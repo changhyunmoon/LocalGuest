@@ -6,7 +6,7 @@ plugins {
 
 group = 'com.team6'
 version = '0.0.1-SNAPSHOT'
-description = 'backend1'
+description = 'backend'
 
 java {
     toolchain {
@@ -24,21 +24,15 @@ ext {
 
 subprojects {
     apply plugin: 'java'
+    apply plugin: 'org.springframework.boot'
     apply plugin: 'io.spring.dependency-management'
 
     repositories {
         mavenCentral()
     }
 
-    dependencyManagement {
-        imports {
-            mavenBom "org.springframework.modulith:spring-modulith-bom:${springModulithVersion}"
-        }
-    }
 
     dependencies {
-        testImplementation 'org.springframework.boot:spring-boot-starter-test'
-        testImplementation 'org.springframework.modulith:spring-modulith-starter-test'
-        testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
     }
 }

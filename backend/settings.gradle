@@ -1,4 +1,4 @@
-rootProject.name = 'backend1'
+rootProject.name = 'backend'
 
 include 'api-server'
 
