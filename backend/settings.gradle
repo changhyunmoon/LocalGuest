@@ -1,0 +1,9 @@
+rootProject.name = 'backend1'
+
+include 'api-server'
+
+include 'module-domain'
+include 'module-chat'
+include 'module-ai'
+
+include 'module-common'
