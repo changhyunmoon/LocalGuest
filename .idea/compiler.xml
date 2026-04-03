@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CompilerConfiguration">
+    <bytecodeTargetLevel>
+      <module name="backend" target="17" />
+      <module name="backend.api-server" target="17" />
+      <module name="backend.api-server.main" target="17" />
+      <module name="backend.api-server.test" target="17" />
+      <module name="backend.main" target="17" />
+      <module name="backend.module-ai" target="17" />
+      <module name="backend.module-ai.main" target="17" />
+      <module name="backend.module-ai.test" target="17" />
+      <module name="backend.module-chat" target="17" />
+      <module name="backend.module-chat.main" target="17" />
+      <module name="backend.module-chat.test" target="17" />
+      <module name="backend.module-common" target="17" />
+      <module name="backend.module-common.main" target="17" />
+      <module name="backend.module-common.test" target="17" />
+      <module name="backend.module-domain" target="17" />
+      <module name="backend.module-domain.main" target="17" />
+      <module name="backend.module-domain.test" target="17" />
+      <module name="backend.test" target="17" />
+    </bytecodeTargetLevel>
+  </component>
+</project>
