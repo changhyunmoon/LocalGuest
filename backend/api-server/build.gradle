@@ -16,7 +16,5 @@ dependencies {
 
     runtimeOnly 'com.mysql:mysql-connector-j'
 }
-
-// 실행 가능한 모듈이므로 bootJar 활성화 (기본값이 true)
 bootJar { enabled = true }
 jar { enabled = false }
