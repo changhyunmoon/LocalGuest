@@ -1,6 +1,4 @@
-plugins {
-    id 'org.springframework.boot'
-}
+
 
 dependencies {
     implementation project(':module-common')
@@ -8,20 +6,17 @@ dependencies {
     implementation project(':module-ai')
     implementation project(':module-chat')
 
+    // Web Server
     implementation 'org.springframework.boot:spring-boot-starter-web'
-    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-    compileOnly 'org.projectlombok:lombok'
-    annotationProcessor 'org.projectlombok:lombok'
 
+    // Runtime DB (H2 등 테스트용)
     runtimeOnly 'com.h2database:h2'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-data-mongodb'
+
+    runtimeOnly 'com.mysql:mysql-connector-j'
 }
 
-repositories {
-    mavenCentral()
-}
-
-test {
-    doFirst {
-        println "Test Classpath: " + classpath.asPath
-    }
-}
+// 실행 가능한 모듈이므로 bootJar 활성화 (기본값이 true)
+bootJar { enabled = true }
+jar { enabled = false }

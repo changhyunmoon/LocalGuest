@@ -15,3 +15,7 @@ spring:
       - optional:classpath:/application-ai-prod.yml
       - optional:classpath:/application-chat-local.yml
       - optional:classpath:/application-chat-prod.yml
+
+server:
+  servlet:
+    context-path: /api
