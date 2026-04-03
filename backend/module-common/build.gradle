@@ -1,10 +1,13 @@
-plugins {
-    id 'java'
-    id 'org.springframework.boot'
-    id 'io.spring.dependency-management'
-}
-
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
+
+    // JPA 하이버네이트 및 관련 어노테이션 사용을 위한 핵심 의존성
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+
+    // @Getter 등을 사용하기 위한 Lombok
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
 }
+bootJar { enabled = false }
+jar { enabled = true }
