@@ -19,10 +19,16 @@ public class AiRecommendationServiceImpl implements AiRecommendationService {
 
     @Override
     public GuideRecommendResponse recommend(GuideRecommendRequest request) {
+        if (request == null || request.getGuideCandidates() == null || request.getGuideCandidates().isEmpty()) {
+            return GuideRecommendResponse.builder()
+                    .totalCount(0)
+                    .recommendations(List.of())
+                    .build();
+        }
+
         TravelerPreference preference = AiRecommendationMapper.toPreference(request);
         List<GuideAiProfile> guides = AiRecommendationMapper.toGuideProfiles(request.getGuideCandidates());
-
-        int topN = request.getTopN() == null ? 3 : request.getTopN();
+        int topN = request.getTopN() == null || request.getTopN() <= 0 ? 3 : request.getTopN();
 
         return matchingEngine.recommend(preference, guides, topN);
     }

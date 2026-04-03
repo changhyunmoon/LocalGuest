@@ -74,4 +74,41 @@ class AiRecommendationServiceTest {
         assertThat(response.getRecommendations()).isNotEmpty();
         assertThat(response.getRecommendations().get(0).getGuideId()).isEqualTo(1L);
     }
+    @Test
+    void recommend_should_return_empty_when_no_candidates() {
+        RegionMatchPolicy regionMatchPolicy = new RegionMatchPolicy();
+        StyleMatchPolicy styleMatchPolicy = new StyleMatchPolicy();
+        BudgetMatchPolicy budgetMatchPolicy = new BudgetMatchPolicy();
+        ActivityMatchPolicy activityMatchPolicy = new ActivityMatchPolicy();
+        LanguageMatchPolicy languageMatchPolicy = new LanguageMatchPolicy();
+
+        ScoreCalculator scoreCalculator = new ScoreCalculator(
+                regionMatchPolicy,
+                styleMatchPolicy,
+                budgetMatchPolicy,
+                activityMatchPolicy,
+                languageMatchPolicy
+        );
+
+        ReasonGenerator reasonGenerator = new ReasonGenerator();
+        MatchingEngine matchingEngine = new MatchingEngine(scoreCalculator, reasonGenerator);
+        AiRecommendationService aiRecommendationService = new AiRecommendationServiceImpl(matchingEngine);
+
+        GuideRecommendRequest request = GuideRecommendRequest.builder()
+                .region("부산")
+                .travelStyle("감성")
+                .budgetLevel("중간")
+                .companionType("혼자")
+                .activityTags(List.of("카페"))
+                .preferredLanguages(List.of("한국어"))
+                .topN(3)
+                .guideCandidates(List.of())
+                .build();
+
+        GuideRecommendResponse response = aiRecommendationService.recommend(request);
+
+        assertThat(response).isNotNull();
+        assertThat(response.getRecommendations()).isEmpty();
+        assertThat(response.getTotalCount()).isEqualTo(0);
+    }
 }

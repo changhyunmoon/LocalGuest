@@ -15,6 +15,6 @@ public class LanguageMatchPolicy {
         boolean matched = pref.getPreferredLanguages().stream()
                 .anyMatch(lang -> guide.getLanguages().contains(lang));
 
-        return matched ? 10 : 0;
+        return matched ? ScoreWeight.LANGUAGE : 0;
     }
 }

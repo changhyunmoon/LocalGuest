@@ -16,6 +16,6 @@ public class ActivityMatchPolicy {
                 .filter(guide.getSpecialtyTags()::contains)
                 .count();
 
-        return (int) matchedCount * 10;
+        return (int) matchedCount * ScoreWeight.ACTIVITY;
     }
 }

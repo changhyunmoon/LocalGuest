@@ -11,6 +11,6 @@ public class RegionMatchPolicy {
         if (pref.getRegion() == null || guide.getRegion() == null) {
             return 0;
         }
-        return pref.getRegion().equalsIgnoreCase(guide.getRegion()) ? 30 : 0;
+        return pref.getRegion().equalsIgnoreCase(guide.getRegion()) ? ScoreWeight.REGION : 0;
     }
 }
