@@ -11,6 +11,6 @@ public class StyleMatchPolicy {
         if (pref.getTravelStyle() == null || guide.getGuideStyle() == null) {
             return 0;
         }
-        return pref.getTravelStyle().equalsIgnoreCase(guide.getGuideStyle()) ? 25 : 0;
+        return pref.getTravelStyle().equalsIgnoreCase(guide.getGuideStyle()) ? ScoreWeight.STYLE : 0;
     }
 }

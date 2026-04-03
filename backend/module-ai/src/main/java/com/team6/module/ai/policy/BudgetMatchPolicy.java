@@ -11,6 +11,6 @@ public class BudgetMatchPolicy {
         if (pref.getBudgetLevel() == null || guide.getPriceLevel() == null) {
             return 0;
         }
-        return pref.getBudgetLevel().equalsIgnoreCase(guide.getPriceLevel()) ? 15 : 0;
+        return pref.getBudgetLevel().equalsIgnoreCase(guide.getPriceLevel()) ? ScoreWeight.BUDGET : 0;
     }
 }
