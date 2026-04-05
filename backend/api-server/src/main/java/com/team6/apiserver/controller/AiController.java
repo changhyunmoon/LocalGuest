@@ -12,7 +12,7 @@ import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/ai")
+@RequestMapping("/ai")
 public class AiController {
 
     private final PromptRecommendationService promptRecommendationService;
