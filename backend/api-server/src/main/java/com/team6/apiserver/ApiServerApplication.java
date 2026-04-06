@@ -14,11 +14,13 @@ import org.springframework.data.mongodb.repository.config.EnableMongoRepositorie
 @EnableJpaRepositories(
         basePackages = {
                 "com.team6.module.chat.repository.mysql", // 채팅용 JPA 레포지토리
-                "com.team6.domain.matching.repository"    // 매칭 도메인 JPA 레포지토리 (MatchRequest 등)
+                "com.team6.domain.matching.repository",   // 매칭 도메인 JPA 레포지토리 (MatchRequest 등)
+                "com.team6.domain.member.repository",     // 멤버 도메인 JPA 레포지토리
         }
 )
 @EnableMongoRepositories(
         basePackages = "com.team6.module.chat.repository.mongodb" // 채팅용 MongoDB 레포지토리
+
 )
 public class ApiServerApplication {
 
