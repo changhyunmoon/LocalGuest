@@ -1,4 +1,4 @@
-package com.team6.domain.matching.dto;
+package com.team6.domain.matching.dto.request;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;

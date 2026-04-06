@@ -5,6 +5,8 @@ import com.team6.domain.matching.exception.MatchingErrorCode;
 import com.team6.domain.matching.exception.MatchingException;
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.extern.slf4j.Slf4j;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -14,6 +16,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Builder
 @AllArgsConstructor
+@Slf4j
 public class MatchRequest {
 
     @Id
@@ -134,15 +137,24 @@ public class MatchRequest {
         this.status = MatchRequestStatus.ACCEPTED;
     }
 
-    // 게스트 취소 처리
+    // 게스트 취소 처리 (F05-01)
     public void cancelByGuest(String reason) {
+        if (this.status != MatchRequestStatus.ACCEPTED &&
+                this.status != MatchRequestStatus.PAID) {
+            throw new MatchingException(MatchingErrorCode.MATCH_REQUEST_CANNOT_CANCEL);
+        }
         this.status = MatchRequestStatus.CANCELLED;
         this.cancelledBy = "GUEST";
         this.cancelReason = reason;
+        log.info("[F05-01] 게스트 취소 처리 — status=CANCELLED, cancelledBy=GUEST");
     }
 
-    // 가이드 취소 처리
+    // 가이드 취소 처리 (F05-02)
     public void cancelByGuide(String reason) {
+        if (this.status != MatchRequestStatus.ACCEPTED &&
+                this.status != MatchRequestStatus.PAID) {
+            throw new MatchingException(MatchingErrorCode.MATCH_REQUEST_CANNOT_CANCEL);
+        }
         this.status = MatchRequestStatus.CANCELLED;
         this.cancelledBy = "GUIDE";
         this.cancelReason = reason;

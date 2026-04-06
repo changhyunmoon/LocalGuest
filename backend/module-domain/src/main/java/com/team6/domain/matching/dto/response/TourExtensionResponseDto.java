@@ -1,4 +1,4 @@
-package com.team6.domain.matching.dto;
+package com.team6.domain.matching.dto.response;
 
 import com.team6.domain.matching.entity.TourExtension;
 import com.team6.domain.matching.entity.enums.TourExtensionStatus;
