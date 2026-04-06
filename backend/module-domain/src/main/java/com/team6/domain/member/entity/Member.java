@@ -5,6 +5,7 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
+@Setter
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
@@ -41,8 +42,12 @@ public class Member {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
+    // 비밀번호 값 교체
+    public void updatePassword(String encodedPassword) {
+        this.password = encodedPassword;
+    }
 
-
+    // 회원 권한 변경
     public void upgradeToGuide() {
         this.role = Role.GUIDE;
     }

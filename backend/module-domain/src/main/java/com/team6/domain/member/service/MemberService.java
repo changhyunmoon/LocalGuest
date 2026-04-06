@@ -1,8 +1,10 @@
 package com.team6.domain.member.service;
 
+import com.team6.domain.auth.config.PasswordConfig;
 import com.team6.domain.member.entity.Member;
 import com.team6.domain.member.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -11,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class MemberService {
     private final MemberRepository memberRepository;
+    private final PasswordEncoder passwordEncoder;
 
     // 회원가입
     @Transactional
@@ -18,6 +21,12 @@ public class MemberService {
         //[LOG] INFO : [Member-Domain] 회원가입 로직 시작
         // 중복 회원 검증
         validateDuplicateMeber(member);
+
+        // 암호화된 비밀번호 값으로 교체
+        // [LOG] DEBUG : [Member-Domain] 비밀번호 암호화 수행 중...
+        String encodedPassword = passwordEncoder.encode(member.getPassword());
+        member.updatePassword(encodedPassword);
+
         // 중복 아니면 DB저장
         memberRepository.save(member);
         //[LOG] INFO : [Member-Domain] 회원 저장 완료 (ID : {})
