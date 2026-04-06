@@ -1,4 +1,4 @@
-package com.team6.apiserver.dto.response;
+package com.team6.domain.matching.dto.response;
 
 import com.team6.domain.matching.entity.MatchRequest;
 import lombok.Builder;
@@ -9,7 +9,7 @@ import java.time.LocalDateTime;
 
 @Getter
 @Builder
-public class MatchRequestCreateResponse {
+public class MatchRequestSummaryResponse {
 
     private Long requestId;
     private Long guestId;
@@ -21,8 +21,8 @@ public class MatchRequestCreateResponse {
     private String status;
     private LocalDateTime createdAt;
 
-    public static MatchRequestCreateResponse from(MatchRequest entity) {
-        return MatchRequestCreateResponse.builder()
+    public static MatchRequestSummaryResponse from(MatchRequest entity) {
+        return MatchRequestSummaryResponse.builder()
                 .requestId(entity.getRequestId())
                 .guestId(entity.getGuestId())
                 .guideId(entity.getGuideId())

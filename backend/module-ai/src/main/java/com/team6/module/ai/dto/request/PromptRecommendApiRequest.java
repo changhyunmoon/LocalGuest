@@ -1,6 +1,5 @@
-package com.team6.apiserver.dto.request;
+package com.team6.module.ai.dto.request;
 
-import com.team6.module.ai.dto.request.GuideRecommendRequest;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 

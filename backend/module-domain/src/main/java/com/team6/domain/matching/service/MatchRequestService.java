@@ -1,7 +1,7 @@
-package com.team6.apiserver.service;
+package com.team6.domain.matching.service;
 
-import com.team6.apiserver.dto.request.MatchRequestCreateRequest;
-import com.team6.apiserver.dto.response.MatchRequestSummaryResponse;
+import com.team6.domain.matching.dto.request.MatchRequestCreateRequest;
+import com.team6.domain.matching.dto.response.MatchRequestSummaryResponse;
 import com.team6.domain.matching.entity.MatchRequest;
 import com.team6.domain.matching.exception.MatchingErrorCode;
 import com.team6.domain.matching.exception.MatchingException;

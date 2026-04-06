@@ -2,8 +2,8 @@ dependencies {
     // 공통 모듈
     implementation project(':module-common')
 
-    // Spring 기본
-    implementation 'org.springframework.boot:spring-boot-starter'
+    // Web Server
+    implementation 'org.springframework.boot:spring-boot-starter-web'
 
     // Lombok
     compileOnly 'org.projectlombok:lombok'
