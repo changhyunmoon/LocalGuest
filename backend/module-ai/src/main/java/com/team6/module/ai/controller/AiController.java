@@ -1,12 +1,15 @@
-package com.team6.apiserver.controller;
+package com.team6.module.ai.controller;
 
-import com.team6.apiserver.dto.request.PromptRecommendApiRequest;
-import com.team6.apiserver.service.GuideCandidateProvider;
+import com.team6.module.ai.dto.request.PromptRecommendApiRequest;
+import com.team6.module.ai.support.GuideCandidateProvider;
 import com.team6.module.ai.dto.request.GuideRecommendRequest;
 import com.team6.module.ai.dto.response.GuideRecommendResponse;
 import com.team6.module.ai.service.PromptRecommendationService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 

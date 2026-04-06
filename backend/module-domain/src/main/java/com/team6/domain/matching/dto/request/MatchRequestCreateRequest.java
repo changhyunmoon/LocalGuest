@@ -1,4 +1,4 @@
-package com.team6.apiserver.dto.request;
+package com.team6.domain.matching.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;

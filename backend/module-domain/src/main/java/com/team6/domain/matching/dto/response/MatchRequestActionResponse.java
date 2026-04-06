@@ -1,4 +1,4 @@
-package com.team6.apiserver.dto.response;
+package com.team6.domain.matching.dto.response;
 
 import com.team6.domain.matching.entity.MatchRequest;
 import lombok.Builder;

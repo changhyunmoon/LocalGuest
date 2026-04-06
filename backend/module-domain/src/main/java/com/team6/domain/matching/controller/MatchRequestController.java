@@ -1,10 +1,10 @@
-package com.team6.apiserver.controller;
+package com.team6.domain.matching.controller;
 
-import com.team6.apiserver.dto.request.MatchRequestCreateRequest;
-import com.team6.apiserver.dto.response.MatchRequestActionResponse;
-import com.team6.apiserver.dto.response.MatchRequestCreateResponse;
-import com.team6.apiserver.dto.response.MatchRequestSummaryResponse;
-import com.team6.apiserver.service.MatchRequestService;
+import com.team6.domain.matching.dto.request.MatchRequestCreateRequest;
+import com.team6.domain.matching.dto.response.MatchRequestActionResponse;
+import com.team6.domain.matching.dto.response.MatchRequestCreateResponse;
+import com.team6.domain.matching.dto.response.MatchRequestSummaryResponse;
+import com.team6.domain.matching.service.MatchRequestService;
 import com.team6.domain.matching.entity.MatchRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

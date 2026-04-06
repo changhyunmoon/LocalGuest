@@ -1,4 +1,4 @@
-package com.team6.apiserver.service;
+package com.team6.module.ai.support;
 
 import com.team6.module.ai.dto.request.GuideRecommendRequest;
 
