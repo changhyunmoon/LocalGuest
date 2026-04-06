@@ -11,6 +11,7 @@ public enum MatchingErrorCode {
     MATCH_REQUEST_NOT_FOUND(404, "매칭 요청을 찾을 수 없습니다"),
     MATCH_REQUEST_CANNOT_CANCEL(400, "현재 상태에서는 취소할 수 없습니다"),
     MATCH_REQUEST_UNAUTHORIZED(403, "해당 매칭 요청에 대한 권한이 없습니다"),
+    MATCH_REQUEST_INVALID_STATUS(400, "현재 상태에서는 처리할 수 없습니다"),
 
     // Payment 관련
     PAYMENT_NOT_FOUND(404, "결제 정보를 찾을 수 없습니다"),
