@@ -1,0 +1,428 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Chat Test (STOMP)</title>
+  <style>
+    :root { color-scheme: light; }
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 0; }
+    header { padding: 12px 16px; border-bottom: 1px solid #e5e7eb; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+    header input { padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 8px; }
+    header button { padding: 8px 12px; border: 1px solid #111827; background: #111827; color: white; border-radius: 8px; cursor: pointer; }
+    header button.secondary { background: white; color: #111827; }
+    header .pill { padding: 6px 10px; border-radius: 999px; background: #f3f4f6; border: 1px solid #e5e7eb; }
+    main { display: grid; grid-template-columns: 420px 1fr; gap: 0; height: calc(100vh - 62px); }
+    .panel { border-right: 1px solid #e5e7eb; overflow: auto; }
+    .panel-right { overflow: auto; }
+    section { padding: 14px 16px; border-bottom: 1px solid #f3f4f6; }
+    h2 { margin: 0 0 10px; font-size: 14px; color: #111827; }
+    .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .row input { flex: 1; min-width: 140px; }
+    .hint { font-size: 12px; color: #6b7280; line-height: 1.4; }
+    .rooms { display: grid; gap: 8px; }
+    .room { border: 1px solid #e5e7eb; border-radius: 12px; padding: 10px; cursor: pointer; background: white; }
+    .room.active { border-color: #111827; }
+    .room .top { display: flex; justify-content: space-between; gap: 8px; }
+    .room .title { font-weight: 700; }
+    .room .meta { font-size: 12px; color: #6b7280; }
+    .room .last { margin-top: 6px; font-size: 13px; color: #111827; }
+    .badge { display: inline-flex; align-items: center; justify-content: center; min-width: 18px; height: 18px; padding: 0 6px; border-radius: 999px; background: #ef4444; color: white; font-size: 12px; }
+    .chat { display: grid; grid-template-rows: auto 1fr auto; height: 100%; }
+    .chat header { border: 0; border-bottom: 1px solid #e5e7eb; }
+    .messages { padding: 14px 16px; overflow: auto; background: #fafafa; }
+    .msg { padding: 10px 12px; border: 1px solid #e5e7eb; border-radius: 12px; background: white; margin-bottom: 8px; }
+    .msg .m1 { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; color: #6b7280; }
+    .msg .m2 { margin-top: 4px; white-space: pre-wrap; }
+    .composer { border-top: 1px solid #e5e7eb; padding: 12px 16px; display: flex; gap: 10px; align-items: center; }
+    .composer input { flex: 1; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 10px; }
+    .composer button { padding: 10px 14px; border: 1px solid #111827; background: #111827; color: white; border-radius: 10px; cursor: pointer; }
+    .log { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; font-size: 12px; white-space: pre-wrap; background: #0b1020; color: #d1d5db; padding: 12px; border-radius: 12px; }
+    .warn { color: #b45309; }
+  </style>
+</head>
+<body>
+<header>
+  <span class="pill" id="status">DISCONNECTED</span>
+  <input id="apiBase" placeholder="API Base (예: http://localhost:8080/api)" style="min-width: 280px;" />
+  <input id="wsUrl" placeholder="WS URL (예: http://localhost:8080/api/ws-stomp)" style="min-width: 320px;" />
+  <input id="userId" placeholder="userId" />
+  <input id="nickname" placeholder="nickname" />
+  <button id="btnConnect">Connect</button>
+  <button id="btnDisconnect" class="secondary">Disconnect</button>
+</header>
+
+<main>
+  <div class="panel">
+    <section>
+      <h2>채팅방 생성</h2>
+      <div class="row">
+        <input id="newRoomTitle" placeholder="채팅방 이름" />
+      </div>
+      <div class="row" style="margin-top:8px;">
+        <input id="inviteCsv" placeholder="초대 userId CSV (예: 2,3,4)" />
+      </div>
+      <div class="hint" style="margin-top:8px;">
+        초대 닉네임은 테스트용으로 <code>user{ID}</code>로 채웁니다.
+      </div>
+      <div class="row" style="margin-top:10px;">
+        <button id="btnCreateRoom">Create</button>
+      </div>
+    </section>
+
+    <section>
+      <h2>내 채팅방 리스트</h2>
+      <div class="row">
+        <button id="btnRefreshRooms">Refresh (REST)</button>
+      </div>
+      <div class="hint" style="margin-top:8px;">
+        실시간 갱신 구독: <code>/sub/chat/rooms/{userId}</code>
+      </div>
+    </section>
+
+    <section>
+      <div class="rooms" id="rooms"></div>
+    </section>
+
+    <section>
+      <h2>로그</h2>
+      <div class="log" id="log"></div>
+    </section>
+  </div>
+
+  <div class="panel-right">
+    <div class="chat">
+      <header>
+        <div class="row" style="width:100%; justify-content:space-between;">
+          <div>
+            <div style="font-weight:800;" id="activeRoomTitle">방을 선택하세요</div>
+            <div class="hint">roomId: <span id="activeRoomId">-</span></div>
+          </div>
+          <div class="row">
+            <button id="btnEnterRoom" class="secondary">Enter (STOMP)</button>
+            <button id="btnLoadMore" class="secondary">Load older (REST)</button>
+          </div>
+        </div>
+      </header>
+      <div class="messages" id="messages"></div>
+      <div class="composer">
+        <input id="msgInput" placeholder="메시지 입력..." />
+        <button id="btnSend">Send</button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+<script>
+  const el = (id) => document.getElementById(id);
+  const logEl = el('log');
+  const log = (s) => {
+    const t = new Date().toISOString();
+    logEl.textContent = `[${t}] ${s}\n` + logEl.textContent;
+  };
+
+  let stomp = null;
+  let roomsById = new Map(); // roomId -> room DTO
+  let activeRoomId = null;
+  let activeRoomSub = null;
+  let lastOldestSeq = null; // for pagination (older): beforeSeq = oldestSeq
+  let lastSeenSeq = 0; // for readAck
+
+  // api-server application.yml: server.servlet.context-path = /api
+  const CONTEXT_PATH = '/api';
+
+  function normalizeApiBase(raw) {
+    const v = (raw || '').trim().replace(/\/+$/, '');
+    if (!v) return window.location.origin + CONTEXT_PATH;
+    if (v.endsWith(CONTEXT_PATH)) return v;
+    // 사용자가 origin만 넣은 경우(/api 빠짐) 자동 보정
+    return v + CONTEXT_PATH;
+  }
+
+  function apiBase() {
+    return normalizeApiBase(el('apiBase').value);
+  }
+  function wsUrl() {
+    const v = (el('wsUrl').value || '').trim().replace(/\/+$/, '');
+    return v || (apiBase() + '/ws-stomp');
+  }
+  function userId() {
+    return Number(el('userId').value.trim());
+  }
+  function nickname() {
+    return el('nickname').value.trim();
+  }
+
+  function setStatus(text, ok) {
+    el('status').textContent = text;
+    el('status').style.background = ok ? '#dcfce7' : '#f3f4f6';
+    el('status').style.borderColor = ok ? '#86efac' : '#e5e7eb';
+    el('status').style.color = ok ? '#166534' : '#111827';
+  }
+
+  async function fetchJson(url, opts) {
+    const res = await fetch(url, Object.assign({
+      headers: { 'Content-Type': 'application/json' }
+    }, opts || {}));
+    if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}`);
+    if (res.status === 204) return null;
+    return await res.json();
+  }
+
+  function renderRooms() {
+    const container = el('rooms');
+    const rooms = Array.from(roomsById.values());
+    container.innerHTML = '';
+    rooms.forEach(r => {
+      const div = document.createElement('div');
+      div.className = 'room' + (r.roomId === activeRoomId ? ' active' : '');
+      const unread = Number(r.unreadCount || 0);
+      const lastAt = r.lastMessageAt ? new Date(r.lastMessageAt).toLocaleString() : '-';
+      div.innerHTML = `
+        <div class="top">
+          <div class="title">${escapeHtml(r.title || '(no title)')}</div>
+          <div>${unread > 0 ? `<span class="badge">${unread}</span>` : ''}</div>
+        </div>
+        <div class="meta">participants: ${r.participantCount ?? '-'} · last: ${escapeHtml(lastAt)}</div>
+        <div class="last">${escapeHtml(r.lastMessage || '')}</div>
+      `;
+      div.onclick = () => selectRoom(r.roomId);
+      container.appendChild(div);
+    });
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  function upsertRoom(roomDto) {
+    if (!roomDto || !roomDto.roomId) return;
+    const prev = roomsById.get(roomDto.roomId) || {};
+    roomsById.set(roomDto.roomId, Object.assign({}, prev, roomDto));
+  }
+
+  async function refreshRoomsRest() {
+    const uid = userId();
+    if (!uid) return log('userId를 입력하세요.');
+    const list = await fetchJson(`${apiBase()}/chat/rooms?userId=${encodeURIComponent(uid)}`);
+    roomsById.clear();
+    list.forEach(upsertRoom);
+    renderRooms();
+    log(`방 리스트 REST 갱신: ${list.length}개`);
+  }
+
+  async function createRoomRest() {
+    const uid = userId();
+    const nick = nickname();
+    const title = el('newRoomTitle').value.trim();
+    if (!uid || !nick) return log('Connect 전에 userId/nickname을 입력하세요.');
+    if (!title) return log('채팅방 이름을 입력하세요.');
+    const inviteIds = el('inviteCsv').value.split(',')
+      .map(x => x.trim())
+      .filter(x => x.length > 0)
+      .map(x => Number(x))
+      .filter(n => Number.isFinite(n) && n > 0 && n !== uid);
+    const participants = inviteIds.map(id => ({ userId: id, nickname: `user${id}` }));
+    const body = { title, ownerId: uid, ownerNickname: nick, participants };
+    const res = await fetchJson(`${apiBase()}/chat/rooms`, { method: 'POST', body: JSON.stringify(body) });
+    log(`방 생성 완료 roomId=${res.roomId}`);
+    await refreshRoomsRest();
+  }
+
+  function ensureConnected() {
+    if (!stomp || !stomp.connected) throw new Error('STOMP 연결이 필요합니다.');
+  }
+
+  function connect() {
+    const uid = userId();
+    if (!uid) return log('userId를 입력하세요.');
+    const sock = new SockJS(wsUrl());
+    stomp = Stomp.over(sock);
+    stomp.debug = null;
+    stomp.connect({}, async () => {
+      setStatus('CONNECTED', true);
+      log('STOMP connected');
+
+      // room list realtime
+      stomp.subscribe(`/sub/chat/rooms/${uid}`, (frame) => {
+        try {
+          const dto = JSON.parse(frame.body);
+          upsertRoom(dto);
+          renderRooms();
+          log(`방 리스트 이벤트 수신: roomId=${dto.roomId} unread=${dto.unreadCount}`);
+        } catch (e) {
+          log('방 리스트 이벤트 파싱 실패: ' + e.message);
+        }
+      });
+
+      await refreshRoomsRest();
+    }, (err) => {
+      setStatus('DISCONNECTED', false);
+      log('STOMP connect error: ' + (err?.toString?.() || err));
+    });
+  }
+
+  function disconnect() {
+    if (activeRoomSub) { try { activeRoomSub.unsubscribe(); } catch {} }
+    activeRoomSub = null;
+    activeRoomId = null;
+    roomsById.clear();
+    renderRooms();
+    el('messages').innerHTML = '';
+    if (stomp && stomp.connected) {
+      stomp.disconnect(() => {
+        setStatus('DISCONNECTED', false);
+        log('STOMP disconnected');
+      });
+    } else {
+      setStatus('DISCONNECTED', false);
+    }
+  }
+
+  async function selectRoom(roomId) {
+    activeRoomId = roomId;
+    lastOldestSeq = null;
+    lastSeenSeq = 0;
+    el('messages').innerHTML = '';
+
+    const room = roomsById.get(roomId);
+    el('activeRoomId').textContent = roomId;
+    el('activeRoomTitle').textContent = room?.title || '채팅방';
+
+    renderRooms();
+
+    // re-subscribe to room messages
+    if (activeRoomSub) { try { activeRoomSub.unsubscribe(); } catch {} }
+    ensureConnected();
+    activeRoomSub = stomp.subscribe(`/sub/chat/room/${roomId}`, (frame) => {
+      const msg = JSON.parse(frame.body);
+      appendMessage(msg);
+      // 방에 들어와있으면 즉시 ack (가장 단순한 테스트용 동작)
+      if (activeRoomId === msg.roomId && msg.seq != null) {
+        lastSeenSeq = Math.max(lastSeenSeq, Number(msg.seq));
+        sendReadAck(lastSeenSeq);
+      }
+    });
+
+    log(`방 선택: ${roomId}. REST로 최근 메시지 로드합니다.`);
+    await loadRecentMessages();
+  }
+
+  function appendMessage(msg) {
+    const wrap = el('messages');
+    const div = document.createElement('div');
+    div.className = 'msg';
+    const at = msg.createdAt ? new Date(msg.createdAt).toLocaleString() : '';
+    div.innerHTML = `
+      <div class="m1">
+        <span>${escapeHtml(msg.senderNickname)} (#${msg.senderId}) · seq=${escapeHtml(msg.seq)}</span>
+        <span>${escapeHtml(at)}</span>
+      </div>
+      <div class="m2">${escapeHtml(msg.message)}</div>
+    `;
+    wrap.appendChild(div);
+    wrap.scrollTop = wrap.scrollHeight;
+
+    // pagination 기준: 현재 화면에 있는 가장 오래된 seq 갱신
+    if (msg.seq != null) {
+      const s = Number(msg.seq);
+      if (lastOldestSeq == null) lastOldestSeq = s;
+      else lastOldestSeq = Math.min(lastOldestSeq, s);
+    }
+  }
+
+  async function loadRecentMessages() {
+    if (!activeRoomId) return;
+    const list = await fetchJson(`${apiBase()}/chat/rooms/${encodeURIComponent(activeRoomId)}/messages?size=30`);
+    list.forEach(appendMessage);
+    if (list.length > 0) {
+      const maxSeq = Math.max(...list.map(m => Number(m.seq || 0)));
+      lastSeenSeq = Math.max(lastSeenSeq, maxSeq);
+    }
+  }
+
+  async function loadOlderMessages() {
+    if (!activeRoomId) return;
+    if (lastOldestSeq == null) return log('이전 메시지를 더 불러올 기준(beforeSeq)이 없습니다.');
+    const beforeSeq = lastOldestSeq;
+    const list = await fetchJson(`${apiBase()}/chat/rooms/${encodeURIComponent(activeRoomId)}/messages?size=30&beforeSeq=${encodeURIComponent(beforeSeq)}`);
+    if (list.length === 0) return log('더 불러올 이전 메시지가 없습니다.');
+
+    // prepend (스크롤 테스트 편의를 위해 간단히 위에 붙임)
+    const wrap = el('messages');
+    const prevScroll = wrap.scrollTop;
+    const prevHeight = wrap.scrollHeight;
+
+    const frag = document.createDocumentFragment();
+    list.forEach(m => {
+      const div = document.createElement('div');
+      div.className = 'msg';
+      const at = m.createdAt ? new Date(m.createdAt).toLocaleString() : '';
+      div.innerHTML = `
+        <div class="m1">
+          <span>${escapeHtml(m.senderNickname)} (#${m.senderId}) · seq=${escapeHtml(m.seq)}</span>
+          <span>${escapeHtml(at)}</span>
+        </div>
+        <div class="m2">${escapeHtml(m.message)}</div>
+      `;
+      frag.appendChild(div);
+      const s = Number(m.seq || 0);
+      lastOldestSeq = Math.min(lastOldestSeq, s);
+    });
+    wrap.insertBefore(frag, wrap.firstChild);
+    wrap.scrollTop = prevScroll + (wrap.scrollHeight - prevHeight);
+    log(`이전 메시지 로드: ${list.length}개 (beforeSeq=${beforeSeq})`);
+  }
+
+  function sendMessage() {
+    if (!activeRoomId) return log('먼저 방을 선택하세요.');
+    const uid = userId();
+    const nick = nickname();
+    const text = el('msgInput').value;
+    if (!text.trim()) return;
+    ensureConnected();
+    stomp.send('/pub/chat/message', {}, JSON.stringify({
+      roomId: activeRoomId,
+      senderId: uid,
+      senderNickname: nick,
+      message: text
+    }));
+    el('msgInput').value = '';
+  }
+
+  function sendEnter() {
+    if (!activeRoomId) return log('먼저 방을 선택하세요.');
+    ensureConnected();
+    stomp.send('/pub/chat/room/enter', {}, JSON.stringify({ roomId: activeRoomId, userId: userId() }));
+    log(`enter 전송: roomId=${activeRoomId}`);
+  }
+
+  function sendReadAck(seq) {
+    if (!activeRoomId) return;
+    ensureConnected();
+    stomp.send('/pub/chat/room/readAck', {}, JSON.stringify({
+      roomId: activeRoomId,
+      userId: userId(),
+      lastSeenSeq: Number(seq)
+    }));
+  }
+
+  el('btnConnect').onclick = () => { try { connect(); } catch (e) { log(e.message); } };
+  el('btnDisconnect').onclick = () => disconnect();
+  el('btnRefreshRooms').onclick = async () => { try { await refreshRoomsRest(); } catch (e) { log(e.message); } };
+  el('btnCreateRoom').onclick = async () => { try { await createRoomRest(); } catch (e) { log(e.message); } };
+  el('btnSend').onclick = () => { try { sendMessage(); } catch (e) { log(e.message); } };
+  el('msgInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') sendMessage(); });
+  el('btnEnterRoom').onclick = () => { try { sendEnter(); } catch (e) { log(e.message); } };
+  el('btnLoadMore').onclick = async () => { try { await loadOlderMessages(); } catch (e) { log(e.message); } };
+
+  // defaults
+  el('apiBase').value = window.location.origin + CONTEXT_PATH;
+  el('wsUrl').value = window.location.origin + CONTEXT_PATH + '/ws-stomp';
+  log('준비 완료. userId/nickname 입력 후 Connect 하세요.');
+</script>
+</body>
+</html>
+
