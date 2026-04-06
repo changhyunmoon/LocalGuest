@@ -6,7 +6,6 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public enum MatchingErrorCode {
-
     // MatchRequest 관련
     MATCH_REQUEST_NOT_FOUND(404, "매칭 요청을 찾을 수 없습니다"),
     MATCH_REQUEST_CANNOT_CANCEL(400, "현재 상태에서는 취소할 수 없습니다"),
@@ -27,8 +26,12 @@ public enum MatchingErrorCode {
     TOUR_EXTENSION_NOT_FOUND(404, "연장 신청을 찾을 수 없습니다"),
     TOUR_EXTENSION_DEADLINE_EXCEEDED(400, "연장 선택 기한이 지났습니다"),
     TOUR_EXTENSION_ALREADY_REQUESTED(400, "이미 연장 신청된 투어입니다"),
-    TOUR_EXTENSION_CANNOT_APPROVE(400, "현재 상태에서는 승인할 수 없습니다");
+    TOUR_EXTENSION_CANNOT_APPROVE(400, "현재 상태에서는 승인할 수 없습니다"),
+
+    INVALID_REQUEST(400, "잘못된 요청입니다"),
+    GUEST_GUIDE_SAME(400, "게스트와 가이드가 동일인입니다");
 
     private final int status;    // HTTP 상태코드
     private final String message; // 에러 메시지
 }
+

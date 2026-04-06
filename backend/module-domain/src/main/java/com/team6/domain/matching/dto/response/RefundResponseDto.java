@@ -1,4 +1,4 @@
-package com.team6.domain.matching.dto;
+package com.team6.domain.matching.dto.response;
 
 import com.team6.domain.matching.entity.Refund;
 import com.team6.domain.matching.entity.enums.RefundStatus;
