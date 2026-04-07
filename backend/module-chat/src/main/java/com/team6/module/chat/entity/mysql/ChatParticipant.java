@@ -22,9 +22,6 @@ public class ChatParticipant extends BaseTimeEntity {
 
     private LocalDateTime lastReadAt; // 마지막으로 읽은 시점
 
-    @Column(nullable = false)
-    private boolean isAlarmOn = true; //알림 설정: 해당 방의 알림 활성화 여부
-
     @Builder
     private ChatParticipant(Long userId, String userNickname) {
         this.userId = userId;
@@ -43,7 +40,5 @@ public class ChatParticipant extends BaseTimeEntity {
         this.lastReadAt = LocalDateTime.now();
     }
 
-    public void updateAlarm(boolean isAlarmOn) {
-        this.isAlarmOn = isAlarmOn;
-    }
+
 }

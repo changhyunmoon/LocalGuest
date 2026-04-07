@@ -1,14 +1,14 @@
 package com.team6.module.chat.service;
 
 import com.team6.module.chat.config.RedisPublisher;
-import com.team6.module.chat.dto.request.ChatMessageRequest;
-import com.team6.module.chat.dto.response.ChatMessageResponse;
+import com.team6.module.chat.dto.request.SendMessageRequest;
 import com.team6.module.chat.entity.mongodb.ChatMessage;
 import com.team6.module.chat.repository.mongodb.ChatMessageRepository;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
 
 @Slf4j
 @Service
@@ -16,30 +16,29 @@ import org.springframework.stereotype.Service;
 public class ChatMessageService {
 
     private final ChatMessageRepository chatMessageRepository;
-    private final RedisPublisher redisPublisher;
 
-    //메시지 전송 및 저장
-    @Transactional
-    public void sendMessage(ChatMessageRequest request) {
-        log.info("채팅 메시지 전송 시작 - roomId: {}, senderId: {}", request.roomId(), request.senderId());
 
-        // 엔티티 생성 및 MongoDB 저장
-        ChatMessage chatMessage = ChatMessage.create(
-                request.roomId(),
-                request.senderId(),
-                request.senderNickname(),
-                request.message()
-        );
+    //안 읽은 메시지 개수 조회
+    public Long countUnreadMessages(String roomId, LocalDateTime lastReadAt) {
+        // lastReadAt이 null인 경우 (방에 처음 초대된 상태)
+        if (lastReadAt == null) {
+            // 시스템에서 다룰 수 있는 현실적인 최소 날짜를 사용합니다. (오버플로우 방지)
+            // 혹은 0을 리턴하거나 전체 메시지를 카운트하도록 비즈니스 로직에 따라 결정합니다.
+            LocalDateTime startOfTime = LocalDateTime.of(2026, 1, 1, 0, 0);
+            return chatMessageRepository.countByRoomIdAndCreatedAtAfter(roomId, startOfTime);
+        }
 
-        // MongoDB에 저장 (성공 시 자동 생성된 ID가 채워짐)
-        ChatMessage savedMessage = chatMessageRepository.save(chatMessage);
-        log.info("MongoDB 메시지 저장 완료 - id: {}", savedMessage.getId());
+        return chatMessageRepository.countByRoomIdAndCreatedAtAfter(roomId, lastReadAt);
+    }
 
-        // Redis 발행을 위한 Response DTO 변환
-        ChatMessageResponse response = ChatMessageResponse.from(savedMessage);
+    public ChatMessage saveMessage(SendMessageRequest request, String senderNickname) {
+        ChatMessage chatMessage = ChatMessage.builder()
+                .roomId(request.roomId())
+                .senderId(request.senderId())
+                .senderNickname(senderNickname)
+                .message(request.message())
+                .build();
 
-        // Redis 토픽(chatroom)으로 메시지 발행
-        redisPublisher.publish(response);
-        log.info("Redis 메시지 발행 완료 - roomId: {}", response.roomId());
+        return chatMessageRepository.save(chatMessage);
     }
 }

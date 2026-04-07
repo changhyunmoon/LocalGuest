@@ -10,10 +10,18 @@ import java.util.Optional;
 
 public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
 
-    @Query("SELECT DISTINCT r FROM ChatRoom r " +
-            "JOIN r.participants p " +
-            "WHERE p.userId = :userId " +
-            "ORDER BY r.lastMessageAt DESC")
-    List<ChatRoom> findAllByUserId(@Param("userId") Long userId);
+    Optional<ChatRoom> findByRoomId(String roomId);
 
+    /**
+     * 사용자가 참여 중인 채팅방 목록을 조회하며,
+     * 각 채팅방의 참여자(participants) 목록을 FETCH JOIN으로 한 번에 가져옵니다.
+     */
+    @Query("SELECT DISTINCT r FROM ChatRoom r " +
+            "JOIN FETCH r.participants p " +
+            "WHERE r.id IN (" +
+            "  SELECT r2.id FROM ChatRoom r2 " +
+            "  JOIN r2.participants p2 " +
+            "  WHERE p2.userId = :userId" +
+            ")")
+    List<ChatRoom> findAllWithParticipantsByUserId(@Param("userId") Long userId);
 }

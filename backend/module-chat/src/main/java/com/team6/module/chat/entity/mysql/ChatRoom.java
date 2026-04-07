@@ -32,12 +32,6 @@ public class ChatRoom extends BaseTimeEntity {
 
     private Long ownerId; // 방장 ID
 
-    /**
-     * 단방향 OneToMany 설정
-     * cascade = ALL: 방이 저장/삭제될 때 참여자도 함께 처리
-     * orphanRemoval = true: 리스트에서 제거된 참여자는 DB에서도 삭제
-     * @JoinColumn: chat_participants 테이블에 생성될 외래키 컬럼명
-     */
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "chat_room_id")
     private List<ChatParticipant> participants = new ArrayList<>();
@@ -58,15 +52,15 @@ public class ChatRoom extends BaseTimeEntity {
                 .build();
     }
 
-    // 비즈니스 메서드: 참여자 추가 (인원수 자동 증가)
     public void addParticipant(ChatParticipant participant) {
         this.participants.add(participant);
         this.participantCount = this.participants.size();
     }
 
-    // 메시지 갱신
-    public void updateLastMessage(String message, LocalDateTime sentAt) {
-        this.lastMessage = message;
+    public void updateLastMessage(String content, LocalDateTime sentAt) {
+        this.lastMessage = content;
         this.lastMessageAt = sentAt;
     }
+
+
 }

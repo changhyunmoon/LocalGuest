@@ -35,12 +35,5 @@ public class ChatMessage {
         this.createdAt = LocalDateTime.now();
     }
 
-    public static ChatMessage create(String roomId, Long senderId, String senderNickname, String message) {
-        return ChatMessage.builder()
-                .roomId(roomId)
-                .senderId(senderId)
-                .senderNickname(senderNickname)
-                .message(message)
-                .build();
-    }
+
 }
