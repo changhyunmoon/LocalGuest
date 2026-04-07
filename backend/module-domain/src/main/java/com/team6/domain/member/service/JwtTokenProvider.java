@@ -25,10 +25,10 @@ public class JwtTokenProvider {
         this.key = Keys.hmacShaKeyFor(secretKey.getBytes());
     }
 
-    public String createToken(String email) {
+    public String createToken(String email, String role) {
         // [LOG] INFO : [Auth-Domain] JWT 토큰 생성 시작 (Target : {})
         Claims claims = Jwts.claims().subject(email).build();
-        claims.put("roles", "GUEST");
+        claims.put("role", role);
 
         Date now = new Date();
         Date validity = new Date(now.getTime() + tokenValidityInMilliseconds);

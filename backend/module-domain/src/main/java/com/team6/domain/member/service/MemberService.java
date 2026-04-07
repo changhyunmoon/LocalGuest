@@ -20,7 +20,7 @@ public class MemberService {
     public Long join(Member member) {
         //[LOG] INFO : [Member-Domain] 회원가입 로직 시작
         // 중복 회원 검증
-        validateDuplicateMeber(member);
+        validateDuplicateMember(member);
 
         // 암호화된 비밀번호 값으로 교체
         // [LOG] DEBUG : [Member-Domain] 비밀번호 암호화 수행 중...
@@ -34,7 +34,7 @@ public class MemberService {
     }
 
     // 중복 회원 검증 로직
-    private void validateDuplicateMeber(Member member) {
+    private void validateDuplicateMember(Member member) {
         if(memberRepository.existsByEmail(member.getEmail())) {
             // [LOG] WARN : [Member-Domain] 중복 회원 가입 시도 감지
             throw new IllegalStateException("이미 존재하는 회원입니다. ");
