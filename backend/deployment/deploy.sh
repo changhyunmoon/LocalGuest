@@ -80,19 +80,22 @@ echo "2. $TARGET_COLOR 컨테이너 실행..."
 $DOCKER_COMPOSE_APP up -d backend-$TARGET_COLOR || exit 1
 
 # 8. 헬스체크 (Spring Actuator 활용)
-for i in {1..20}; do
-    echo "3. $TARGET_COLOR 헬스체크 중... ($i/20)"
-    sleep 7
+for i in {1..30}; do
+    echo "3. $TARGET_COLOR 헬스체크 중... ($i/30)"
+    sleep 10
 
-    RESPONSE=$(curl -s http://127.0.0.1:$TARGET_PORT/api/actuator/health | grep "UP" || true)
+    HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:$TARGET_PORT/api/actuator/health)
 
-    if [ -n "$RESPONSE" ]; then
-        echo "✅ 헬스체크 성공!"
+    if [ "$HTTP_STATUS" -eq 200 ]; then
+        echo "✅ 헬스체크 성공! (HTTP Status: $HTTP_STATUS)"
         break
     fi
 
-    if [ $i -eq 20 ]; then
-        echo "❌ 헬스체크 실패! $TARGET_COLOR 배포를 중단하고 롤백합니다."
+    if [ $i -eq 30 ]; then
+        echo "❌ 헬스체크 최종 실패 (마지막 응답 코드: $HTTP_STATUS)"
+        echo "--- 최신 컨테이너 로그(마지막 50줄) ---"
+        docker logs --tail 50 backend-$TARGET_COLOR
+        echo "❌ $TARGET_COLOR 배포를 중단하고 롤백합니다."
         $DOCKER_COMPOSE_APP stop backend-$TARGET_COLOR
         exit 1
     fi
