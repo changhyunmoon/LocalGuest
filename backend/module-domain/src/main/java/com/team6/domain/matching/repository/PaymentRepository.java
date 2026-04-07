@@ -9,7 +9,7 @@ import java.util.Optional;
 public interface PaymentRepository extends JpaRepository<Payment, Long> {
 
     // 매칭 요청 ID로 결제 목록 조회
-    List<Payment> findByMatchRequest_RequestId(Long requestId);
+    List<Payment> findByMatchRequest_Id(Long requestId);
 
     // 게스트 ID로 결제 내역 조회
     List<Payment> findByPayerId(Long payerId);

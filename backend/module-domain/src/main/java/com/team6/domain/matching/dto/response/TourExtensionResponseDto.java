@@ -21,8 +21,8 @@ public class TourExtensionResponseDto {
     // Entity → DTO 변환
     public static TourExtensionResponseDto from(TourExtension extension) {
         return TourExtensionResponseDto.builder()
-                .extensionId(extension.getExtensionId())
-                .requestId(extension.getMatchRequest().getRequestId())
+                .extensionId(extension.getId())
+                .requestId(extension.getMatchRequest().getId())
                 .extendedDate(extension.getExtendedDate())
                 .extendedPrice(extension.getExtendedPrice())
                 .status(extension.getStatus())

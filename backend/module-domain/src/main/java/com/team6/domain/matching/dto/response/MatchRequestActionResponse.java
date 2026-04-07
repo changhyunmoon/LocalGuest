@@ -13,7 +13,7 @@ public class MatchRequestActionResponse {
 
     public static MatchRequestActionResponse from(MatchRequest entity) {
         return MatchRequestActionResponse.builder()
-                .requestId(entity.getRequestId())
+                .requestId(entity.getId())
                 .status(entity.getStatus().name())
                 .build();
     }
