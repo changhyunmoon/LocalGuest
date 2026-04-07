@@ -28,4 +28,4 @@ services:
 
 networks:
   team6-backend:
-    external: true # 이미 존재하는(백엔드용) 네트워크를 사용하겠다는 설정
+    external: true

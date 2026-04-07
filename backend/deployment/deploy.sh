@@ -23,13 +23,16 @@ echo "--- 📦 1. 인프라 환경 점검 (Redis, MongoDB) ---"
 docker network inspect team6-backend >/dev/null 2>&1 || \
     docker network create team6-backend
 
-# 인프라 파일 존재 여부 확인 후 실행
 if [ -f "$COMPOSE_INFRA" ]; then
     echo "✅ 인프라 컨테이너 상태 확인 및 실행..."
-    # up -d는 이미 실행 중이면 아무 작업도 하지 않고(Skipping), 없으면 실행합니다.
     $DOCKER_COMPOSE_INFRA up -d
+
+    # [추가] 인프라가 준비될 때까지 잠시 대기 (이름 해석 에러 방지용)
+    echo "⏳ 인프라 서비스 안정화 대기 중 (10s)..."
+    sleep 10
 else
-    echo "⚠️ 경고: $COMPOSE_INFRA 파일을 찾을 수 없습니다. 인프라 체크를 건너뜁니다."
+    echo "❌ 에러: $COMPOSE_INFRA 파일을 찾을 수 없습니다."
+    exit 1
 fi
 
 # 3. 필수 환경 변수 주입 확인
