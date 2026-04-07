@@ -17,8 +17,7 @@ public class GuideImage extends BaseTimeEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "image_id")
-    private Long imageId; // 이미지 고유 ID (PK)
+    private Long id; // 이미지 고유 ID (PK)
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "guide_id", nullable = false)
@@ -30,4 +29,8 @@ public class GuideImage extends BaseTimeEntity {
     @Column(name = "sort_order", nullable = false)
     @Builder.Default
     private Integer sortOrder = 0; // 이미지 정렬 순서
+
+    @Column(name = "is_main", nullable = false)
+    @Builder.Default
+    private Boolean isMain = false; // 대표 이미지 여부
 }

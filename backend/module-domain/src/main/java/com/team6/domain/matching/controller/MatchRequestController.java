@@ -3,7 +3,6 @@ package com.team6.domain.matching.controller;
 import com.team6.domain.matching.dto.request.MatchRequestCreateRequest;
 import com.team6.domain.matching.dto.response.MatchRequestActionResponse;
 import com.team6.domain.matching.dto.response.MatchRequestCreateResponse;
-import com.team6.domain.matching.dto.response.MatchRequestSummaryResponse;
 import com.team6.domain.matching.service.MatchRequestService;
 import com.team6.domain.matching.entity.MatchRequest;
 import jakarta.validation.Valid;
@@ -26,9 +25,9 @@ public class MatchRequestController {
     ) {
         Long guestId = 1L; // TODO: JWT 연동 후 교체
 
-        MatchRequest saved = matchRequestService.createMatchRequest(guestId, request);
+        MatchRequestCreateResponse saved = matchRequestService.createMatchRequest(guestId, request);
 
-        return ResponseEntity.ok(MatchRequestCreateResponse.from(saved));
+        return ResponseEntity.ok(saved);
     }
 
     /**
@@ -38,7 +37,7 @@ public class MatchRequestController {
      * 추후 JWT 연동 시 guideId는 인증 정보에서 추출하도록 변경 가능하다.
      */
     @GetMapping("/guides/{guideId}")
-    public ResponseEntity<List<MatchRequestSummaryResponse>> getGuideRequests(
+    public ResponseEntity<List<MatchRequestCreateResponse>> getGuideRequests(
             @PathVariable Long guideId
     ) {
         return ResponseEntity.ok(matchRequestService.getGuideRequests(guideId));
@@ -55,8 +54,8 @@ public class MatchRequestController {
             @PathVariable Long requestId,
             @RequestParam Long guideId
     ) {
-        MatchRequest updated = matchRequestService.rejectMatchRequest(guideId, requestId);
-        return ResponseEntity.ok(MatchRequestActionResponse.from(updated));
+        MatchRequestActionResponse updated = matchRequestService.rejectMatchRequest(guideId, requestId);
+        return ResponseEntity.ok(updated);
     }
 
     /**
@@ -74,8 +73,8 @@ public class MatchRequestController {
             @PathVariable Long requestId,
             @RequestParam Long guideId
     ) {
-        MatchRequest updated = matchRequestService.proposeMatchRequest(guideId, requestId);
-        return ResponseEntity.ok(MatchRequestActionResponse.from(updated));
+        MatchRequestActionResponse updated = matchRequestService.proposeMatchRequest(guideId, requestId);
+        return ResponseEntity.ok(updated);
     }
 
     /**
@@ -91,7 +90,7 @@ public class MatchRequestController {
             @PathVariable Long requestId,
             @RequestParam Long guestId
     ) {
-        MatchRequest updated = matchRequestService.acceptMatchRequest(guestId, requestId);
-        return ResponseEntity.ok(MatchRequestActionResponse.from(updated));
+        MatchRequestActionResponse updated = matchRequestService.acceptMatchRequest(guestId, requestId);
+        return ResponseEntity.ok(updated);
     }
 }

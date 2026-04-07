@@ -1,4 +1,4 @@
-package com.team6.domain.matching.dto;
+package com.team6.domain.matching.dto.response;
 
 import com.team6.domain.matching.entity.Refund;
 import com.team6.domain.matching.entity.enums.RefundStatus;
@@ -20,8 +20,8 @@ public class RefundResponseDto {
     // Entity → DTO 변환
     public static RefundResponseDto from(Refund refund) {
         return RefundResponseDto.builder()
-                .refundId(refund.getRefundId())
-                .paymentId(refund.getPayment().getPaymentId())
+                .refundId(refund.getId())
+                .paymentId(refund.getPayment().getId())
                 .refundType(refund.getRefundType())
                 .status(refund.getStatus())
                 .processedAt(refund.getProcessedAt())

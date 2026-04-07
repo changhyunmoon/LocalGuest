@@ -1,49 +1,56 @@
 package com.team6.domain.matching.entity;
 
 import com.team6.domain.matching.entity.enums.TourExtensionStatus;
+import com.team6.module.common.global.entity.BaseTimeEntity;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.Check;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "tour_extension")
+@Check(constraints = "status IN ('REQUESTED','GUIDE_APPROVED','PAID','REJECTED','AUTO_CANCELLED')")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Builder
 @AllArgsConstructor
-public class TourExtension {
+@AttributeOverrides({
+        @AttributeOverride(name = "createdAt", column = @Column(name = "created_at", nullable = false, updatable = false, columnDefinition = "DATETIME(6)")),
+        @AttributeOverride(name = "updatedAt", column = @Column(name = "updated_at", nullable = false, columnDefinition = "DATETIME(6)"))
+})
+public class TourExtension extends BaseTimeEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long extensionId;
+    private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "request_id", nullable = false)
+    @JoinColumn(name = "match_request_id", nullable = false)
     private MatchRequest matchRequest;  // MATCH_REQUEST FK
 
     // TODO: Member 엔티티 완성 후 @ManyToOne으로 교체
-    @Column(nullable = false)
+    @Column(name = "guest_id", nullable = false)
     private Long guestId;               // 게스트 MEMBER FK
 
-    @Column(nullable = false)
+    @Column(name = "extended_date", nullable = false)
     private LocalDate extendedDate;     // 연장 날짜
 
+    @Column(name = "extended_price")
     private Integer extendedPrice;      // 연장 요금(원)
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
     private TourExtensionStatus status; // 연장 신청 상태
 
-    @Column(nullable = false, updatable = false)
+    @Column(name = "requested_at", nullable = false, updatable = false, columnDefinition = "DATETIME(6)")
     private LocalDateTime requestedAt;  // 신청일시
 
+    @Column(name = "guide_approved_at", columnDefinition = "DATETIME(6)")
     private LocalDateTime guideApprovedAt; // 가이드 승인 일시
 
-    @Column(nullable = false)
+    @Column(name = "deadline_at", nullable = false, columnDefinition = "DATETIME(6)")
     private LocalDateTime deadlineAt;   // 선택 마감 당일 23:59:59
-
-    private LocalDateTime autoCancelledAt; // 자동 미연장 처리 일시
 
     @PrePersist
     protected void onCreate() {
@@ -61,7 +68,6 @@ public class TourExtension {
     // 자동 취소 (23:59:59 초과)
     public void autoCancel() {
         this.status = TourExtensionStatus.AUTO_CANCELLED;
-        this.autoCancelledAt = LocalDateTime.now();
     }
 
     // 연장 결제 완료

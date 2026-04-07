@@ -23,7 +23,7 @@ public class MatchRequestCreateResponse {
 
     public static MatchRequestCreateResponse from(MatchRequest entity) {
         return MatchRequestCreateResponse.builder()
-                .requestId(entity.getRequestId())
+                .requestId(entity.getId())
                 .guestId(entity.getGuestId())
                 .guideId(entity.getGuideId())
                 .destination(entity.getDestination())

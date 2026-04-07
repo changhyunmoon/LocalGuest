@@ -10,7 +10,7 @@ import java.util.Optional;
 public interface TourExtensionRepository extends JpaRepository<TourExtension, Long> {
 
     // 매칭 요청 ID로 연장 신청 조회
-    Optional<TourExtension> findByMatchRequest_RequestId(Long requestId);
+    Optional<TourExtension> findByMatchRequest_Id(Long requestId);
 
     // 게스트 ID로 연장 신청 목록 조회
     List<TourExtension> findByGuestId(Long guestId);

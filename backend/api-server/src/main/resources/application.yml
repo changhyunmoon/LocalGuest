@@ -19,3 +19,23 @@ spring:
 server:
   servlet:
     context-path: /api
+
+---
+spring:
+  config:
+    activate:
+      on-profile: local
+  jpa:
+    hibernate:
+      ddl-auto: validate
+
+---
+spring:
+  config:
+    activate:
+      on-profile: prod
+  jpa:
+    hibernate:
+      # 운영에서는 스키마 변경 없이 검증만 수행
+      ddl-auto: validate
+

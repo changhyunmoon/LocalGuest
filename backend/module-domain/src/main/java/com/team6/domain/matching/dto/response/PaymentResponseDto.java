@@ -1,4 +1,4 @@
-package com.team6.domain.matching.dto;
+package com.team6.domain.matching.dto.response;
 
 import com.team6.domain.matching.entity.Payment;
 import com.team6.domain.matching.entity.enums.PaymentStatus;
@@ -21,8 +21,8 @@ public class PaymentResponseDto {
     // Entity → DTO 변환
     public static PaymentResponseDto from(Payment payment) {
         return PaymentResponseDto.builder()
-                .paymentId(payment.getPaymentId())
-                .requestId(payment.getMatchRequest().getRequestId())
+                .paymentId(payment.getId())
+                .requestId(payment.getMatchRequest().getId())
                 .amount(payment.getAmount())
                 .paymentType(payment.getPaymentType())
                 .status(payment.getStatus())
