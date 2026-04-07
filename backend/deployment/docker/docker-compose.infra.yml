@@ -10,7 +10,7 @@ services:
     volumes:
       - ./data/redis:/data
     networks:
-      - team6-backend # 백엔드와 같은 네트워크 사용
+      - team6-backend
 
   mongodb:
     image: mongo:latest
