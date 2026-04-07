@@ -2,7 +2,6 @@ spring:
   profiles:
     active: local
     group:
-      # ???
       "local": ["common", "domain-local", "ai-local", "chat-local"]
       "prod": ["common", "domain-prod", "ai-prod", "chat-prod"]
 
