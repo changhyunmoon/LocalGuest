@@ -24,26 +24,29 @@ jobs:
       # api-server가 실행될 때 의존하는 모듈들의 설정을 함께 읽어올 수 있도록 각각 배치합니다.
       - name: Decode and Create Module Configuration Files
         run: |
-          mkdir -p backend/module-ai/src/main/resources
-          mkdir -p backend/module-chat/src/main/resources
-          mkdir -p backend/module-domain/src/main/resources
-          mkdir -p backend/module-common/src/main/resources
+          # 모든 설정 파일을 api-server의 리소스 폴더에 집중시킵니다.
+          mkdir -p backend/api-server/src/main/resources
           
-          cat <<EOF > backend/module-chat/src/main/resources/application-chat-prod.yml
+          # 1. Chat 설정
+          cat <<EOF > backend/api-server/src/main/resources/application-chat-prod.yml
           ${{ secrets.APPLICATION_CHAT_PROD }}
           EOF
-
-          cat <<EOF > backend/module-domain/src/main/resources/application-domain-prod.yml
+          
+          # 2. Domain 설정
+          cat <<EOF > backend/api-server/src/main/resources/application-domain-prod.yml
           ${{ secrets.APPLICATION_DOMAIN_PROD }}
           EOF
           
+          # 3. AI 설정
           cat <<EOF > backend/api-server/src/main/resources/application-ai-prod.yml
           ${{ secrets.APPLICATION_AI_PROD }}
           EOF
           
-          cat <<EOF > backend/module-common/src/main/resources/application-common-prod.yml
+          # 4. Common 설정
+          cat <<EOF > backend/api-server/src/main/resources/application-common-prod.yml
           ${{ secrets.APPLICATION_COMMON_PROD }}
           EOF
+        
 
       - name: Grant execute permission for gradlew
         run: chmod +x backend/gradlew
