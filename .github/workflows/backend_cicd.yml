@@ -28,10 +28,22 @@ jobs:
           mkdir -p backend/module-chat/src/main/resources
           mkdir -p backend/module-domain/src/main/resources
           mkdir -p backend/module-common/src/main/resources
-          echo "${{ secrets.APPLICATION_CHAT_PROD }}" | base64 --decode > backend/module-chat/src/main/resources/application-chat-prod.yml
-          echo "${{ secrets.APPLICATION_DOMAIN_PROD }}" | base64 --decode > backend/module-domain/src/main/resources/application-domain-prod.yml
-          echo "${{ secrets.APPLICATION_AI_PROD }}" | base64 --decode > backend/api-server/src/main/resources/application-ai-prod.yml
-          echo "${{ secrets.APPLICATION_COMMON_PROD }}" | base64 --decode > backend/module-common/src/main/resources/application-common-prod.yml
+          
+          cat <<EOF > backend/module-chat/src/main/resources/application-chat-prod.yml
+          ${{ secrets.APPLICATION_CHAT_PROD }}
+          EOF
+
+          cat <<EOF > backend/module-domain/src/main/resources/application-domain-prod.yml
+          ${{ secrets.APPLICATION_DOMAIN_PROD }}
+          EOF
+          
+          cat <<EOF > backend/api-server/src/main/resources/application-ai-prod.yml
+          ${{ secrets.APPLICATION_AI_PROD }}
+          EOF
+          
+          cat <<EOF > backend/module-common/src/main/resources/application-common-prod.yml
+          ${{ secrets.APPLICATION_COMMON_PROD }}
+          EOF
 
       - name: Grant execute permission for gradlew
         run: chmod +x backend/gradlew
