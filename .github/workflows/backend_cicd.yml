@@ -67,7 +67,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: ./backend
-          file: ./backend/api-server/Dockerfile # api-server 내부에 Dockerfile
+          file: ./backend/Dockerfile
           push: true
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.BACKEND_IMAGE_NAME }}:${{ secrets.BACKEND_IMAGE_TAG }}
