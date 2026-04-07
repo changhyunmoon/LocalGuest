@@ -19,8 +19,7 @@ public class GuideCareer extends BaseTimeEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "career_id")
-    private Long careerId; // 경력 고유 ID (PK)
+    private Long id; // 경력 고유 ID (PK)
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "guide_id", nullable = false)

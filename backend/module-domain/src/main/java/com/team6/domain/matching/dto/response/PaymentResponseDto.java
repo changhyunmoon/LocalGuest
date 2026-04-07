@@ -21,8 +21,8 @@ public class PaymentResponseDto {
     // Entity → DTO 변환
     public static PaymentResponseDto from(Payment payment) {
         return PaymentResponseDto.builder()
-                .paymentId(payment.getPaymentId())
-                .requestId(payment.getMatchRequest().getRequestId())
+                .paymentId(payment.getId())
+                .requestId(payment.getMatchRequest().getId())
                 .amount(payment.getAmount())
                 .paymentType(payment.getPaymentType())
                 .status(payment.getStatus())

@@ -9,7 +9,7 @@ import java.util.Optional;
 public interface RefundRepository extends JpaRepository<Refund, Long> {
 
     // 결제 ID로 환불 조회 (중복 신청 방지용)
-    Optional<Refund> findByPayment_PaymentId(Long paymentId);
+    Optional<Refund> findByPayment_Id(Long paymentId);
 
     // 신청자 ID로 환불 내역 조회
     List<Refund> findByRequesterId(Long requesterId);
