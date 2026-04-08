@@ -88,6 +88,16 @@ class PromptParserTest {
     }
 
     @Test
+    void parse_should_extract_manwon_rough_budget_tier() {
+        GuideRecommendRequest r = promptParser.parse("제주 8만 안으로 카페 위주", 3, List.of());
+        assertThat(r.getBudgetLevel()).isEqualTo("낮음");
+        assertThat(r.getRegion()).isEqualTo("제주");
+
+        GuideRecommendRequest r2 = promptParser.parse("서울 약 25만 전후 예산", 3, List.of());
+        assertThat(r2.getBudgetLevel()).isEqualTo("중간");
+    }
+
+    @Test
     void parse_should_extract_new_regions_and_camping_tag() {
         assertThat(promptParser.parse("속초 바다 산책 추천", 3, List.of()).getRegion()).isEqualTo("속초");
         assertThat(promptParser.parse("울산 문화 유적 여행", 3, List.of()).getRegion()).isEqualTo("울산");

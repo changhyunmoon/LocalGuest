@@ -3,12 +3,12 @@ package com.team6.module.ai.engine;
 import com.team6.module.ai.model.GuideAiProfile;
 import com.team6.module.ai.model.TravelerPreference;
 import com.team6.module.ai.parser.KeywordNormalizer;
+import com.team6.module.ai.support.BudgetTier;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -155,7 +155,7 @@ public class ReasonGenerator {
                     "예산 범위가 같은 편",
                     listNonNull(guide.getPriceLevel())
             ));
-        } else if (budgetTiersAdjacent(pref.getBudgetLevel(), guide.getPriceLevel())) {
+        } else if (BudgetTier.adjacentTiers(pref.getBudgetLevel(), guide.getPriceLevel())) {
             segments.add(new Segment(
                     CODE_BUDGET_MATCH,
                     "예산 범위가 한 단계 차이로 가까움",
@@ -164,28 +164,6 @@ public class ReasonGenerator {
         }
 
         return segments;
-    }
-
-    private static boolean budgetTiersAdjacent(String a, String b) {
-        if (a == null || b == null || a.isBlank() || b.isBlank()) {
-            return false;
-        }
-        int ia = budgetTierIndex(a.trim());
-        int ib = budgetTierIndex(b.trim());
-        if (ia < 0 || ib < 0) {
-            return false;
-        }
-        return Math.abs(ia - ib) == 1;
-    }
-
-    private static int budgetTierIndex(String level) {
-        String n = level.toLowerCase(Locale.ROOT);
-        return switch (n) {
-            case "낮음" -> 0;
-            case "중간" -> 1;
-            case "높음" -> 2;
-            default -> -1;
-        };
     }
 
     private static List<String> listNonNull(String value) {

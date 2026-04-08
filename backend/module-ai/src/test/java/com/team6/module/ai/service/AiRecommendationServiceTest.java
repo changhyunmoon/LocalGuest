@@ -111,6 +111,35 @@ class AiRecommendationServiceTest {
     }
 
     @Test
+    void recommend_should_set_matched_budgetAdjacent_when_budget_tier_adjacent_only() {
+        AiRecommendationService aiRecommendationService = createService();
+
+        GuideRecommendRequest request = GuideRecommendRequest.builder()
+                .region("부산")
+                .travelStyle("감성")
+                .budgetLevel("낮음")
+                .activityTags(List.of("카페"))
+                .topN(1)
+                .guideCandidates(List.of(
+                        GuideRecommendRequest.GuideCandidateDto.builder()
+                                .guideId(1L)
+                                .guideName("A")
+                                .region("부산")
+                                .guideStyle("감성")
+                                .priceLevel("중간")
+                                .specialtyTags(List.of("카페"))
+                                .languages(List.of("한국어"))
+                                .build()
+                ))
+                .build();
+
+        GuideRecommendResponse response = aiRecommendationService.recommend(request);
+        var matched = response.getRecommendations().get(0).getMatched();
+        assertThat(matched.isBudget()).isFalse();
+        assertThat(matched.isBudgetAdjacent()).isTrue();
+    }
+
+    @Test
     void recommend_should_apply_synonym_matching_for_activity_tags() {
         AiRecommendationService aiRecommendationService = createService();
 

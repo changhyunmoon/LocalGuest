@@ -105,7 +105,9 @@ class AiRecommendationRegressionTest {
                         "맛집",
                         null,
                         ReasonGenerator.CODE_SOFT_ACTIVITY_PENALTY
-                )
+                ),
+                scenario("부산 약 25만 이내 감성 카페 여행", 3, 1L, "카페", null),
+                scenario("제주 워크샵 단체로 맛집 위주", 3, 2L, "맛집", null)
         );
     }
 
