@@ -4,7 +4,8 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * MVP용 인접 지역 맵(코드 상수). 추후 DB/운영 설정으로 이전 가능.
+ * 기본 인접 지역 맵(코드 상수). 지역별 덮어쓰기는 {@code localguest.ai.adjacent-regions}(YAML)와
+ * {@link AdjacentRegionProvider}를 사용한다.
  */
 public final class AdjacentRegionMap {
 
