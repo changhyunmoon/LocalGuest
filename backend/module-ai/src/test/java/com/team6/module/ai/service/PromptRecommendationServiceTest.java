@@ -10,6 +10,7 @@ import com.team6.module.ai.parser.PromptParser;
 import com.team6.module.ai.policy.ActivityMatchPolicy;
 import com.team6.module.ai.support.AdjacentRegionProvider;
 import com.team6.module.ai.support.AiRecommendationMetrics;
+import com.team6.module.ai.support.RecommendationNoticeCodes;
 import com.team6.module.ai.policy.BudgetMatchPolicy;
 import com.team6.module.ai.policy.LanguageMatchPolicy;
 import com.team6.module.ai.policy.RegionMatchPolicy;
@@ -36,7 +37,7 @@ class PromptRecommendationServiceTest {
                 new AiRecommendationServiceImpl(new MatchingEngine(scoreCalculator, new ReasonGenerator()));
 
         return new PromptRecommendationService(
-                new PromptParser(),
+                new PromptParser(new LocalGuestAiProperties()),
                 aiRecommendationService,
                 new AdjacentRegionProvider(new LocalGuestAiProperties()),
                 new AiRecommendationMetrics(new SimpleMeterRegistry())
@@ -72,6 +73,9 @@ class PromptRecommendationServiceTest {
         assertThat(response.getKeywords().getExcludedActivityTags()).contains("술집");
         assertThat(response.getPolicyVersion()).isEqualTo(AiRecommendationTuning.POLICY_VERSION);
         assertThat(response.getNotice()).contains("한 분뿐");
+        assertThat(response.getNoticeCodes()).contains(
+                RecommendationNoticeCodes.SPARSE_GUIDE_POOL
+        );
     }
 
     @Test
@@ -97,6 +101,7 @@ class PromptRecommendationServiceTest {
         assertThat(response.getRecommendations()).isEmpty();
         assertThat(response.getTotalCount()).isEqualTo(0);
         assertThat(response.getNotice()).contains("지역");
+        assertThat(response.getNoticeCodes()).containsExactly(RecommendationNoticeCodes.REGION_REQUIRED);
         assertThat(response.getPolicyVersion()).isEqualTo(AiRecommendationTuning.POLICY_VERSION);
     }
 
@@ -124,6 +129,10 @@ class PromptRecommendationServiceTest {
         assertThat(response.getKeywords().getRegion()).isEqualTo("강릉");
         assertThat(response.getNotice()).contains("인접");
         assertThat(response.getNotice()).contains("한 분뿐");
+        assertThat(response.getNoticeCodes()).contains(
+                RecommendationNoticeCodes.ADJACENT_REGION_INCLUDED,
+                RecommendationNoticeCodes.SPARSE_GUIDE_POOL
+        );
         assertThat(response.getRecommendations().get(0).getGuideId()).isEqualTo(99L);
     }
 }

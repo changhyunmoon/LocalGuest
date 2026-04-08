@@ -10,7 +10,7 @@ import java.util.concurrent.TimeUnit;
  * 프롬프트 추천 파이프라인 관측용 Micrometer.
  * <p>
  * Counter: {@code prompt_calls}, {@code no_region_short_circuit}, {@code region_expansion},
- * {@code sparse_pool_notice}, {@code fallback(stage=...)}.
+ * {@code sparse_pool_notice}, {@code fallback(stage=...)}, {@code outcome(type=...)}.
  * Timer/Summary: {@code latency}, {@code top1_score}, {@code effective_pool_size} (태그 {@code policy_version}).
  */
 @Component
@@ -46,6 +46,15 @@ public class AiRecommendationMetrics {
     public void recordFallback(String relaxStage) {
         String stage = relaxStage == null || relaxStage.isBlank() ? "NONE" : relaxStage;
         registry.counter(PREFIX + ".fallback", "stage", stage).increment();
+    }
+
+    /**
+     * 프롬프트 추천 최종 비즈니스 결과. {@code no_region}: 지역 미입력 단축,
+     * {@code empty}: 추천 0건, {@code success}: 1건 이상.
+     */
+    public void recordOutcome(String outcomeType) {
+        String t = outcomeType == null || outcomeType.isBlank() ? "unknown" : outcomeType;
+        registry.counter(PREFIX + ".outcome", "type", t).increment();
     }
 
     /**

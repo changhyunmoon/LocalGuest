@@ -16,6 +16,11 @@ public class GuideRecommendResponse {
     private Keywords keywords;
     @Schema(description = "사용자 안내(지역 누락, 인접 지역 포함, 희소 풀 등)")
     private String notice;
+    @Schema(
+            description = "notice에 대응하는 기계 판별 코드(프론트 i18n·토스트 매핑). 중복 없이 순서 유지.",
+            example = "[\"ADJACENT_REGION_INCLUDED\", \"SPARSE_GUIDE_POOL\"]"
+    )
+    private List<String> noticeCodes;
     /**
      * 룰 기반 추천 정책 버전({@link com.team6.module.ai.support.AiRecommendationTuning#POLICY_VERSION}).
      */

@@ -1,9 +1,11 @@
 package com.team6.module.ai.parser;
 
+import com.team6.module.ai.config.LocalGuestAiProperties;
 import com.team6.module.ai.dto.request.GuideRecommendRequest;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
@@ -15,6 +17,27 @@ import java.util.stream.Collectors;
 
 @Component
 public class PromptParser {
+
+    private static final String[] DEFAULT_SOFT_PENALTY_HEAVY_HINTS = {
+            "힘든", "힘들", "빡센", "빡세", "무거운", "험한", "무리", "고난이도", "체력", "경사"
+    };
+    private static final String[] DEFAULT_SOFT_PENALTY_HIKING_CONTEXT = {"등산", "트레킹"};
+    private static final String[] DEFAULT_SOFT_PENALTY_NIGHTLIFE_NOISE_HINTS = {
+            "시끄", "시끄러", "붐비", "붐벼", "야간", "밤늦", "새벽"
+    };
+    private static final String[] DEFAULT_SOFT_PENALTY_SHOPPING_CROWD_HINTS = {
+            "복잡", "붐비", "붐벼", "인파", "사람 많", "사람많"
+    };
+    private static final String[] DEFAULT_SOFT_PENALTY_SHOPPING_ACTIVITY_CONTEXT = {"쇼핑", "쇼핑몰", "아울렛"};
+    private static final String[] DEFAULT_EXCLUSION_INTENT_KEYWORDS = {
+            "빼고", "제외", "말고", "싫어", "안 가", "안가", "원치 않아", "원치않아"
+    };
+
+    private final LocalGuestAiProperties aiProperties;
+
+    public PromptParser(LocalGuestAiProperties aiProperties) {
+        this.aiProperties = aiProperties;
+    }
 
     private static final Pattern BUDGET_WON = Pattern.compile("(\\d{1,3}(?:,\\d{3})+|\\d+)\\s*(원|만원)");
     private static final Pattern BUDGET_MANWON_BAND = Pattern.compile("(\\d+)\\s*만원\\s*대");
@@ -172,7 +195,11 @@ public class PromptParser {
     private List<String> extractExcludedActivityTags(String prompt) {
         // 간단 룰: 제외 의도 + 태그 키워드가 같이 등장하면 제외 태그로 등록
         Set<String> excluded = new LinkedHashSet<>();
-        if (containsAny(prompt, "빼고", "제외", "말고", "싫어", "안 가", "안가", "원치 않아", "원치않아")) {
+        if (containsAnyMerged(
+                prompt,
+                aiProperties.getParser().getExclusionIntentKeywords(),
+                DEFAULT_EXCLUSION_INTENT_KEYWORDS
+        )) {
             if (containsAny(prompt, "술집", "클럽", "바")) excluded.add("술집");
             if (containsAny(prompt, "등산", "트레킹")) excluded.add("등산");
             if (containsAny(prompt, "쇼핑", "쇼핑몰", "아울렛")) excluded.add("쇼핑");
@@ -203,19 +230,65 @@ public class PromptParser {
 
     private List<String> extractSoftPenaltyActivityTags(String prompt) {
         Set<String> raw = new LinkedHashSet<>();
-        boolean heavy = containsAny(prompt, "힘든", "힘들", "빡센", "빡세", "무거운", "험한", "무리", "고난이도", "체력", "경사");
-        if (heavy && containsAny(prompt, "등산", "트레킹")) {
+        boolean heavy = containsAnyMerged(
+                prompt,
+                aiProperties.getParser().getSoftPenaltyHeavyHints(),
+                DEFAULT_SOFT_PENALTY_HEAVY_HINTS
+        );
+        boolean hikingCtx = containsAnyMerged(
+                prompt,
+                aiProperties.getParser().getSoftPenaltyHikingContext(),
+                DEFAULT_SOFT_PENALTY_HIKING_CONTEXT
+        );
+        if (heavy && hikingCtx) {
             raw.add("등산");
         }
-        boolean noisyNight = containsAny(prompt, "시끄", "시끄러", "붐비", "붐벼", "야간", "밤늦", "새벽");
+        boolean noisyNight = containsAnyMerged(
+                prompt,
+                aiProperties.getParser().getSoftPenaltyNightlifeNoiseHints(),
+                DEFAULT_SOFT_PENALTY_NIGHTLIFE_NOISE_HINTS
+        );
         if (noisyNight && containsAny(prompt, "술집", "클럽", "바")) {
             raw.add("술집");
         }
-        boolean crowded = containsAny(prompt, "복잡", "붐비", "붐벼", "인파", "사람 많", "사람많");
-        if (crowded && containsAny(prompt, "쇼핑", "쇼핑몰", "아울렛")) {
+        boolean crowded = containsAnyMerged(
+                prompt,
+                aiProperties.getParser().getSoftPenaltyShoppingCrowdHints(),
+                DEFAULT_SOFT_PENALTY_SHOPPING_CROWD_HINTS
+        );
+        boolean shoppingCtx = containsAnyMerged(
+                prompt,
+                aiProperties.getParser().getSoftPenaltyShoppingActivityContext(),
+                DEFAULT_SOFT_PENALTY_SHOPPING_ACTIVITY_CONTEXT
+        );
+        if (crowded && shoppingCtx) {
             raw.add("쇼핑");
         }
         return normalizeTagList(raw);
+    }
+
+    /**
+     * YAML 목록이 비어 있으면 {@code defaults}만, 있으면 defaults + YAML을 합쳐 매칭한다.
+     */
+    private static List<String> mergeKeywordList(List<String> yaml, String[] defaults) {
+        if (yaml == null || yaml.isEmpty()) {
+            return Arrays.asList(defaults);
+        }
+        LinkedHashSet<String> merged = new LinkedHashSet<>();
+        for (String d : defaults) {
+            merged.add(d);
+        }
+        for (String y : yaml) {
+            if (y != null && !y.isBlank()) {
+                merged.add(y.trim());
+            }
+        }
+        return new ArrayList<>(merged);
+    }
+
+    private boolean containsAnyMerged(String prompt, List<String> yaml, String[] defaults) {
+        List<String> merged = mergeKeywordList(yaml, defaults);
+        return containsAny(prompt, merged.toArray(new String[0]));
     }
 
     private List<String> extractLanguages(String prompt) {

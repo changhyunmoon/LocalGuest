@@ -4,6 +4,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,5 +35,14 @@ public class LocalGuestAiProperties {
          * 입력 표현 → 정규 태그 (예: 커스텀별칭 → 카페).
          */
         private Map<String, String> tagSynonyms = new LinkedHashMap<>();
+        /** 비어 있으면 내장 soft 부정(힘듦·고난이도 등) 키워드만 사용. */
+        private List<String> softPenaltyHeavyHints = new ArrayList<>();
+        /** 비어 있으면 내장 등산/트레킹 맥락만 사용. */
+        private List<String> softPenaltyHikingContext = new ArrayList<>();
+        private List<String> softPenaltyNightlifeNoiseHints = new ArrayList<>();
+        private List<String> softPenaltyShoppingCrowdHints = new ArrayList<>();
+        private List<String> softPenaltyShoppingActivityContext = new ArrayList<>();
+        /** 제외 의도(빼고·싫어 등). 비어 있으면 내장. */
+        private List<String> exclusionIntentKeywords = new ArrayList<>();
     }
 }
