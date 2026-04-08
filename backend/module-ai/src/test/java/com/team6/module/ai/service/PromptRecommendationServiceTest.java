@@ -13,6 +13,7 @@ import com.team6.module.ai.policy.BudgetMatchPolicy;
 import com.team6.module.ai.policy.LanguageMatchPolicy;
 import com.team6.module.ai.policy.RegionMatchPolicy;
 import com.team6.module.ai.policy.StyleMatchPolicy;
+import com.team6.module.ai.support.AiRecommendationTuning;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -66,6 +67,8 @@ class PromptRecommendationServiceTest {
         assertThat(response.getKeywords().getHeadcount()).isEqualTo(4);
         assertThat(response.getKeywords().getActivityTags()).contains("바다", "맛집");
         assertThat(response.getKeywords().getExcludedActivityTags()).contains("술집");
+        assertThat(response.getPolicyVersion()).isEqualTo(AiRecommendationTuning.POLICY_VERSION);
+        assertThat(response.getNotice()).contains("한 분뿐");
     }
 
     @Test
@@ -91,6 +94,7 @@ class PromptRecommendationServiceTest {
         assertThat(response.getRecommendations()).isEmpty();
         assertThat(response.getTotalCount()).isEqualTo(0);
         assertThat(response.getNotice()).contains("지역");
+        assertThat(response.getPolicyVersion()).isEqualTo(AiRecommendationTuning.POLICY_VERSION);
     }
 
     @Test
@@ -116,6 +120,7 @@ class PromptRecommendationServiceTest {
         assertThat(response.getRecommendations()).isNotEmpty();
         assertThat(response.getKeywords().getRegion()).isEqualTo("강릉");
         assertThat(response.getNotice()).contains("인접");
+        assertThat(response.getNotice()).contains("한 분뿐");
         assertThat(response.getRecommendations().get(0).getGuideId()).isEqualTo(99L);
     }
 }

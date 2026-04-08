@@ -31,6 +31,9 @@ public class PromptRecommendationService {
             "여행하고 싶은 지역을 알려주시면 더 정확하게 추천할 수 있어요.";
     private static final String NOTICE_ADJACENT_INCLUDED =
             "요청 지역과 가까운 인접 지역 가이드를 포함해 추천했어요.";
+    /** API로 넘어온 후보·지역 필터 후 풀에 가이드가 한 명뿐일 때 */
+    private static final String NOTICE_SPARSE_GUIDE_POOL =
+            "이 조건에 맞는 가이드가 한 분뿐이라 추천 선택 폭이 좁을 수 있어요.";
 
     public GuideRecommendResponse recommendByPrompt(
             String prompt,
@@ -63,6 +66,7 @@ public class PromptRecommendationService {
                     .conceptSummary(ConceptSummaryGenerator.generate(parsed))
                     .keywords(keywordsFrom(parsed))
                     .notice(NOTICE_REGION_REQUIRED)
+                    .policyVersion(AiRecommendationTuning.POLICY_VERSION)
                     .totalCount(0)
                     .recommendations(List.of())
                     .build();
@@ -108,6 +112,10 @@ public class PromptRecommendationService {
         if (expansion.expansionUsed()) {
             notice = mergeNotice(NOTICE_ADJACENT_INCLUDED, notice);
         }
+        int effectivePoolSizeForNotice = poolSize(expansion.candidates());
+        if (effectivePoolSizeForNotice == 1 && finalBase.getTotalCount() > 0) {
+            notice = mergeNotice(NOTICE_SPARSE_GUIDE_POOL, notice);
+        }
 
         logRecommendation(
                 prompt,
@@ -126,6 +134,7 @@ public class PromptRecommendationService {
                 .conceptSummary(ConceptSummaryGenerator.generate(parsed))
                 .keywords(keywordsFrom(parsed))
                 .notice(notice)
+                .policyVersion(AiRecommendationTuning.POLICY_VERSION)
                 .totalCount(finalBase.getTotalCount())
                 .recommendations(finalBase.getRecommendations())
                 .build();
@@ -184,7 +193,8 @@ public class PromptRecommendationService {
     private FallbackDecision decideFallback(GuideRecommendRequest request, GuideRecommendResponse base) {
         int candidateCount = request.getGuideCandidates() == null ? 0 : request.getGuideCandidates().size();
         if (candidateCount == 0) {
-            return new FallbackDecision(false, RelaxStage.NONE, "가이드 후보가 없어 추천이 제한됩니다.");
+            return new FallbackDecision(false, RelaxStage.NONE,
+                    "연결 가능한 가이드 후보가 없어 추천을 제공하기 어려워요. 지역을 바꾸거나 나중에 다시 시도해 주세요.");
         }
 
         int score = topScore(base);
@@ -218,6 +228,9 @@ public class PromptRecommendationService {
                 || (req.getSoftPenaltyActivityTags() != null && !req.getSoftPenaltyActivityTags().isEmpty());
     }
 
+    /**
+     * 조건 완화 단계. {@code excludedActivityTags}·{@code softPenaltyActivityTags}는 사용자 의도로 간주해 항상 원본을 유지한다.
+     */
     private GuideRecommendRequest relax(GuideRecommendRequest original, RelaxStage stage) {
         if (original == null) {
             return null;
@@ -282,7 +295,8 @@ public class PromptRecommendationService {
             String top1ReasonCodes = summarizeTopReasonCodes(finalBase);
             Long top1GuideId = topGuideId(finalBase);
 
-            log.info("[AI_RECOMMEND] promptHash={} topN={} candidates={} policy={{noRegionShortCircuit={},regionExpansion={},effectivePool={},expansionExact={}}} keywords={{region={},style={},budget={},companion={},headcount={},durationDays={},tags={},excluded={},softPenalty={},langs={}}} base={{count={},topScore={}}} final={{count={},topScore={},top1GuideId={},top1ReasonCodes={}}} fallback={{used={},stage={}}}",
+            log.info("[AI_RECOMMEND] policyVer={} promptHash={} topN={} candidates={} policy={{noRegionShortCircuit={},regionExpansion={},effectivePool={},expansionExact={}}} keywords={{region={},style={},budget={},companion={},headcount={},durationDays={},tags={},excluded={},softPenalty={},langs={}}} base={{count={},topScore={}}} final={{count={},topScore={},top1GuideId={},top1ReasonCodes={}}} fallback={{used={},stage={}}}",
+                    AiRecommendationTuning.POLICY_VERSION,
                     promptHash,
                     request == null ? null : request.getTopN(),
                     candidateCount,

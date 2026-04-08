@@ -10,6 +10,7 @@ import com.team6.module.ai.policy.BudgetMatchPolicy;
 import com.team6.module.ai.policy.LanguageMatchPolicy;
 import com.team6.module.ai.policy.RegionMatchPolicy;
 import com.team6.module.ai.policy.StyleMatchPolicy;
+import com.team6.module.ai.support.AiRecommendationTuning;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -76,6 +77,37 @@ class AiRecommendationServiceTest {
         assertThat(response.getRecommendations().get(0).getReasonFacts()).isNotEmpty();
         assertThat(response.getRecommendations().get(0).getMatched()).isNotNull();
         assertThat(response.getRecommendations().get(0).getMatched().isRegion()).isTrue();
+        assertThat(response.getPolicyVersion()).isEqualTo(AiRecommendationTuning.POLICY_VERSION);
+    }
+
+    @Test
+    void recommend_should_expose_soft_penalty_overlap_on_matched_evidence() {
+        AiRecommendationService aiRecommendationService = createService();
+
+        GuideRecommendRequest request = GuideRecommendRequest.builder()
+                .region("서울")
+                .travelStyle("액티비티")
+                .budgetLevel("중간")
+                .activityTags(List.of("맛집"))
+                .softPenaltyActivityTags(List.of("쇼핑"))
+                .topN(1)
+                .guideCandidates(List.of(
+                        GuideRecommendRequest.GuideCandidateDto.builder()
+                                .guideId(1L)
+                                .guideName("A")
+                                .region("서울")
+                                .guideStyle("액티비티")
+                                .priceLevel("중간")
+                                .specialtyTags(List.of("맛집", "쇼핑"))
+                                .languages(List.of("한국어"))
+                                .build()
+                ))
+                .build();
+
+        GuideRecommendResponse response = aiRecommendationService.recommend(request);
+        assertThat(response.getRecommendations()).isNotEmpty();
+        assertThat(response.getRecommendations().get(0).getMatched().getSoftPenaltyOverlapTags())
+                .containsExactly("쇼핑");
     }
 
     @Test
