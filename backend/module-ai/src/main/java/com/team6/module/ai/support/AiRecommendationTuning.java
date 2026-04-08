@@ -21,4 +21,10 @@ public final class AiRecommendationTuning {
      * 미만이면 {@link AdjacentRegionMap} 기반으로 인접 지역까지 후보를 넓힌다.
      */
     public static final int MIN_EXACT_REGION_CANDIDATES = 2;
+
+    /**
+     * 가이드 전문 태그가 {@link com.team6.module.ai.model.TravelerPreference#getSoftPenaltyActivityTags()}
+     * 와 겹칠 때마다 활동 점수에서 차감하는 값(한 태그당, {@link com.team6.module.ai.policy.ScoreWeight#ACTIVITY}와 동일 스케일).
+     */
+    public static final int SOFT_ACTIVITY_PENALTY_PER_TAG = 6;
 }

@@ -17,6 +17,10 @@ public class GuideRecommendRequest {
     private Integer headcount;
     private Integer durationDays;
     private List<String> excludedActivityTags;
+    /**
+     * 하드 제외가 아니라, 가이드가 해당 활동을 강하게 전문으로 내세울 때 점수를 깎는(soft) 태그.
+     */
+    private List<String> softPenaltyActivityTags;
     private Integer topN;
     private List<GuideCandidateDto> guideCandidates;
 
