@@ -87,6 +87,7 @@ public class MatchRequest extends BaseTimeEntity {
             Long guideId,
             String destination,
             String concept,
+            String conceptSummary,
             LocalDate desiredDate,
             Integer desiredBudget
     ) {
@@ -95,6 +96,7 @@ public class MatchRequest extends BaseTimeEntity {
                 .guideId(guideId)
                 .destination(destination)
                 .concept(concept)
+                .conceptSummary(conceptSummary)
                 .desiredDate(desiredDate)
                 .desiredBudget(desiredBudget)
                 .build();
