@@ -1,5 +1,6 @@
 package com.team6.module.ai.regression;
 
+import com.team6.module.ai.config.LocalGuestAiProperties;
 import com.team6.module.ai.dto.request.GuideRecommendRequest;
 import com.team6.module.ai.dto.response.GuideRecommendResponse;
 import com.team6.module.ai.engine.MatchingEngine;
@@ -27,7 +28,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class AiRecommendationRegressionTest {
 
-    private final PromptParser promptParser = new PromptParser();
+    private final PromptParser promptParser = new PromptParser(new LocalGuestAiProperties());
     private final AiRecommendationService aiRecommendationService = createService();
 
     @Test

@@ -1,5 +1,6 @@
 package com.team6.module.ai.parser;
 
+import com.team6.module.ai.config.LocalGuestAiProperties;
 import com.team6.module.ai.dto.request.GuideRecommendRequest;
 import org.junit.jupiter.api.Test;
 
@@ -9,7 +10,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class PromptParserTest {
 
-    private final PromptParser promptParser = new PromptParser();
+    private final PromptParser promptParser = new PromptParser(new LocalGuestAiProperties());
 
     @Test
     void parse_should_extract_keywords_from_prompt() {

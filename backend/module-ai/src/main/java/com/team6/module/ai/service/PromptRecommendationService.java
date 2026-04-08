@@ -7,6 +7,7 @@ import com.team6.module.ai.support.AdjacentRegionProvider;
 import com.team6.module.ai.support.AiRecommendationMetrics;
 import com.team6.module.ai.support.AiRecommendationTuning;
 import com.team6.module.ai.support.ConceptSummaryGenerator;
+import com.team6.module.ai.support.RecommendationNoticeCodes;
 import com.team6.module.ai.support.RegionCandidateExpansion;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -14,6 +15,8 @@ import org.springframework.stereotype.Service;
 import com.team6.module.ai.dto.response.GuideRecommendItem;
 
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -81,10 +84,12 @@ public class PromptRecommendationService {
                         0
                 );
                 metrics.recordNoRegionShortCircuit();
+                metrics.recordOutcome("no_region");
                 GuideRecommendResponse out = GuideRecommendResponse.builder()
                         .conceptSummary(ConceptSummaryGenerator.generate(parsed))
                         .keywords(keywordsFrom(parsed))
                         .notice(NOTICE_REGION_REQUIRED)
+                        .noticeCodes(List.of(RecommendationNoticeCodes.REGION_REQUIRED))
                         .policyVersion(POLICY_VERSION)
                         .totalCount(0)
                         .recommendations(List.of())
@@ -144,6 +149,14 @@ public class PromptRecommendationService {
             metrics.recordFallback(decision.stage.name());
         }
 
+            List<String> noticeCodes = buildNoticeCodes(
+                    decision,
+                    expansion.expansionUsed(),
+                    effectivePoolSizeForNotice,
+                    finalBase.getTotalCount()
+            );
+            metrics.recordOutcome(finalBase.getTotalCount() > 0 ? "success" : "empty");
+
             logRecommendation(
                     prompt,
                     parsed,
@@ -161,6 +174,7 @@ public class PromptRecommendationService {
                     .conceptSummary(ConceptSummaryGenerator.generate(parsed))
                     .keywords(keywordsFrom(parsed))
                     .notice(notice)
+                    .noticeCodes(noticeCodes)
                     .policyVersion(POLICY_VERSION)
                     .totalCount(finalBase.getTotalCount())
                     .recommendations(finalBase.getRecommendations())
@@ -205,6 +219,25 @@ public class PromptRecommendationService {
         return primary + " " + secondary;
     }
 
+    private static List<String> buildNoticeCodes(
+            FallbackDecision decision,
+            boolean expansionUsed,
+            int effectivePoolSize,
+            int resultCount
+    ) {
+        LinkedHashSet<String> codes = new LinkedHashSet<>();
+        if (decision.noticeCodes != null) {
+            codes.addAll(decision.noticeCodes);
+        }
+        if (expansionUsed) {
+            codes.add(RecommendationNoticeCodes.ADJACENT_REGION_INCLUDED);
+        }
+        if (effectivePoolSize == 1 && resultCount > 0) {
+            codes.add(RecommendationNoticeCodes.SPARSE_GUIDE_POOL);
+        }
+        return new ArrayList<>(codes);
+    }
+
     private static int topScore(GuideRecommendResponse resp) {
         if (resp == null || resp.getRecommendations() == null || resp.getRecommendations().isEmpty()) {
             return 0;
@@ -233,24 +266,29 @@ public class PromptRecommendationService {
         int candidateCount = request.getGuideCandidates() == null ? 0 : request.getGuideCandidates().size();
         if (candidateCount == 0) {
             return new FallbackDecision(false, RelaxStage.NONE,
-                    "연결 가능한 가이드 후보가 없어 추천을 제공하기 어려워요. 지역을 바꾸거나 나중에 다시 시도해 주세요.");
+                    "연결 가능한 가이드 후보가 없어 추천을 제공하기 어려워요. 지역을 바꾸거나 나중에 다시 시도해 주세요.",
+                    List.of(RecommendationNoticeCodes.NO_GUIDE_CANDIDATES));
         }
 
         int score = topScore(base);
         boolean extractedAnySignal = hasAnySignal(request);
         if (!extractedAnySignal) {
-            return new FallbackDecision(false, RelaxStage.NONE, "원하는 조건(지역/스타일/예산/활동/언어/기간/인원)을 조금 더 구체적으로 알려주세요.");
+            return new FallbackDecision(false, RelaxStage.NONE,
+                    "원하는 조건(지역/스타일/예산/활동/언어/기간/인원)을 조금 더 구체적으로 알려주세요.",
+                    List.of(RecommendationNoticeCodes.PROMPT_DETAIL_REQUESTED));
         }
 
         if (base == null || base.getTotalCount() == 0) {
-            return new FallbackDecision(true, RelaxStage.DROP_REGION_STYLE, "조건을 일부 완화해 비슷한 가이드를 다시 찾아봤어요.");
+            return new FallbackDecision(true, RelaxStage.DROP_REGION_STYLE, "조건을 일부 완화해 비슷한 가이드를 다시 찾아봤어요.",
+                    List.of(RecommendationNoticeCodes.FALLBACK_RELAXED_NO_MATCH));
         }
 
         if (score < AiRecommendationTuning.LOW_SIGNAL_SCORE_THRESHOLD) {
-            return new FallbackDecision(true, RelaxStage.DROP_REGION, "조건을 일부 완화해 더 많은 후보를 찾아봤어요.");
+            return new FallbackDecision(true, RelaxStage.DROP_REGION, "조건을 일부 완화해 더 많은 후보를 찾아봤어요.",
+                    List.of(RecommendationNoticeCodes.FALLBACK_LOW_SCORE_RELAXED));
         }
 
-        return new FallbackDecision(false, RelaxStage.NONE, null);
+        return new FallbackDecision(false, RelaxStage.NONE, null, List.of());
     }
 
     private static boolean hasAnySignal(GuideRecommendRequest req) {
@@ -390,11 +428,13 @@ public class PromptRecommendationService {
         private final boolean shouldFallback;
         private final RelaxStage stage;
         private final String notice;
+        private final List<String> noticeCodes;
 
-        private FallbackDecision(boolean shouldFallback, RelaxStage stage, String notice) {
+        private FallbackDecision(boolean shouldFallback, RelaxStage stage, String notice, List<String> noticeCodes) {
             this.shouldFallback = shouldFallback;
             this.stage = stage;
             this.notice = notice;
+            this.noticeCodes = noticeCodes == null ? List.of() : noticeCodes;
         }
     }
 }
