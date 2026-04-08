@@ -14,7 +14,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.text.NumberFormat;
 import java.util.List;
+import java.util.Locale;
 
 @Slf4j
 @Service
@@ -28,16 +30,18 @@ public class MatchRequestService {
     public MatchRequestCreateResponse createMatchRequest(Long guestId, MatchRequestCreateRequest request) {
         validateCreateRequest(guestId, request);
 
+        String conceptSummary = resolveConceptSummary(request);
         MatchRequest matchRequest = MatchRequest.create(
                 guestId,
                 request.getGuideId(),
                 request.getDestination(),
                 request.getConcept(),
+                conceptSummary,
                 request.getDesiredDate(),
                 request.getDesiredBudget()
         );
 
-        log.info("[MatchRequest] 매칭 요청 생성 — guestId={}, guideId={}", guestId, request.getGuideId());
+        log.info("[F03-04] 매칭 요청 생성 — guestId={}, guideId={}", guestId, request.getGuideId());
         return MatchRequestCreateResponse.from(matchRequestRepository.save(matchRequest));
     }
 
@@ -140,5 +144,57 @@ public class MatchRequestService {
         if (guestId.equals(request.getGuideId())) {
             throw new MatchingException(MatchingErrorCode.GUEST_GUIDE_SAME);
         }
+    }
+
+    private String resolveConceptSummary(MatchRequestCreateRequest request) {
+        if (request.getConceptSummary() != null && !request.getConceptSummary().isBlank()) {
+            return request.getConceptSummary().trim();
+        }
+
+        String destination = safeTrim(request.getDestination());
+        String concept = safeTrim(request.getConcept());
+        String date = request.getDesiredDate() == null ? null : request.getDesiredDate().toString();
+        String budget = formatBudget(request.getDesiredBudget());
+
+        StringBuilder sb = new StringBuilder();
+        if (destination != null) {
+            sb.append('[').append(destination).append("] ");
+        }
+        if (date != null) {
+            sb.append(date);
+        }
+        if (budget != null) {
+            if (sb.length() > 0) sb.append(", ");
+            sb.append("예산 ").append(budget);
+        }
+        if (concept != null) {
+            if (sb.length() > 0) sb.append(" · ");
+            sb.append("컨셉: ").append(concept);
+        }
+
+        String summary = sb.toString().trim();
+        if (summary.isBlank()) {
+            return null;
+        }
+        return summary.length() > 500 ? summary.substring(0, 500) : summary;
+    }
+
+    private String safeTrim(String value) {
+        if (value == null) {
+            return null;
+        }
+        String t = value.trim();
+        return t.isBlank() ? null : t;
+    }
+
+    private String formatBudget(Integer desiredBudget) {
+        if (desiredBudget == null) {
+            return null;
+        }
+        if (desiredBudget < 0) {
+            throw new MatchingException(MatchingErrorCode.INVALID_REQUEST);
+        }
+        NumberFormat nf = NumberFormat.getNumberInstance(Locale.KOREA);
+        return nf.format(desiredBudget) + "원";
     }
 }
