@@ -7,9 +7,11 @@ import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @Component
 public class PromptParser {
@@ -121,12 +123,29 @@ public class PromptParser {
         if (containsAny(prompt, "등산", "트레킹")) tags.add("등산");
         if (containsAny(prompt, "사진", "포토", "인생샷")) tags.add("사진");
         if (containsAny(prompt, "쇼핑")) tags.add("쇼핑");
-        if (containsAny(prompt, "바다", "해변", "오션뷰")) tags.add("바다");
+        if (containsAny(prompt, "바다", "해변", "오션뷰", "해수욕장")) tags.add("바다");
+        if (containsAny(prompt, "일몰", "노을", "야경명소")) tags.add("일몰");
         if (containsAny(prompt, "박물관", "미술관", "전시")) tags.add("전시");
-        if (containsAny(prompt, "시장", "전통시장", "로컬시장")) tags.add("시장");
+        if (containsAny(prompt, "시장", "전통시장", "로컬시장", "야시장")) tags.add("시장");
         if (containsAny(prompt, "술집", "클럽", "바")) tags.add("술집");
+        if (containsAny(prompt, "브런치", "카페투어")) tags.add("브런치");
+        if (containsAny(prompt, "쇼핑몰", "아울렛")) tags.add("쇼핑몰");
 
-        return new ArrayList<>(tags);
+        return normalizeTagList(tags);
+    }
+
+    /**
+     * 추출된 표현을 {@link KeywordNormalizer}로 통일해 매칭 정확도를 맞춘다.
+     */
+    private List<String> normalizeTagList(Set<String> rawTags) {
+        LinkedHashSet<String> out = new LinkedHashSet<>();
+        for (String t : rawTags) {
+            String n = KeywordNormalizer.normalizeTag(t);
+            if (n != null && !n.isBlank()) {
+                out.add(n);
+            }
+        }
+        return new ArrayList<>(out);
     }
 
     private List<String> extractExcludedActivityTags(String prompt) {
@@ -135,9 +154,14 @@ public class PromptParser {
         if (containsAny(prompt, "빼고", "제외", "말고", "싫어", "안 가", "안가", "원치 않아", "원치않아")) {
             if (containsAny(prompt, "술집", "클럽", "바")) excluded.add("술집");
             if (containsAny(prompt, "등산", "트레킹")) excluded.add("등산");
-            if (containsAny(prompt, "쇼핑")) excluded.add("쇼핑");
+            if (containsAny(prompt, "쇼핑", "쇼핑몰", "아울렛")) excluded.add("쇼핑");
         }
-        return new ArrayList<>(excluded);
+        LinkedHashSet<String> normalized = excluded.stream()
+                .map(KeywordNormalizer::normalizeTag)
+                .filter(Objects::nonNull)
+                .filter(s -> !s.isBlank())
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+        return new ArrayList<>(normalized);
     }
 
     private List<String> extractLanguages(String prompt) {

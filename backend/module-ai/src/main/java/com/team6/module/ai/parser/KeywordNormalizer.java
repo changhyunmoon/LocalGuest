@@ -16,15 +16,25 @@ public final class KeywordNormalizer {
             Map.entry("오션뷰", "바다"),
             Map.entry("해변", "바다"),
             Map.entry("바닷가", "바다"),
+            Map.entry("해수욕장", "바다"),
             Map.entry("식도락", "맛집"),
             Map.entry("먹방", "맛집"),
+            Map.entry("브런치", "카페"),
+            Map.entry("카페투어", "카페"),
             Map.entry("포토", "사진"),
             Map.entry("인생샷", "사진"),
             Map.entry("전시", "전시"),
             Map.entry("미술관", "전시"),
             Map.entry("박물관", "전시"),
             Map.entry("전통시장", "시장"),
-            Map.entry("로컬시장", "시장")
+            Map.entry("로컬시장", "시장"),
+            Map.entry("야시장", "시장"),
+            Map.entry("트레킹", "등산"),
+            Map.entry("일몰", "야경"),
+            Map.entry("노을", "야경"),
+            Map.entry("야경명소", "야경"),
+            Map.entry("쇼핑몰", "쇼핑"),
+            Map.entry("아울렛", "쇼핑")
     );
 
     public static String normalizeTag(String tag) {

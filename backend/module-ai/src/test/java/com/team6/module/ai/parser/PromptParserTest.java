@@ -72,4 +72,10 @@ class PromptParserTest {
         assertThat(request.getCompanionType()).isEqualTo("반려견");
         assertThat(request.getExcludedActivityTags()).contains("술집");
     }
+
+    @Test
+    void parse_should_normalize_activity_tags_via_keyword_normalizer() {
+        GuideRecommendRequest request = promptParser.parse("부산 브런치랑 일몰 보고 싶어", 3, List.of());
+        assertThat(request.getActivityTags()).contains("카페", "야경");
+    }
 }
