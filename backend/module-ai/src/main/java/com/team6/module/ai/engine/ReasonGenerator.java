@@ -2,6 +2,7 @@ package com.team6.module.ai.engine;
 
 import com.team6.module.ai.model.GuideAiProfile;
 import com.team6.module.ai.model.TravelerPreference;
+import com.team6.module.ai.parser.KeywordNormalizer;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -28,8 +29,15 @@ public class ReasonGenerator {
         }
 
         if (pref.getPreferredLanguages() != null && guide.getLanguages() != null) {
+            Set<String> guideLang = guide.getLanguages().stream()
+                    .map(KeywordNormalizer::normalizeLanguage)
+                    .filter(s -> s != null && !s.isBlank())
+                    .collect(Collectors.toSet());
+
             Set<String> matchedLanguages = pref.getPreferredLanguages().stream()
-                    .filter(guide.getLanguages()::contains)
+                    .map(KeywordNormalizer::normalizeLanguage)
+                    .filter(s -> s != null && !s.isBlank())
+                    .filter(guideLang::contains)
                     .collect(Collectors.toSet());
             if (!matchedLanguages.isEmpty()) {
                 reasons.add("가능 언어(" + String.join("/", matchedLanguages) + ")");
@@ -37,8 +45,15 @@ public class ReasonGenerator {
         }
 
         if (pref.getActivityTags() != null && guide.getSpecialtyTags() != null) {
+            Set<String> guideTags = guide.getSpecialtyTags().stream()
+                    .map(KeywordNormalizer::normalizeTag)
+                    .filter(s -> s != null && !s.isBlank())
+                    .collect(Collectors.toSet());
+
             List<String> matched = pref.getActivityTags().stream()
-                    .filter(guide.getSpecialtyTags()::contains)
+                    .map(KeywordNormalizer::normalizeTag)
+                    .filter(s -> s != null && !s.isBlank())
+                    .filter(guideTags::contains)
                     .distinct()
                     .toList();
 
@@ -46,6 +61,13 @@ public class ReasonGenerator {
                 String head = matched.stream().limit(3).collect(Collectors.joining("/"));
                 reasons.add("관심 활동(" + head + (matched.size() > 3 ? " 외" : "") + ")");
             }
+        }
+
+        if (pref.getHeadcount() != null) {
+            reasons.add("인원 " + pref.getHeadcount() + "명");
+        }
+        if (pref.getDurationDays() != null) {
+            reasons.add("기간 " + pref.getDurationDays() + "일");
         }
 
         if (reasons.isEmpty()) {

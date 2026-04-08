@@ -15,6 +15,9 @@ import java.util.regex.Pattern;
 public class PromptParser {
 
     private static final Pattern BUDGET_WON = Pattern.compile("(\\d{1,3}(?:,\\d{3})+|\\d+)\\s*(원|만원)");
+    private static final Pattern HEADCOUNT = Pattern.compile("(\\d+)\\s*(명|인)");
+    private static final Pattern DURATION_NIGHTS_DAYS = Pattern.compile("(\\d+)\\s*박\\s*(\\d+)\\s*일");
+    private static final Pattern DURATION_DAYS = Pattern.compile("(\\d+)\\s*일");
 
     public GuideRecommendRequest parse(
             String prompt,
@@ -28,7 +31,10 @@ public class PromptParser {
         String budgetLevel = extractBudgetLevel(normalizedPrompt);
         String companionType = extractCompanionType(normalizedPrompt);
         List<String> activityTags = extractActivityTags(normalizedPrompt);
+        List<String> excludedActivityTags = extractExcludedActivityTags(normalizedPrompt);
         List<String> preferredLanguages = extractLanguages(normalizedPrompt);
+        Integer headcount = extractHeadcount(normalizedPrompt);
+        Integer durationDays = extractDurationDays(normalizedPrompt);
 
         return GuideRecommendRequest.builder()
                 .region(region)
@@ -37,6 +43,9 @@ public class PromptParser {
                 .companionType(companionType)
                 .activityTags(activityTags)
                 .preferredLanguages(preferredLanguages)
+                .headcount(headcount)
+                .durationDays(durationDays)
+                .excludedActivityTags(excludedActivityTags)
                 .topN(topN)
                 .guideCandidates(guideCandidates)
                 .build();
@@ -103,8 +112,20 @@ public class PromptParser {
         if (containsAny(prompt, "바다", "해변", "오션뷰")) tags.add("바다");
         if (containsAny(prompt, "박물관", "미술관", "전시")) tags.add("전시");
         if (containsAny(prompt, "시장", "전통시장", "로컬시장")) tags.add("시장");
+        if (containsAny(prompt, "술집", "클럽", "바")) tags.add("술집");
 
         return new ArrayList<>(tags);
+    }
+
+    private List<String> extractExcludedActivityTags(String prompt) {
+        // 간단 룰: "<키워드> ... (빼고|제외|말고)" 형태를 포함하면 제외 태그로 등록
+        Set<String> excluded = new LinkedHashSet<>();
+        if (containsAny(prompt, "빼고", "제외", "말고")) {
+            if (containsAny(prompt, "술집", "클럽", "바") && containsAny(prompt, "빼고", "제외", "말고")) excluded.add("술집");
+            if (containsAny(prompt, "등산", "트레킹") && containsAny(prompt, "빼고", "제외", "말고")) excluded.add("등산");
+            if (containsAny(prompt, "쇼핑") && containsAny(prompt, "빼고", "제외", "말고")) excluded.add("쇼핑");
+        }
+        return new ArrayList<>(excluded);
     }
 
     private List<String> extractLanguages(String prompt) {
@@ -146,5 +167,38 @@ public class PromptParser {
         } catch (NumberFormatException e) {
             return null;
         }
+    }
+
+    private Integer extractHeadcount(String prompt) {
+        Matcher m = HEADCOUNT.matcher(prompt);
+        if (!m.find()) {
+            return null;
+        }
+        try {
+            int n = Integer.parseInt(m.group(1));
+            return (n <= 0 || n > 20) ? null : n;
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    private Integer extractDurationDays(String prompt) {
+        Matcher m = DURATION_NIGHTS_DAYS.matcher(prompt);
+        if (m.find()) {
+            try {
+                int days = Integer.parseInt(m.group(2));
+                return (days <= 0 || days > 30) ? null : days;
+            } catch (NumberFormatException ignored) {
+            }
+        }
+        Matcher d = DURATION_DAYS.matcher(prompt);
+        if (d.find()) {
+            try {
+                int days = Integer.parseInt(d.group(1));
+                return (days <= 0 || days > 30) ? null : days;
+            } catch (NumberFormatException ignored) {
+            }
+        }
+        return null;
     }
 }
