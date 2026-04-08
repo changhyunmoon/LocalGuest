@@ -34,4 +34,17 @@ class PromptParserTest {
         assertThat(request.getBudgetLevel()).isEqualTo("중간");
         assertThat(request.getActivityTags()).contains("카페");
     }
+
+    @Test
+    void parse_should_extract_headcount_and_duration_and_exclusions() {
+        String prompt = "제주 2박3일로 4명 여행인데 술집은 빼고 바다(오션뷰)랑 맛집 위주로 추천해줘";
+
+        GuideRecommendRequest request = promptParser.parse(prompt, 3, List.of());
+
+        assertThat(request.getRegion()).isEqualTo("제주");
+        assertThat(request.getHeadcount()).isEqualTo(4);
+        assertThat(request.getDurationDays()).isEqualTo(3);
+        assertThat(request.getExcludedActivityTags()).contains("술집");
+        assertThat(request.getActivityTags()).contains("바다", "맛집");
+    }
 }

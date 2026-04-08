@@ -5,6 +5,8 @@ import com.team6.module.ai.model.GuideAiProfile;
 import com.team6.module.ai.model.TravelerPreference;
 
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public class AiRecommendationMapper {
 
@@ -12,13 +14,23 @@ public class AiRecommendationMapper {
     }
 
     public static TravelerPreference toPreference(GuideRecommendRequest request) {
+        List<String> excluded = request.getExcludedActivityTags() == null ? List.of() : request.getExcludedActivityTags();
+        Set<String> excludedSet = excluded.stream().collect(Collectors.toSet());
+        List<String> activityTags = request.getActivityTags() == null ? List.of() : request.getActivityTags();
+        List<String> filteredTags = activityTags.stream()
+                .filter(t -> !excludedSet.contains(t))
+                .toList();
+
         return TravelerPreference.builder()
                 .region(request.getRegion())
                 .travelStyle(request.getTravelStyle())
                 .budgetLevel(request.getBudgetLevel())
                 .companionType(request.getCompanionType())
-                .activityTags(request.getActivityTags())
+                .activityTags(filteredTags)
                 .preferredLanguages(request.getPreferredLanguages())
+                .headcount(request.getHeadcount())
+                .durationDays(request.getDurationDays())
+                .excludedActivityTags(excluded)
                 .build();
     }
 

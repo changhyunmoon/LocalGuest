@@ -14,6 +14,9 @@ public class GuideRecommendRequest {
     private String companionType;
     private List<String> activityTags;
     private List<String> preferredLanguages;
+    private Integer headcount;
+    private Integer durationDays;
+    private List<String> excludedActivityTags;
     private Integer topN;
     private List<GuideCandidateDto> guideCandidates;
 

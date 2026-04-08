@@ -75,6 +75,35 @@ class AiRecommendationServiceTest {
     }
 
     @Test
+    void recommend_should_apply_synonym_matching_for_activity_tags() {
+        AiRecommendationService aiRecommendationService = createService();
+
+        GuideRecommendRequest request = GuideRecommendRequest.builder()
+                .region("제주")
+                .travelStyle("감성")
+                .budgetLevel("중간")
+                .activityTags(List.of("오션뷰")) // synonym -> 바다
+                .topN(1)
+                .guideCandidates(List.of(
+                        GuideRecommendRequest.GuideCandidateDto.builder()
+                                .guideId(1L)
+                                .guideName("A가이드")
+                                .region("제주")
+                                .guideStyle("감성")
+                                .priceLevel("중간")
+                                .specialtyTags(List.of("바다"))
+                                .languages(List.of("한국어"))
+                                .build()
+                ))
+                .build();
+
+        GuideRecommendResponse response = aiRecommendationService.recommend(request);
+        assertThat(response.getRecommendations()).isNotEmpty();
+        assertThat(response.getRecommendations().get(0).getScore()).isGreaterThan(0);
+        assertThat(response.getRecommendations().get(0).getReason()).contains("관심 활동");
+    }
+
+    @Test
     void recommend_should_return_empty_when_no_candidates() {
         AiRecommendationService aiRecommendationService = createService();
 

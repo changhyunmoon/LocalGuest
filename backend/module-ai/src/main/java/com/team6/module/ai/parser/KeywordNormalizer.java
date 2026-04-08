@@ -1,0 +1,60 @@
+package com.team6.module.ai.parser;
+
+import java.util.Locale;
+import java.util.Map;
+
+/**
+ * Prompt/프로필의 다양한 표현을 canonical 형태로 통일한다.
+ * (LLM 없이 룰 기반으로 매칭 정확도만 올리기 위한 유틸)
+ */
+public final class KeywordNormalizer {
+
+    private KeywordNormalizer() {
+    }
+
+    private static final Map<String, String> TAG_SYNONYMS = Map.ofEntries(
+            Map.entry("오션뷰", "바다"),
+            Map.entry("해변", "바다"),
+            Map.entry("바닷가", "바다"),
+            Map.entry("식도락", "맛집"),
+            Map.entry("먹방", "맛집"),
+            Map.entry("포토", "사진"),
+            Map.entry("인생샷", "사진"),
+            Map.entry("전시", "전시"),
+            Map.entry("미술관", "전시"),
+            Map.entry("박물관", "전시"),
+            Map.entry("전통시장", "시장"),
+            Map.entry("로컬시장", "시장")
+    );
+
+    public static String normalizeTag(String tag) {
+        if (tag == null) {
+            return null;
+        }
+        String trimmed = tag.trim();
+        if (trimmed.isEmpty()) {
+            return null;
+        }
+        String canonical = TAG_SYNONYMS.get(trimmed);
+        return canonical != null ? canonical : trimmed;
+    }
+
+    public static String normalizeLanguage(String lang) {
+        if (lang == null) {
+            return null;
+        }
+        String trimmed = lang.trim();
+        if (trimmed.isEmpty()) {
+            return null;
+        }
+        String lower = trimmed.toLowerCase(Locale.ROOT);
+        return switch (lower) {
+            case "eng", "english", "en", "영어" -> "영어";
+            case "jp", "japanese", "ja", "일본어" -> "일본어";
+            case "cn", "chinese", "zh", "중국어" -> "중국어";
+            case "kr", "korean", "ko", "한국어" -> "한국어";
+            default -> trimmed;
+        };
+    }
+}
+
