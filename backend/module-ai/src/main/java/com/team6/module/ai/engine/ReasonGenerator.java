@@ -6,6 +6,7 @@ import com.team6.module.ai.parser.KeywordNormalizer;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -14,7 +15,8 @@ import java.util.stream.Collectors;
 public class ReasonGenerator {
 
     public String generate(TravelerPreference pref, GuideAiProfile guide, int score) {
-        List<String> reasons = new ArrayList<>();
+        // "핵심 근거" 위주로 2~3개만 노출 (중복 제거)
+        LinkedHashSet<String> reasons = new LinkedHashSet<>();
 
         if (safeEquals(pref.getRegion(), guide.getRegion())) {
             reasons.add("선호 지역이 일치");
@@ -22,10 +24,6 @@ public class ReasonGenerator {
 
         if (safeEquals(pref.getTravelStyle(), guide.getGuideStyle())) {
             reasons.add("여행 스타일이 유사");
-        }
-
-        if (safeEquals(pref.getBudgetLevel(), guide.getPriceLevel())) {
-            reasons.add("예산대가 비슷");
         }
 
         if (pref.getPreferredLanguages() != null && guide.getLanguages() != null) {
@@ -63,18 +61,19 @@ public class ReasonGenerator {
             }
         }
 
-        if (pref.getHeadcount() != null) {
-            reasons.add("인원 " + pref.getHeadcount() + "명");
-        }
-        if (pref.getDurationDays() != null) {
-            reasons.add("기간 " + pref.getDurationDays() + "일");
+        if (safeEquals(pref.getBudgetLevel(), guide.getPriceLevel())) {
+            reasons.add("예산대가 비슷");
         }
 
         if (reasons.isEmpty()) {
             reasons.add("전체 선호도 기준으로 적합");
         }
 
-        return String.join(" · ", reasons);
+        List<String> top = new ArrayList<>(reasons);
+        if (top.size() > 3) {
+            top = top.subList(0, 3);
+        }
+        return String.join(" · ", top);
     }
 
     private boolean safeEquals(String a, String b) {

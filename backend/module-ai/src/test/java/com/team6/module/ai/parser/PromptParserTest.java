@@ -47,4 +47,29 @@ class PromptParserTest {
         assertThat(request.getExcludedActivityTags()).contains("술집");
         assertThat(request.getActivityTags()).contains("바다", "맛집");
     }
+
+    @Test
+    void parse_should_extract_duration_for_daytrip_weekend_and_weeks() {
+        GuideRecommendRequest daytrip = promptParser.parse("서울 당일치기 여행 추천", 3, List.of());
+        assertThat(daytrip.getDurationDays()).isEqualTo(1);
+
+        GuideRecommendRequest weekend = promptParser.parse("부산 주말 여행할건데 맛집 위주", 3, List.of());
+        assertThat(weekend.getDurationDays()).isEqualTo(2);
+
+        GuideRecommendRequest weeks = promptParser.parse("제주 2주 살기 느낌으로 로컬 위주", 3, List.of());
+        assertThat(weeks.getDurationDays()).isEqualTo(14);
+    }
+
+    @Test
+    void parse_should_extract_budget_level_from_manwon_band() {
+        GuideRecommendRequest request = promptParser.parse("경주 10만원대 가성비로 부탁", 3, List.of());
+        assertThat(request.getBudgetLevel()).isEqualTo("낮음");
+    }
+
+    @Test
+    void parse_should_extract_companion_pet_and_exclusion_synonyms() {
+        GuideRecommendRequest request = promptParser.parse("강릉 반려견이랑 가는데 술집은 싫어", 3, List.of());
+        assertThat(request.getCompanionType()).isEqualTo("반려견");
+        assertThat(request.getExcludedActivityTags()).contains("술집");
+    }
 }
