@@ -54,7 +54,8 @@ public class PromptRecommendationService {
                     null,
                     true,
                     false,
-                    poolSize(parsed.getGuideCandidates())
+                    poolSize(parsed.getGuideCandidates()),
+                    0
             );
             return GuideRecommendResponse.builder()
                     .conceptSummary(ConceptSummaryGenerator.generate(parsed))
@@ -110,7 +111,8 @@ public class PromptRecommendationService {
                 decision,
                 false,
                 expansion.expansionUsed(),
-                poolSize(expansion.candidates())
+                poolSize(expansion.candidates()),
+                expansion.exactCount()
         );
 
         return GuideRecommendResponse.builder()
@@ -257,7 +259,8 @@ public class PromptRecommendationService {
             FallbackDecision decision,
             boolean noRegionShortCircuit,
             boolean regionExpansionUsed,
-            int effectivePoolSize
+            int effectivePoolSize,
+            int expansionExactCount
     ) {
         try {
             int promptHash = Objects.toString(prompt, "").getBytes(StandardCharsets.UTF_8).length == 0
@@ -269,13 +272,14 @@ public class PromptRecommendationService {
             String top1ReasonCodes = summarizeTopReasonCodes(finalBase);
             Long top1GuideId = topGuideId(finalBase);
 
-            log.info("[AI_RECOMMEND] promptHash={} topN={} candidates={} policy={{noRegionShortCircuit={},regionExpansion={},effectivePool={}}} keywords={{region={},style={},budget={},companion={},headcount={},durationDays={},tags={},excluded={},langs={}}} base={{count={},topScore={}}} final={{count={},topScore={},top1GuideId={},top1ReasonCodes={}}} fallback={{used={},stage={}}}",
+            log.info("[AI_RECOMMEND] promptHash={} topN={} candidates={} policy={{noRegionShortCircuit={},regionExpansion={},effectivePool={},expansionExact={}}} keywords={{region={},style={},budget={},companion={},headcount={},durationDays={},tags={},excluded={},langs={}}} base={{count={},topScore={}}} final={{count={},topScore={},top1GuideId={},top1ReasonCodes={}}} fallback={{used={},stage={}}}",
                     promptHash,
                     request == null ? null : request.getTopN(),
                     candidateCount,
                     noRegionShortCircuit,
                     regionExpansionUsed,
                     effectivePoolSize,
+                    expansionExactCount,
                     request == null ? null : request.getRegion(),
                     request == null ? null : request.getTravelStyle(),
                     request == null ? null : request.getBudgetLevel(),

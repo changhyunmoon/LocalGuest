@@ -2,6 +2,9 @@ package com.team6.module.ai.support;
 
 /**
  * 룰 기반 추천의 기본 튜닝 값(yml 없이 코드로 고정). 변경 시 회귀 테스트를 함께 점검한다.
+ * <p>
+ * Diversity rerank 가중치는 {@link com.team6.module.ai.engine.DiversityRerankConstants},
+ * 정책별 점수 가중은 {@link com.team6.module.ai.policy.ScoreWeight}를 참고한다.
  */
 public final class AiRecommendationTuning {
 
