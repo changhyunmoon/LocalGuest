@@ -20,18 +20,11 @@ jobs:
           distribution: 'temurin'
           cache: gradle
 
-      # 각 모듈별 resources 폴더 생성 및 Secret 디코딩
-      # api-server가 실행될 때 의존하는 모듈들의 설정을 함께 읽어올 수 있도록 각각 배치합니다.
-      - name: Decode and Create Module Configuration Files
+      # 멀티모듈 구조에서는 실행 주체인 api-server의 resources에 설정값을 넣어야 합니다.
+      - name: Decode and Create application-prod.yml
         run: |
-          mkdir -p backend/module-ai/src/main/resources
-          mkdir -p backend/module-chat/src/main/resources
-          mkdir -p backend/module-domain/src/main/resources
-          mkdir -p backend/module-common/src/main/resources
-          echo "${{ secrets.APPLICATION_CHAT_PROD }}" | base64 --decode > backend/module-chat/src/main/resources/application-chat-prod.yml
-          echo "${{ secrets.APPLICATION_DOMAIN_PROD }}" | base64 --decode > backend/module-domain/src/main/resources/application-domain-prod.yml
-          echo "${{ secrets.APPLICATION_AI_PROD }}" | base64 --decode > backend/api-server/src/main/resources/application-ai-prod.yml
-          echo "${{ secrets.APPLICATION_COMMON_PROD }}" | base64 --decode > backend/module-common/src/main/resources/application-common-prod.yml
+          mkdir -p backend/api-server/src/main/resources
+          echo "${{ secrets.APPLICATION_PROD }}" | base64 --decode > backend/api-server/src/main/resources/application-prod.yml
 
       - name: Grant execute permission for gradlew
         run: chmod +x backend/gradlew
@@ -55,7 +48,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: ./backend
-          file: ./backend/api-server/Dockerfile # api-server 내부에 Dockerfile
+          file: ./backend/Dockerfile
           push: true
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.BACKEND_IMAGE_NAME }}:${{ secrets.BACKEND_IMAGE_TAG }}

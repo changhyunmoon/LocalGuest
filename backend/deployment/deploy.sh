@@ -23,13 +23,16 @@ echo "--- 📦 1. 인프라 환경 점검 (Redis, MongoDB) ---"
 docker network inspect team6-backend >/dev/null 2>&1 || \
     docker network create team6-backend
 
-# 인프라 파일 존재 여부 확인 후 실행
 if [ -f "$COMPOSE_INFRA" ]; then
     echo "✅ 인프라 컨테이너 상태 확인 및 실행..."
-    # up -d는 이미 실행 중이면 아무 작업도 하지 않고(Skipping), 없으면 실행합니다.
     $DOCKER_COMPOSE_INFRA up -d
+
+    # [추가] 인프라가 준비될 때까지 잠시 대기 (이름 해석 에러 방지용)
+    echo "⏳ 인프라 서비스 안정화 대기 중 (10s)..."
+    sleep 10
 else
-    echo "⚠️ 경고: $COMPOSE_INFRA 파일을 찾을 수 없습니다. 인프라 체크를 건너뜁니다."
+    echo "❌ 에러: $COMPOSE_INFRA 파일을 찾을 수 없습니다."
+    exit 1
 fi
 
 # 3. 필수 환경 변수 주입 확인
@@ -77,19 +80,22 @@ echo "2. $TARGET_COLOR 컨테이너 실행..."
 $DOCKER_COMPOSE_APP up -d backend-$TARGET_COLOR || exit 1
 
 # 8. 헬스체크 (Spring Actuator 활용)
-for i in {1..20}; do
-    echo "3. $TARGET_COLOR 헬스체크 중... ($i/20)"
-    sleep 7
+for i in {1..30}; do
+    echo "3. $TARGET_COLOR 헬스체크 중... ($i/30)"
+    sleep 10
 
-    RESPONSE=$(curl -s http://127.0.0.1:$TARGET_PORT/api/actuator/health | grep "UP" || true)
+    HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:$TARGET_PORT/api/actuator/health)
 
-    if [ -n "$RESPONSE" ]; then
-        echo "✅ 헬스체크 성공!"
+    if [ "$HTTP_STATUS" -eq 200 ]; then
+        echo "✅ 헬스체크 성공! (HTTP Status: $HTTP_STATUS)"
         break
     fi
 
-    if [ $i -eq 20 ]; then
-        echo "❌ 헬스체크 실패! $TARGET_COLOR 배포를 중단하고 롤백합니다."
+    if [ $i -eq 30 ]; then
+        echo "❌ 헬스체크 최종 실패 (마지막 응답 코드: $HTTP_STATUS)"
+        echo "--- 최신 컨테이너 로그(마지막 50줄) ---"
+        docker logs --tail 50 backend-$TARGET_COLOR
+        echo "❌ $TARGET_COLOR 배포를 중단하고 롤백합니다."
         $DOCKER_COMPOSE_APP stop backend-$TARGET_COLOR
         exit 1
     fi
