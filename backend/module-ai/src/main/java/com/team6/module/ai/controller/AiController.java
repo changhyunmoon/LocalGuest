@@ -28,6 +28,7 @@ public class AiController {
 
         return promptRecommendationService.recommendByPrompt(
                 request.getPrompt(),
+                request.getTopN(),
                 candidates
         );
     }

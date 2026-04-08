@@ -17,9 +17,11 @@ public class PromptRecommendationService {
 
     public GuideRecommendResponse recommendByPrompt(
             String prompt,
+            Integer topN,
             List<GuideRecommendRequest.GuideCandidateDto> guideCandidates
     ) {
-        GuideRecommendRequest request = promptParser.parse(prompt, guideCandidates);
+        Integer resolvedTopN = (topN == null || topN <= 0) ? 3 : topN;
+        GuideRecommendRequest request = promptParser.parse(prompt, resolvedTopN, guideCandidates);
         return aiRecommendationService.recommend(request);
     }
 }
