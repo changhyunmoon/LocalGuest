@@ -110,14 +110,33 @@ public class PromptParser {
         if (containsAny(prompt, "태안")) return "태안";
         if (containsAny(prompt, "인천")) return "인천";
         if (containsAny(prompt, "수원")) return "수원";
+        if (containsAny(prompt, "속초")) return "속초";
+        if (containsAny(prompt, "동해")) return "동해";
+        if (containsAny(prompt, "삼척")) return "삼척";
+        if (containsAny(prompt, "양양")) return "양양";
+        if (containsAny(prompt, "평창")) return "평창";
+        if (containsAny(prompt, "홍천")) return "홍천";
+        if (containsAny(prompt, "태백")) return "태백";
+        if (containsAny(prompt, "울산")) return "울산";
+        if (containsAny(prompt, "창원")) return "창원";
+        if (containsAny(prompt, "포항")) return "포항";
+        if (containsAny(prompt, "안동")) return "안동";
+        if (containsAny(prompt, "광주")) return "광주";
+        if (containsAny(prompt, "대전")) return "대전";
+        if (containsAny(prompt, "남해")) return "남해";
+        if (containsAny(prompt, "밀양")) return "밀양";
+        if (containsAny(prompt, "김해")) return "김해";
         return null;
     }
 
     private String extractTravelStyle(String prompt) {
         if (containsAny(prompt, "감성", "감성적인", "감성샷")) return "감성";
-        if (containsAny(prompt, "액티비티", "활동적인", "신나게", "역동적인", "익스트림")) return "액티비티";
+        if (containsAny(prompt, "액티비티", "활동적인", "신나게", "역동적인", "익스트림", "스릴", "짜릿")) {
+            return "액티비티";
+        }
         if (containsAny(prompt, "조용", "힐링", "편안", "여유", "쉬고")) return "힐링";
         if (containsAny(prompt, "로컬", "현지", "동네", "시장", "골목")) return "로컬";
+        if (containsAny(prompt, "문화", "역사", "유적", "문화재", "유네스코")) return "로컬";
         return null;
     }
 
@@ -174,6 +193,13 @@ public class PromptParser {
         if (containsAny(prompt, "골프", "골프장")) tags.add("골프");
         if (containsAny(prompt, "서핑", "서핑하기")) tags.add("서핑");
         if (containsAny(prompt, "드라이브", "드라이브코스")) tags.add("드라이브");
+        if (containsAny(prompt, "한옥", "한옥마을", "한옥스테이")) tags.add("한옥");
+        if (containsAny(prompt, "테마파크", "놀이공원", "놀이동산")) tags.add("테마파크");
+        if (containsAny(prompt, "캠핑", "글램핑", "오토캠핑")) tags.add("캠핑");
+        if (containsAny(prompt, "사찰", "템플스테이", "사찰순례")) tags.add("사찰");
+        if (containsAny(prompt, "유적", "고분", "왕릉")) tags.add("유적");
+        if (containsAny(prompt, "자전거", "라이딩", "사이클")) tags.add("자전거");
+        if (containsAny(prompt, "래프팅", "레포츠", "짚라인")) tags.add("래프팅");
 
         return normalizeTagList(tags);
     }

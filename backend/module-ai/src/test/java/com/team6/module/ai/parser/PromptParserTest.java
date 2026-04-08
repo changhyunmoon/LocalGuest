@@ -88,6 +88,13 @@ class PromptParserTest {
     }
 
     @Test
+    void parse_should_extract_new_regions_and_camping_tag() {
+        assertThat(promptParser.parse("속초 바다 산책 추천", 3, List.of()).getRegion()).isEqualTo("속초");
+        assertThat(promptParser.parse("울산 문화 유적 여행", 3, List.of()).getRegion()).isEqualTo("울산");
+        assertThat(promptParser.parse("양양 글램핑 가고 싶어요", 3, List.of()).getActivityTags()).contains("캠핑");
+    }
+
+    @Test
     void parse_should_extract_extra_languages_and_normalize_surfing() {
         GuideRecommendRequest request = promptParser.parse(
                 "전주 한옥마을이랑 french 가이드, 서핑도 해보고 싶어",

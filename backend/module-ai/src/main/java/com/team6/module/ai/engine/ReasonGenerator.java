@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -33,7 +34,7 @@ public class ReasonGenerator {
         if (segments.isEmpty()) {
             segments = List.of(new Segment(
                     CODE_GENERAL_FALLBACK,
-                    "전체 선호도 기준으로 적합",
+                    "프롬프트 선호와 가이드 프로필을 종합한 매칭",
                     List.of()
             ));
         }
@@ -73,7 +74,7 @@ public class ReasonGenerator {
         if (safeEquals(pref.getRegion(), guide.getRegion())) {
             segments.add(new Segment(
                     CODE_REGION_MATCH,
-                    "선호 지역이 일치",
+                    "희망 지역과 가이드 활동 지역이 같음",
                     listNonNull(guide.getRegion())
             ));
         }
@@ -93,7 +94,7 @@ public class ReasonGenerator {
 
             if (!matched.isEmpty()) {
                 String head = matched.stream().limit(3).collect(Collectors.joining("/"));
-                String display = "관심 활동(" + head + (matched.size() > 3 ? " 외" : "") + ")";
+                String display = "관심 활동 맞춤(" + head + (matched.size() > 3 ? " 외" : "") + ")";
                 segments.add(new Segment(CODE_ACTIVITY_MATCH, display, matched));
             }
         }
@@ -113,7 +114,7 @@ public class ReasonGenerator {
 
             if (!penalized.isEmpty()) {
                 String head = penalized.stream().limit(3).collect(Collectors.joining("/"));
-                String display = "부담 활동 반영(" + head + (penalized.size() > 3 ? " 외" : "") + ")";
+                String display = "부담되는 활동 반영(" + head + (penalized.size() > 3 ? " 외" : "") + ")";
                 segments.add(new Segment(CODE_SOFT_ACTIVITY_PENALTY, display, penalized));
             }
         }
@@ -121,7 +122,7 @@ public class ReasonGenerator {
         if (safeEquals(pref.getTravelStyle(), guide.getGuideStyle())) {
             segments.add(new Segment(
                     CODE_STYLE_MATCH,
-                    "여행 스타일이 유사",
+                    "여행 스타일이 비슷함",
                     listNonNull(guide.getGuideStyle())
             ));
         }
@@ -151,12 +152,40 @@ public class ReasonGenerator {
         if (safeEquals(pref.getBudgetLevel(), guide.getPriceLevel())) {
             segments.add(new Segment(
                     CODE_BUDGET_MATCH,
-                    "예산대가 비슷",
+                    "예산 범위가 같은 편",
+                    listNonNull(guide.getPriceLevel())
+            ));
+        } else if (budgetTiersAdjacent(pref.getBudgetLevel(), guide.getPriceLevel())) {
+            segments.add(new Segment(
+                    CODE_BUDGET_MATCH,
+                    "예산 범위가 한 단계 차이로 가까움",
                     listNonNull(guide.getPriceLevel())
             ));
         }
 
         return segments;
+    }
+
+    private static boolean budgetTiersAdjacent(String a, String b) {
+        if (a == null || b == null || a.isBlank() || b.isBlank()) {
+            return false;
+        }
+        int ia = budgetTierIndex(a.trim());
+        int ib = budgetTierIndex(b.trim());
+        if (ia < 0 || ib < 0) {
+            return false;
+        }
+        return Math.abs(ia - ib) == 1;
+    }
+
+    private static int budgetTierIndex(String level) {
+        String n = level.toLowerCase(Locale.ROOT);
+        return switch (n) {
+            case "낮음" -> 0;
+            case "중간" -> 1;
+            case "높음" -> 2;
+            default -> -1;
+        };
     }
 
     private static List<String> listNonNull(String value) {
