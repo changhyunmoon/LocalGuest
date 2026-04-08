@@ -9,11 +9,13 @@ import com.team6.module.ai.config.LocalGuestAiProperties;
 import com.team6.module.ai.parser.PromptParser;
 import com.team6.module.ai.policy.ActivityMatchPolicy;
 import com.team6.module.ai.support.AdjacentRegionProvider;
+import com.team6.module.ai.support.AiRecommendationMetrics;
 import com.team6.module.ai.policy.BudgetMatchPolicy;
 import com.team6.module.ai.policy.LanguageMatchPolicy;
 import com.team6.module.ai.policy.RegionMatchPolicy;
 import com.team6.module.ai.policy.StyleMatchPolicy;
 import com.team6.module.ai.support.AiRecommendationTuning;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -36,7 +38,8 @@ class PromptRecommendationServiceTest {
         return new PromptRecommendationService(
                 new PromptParser(),
                 aiRecommendationService,
-                new AdjacentRegionProvider(new LocalGuestAiProperties())
+                new AdjacentRegionProvider(new LocalGuestAiProperties()),
+                new AiRecommendationMetrics(new SimpleMeterRegistry())
         );
     }
 
