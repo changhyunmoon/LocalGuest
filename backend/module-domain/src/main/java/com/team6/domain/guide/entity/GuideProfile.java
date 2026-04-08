@@ -43,7 +43,7 @@ public class GuideProfile extends BaseTimeEntity {
     @Column(nullable = false, length = 100)
     private String region; // 활동 지역
 
-    @Column(length = 50)
+    @Column(length = 100)
     private String language; // 구사 가능 언어
 
     @Column(name = "price_per_hour", precision = 10, scale = 2)
@@ -65,9 +65,10 @@ public class GuideProfile extends BaseTimeEntity {
     @Builder.Default
     private Boolean isActive = true; // 활성화 여부
 
-    // 수정 가능한 필드 업데이트
+    // 수정 가능한 필드 업데이트 (residenceYears, localStory 포함)
     public void update(String nickname, String profileImage, String bio,
-                       String region, String language, BigDecimal pricePerHour, Boolean isActive) {
+                       String region, String language, BigDecimal pricePerHour, Boolean isActive,
+                       Integer residenceYears, String localStory) {
         this.nickname = nickname;
         this.profileImage = profileImage;
         this.bio = bio;
@@ -75,5 +76,12 @@ public class GuideProfile extends BaseTimeEntity {
         this.language = language;
         this.pricePerHour = pricePerHour;
         this.isActive = isActive;
+        this.residenceYears = residenceYears;
+        this.localStory = localStory;
+    }
+
+    // 활성화/비활성화 상태 반전 (F06-06)
+    public void toggleActive() {
+        this.isActive = !this.isActive;
     }
 }
