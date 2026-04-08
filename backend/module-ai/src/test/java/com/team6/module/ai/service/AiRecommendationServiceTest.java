@@ -71,6 +71,7 @@ class AiRecommendationServiceTest {
         assertThat(response).isNotNull();
         assertThat(response.getRecommendations()).isNotEmpty();
         assertThat(response.getRecommendations().get(0).getGuideId()).isEqualTo(1L);
+        assertThat(response.getRecommendations().get(0).getReason()).contains("선호 지역");
     }
 
     @Test
