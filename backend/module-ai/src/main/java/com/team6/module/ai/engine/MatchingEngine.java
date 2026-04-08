@@ -6,6 +6,7 @@ import com.team6.module.ai.model.GuideAiProfile;
 import com.team6.module.ai.model.TravelerPreference;
 import com.team6.module.ai.parser.KeywordNormalizer;
 import com.team6.module.ai.support.AiRecommendationTuning;
+import com.team6.module.ai.support.BudgetTier;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -79,7 +80,7 @@ public class MatchingEngine {
                 double penalty = selected.isEmpty() ? 0.0 : maxSimilarityToSelected(c.guide, selected) * DiversityRerankConstants.DIVERSITY_LAMBDA;
                 double finalScore = c.baseScore - penalty;
 
-                if (finalScore > bestFinal) {
+                if (isBetterCandidate(finalScore, c, bestFinal, best)) {
                     bestFinal = finalScore;
                     best = c;
                 }
@@ -94,6 +95,34 @@ public class MatchingEngine {
         }
 
         return selected;
+    }
+
+    /**
+     * 동일 finalScore일 때 baseScore가 높은 후보, 그다음 guideId 오름차순으로 안정적으로 고른다.
+     */
+    private static boolean isBetterCandidate(double finalScore, ScoredGuide cand, double bestFinal, ScoredGuide best) {
+        int cmp = Double.compare(finalScore, bestFinal);
+        if (cmp > 0) {
+            return true;
+        }
+        if (cmp < 0) {
+            return false;
+        }
+        if (best == null) {
+            return true;
+        }
+        if (cand.baseScore != best.baseScore) {
+            return cand.baseScore > best.baseScore;
+        }
+        Long a = cand.guide.getGuideId();
+        Long b = best.guide.getGuideId();
+        if (a == null) {
+            return false;
+        }
+        if (b == null) {
+            return true;
+        }
+        return a < b;
     }
 
     private double maxSimilarityToSelected(GuideAiProfile candidate, List<ScoredGuide> selected) {
@@ -117,11 +146,41 @@ public class MatchingEngine {
         double tagSim = tagOverlapRatio(a.getSpecialtyTags(), b.getSpecialtyTags());
         sim += DiversityRerankConstants.TAG_SIM_WEIGHT * tagSim;
 
-        // normalize to 0..1-ish
+        double langSim = languageJaccard(a.getLanguages(), b.getLanguages());
+        sim += DiversityRerankConstants.LANGUAGE_SIM_WEIGHT * langSim;
+
+        if (safeEquals(a.getPriceLevel(), b.getPriceLevel())) {
+            sim += DiversityRerankConstants.PRICE_TIER_SIM_WEIGHT;
+        }
+
         double max = DiversityRerankConstants.REGION_SIM_WEIGHT
                 + DiversityRerankConstants.STYLE_SIM_WEIGHT
-                + DiversityRerankConstants.TAG_SIM_WEIGHT;
+                + DiversityRerankConstants.TAG_SIM_WEIGHT
+                + DiversityRerankConstants.LANGUAGE_SIM_WEIGHT
+                + DiversityRerankConstants.PRICE_TIER_SIM_WEIGHT;
         return max == 0.0 ? 0.0 : (sim / max);
+    }
+
+    private double languageJaccard(List<String> la, List<String> lb) {
+        if (la == null || lb == null || la.isEmpty() || lb.isEmpty()) {
+            return 0.0;
+        }
+        Set<String> a = la.stream()
+                .map(KeywordNormalizer::normalizeLanguage)
+                .filter(s -> s != null && !s.isBlank())
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+        Set<String> b = lb.stream()
+                .map(KeywordNormalizer::normalizeLanguage)
+                .filter(s -> s != null && !s.isBlank())
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+        if (a.isEmpty() || b.isEmpty()) {
+            return 0.0;
+        }
+        Set<String> inter = new LinkedHashSet<>(a);
+        inter.retainAll(b);
+        Set<String> uni = new LinkedHashSet<>(a);
+        uni.addAll(b);
+        return uni.isEmpty() ? 0.0 : ((double) inter.size() / (double) uni.size());
     }
 
     private double tagOverlapRatio(List<String> tagsA, List<String> tagsB) {
@@ -156,7 +215,9 @@ public class MatchingEngine {
     private GuideRecommendItem.MatchedEvidence buildMatchedEvidence(TravelerPreference pref, GuideAiProfile guide) {
         boolean region = safeEquals(pref.getRegion(), guide.getRegion());
         boolean style = safeEquals(pref.getTravelStyle(), guide.getGuideStyle());
-        boolean budget = safeEquals(pref.getBudgetLevel(), guide.getPriceLevel());
+        boolean budgetExact = safeEquals(pref.getBudgetLevel(), guide.getPriceLevel());
+        boolean budgetAdjacent = !budgetExact
+                && BudgetTier.adjacentTiers(pref.getBudgetLevel(), guide.getPriceLevel());
 
         List<String> matchedTags = intersectNormalizedTags(pref.getActivityTags(), guide.getSpecialtyTags());
         List<String> matchedLanguages = intersectNormalizedLanguages(pref.getPreferredLanguages(), guide.getLanguages());
@@ -165,7 +226,8 @@ public class MatchingEngine {
         return GuideRecommendItem.MatchedEvidence.builder()
                 .region(region)
                 .style(style)
-                .budget(budget)
+                .budget(budgetExact)
+                .budgetAdjacent(budgetAdjacent)
                 .tags(matchedTags)
                 .languages(matchedLanguages)
                 .softPenaltyOverlapTags(softPenaltyOverlap)

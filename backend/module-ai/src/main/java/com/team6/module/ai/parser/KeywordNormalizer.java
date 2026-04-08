@@ -78,7 +78,13 @@ public final class KeywordNormalizer {
             Map.entry("왕릉", "유적"),
             Map.entry("사이클", "자전거"),
             Map.entry("레포츠", "래프팅"),
-            Map.entry("짚라인", "래프팅")
+            Map.entry("짚라인", "래프팅"),
+            Map.entry("스노보드", "스키"),
+            Map.entry("보드", "스키"),
+            Map.entry("슬로프", "스키"),
+            Map.entry("폭포", "계곡"),
+            Map.entry("바다낚시", "낚시"),
+            Map.entry("패러", "패러글라이딩")
     );
 
     public static String normalizeTag(String tag) {
@@ -114,6 +120,9 @@ public final class KeywordNormalizer {
             case "fr", "french", "français", "프랑스어", "프랑스" -> "프랑스어";
             case "es", "spanish", "español", "스페인어", "스페인" -> "스페인어";
             case "de", "german", "deutsch", "독일어", "독일" -> "독일어";
+            case "베트남어", "베트남", "vietnamese", "vn", "vi" -> "베트남어";
+            case "태국어", "태국", "thai", "th" -> "태국어";
+            case "이탈리아어", "이탈리아", "italian", "it", "italiano" -> "이탈리아어";
             default -> trimmed;
         };
     }

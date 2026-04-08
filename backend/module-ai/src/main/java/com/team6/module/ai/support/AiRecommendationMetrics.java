@@ -7,11 +7,23 @@ import org.springframework.stereotype.Component;
 import java.util.concurrent.TimeUnit;
 
 /**
- * 프롬프트 추천 파이프라인 관측용 Micrometer.
+ * 프롬프트 추천 파이프라인 관측용 Micrometer. 이름 접두사: {@code localguest.ai.recommend.*}
  * <p>
- * Counter: {@code prompt_calls}, {@code no_region_short_circuit}, {@code region_expansion},
- * {@code sparse_pool_notice}, {@code fallback(stage=...)}, {@code outcome(type=...)}.
- * Timer/Summary: {@code latency}, {@code top1_score}, {@code effective_pool_size} (태그 {@code policy_version}).
+ * <b>Counter</b>
+ * <ul>
+ *   <li>{@code .prompt_calls} — {@link com.team6.module.ai.service.PromptRecommendationService#recommendByPrompt} 진입</li>
+ *   <li>{@code .no_region_short_circuit} — 지역 미입력 단축</li>
+ *   <li>{@code .region_expansion} — 인접 지역 후보 확장 사용</li>
+ *   <li>{@code .sparse_pool_notice} — 희소 풀 안내 부착</li>
+ *   <li>{@code .fallback(stage=...)} — 조건 완화 재시도</li>
+ *   <li>{@code .outcome(type=no_region|empty|success)} — 최종 건수 결과</li>
+ * </ul>
+ * <b>Timer / Summary</b> (태그 {@code policy_version} 권장)
+ * <ul>
+ *   <li>{@code .latency} — end-to-end 지연</li>
+ *   <li>{@code .top1_score} — Top1 룰 점수</li>
+ *   <li>{@code .effective_pool_size} — 확장 후 후보 풀 크기</li>
+ * </ul>
  */
 @Component
 public class AiRecommendationMetrics {

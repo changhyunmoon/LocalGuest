@@ -46,7 +46,10 @@ public class GuideRecommendItem {
     public static class MatchedEvidence {
         private boolean region;
         private boolean style;
+        @Schema(description = "예산 티어(낮음/중간/높음) 완전 일치")
         private boolean budget;
+        @Schema(description = "예산 티어가 한 단계만 차이(인접). budget이 true이면 보통 false")
+        private boolean budgetAdjacent;
         @Schema(description = "선호 활동 태그와 가이드 전문 태그 교집합(정규화)")
         private List<String> tags;
         @Schema(description = "선호 언어와 가이드 가능 언어 교집합")

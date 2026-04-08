@@ -40,6 +40,12 @@ public class PromptParser {
     }
 
     private static final Pattern BUDGET_WON = Pattern.compile("(\\d{1,3}(?:,\\d{3})+|\\d+)\\s*(원|만원)");
+    /**
+     * "15만 안으로", "약 20만 전후", "30만 이내" 등 만 원 단위 구어체.
+     */
+    private static final Pattern BUDGET_MANWON_ROUGH = Pattern.compile(
+            "(?:약|대략)?\\s*(\\d{1,3}(?:,\\d{3})+|\\d+)\\s*만(?:원)?(?:\\s*(?:안(?:으로)?|이내|까지|전후|정도|쯤|수준|선))?"
+    );
     private static final Pattern BUDGET_MANWON_BAND = Pattern.compile("(\\d+)\\s*만원\\s*대");
     private static final Pattern HEADCOUNT = Pattern.compile("(\\d+)\\s*(명|인)");
     private static final Pattern DURATION_NIGHTS_DAYS = Pattern.compile("(\\d+)\\s*박\\s*(\\d+)\\s*일");
@@ -126,6 +132,18 @@ public class PromptParser {
         if (containsAny(prompt, "남해")) return "남해";
         if (containsAny(prompt, "밀양")) return "밀양";
         if (containsAny(prompt, "김해")) return "김해";
+        if (containsAny(prompt, "가평")) return "가평";
+        if (containsAny(prompt, "양평")) return "양평";
+        if (containsAny(prompt, "파주")) return "파주";
+        if (containsAny(prompt, "여주")) return "여주";
+        if (containsAny(prompt, "제천")) return "제천";
+        if (containsAny(prompt, "단양")) return "단양";
+        if (containsAny(prompt, "정선")) return "정선";
+        if (containsAny(prompt, "인제")) return "인제";
+        if (containsAny(prompt, "하동")) return "하동";
+        if (containsAny(prompt, "구례")) return "구례";
+        if (containsAny(prompt, "보성")) return "보성";
+        if (containsAny(prompt, "익산")) return "익산";
         return null;
     }
 
@@ -143,9 +161,12 @@ public class PromptParser {
     private String extractBudgetLevel(String prompt) {
         Integer budget = extractBudgetAmount(prompt);
         if (budget != null) {
-            if (budget <= 100_000) return "낮음";
-            if (budget <= 300_000) return "중간";
-            return "높음";
+            return budgetTierFromAbsoluteWon(budget);
+        }
+
+        Integer roughManwon = extractManwonRoughBudgetWon(prompt);
+        if (roughManwon != null) {
+            return budgetTierFromAbsoluteWon(roughManwon);
         }
 
         Integer band = extractBudgetBand(prompt);
@@ -163,12 +184,47 @@ public class PromptParser {
         return null;
     }
 
+    private static String budgetTierFromAbsoluteWon(int won) {
+        if (won <= 100_000) {
+            return "낮음";
+        }
+        if (won <= 300_000) {
+            return "중간";
+        }
+        return "높음";
+    }
+
+    /**
+     * "N만 안으로" 등 {@link #BUDGET_WON}으로 잡히지 않는 구어체 금액(원 단위).
+     */
+    private Integer extractManwonRoughBudgetWon(String prompt) {
+        Matcher m = BUDGET_MANWON_ROUGH.matcher(prompt);
+        if (!m.find()) {
+            return null;
+        }
+        String number = m.group(1).replace(",", "");
+        try {
+            long man = Long.parseLong(number);
+            if (man <= 0L || man > 1_000_000L) {
+                return null;
+            }
+            long value = man * 10_000L;
+            if (value > Integer.MAX_VALUE) {
+                return null;
+            }
+            return (int) value;
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
     private String extractCompanionType(String prompt) {
         if (containsAny(prompt, "혼자", "혼행", "1인")) return "혼자";
         if (containsAny(prompt, "친구", "친구랑", "우정", "동창")) return "친구";
         if (containsAny(prompt, "가족", "부모님", "엄마", "아빠", "아이", "애기")) return "가족";
         if (containsAny(prompt, "반려견", "강아지", "댕댕이", "반려동물")) return "반려견";
         if (containsAny(prompt, "연인", "커플", "데이트", "여자친구", "남자친구")) return "연인";
+        if (containsAny(prompt, "단체", "워크샵", "워크숍", "회사", "동호회", "모임")) return "단체";
         return null;
     }
 
@@ -200,6 +256,10 @@ public class PromptParser {
         if (containsAny(prompt, "유적", "고분", "왕릉")) tags.add("유적");
         if (containsAny(prompt, "자전거", "라이딩", "사이클")) tags.add("자전거");
         if (containsAny(prompt, "래프팅", "레포츠", "짚라인")) tags.add("래프팅");
+        if (containsAny(prompt, "스키", "보드", "스노보드", "슬로프")) tags.add("스키");
+        if (containsAny(prompt, "계곡", "폭포", "계곡트레킹")) tags.add("계곡");
+        if (containsAny(prompt, "패러글라이딩", "패러")) tags.add("패러글라이딩");
+        if (containsAny(prompt, "낚시", "바다낚시")) tags.add("낚시");
 
         return normalizeTagList(tags);
     }
@@ -327,6 +387,9 @@ public class PromptParser {
         if (containsAny(prompt, "프랑스어", "프랑스", "french", "français")) languages.add("프랑스어");
         if (containsAny(prompt, "스페인어", "스페인", "spanish", "español")) languages.add("스페인어");
         if (containsAny(prompt, "독일어", "독일", "german", "deutsch")) languages.add("독일어");
+        if (containsAny(prompt, "베트남어", "베트남", "vietnamese", "vn")) languages.add("베트남어");
+        if (containsAny(prompt, "태국어", "태국", "thai", "ภาษาไทย")) languages.add("태국어");
+        if (containsAny(prompt, "이탈리아어", "이탈리아", "italian", "italiano")) languages.add("이탈리아어");
 
         return new ArrayList<>(languages);
     }
