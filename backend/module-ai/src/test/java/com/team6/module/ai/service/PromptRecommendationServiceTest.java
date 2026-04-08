@@ -5,8 +5,10 @@ import com.team6.module.ai.dto.response.GuideRecommendResponse;
 import com.team6.module.ai.engine.MatchingEngine;
 import com.team6.module.ai.engine.ReasonGenerator;
 import com.team6.module.ai.engine.ScoreCalculator;
+import com.team6.module.ai.config.LocalGuestAiProperties;
 import com.team6.module.ai.parser.PromptParser;
 import com.team6.module.ai.policy.ActivityMatchPolicy;
+import com.team6.module.ai.support.AdjacentRegionProvider;
 import com.team6.module.ai.policy.BudgetMatchPolicy;
 import com.team6.module.ai.policy.LanguageMatchPolicy;
 import com.team6.module.ai.policy.RegionMatchPolicy;
@@ -30,7 +32,11 @@ class PromptRecommendationServiceTest {
         AiRecommendationService aiRecommendationService =
                 new AiRecommendationServiceImpl(new MatchingEngine(scoreCalculator, new ReasonGenerator()));
 
-        return new PromptRecommendationService(new PromptParser(), aiRecommendationService);
+        return new PromptRecommendationService(
+                new PromptParser(),
+                aiRecommendationService,
+                new AdjacentRegionProvider(new LocalGuestAiProperties())
+        );
     }
 
     @Test

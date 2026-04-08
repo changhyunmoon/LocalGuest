@@ -40,7 +40,10 @@ public final class KeywordNormalizer {
             Map.entry("서핑", "바다"),
             Map.entry("서핑하기", "바다"),
             Map.entry("드라이브", "산책"),
-            Map.entry("드라이브코스", "산책")
+            Map.entry("드라이브코스", "산책"),
+            Map.entry("골목", "산책"),
+            Map.entry("골목투어", "산책"),
+            Map.entry("먹거리", "맛집")
     );
 
     public static String normalizeTag(String tag) {

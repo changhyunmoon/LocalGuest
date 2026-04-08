@@ -18,10 +18,12 @@ public class ReasonGenerator {
     public static final String CODE_STYLE_MATCH = "STYLE_MATCH";
     public static final String CODE_LANGUAGE_MATCH = "LANGUAGE_MATCH";
     public static final String CODE_ACTIVITY_MATCH = "ACTIVITY_MATCH";
+    public static final String CODE_SOFT_ACTIVITY_PENALTY = "SOFT_ACTIVITY_PENALTY";
     public static final String CODE_BUDGET_MATCH = "BUDGET_MATCH";
     public static final String CODE_GENERAL_FALLBACK = "GENERAL_FALLBACK";
 
-    private static final int MAX_DISPLAY_SEGMENTS = 3;
+    /** soft 부담 등이 잘리지 않도록 여유를 둔다. */
+    private static final int MAX_DISPLAY_SEGMENTS = 4;
 
     /**
      * @param score 현재는 reason 문구 생성에 직접 쓰지 않지만, 추후 임계값/요약에 활용 가능하도록 유지
@@ -61,6 +63,10 @@ public class ReasonGenerator {
                 .build();
     }
 
+    /**
+     * 우선순위: 지역 → (선호)활동 → soft 부담 → 스타일 → 언어 → 예산.
+     * 상위 {@link #MAX_DISPLAY_SEGMENTS}개만 노출되므로 부담 활동이 앞쪽에 오도록 순서를 맞춘다.
+     */
     private List<Segment> buildSegments(TravelerPreference pref, GuideAiProfile guide) {
         List<Segment> segments = new ArrayList<>();
 
@@ -70,6 +76,46 @@ public class ReasonGenerator {
                     "선호 지역이 일치",
                     listNonNull(guide.getRegion())
             ));
+        }
+
+        if (pref.getActivityTags() != null && guide.getSpecialtyTags() != null) {
+            Set<String> guideTags = guide.getSpecialtyTags().stream()
+                    .map(KeywordNormalizer::normalizeTag)
+                    .filter(s -> s != null && !s.isBlank())
+                    .collect(Collectors.toSet());
+
+            List<String> matched = pref.getActivityTags().stream()
+                    .map(KeywordNormalizer::normalizeTag)
+                    .filter(s -> s != null && !s.isBlank())
+                    .filter(guideTags::contains)
+                    .distinct()
+                    .toList();
+
+            if (!matched.isEmpty()) {
+                String head = matched.stream().limit(3).collect(Collectors.joining("/"));
+                String display = "관심 활동(" + head + (matched.size() > 3 ? " 외" : "") + ")";
+                segments.add(new Segment(CODE_ACTIVITY_MATCH, display, matched));
+            }
+        }
+
+        if (pref.getSoftPenaltyActivityTags() != null && guide.getSpecialtyTags() != null) {
+            Set<String> guideTagsForPenalty = guide.getSpecialtyTags().stream()
+                    .map(KeywordNormalizer::normalizeTag)
+                    .filter(s -> s != null && !s.isBlank())
+                    .collect(Collectors.toSet());
+
+            List<String> penalized = pref.getSoftPenaltyActivityTags().stream()
+                    .map(KeywordNormalizer::normalizeTag)
+                    .filter(s -> s != null && !s.isBlank())
+                    .filter(guideTagsForPenalty::contains)
+                    .distinct()
+                    .toList();
+
+            if (!penalized.isEmpty()) {
+                String head = penalized.stream().limit(3).collect(Collectors.joining("/"));
+                String display = "부담 활동 반영(" + head + (penalized.size() > 3 ? " 외" : "") + ")";
+                segments.add(new Segment(CODE_SOFT_ACTIVITY_PENALTY, display, penalized));
+            }
         }
 
         if (safeEquals(pref.getTravelStyle(), guide.getGuideStyle())) {
@@ -99,26 +145,6 @@ public class ReasonGenerator {
                         "가능 언어(" + String.join("/", langValues) + ")",
                         langValues
                 ));
-            }
-        }
-
-        if (pref.getActivityTags() != null && guide.getSpecialtyTags() != null) {
-            Set<String> guideTags = guide.getSpecialtyTags().stream()
-                    .map(KeywordNormalizer::normalizeTag)
-                    .filter(s -> s != null && !s.isBlank())
-                    .collect(Collectors.toSet());
-
-            List<String> matched = pref.getActivityTags().stream()
-                    .map(KeywordNormalizer::normalizeTag)
-                    .filter(s -> s != null && !s.isBlank())
-                    .filter(guideTags::contains)
-                    .distinct()
-                    .toList();
-
-            if (!matched.isEmpty()) {
-                String head = matched.stream().limit(3).collect(Collectors.joining("/"));
-                String display = "관심 활동(" + head + (matched.size() > 3 ? " 외" : "") + ")";
-                segments.add(new Segment(CODE_ACTIVITY_MATCH, display, matched));
             }
         }
 

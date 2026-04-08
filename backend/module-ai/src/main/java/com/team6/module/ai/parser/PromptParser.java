@@ -186,10 +186,7 @@ public class PromptParser {
     }
 
     /**
-     * 하드 제외가 아니라, 해당 활동을 가이드가 강하게 내세울 때 순위를 낮추기 위한 soft 부정 힌트.
-     */
-    /**
-     * soft 부정 태그와 겹치는 활동은 '선호 활동'에서 제외(요약/매칭 모순 방지).
+     * soft 부정 태그와 겹치는 활동은 선호 활동에서 제외(요약/매칭 모순 방지).
      */
     private List<String> stripActivityTagsOverlappingSoft(List<String> activityTags, List<String> softPenaltyTags) {
         if (activityTags == null || activityTags.isEmpty() || softPenaltyTags == null || softPenaltyTags.isEmpty()) {
@@ -206,14 +203,16 @@ public class PromptParser {
 
     private List<String> extractSoftPenaltyActivityTags(String prompt) {
         Set<String> raw = new LinkedHashSet<>();
-        boolean heavy = containsAny(prompt, "힘든", "힘들", "빡센", "빡세", "무거운", "험한", "무리");
+        boolean heavy = containsAny(prompt, "힘든", "힘들", "빡센", "빡세", "무거운", "험한", "무리", "고난이도", "체력", "경사");
         if (heavy && containsAny(prompt, "등산", "트레킹")) {
             raw.add("등산");
         }
-        if (containsAny(prompt, "시끄", "시끄러", "붐비", "붐벼") && containsAny(prompt, "술집", "클럽", "바")) {
+        boolean noisyNight = containsAny(prompt, "시끄", "시끄러", "붐비", "붐벼", "야간", "밤늦", "새벽");
+        if (noisyNight && containsAny(prompt, "술집", "클럽", "바")) {
             raw.add("술집");
         }
-        if (containsAny(prompt, "복잡", "붐비", "붐벼") && containsAny(prompt, "쇼핑")) {
+        boolean crowded = containsAny(prompt, "복잡", "붐비", "붐벼", "인파", "사람 많", "사람많");
+        if (crowded && containsAny(prompt, "쇼핑", "쇼핑몰", "아울렛")) {
             raw.add("쇼핑");
         }
         return normalizeTagList(raw);

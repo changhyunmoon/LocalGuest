@@ -107,4 +107,14 @@ class PromptParserTest {
         );
         assertThat(request.getSoftPenaltyActivityTags()).contains("등산");
     }
+
+    @Test
+    void parse_should_extract_soft_penalty_for_crowded_shopping() {
+        GuideRecommendRequest request = promptParser.parse(
+                "서울 맛집 쇼핑 위주인데 인파 많은 쇼핑몰은 부담",
+                3,
+                List.of()
+        );
+        assertThat(request.getSoftPenaltyActivityTags()).contains("쇼핑");
+    }
 }

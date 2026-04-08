@@ -7,6 +7,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -25,6 +26,17 @@ public final class RegionCandidateExpansion {
     }
 
     public static Result apply(List<GuideRecommendRequest.GuideCandidateDto> all, String region) {
+        return apply(all, region, AdjacentRegionMap::neighbors);
+    }
+
+    /**
+     * @param adjacentNeighbors 지역명 → 인접 지역 집합 (테스트·YAML 주입용)
+     */
+    public static Result apply(
+            List<GuideRecommendRequest.GuideCandidateDto> all,
+            String region,
+            Function<String, Set<String>> adjacentNeighbors
+    ) {
         List<GuideRecommendRequest.GuideCandidateDto> pool =
                 all == null ? List.of() : new ArrayList<>(all);
 
@@ -44,7 +56,7 @@ public final class RegionCandidateExpansion {
 
         LinkedHashSet<String> allowed = new LinkedHashSet<>();
         allowed.add(r);
-        allowed.addAll(AdjacentRegionMap.neighbors(r));
+        allowed.addAll(adjacentNeighbors.apply(r));
 
         List<GuideRecommendRequest.GuideCandidateDto> wider = pool.stream()
                 .filter(Objects::nonNull)

@@ -3,6 +3,7 @@ package com.team6.module.ai.service;
 import com.team6.module.ai.dto.request.GuideRecommendRequest;
 import com.team6.module.ai.dto.response.GuideRecommendResponse;
 import com.team6.module.ai.parser.PromptParser;
+import com.team6.module.ai.support.AdjacentRegionProvider;
 import com.team6.module.ai.support.AiRecommendationTuning;
 import com.team6.module.ai.support.ConceptSummaryGenerator;
 import com.team6.module.ai.support.RegionCandidateExpansion;
@@ -24,6 +25,7 @@ public class PromptRecommendationService {
 
     private final PromptParser promptParser;
     private final AiRecommendationService aiRecommendationService;
+    private final AdjacentRegionProvider adjacentRegionProvider;
 
     private static final String NOTICE_REGION_REQUIRED =
             "여행하고 싶은 지역을 알려주시면 더 정확하게 추천할 수 있어요.";
@@ -67,7 +69,11 @@ public class PromptRecommendationService {
         }
 
         RegionCandidateExpansion.Result expansion =
-                RegionCandidateExpansion.apply(parsed.getGuideCandidates(), parsed.getRegion());
+                RegionCandidateExpansion.apply(
+                        parsed.getGuideCandidates(),
+                        parsed.getRegion(),
+                        adjacentRegionProvider::neighbors
+                );
 
         GuideRecommendRequest effective = GuideRecommendRequest.builder()
                 .region(parsed.getRegion())
@@ -79,6 +85,7 @@ public class PromptRecommendationService {
                 .headcount(parsed.getHeadcount())
                 .durationDays(parsed.getDurationDays())
                 .excludedActivityTags(parsed.getExcludedActivityTags())
+                .softPenaltyActivityTags(parsed.getSoftPenaltyActivityTags())
                 .topN(parsed.getTopN())
                 .guideCandidates(expansion.candidates())
                 .build();
@@ -207,7 +214,8 @@ public class PromptRecommendationService {
                 || (req.getPreferredLanguages() != null && !req.getPreferredLanguages().isEmpty())
                 || req.getHeadcount() != null
                 || req.getDurationDays() != null
-                || (req.getExcludedActivityTags() != null && !req.getExcludedActivityTags().isEmpty());
+                || (req.getExcludedActivityTags() != null && !req.getExcludedActivityTags().isEmpty())
+                || (req.getSoftPenaltyActivityTags() != null && !req.getSoftPenaltyActivityTags().isEmpty());
     }
 
     private GuideRecommendRequest relax(GuideRecommendRequest original, RelaxStage stage) {
@@ -246,6 +254,7 @@ public class PromptRecommendationService {
                 .headcount(original.getHeadcount())
                 .durationDays(original.getDurationDays())
                 .excludedActivityTags(original.getExcludedActivityTags())
+                .softPenaltyActivityTags(original.getSoftPenaltyActivityTags())
                 .topN(original.getTopN())
                 .guideCandidates(original.getGuideCandidates())
                 .build();
@@ -273,7 +282,7 @@ public class PromptRecommendationService {
             String top1ReasonCodes = summarizeTopReasonCodes(finalBase);
             Long top1GuideId = topGuideId(finalBase);
 
-            log.info("[AI_RECOMMEND] promptHash={} topN={} candidates={} policy={{noRegionShortCircuit={},regionExpansion={},effectivePool={},expansionExact={}}} keywords={{region={},style={},budget={},companion={},headcount={},durationDays={},tags={},excluded={},langs={}}} base={{count={},topScore={}}} final={{count={},topScore={},top1GuideId={},top1ReasonCodes={}}} fallback={{used={},stage={}}}",
+            log.info("[AI_RECOMMEND] promptHash={} topN={} candidates={} policy={{noRegionShortCircuit={},regionExpansion={},effectivePool={},expansionExact={}}} keywords={{region={},style={},budget={},companion={},headcount={},durationDays={},tags={},excluded={},softPenalty={},langs={}}} base={{count={},topScore={}}} final={{count={},topScore={},top1GuideId={},top1ReasonCodes={}}} fallback={{used={},stage={}}}",
                     promptHash,
                     request == null ? null : request.getTopN(),
                     candidateCount,
@@ -289,6 +298,7 @@ public class PromptRecommendationService {
                     request == null ? null : request.getDurationDays(),
                     request == null ? null : request.getActivityTags(),
                     request == null ? null : request.getExcludedActivityTags(),
+                    request == null ? null : request.getSoftPenaltyActivityTags(),
                     request == null ? null : request.getPreferredLanguages(),
                     base == null ? 0 : base.getTotalCount(),
                     baseTopScore,
