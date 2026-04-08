@@ -23,10 +23,6 @@ public class MatchingEngine {
     private final ScoreCalculator scoreCalculator;
     private final ReasonGenerator reasonGenerator;
 
-    private static final double DIVERSITY_LAMBDA = 15.0;
-    private static final double REGION_SIM_WEIGHT = 1.0;
-    private static final double STYLE_SIM_WEIGHT = 0.8;
-    private static final double TAG_SIM_WEIGHT = 0.8;
 
     public GuideRecommendResponse recommend(
             TravelerPreference preference,
@@ -78,7 +74,7 @@ public class MatchingEngine {
                 if (c.guide.getGuideId() == null || used.contains(c.guide.getGuideId())) {
                     continue;
                 }
-                double penalty = selected.isEmpty() ? 0.0 : maxSimilarityToSelected(c.guide, selected) * DIVERSITY_LAMBDA;
+                double penalty = selected.isEmpty() ? 0.0 : maxSimilarityToSelected(c.guide, selected) * DiversityRerankConstants.DIVERSITY_LAMBDA;
                 double finalScore = c.baseScore - penalty;
 
                 if (finalScore > bestFinal) {
@@ -110,17 +106,19 @@ public class MatchingEngine {
         double sim = 0.0;
 
         if (safeEquals(a.getRegion(), b.getRegion())) {
-            sim += REGION_SIM_WEIGHT;
+            sim += DiversityRerankConstants.REGION_SIM_WEIGHT;
         }
         if (safeEquals(a.getGuideStyle(), b.getGuideStyle())) {
-            sim += STYLE_SIM_WEIGHT;
+            sim += DiversityRerankConstants.STYLE_SIM_WEIGHT;
         }
 
         double tagSim = tagOverlapRatio(a.getSpecialtyTags(), b.getSpecialtyTags());
-        sim += TAG_SIM_WEIGHT * tagSim;
+        sim += DiversityRerankConstants.TAG_SIM_WEIGHT * tagSim;
 
         // normalize to 0..1-ish
-        double max = REGION_SIM_WEIGHT + STYLE_SIM_WEIGHT + TAG_SIM_WEIGHT;
+        double max = DiversityRerankConstants.REGION_SIM_WEIGHT
+                + DiversityRerankConstants.STYLE_SIM_WEIGHT
+                + DiversityRerankConstants.TAG_SIM_WEIGHT;
         return max == 0.0 ? 0.0 : (sim / max);
     }
 
