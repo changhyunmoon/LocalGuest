@@ -49,6 +49,7 @@ public class MatchingEngine {
                         .guideName(sg.guide.getGuideName())
                         .score(sg.baseScore)
                         .reason(sg.reason)
+                        .matched(buildMatchedEvidence(preference, sg.guide))
                         .build())
                 .toList();
 
@@ -148,6 +149,57 @@ public class MatchingEngine {
 
     private boolean safeEquals(String a, String b) {
         return a != null && a.equalsIgnoreCase(b);
+    }
+
+    private GuideRecommendItem.MatchedEvidence buildMatchedEvidence(TravelerPreference pref, GuideAiProfile guide) {
+        boolean region = safeEquals(pref.getRegion(), guide.getRegion());
+        boolean style = safeEquals(pref.getTravelStyle(), guide.getGuideStyle());
+        boolean budget = safeEquals(pref.getBudgetLevel(), guide.getPriceLevel());
+
+        List<String> matchedTags = intersectNormalizedTags(pref.getActivityTags(), guide.getSpecialtyTags());
+        List<String> matchedLanguages = intersectNormalizedLanguages(pref.getPreferredLanguages(), guide.getLanguages());
+
+        return GuideRecommendItem.MatchedEvidence.builder()
+                .region(region)
+                .style(style)
+                .budget(budget)
+                .tags(matchedTags)
+                .languages(matchedLanguages)
+                .build();
+    }
+
+    private List<String> intersectNormalizedTags(List<String> a, List<String> b) {
+        if (a == null || b == null || a.isEmpty() || b.isEmpty()) {
+            return List.of();
+        }
+        Set<String> right = b.stream()
+                .map(KeywordNormalizer::normalizeTag)
+                .filter(s -> s != null && !s.isBlank())
+                .collect(Collectors.toSet());
+
+        return a.stream()
+                .map(KeywordNormalizer::normalizeTag)
+                .filter(s -> s != null && !s.isBlank())
+                .distinct()
+                .filter(right::contains)
+                .toList();
+    }
+
+    private List<String> intersectNormalizedLanguages(List<String> a, List<String> b) {
+        if (a == null || b == null || a.isEmpty() || b.isEmpty()) {
+            return List.of();
+        }
+        Set<String> right = b.stream()
+                .map(KeywordNormalizer::normalizeLanguage)
+                .filter(s -> s != null && !s.isBlank())
+                .collect(Collectors.toSet());
+
+        return a.stream()
+                .map(KeywordNormalizer::normalizeLanguage)
+                .filter(s -> s != null && !s.isBlank())
+                .distinct()
+                .filter(right::contains)
+                .toList();
     }
 
     private record ScoredGuide(GuideAiProfile guide, int baseScore, String reason) {

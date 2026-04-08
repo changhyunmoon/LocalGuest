@@ -72,6 +72,8 @@ class AiRecommendationServiceTest {
         assertThat(response.getRecommendations()).isNotEmpty();
         assertThat(response.getRecommendations().get(0).getGuideId()).isEqualTo(1L);
         assertThat(response.getRecommendations().get(0).getReason()).contains("선호 지역");
+        assertThat(response.getRecommendations().get(0).getMatched()).isNotNull();
+        assertThat(response.getRecommendations().get(0).getMatched().isRegion()).isTrue();
     }
 
     @Test
@@ -101,6 +103,8 @@ class AiRecommendationServiceTest {
         assertThat(response.getRecommendations()).isNotEmpty();
         assertThat(response.getRecommendations().get(0).getScore()).isGreaterThan(0);
         assertThat(response.getRecommendations().get(0).getReason()).contains("관심 활동");
+        assertThat(response.getRecommendations().get(0).getMatched()).isNotNull();
+        assertThat(response.getRecommendations().get(0).getMatched().getTags()).contains("바다");
     }
 
     @Test
