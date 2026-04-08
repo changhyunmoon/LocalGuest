@@ -18,6 +18,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import static com.team6.module.ai.support.AiRecommendationTuning.POLICY_VERSION;
+
 @Service
 @Slf4j
 public class PromptRecommendationService {
@@ -52,42 +54,46 @@ public class PromptRecommendationService {
             Integer topN,
             List<GuideRecommendRequest.GuideCandidateDto> guideCandidates
     ) {
+        long startNs = System.nanoTime();
         metrics.recordPromptRecommendCall();
 
-        Integer resolvedTopN = (topN == null || topN <= 0)
-                ? AiRecommendationTuning.DEFAULT_TOP_N
-                : topN;
-        GuideRecommendRequest parsed = promptParser.parse(prompt, resolvedTopN, guideCandidates);
+        try {
+            Integer resolvedTopN = (topN == null || topN <= 0)
+                    ? AiRecommendationTuning.DEFAULT_TOP_N
+                    : topN;
+            GuideRecommendRequest parsed = promptParser.parse(prompt, resolvedTopN, guideCandidates);
 
-        if (!notBlank(parsed.getRegion())) {
-            GuideRecommendResponse empty = GuideRecommendResponse.builder()
-                    .totalCount(0)
-                    .recommendations(List.of())
-                    .build();
-            logRecommendation(
-                    prompt,
-                    parsed,
-                    guideCandidates,
-                    empty,
-                    empty,
-                    null,
-                    true,
-                    false,
-                    poolSize(parsed.getGuideCandidates()),
-                    0
-            );
-            metrics.recordNoRegionShortCircuit();
-            return GuideRecommendResponse.builder()
-                    .conceptSummary(ConceptSummaryGenerator.generate(parsed))
-                    .keywords(keywordsFrom(parsed))
-                    .notice(NOTICE_REGION_REQUIRED)
-                    .policyVersion(AiRecommendationTuning.POLICY_VERSION)
-                    .totalCount(0)
-                    .recommendations(List.of())
-                    .build();
-        }
+            if (!notBlank(parsed.getRegion())) {
+                GuideRecommendResponse empty = GuideRecommendResponse.builder()
+                        .totalCount(0)
+                        .recommendations(List.of())
+                        .build();
+                logRecommendation(
+                        prompt,
+                        parsed,
+                        guideCandidates,
+                        empty,
+                        empty,
+                        null,
+                        true,
+                        false,
+                        poolSize(parsed.getGuideCandidates()),
+                        0
+                );
+                metrics.recordNoRegionShortCircuit();
+                GuideRecommendResponse out = GuideRecommendResponse.builder()
+                        .conceptSummary(ConceptSummaryGenerator.generate(parsed))
+                        .keywords(keywordsFrom(parsed))
+                        .notice(NOTICE_REGION_REQUIRED)
+                        .policyVersion(POLICY_VERSION)
+                        .totalCount(0)
+                        .recommendations(List.of())
+                        .build();
+                recordDistributionMetrics(out, 0);
+                return out;
+            }
 
-        RegionCandidateExpansion.Result expansion =
+            RegionCandidateExpansion.Result expansion =
                 RegionCandidateExpansion.apply(
                         parsed.getGuideCandidates(),
                         parsed.getRegion(),
@@ -138,27 +144,39 @@ public class PromptRecommendationService {
             metrics.recordFallback(decision.stage.name());
         }
 
-        logRecommendation(
-                prompt,
-                parsed,
-                guideCandidates,
-                base,
-                finalBase,
-                decision,
-                false,
-                expansion.expansionUsed(),
-                poolSize(expansion.candidates()),
-                expansion.exactCount()
-        );
+            logRecommendation(
+                    prompt,
+                    parsed,
+                    guideCandidates,
+                    base,
+                    finalBase,
+                    decision,
+                    false,
+                    expansion.expansionUsed(),
+                    poolSize(expansion.candidates()),
+                    expansion.exactCount()
+            );
 
-        return GuideRecommendResponse.builder()
-                .conceptSummary(ConceptSummaryGenerator.generate(parsed))
-                .keywords(keywordsFrom(parsed))
-                .notice(notice)
-                .policyVersion(AiRecommendationTuning.POLICY_VERSION)
-                .totalCount(finalBase.getTotalCount())
-                .recommendations(finalBase.getRecommendations())
-                .build();
+            GuideRecommendResponse out = GuideRecommendResponse.builder()
+                    .conceptSummary(ConceptSummaryGenerator.generate(parsed))
+                    .keywords(keywordsFrom(parsed))
+                    .notice(notice)
+                    .policyVersion(POLICY_VERSION)
+                    .totalCount(finalBase.getTotalCount())
+                    .recommendations(finalBase.getRecommendations())
+                    .build();
+            recordDistributionMetrics(out, poolSize(expansion.candidates()));
+            return out;
+        } finally {
+            metrics.recordRecommendationLatencyNanos(System.nanoTime() - startNs, POLICY_VERSION);
+        }
+    }
+
+    private void recordDistributionMetrics(GuideRecommendResponse response, int effectivePoolSize) {
+        metrics.recordEffectivePoolSize(effectivePoolSize, POLICY_VERSION);
+        if (response.getRecommendations() != null && !response.getRecommendations().isEmpty()) {
+            metrics.recordTop1Score(response.getRecommendations().get(0).getScore(), POLICY_VERSION);
+        }
     }
 
     private static GuideRecommendResponse.Keywords keywordsFrom(GuideRecommendRequest request) {
