@@ -11,6 +11,10 @@ public class GuideRecommendResponse {
     private String conceptSummary;
     private Keywords keywords;
     private String notice;
+    /**
+     * 룰 기반 추천 정책 버전({@link com.team6.module.ai.support.AiRecommendationTuning#POLICY_VERSION}).
+     */
+    private String policyVersion;
     private int totalCount;
     private List<GuideRecommendItem> recommendations;
 

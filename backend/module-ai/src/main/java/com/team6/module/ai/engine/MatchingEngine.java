@@ -5,6 +5,7 @@ import com.team6.module.ai.dto.response.GuideRecommendResponse;
 import com.team6.module.ai.model.GuideAiProfile;
 import com.team6.module.ai.model.TravelerPreference;
 import com.team6.module.ai.parser.KeywordNormalizer;
+import com.team6.module.ai.support.AiRecommendationTuning;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -52,6 +53,7 @@ public class MatchingEngine {
                 .toList();
 
         return GuideRecommendResponse.builder()
+                .policyVersion(AiRecommendationTuning.POLICY_VERSION)
                 .totalCount(items.size())
                 .recommendations(items)
                 .build();
@@ -158,6 +160,7 @@ public class MatchingEngine {
 
         List<String> matchedTags = intersectNormalizedTags(pref.getActivityTags(), guide.getSpecialtyTags());
         List<String> matchedLanguages = intersectNormalizedLanguages(pref.getPreferredLanguages(), guide.getLanguages());
+        List<String> softPenaltyOverlap = softPenaltyOverlapTags(pref.getSoftPenaltyActivityTags(), guide.getSpecialtyTags());
 
         return GuideRecommendItem.MatchedEvidence.builder()
                 .region(region)
@@ -165,7 +168,24 @@ public class MatchingEngine {
                 .budget(budget)
                 .tags(matchedTags)
                 .languages(matchedLanguages)
+                .softPenaltyOverlapTags(softPenaltyOverlap)
                 .build();
+    }
+
+    private List<String> softPenaltyOverlapTags(List<String> softPenaltyTags, List<String> guideSpecialtyTags) {
+        if (softPenaltyTags == null || guideSpecialtyTags == null || softPenaltyTags.isEmpty() || guideSpecialtyTags.isEmpty()) {
+            return List.of();
+        }
+        Set<String> guideNorm = guideSpecialtyTags.stream()
+                .map(KeywordNormalizer::normalizeTag)
+                .filter(s -> s != null && !s.isBlank())
+                .collect(Collectors.toSet());
+        return softPenaltyTags.stream()
+                .map(KeywordNormalizer::normalizeTag)
+                .filter(s -> s != null && !s.isBlank())
+                .filter(guideNorm::contains)
+                .distinct()
+                .toList();
     }
 
     private List<String> intersectNormalizedTags(List<String> a, List<String> b) {
