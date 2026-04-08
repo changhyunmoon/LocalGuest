@@ -12,6 +12,7 @@ public class PromptParser {
 
     public GuideRecommendRequest parse(
             String prompt,
+            Integer topN,
             List<GuideRecommendRequest.GuideCandidateDto> guideCandidates
     ) {
         String normalizedPrompt = normalize(prompt);
@@ -30,7 +31,7 @@ public class PromptParser {
                 .companionType(companionType)
                 .activityTags(activityTags)
                 .preferredLanguages(preferredLanguages)
-                .topN(3)
+                .topN(topN)
                 .guideCandidates(guideCandidates)
                 .build();
     }

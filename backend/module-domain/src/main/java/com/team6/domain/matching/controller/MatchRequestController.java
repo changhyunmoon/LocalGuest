@@ -1,10 +1,11 @@
 package com.team6.domain.matching.controller;
 
+import com.team6.domain.matching.dto.request.MatchRequestDeclineRequest;
 import com.team6.domain.matching.dto.request.MatchRequestCreateRequest;
+import com.team6.domain.matching.dto.request.MatchRequestProposeRequest;
 import com.team6.domain.matching.dto.response.MatchRequestActionResponse;
 import com.team6.domain.matching.dto.response.MatchRequestCreateResponse;
 import com.team6.domain.matching.service.MatchRequestService;
-import com.team6.domain.matching.entity.MatchRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -71,9 +72,10 @@ public class MatchRequestController {
     @PatchMapping("/{requestId}/propose")
     public ResponseEntity<MatchRequestActionResponse> proposeMatchRequest(
             @PathVariable Long requestId,
-            @RequestParam Long guideId
+            @RequestParam Long guideId,
+            @RequestBody @Valid MatchRequestProposeRequest request
     ) {
-        MatchRequestActionResponse updated = matchRequestService.proposeMatchRequest(guideId, requestId);
+        MatchRequestActionResponse updated = matchRequestService.proposeMatchRequest(guideId, requestId, request);
         return ResponseEntity.ok(updated);
     }
 
@@ -91,6 +93,19 @@ public class MatchRequestController {
             @RequestParam Long guestId
     ) {
         MatchRequestActionResponse updated = matchRequestService.acceptMatchRequest(guestId, requestId);
+        return ResponseEntity.ok(updated);
+    }
+
+    /**
+     * 게스트가 가이드의 제시안을 최종 거절하는 API (F03-06)
+     */
+    @PatchMapping("/{requestId}/decline")
+    public ResponseEntity<MatchRequestActionResponse> declineMatchRequest(
+            @PathVariable Long requestId,
+            @RequestParam Long guestId,
+            @RequestBody @Valid MatchRequestDeclineRequest request
+    ) {
+        MatchRequestActionResponse updated = matchRequestService.declineMatchRequest(guestId, requestId, request);
         return ResponseEntity.ok(updated);
     }
 }

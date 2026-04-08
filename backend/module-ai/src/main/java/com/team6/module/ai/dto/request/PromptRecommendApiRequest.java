@@ -9,5 +9,6 @@ import java.util.List;
 @NoArgsConstructor
 public class PromptRecommendApiRequest {
     private String prompt;
+    private Integer topN;
     private List<GuideRecommendRequest.GuideCandidateDto> guideCandidates;
 }
