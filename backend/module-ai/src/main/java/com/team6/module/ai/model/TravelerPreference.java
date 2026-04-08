@@ -19,4 +19,6 @@ public class TravelerPreference {
     private Integer headcount;
     private Integer durationDays;
     private List<String> excludedActivityTags;
+    /** 활동 매칭 시 가이드 태그와 겹치면 점수 패널티(soft 부정 제약). */
+    private List<String> softPenaltyActivityTags;
 }

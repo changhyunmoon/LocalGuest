@@ -55,6 +55,12 @@ public final class ConceptSummaryGenerator {
             sb.append("제외: ").append(excluded);
         }
 
+        String soft = join(req.getSoftPenaltyActivityTags());
+        if (notBlank(soft)) {
+            if (sb.length() > 0) sb.append(" · ");
+            sb.append("부담 최소: ").append(soft);
+        }
+
         String langs = join(req.getPreferredLanguages());
         if (notBlank(langs)) {
             if (sb.length() > 0) sb.append(" · ");

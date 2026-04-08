@@ -134,6 +134,7 @@ public class PromptRecommendationService {
                 .durationDays(request.getDurationDays())
                 .activityTags(request.getActivityTags())
                 .excludedActivityTags(request.getExcludedActivityTags())
+                .softPenaltyActivityTags(request.getSoftPenaltyActivityTags())
                 .preferredLanguages(request.getPreferredLanguages())
                 .build();
     }

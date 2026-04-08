@@ -97,4 +97,14 @@ class PromptParserTest {
         assertThat(request.getPreferredLanguages()).contains("프랑스어");
         assertThat(request.getActivityTags()).contains("바다");
     }
+
+    @Test
+    void parse_should_extract_soft_penalty_for_heavy_hiking() {
+        GuideRecommendRequest request = promptParser.parse(
+                "제주 여행인데 힘든 등산 코스는 싫어요",
+                3,
+                List.of()
+        );
+        assertThat(request.getSoftPenaltyActivityTags()).contains("등산");
+    }
 }
