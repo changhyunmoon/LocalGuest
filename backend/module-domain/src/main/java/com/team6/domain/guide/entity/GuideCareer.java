@@ -33,4 +33,11 @@ public class GuideCareer extends BaseTimeEntity {
 
     @Column(name = "acquired_at", nullable = false)
     private LocalDate acquiredAt; // 자격 취득일
+
+    public void update(String title, String description, LocalDate acquiredAt) {
+        this.title = title;
+        this.description = description;
+        this.acquiredAt = acquiredAt;
+    }
 }
+

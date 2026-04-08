@@ -22,7 +22,14 @@ public class GuideProfile extends BaseTimeEntity {
     private Long id; // 가이드 프로필 고유 ID (PK)
 
     @Column(name = "member_id", nullable = false, unique = true)
-    private Long memberId; // 회원 ID (JWT에서 추출, 엔티티 직접 참조 금지)
+    private Long memberId; // userId → memberId 로 변경
+
+    // 아래 두 필드 추가
+    @Column(name = "residence_years")
+    private Integer residenceYears; // 거주 연수
+
+    @Column(name = "local_story", columnDefinition = "TEXT")
+    private String localStory; // 로컬 스토리
 
     @Column(nullable = false, length = 50)
     private String nickname; // 가이드 닉네임
@@ -36,7 +43,7 @@ public class GuideProfile extends BaseTimeEntity {
     @Column(nullable = false, length = 100)
     private String region; // 활동 지역
 
-    @Column(length = 100)
+    @Column(length = 50)
     private String language; // 구사 가능 언어
 
     @Column(name = "price_per_hour", precision = 10, scale = 2)
@@ -57,12 +64,6 @@ public class GuideProfile extends BaseTimeEntity {
     @Column(name = "is_active", nullable = false)
     @Builder.Default
     private Boolean isActive = true; // 활성화 여부
-
-    @Column(name = "residence_years")
-    private Integer residenceYears; // 거주 연수
-
-    @Column(name = "local_story", columnDefinition = "TEXT")
-    private String localStory; // 로컬 스토리 소개
 
     // 수정 가능한 필드 업데이트
     public void update(String nickname, String profileImage, String bio,
