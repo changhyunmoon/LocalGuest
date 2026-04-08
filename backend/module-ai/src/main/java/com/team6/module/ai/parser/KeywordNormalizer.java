@@ -2,6 +2,7 @@ package com.team6.module.ai.parser;
 
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Prompt/프로필의 다양한 표현을 canonical 형태로 통일한다.
@@ -10,6 +11,29 @@ import java.util.Map;
 public final class KeywordNormalizer {
 
     private KeywordNormalizer() {
+    }
+
+    /** {@code localguest.ai.parser.tag-synonyms}에서 주입(보조 맵이 있으면 내장보다 우선). */
+    private static final Map<String, String> DYNAMIC_TAG_SYNONYMS = new ConcurrentHashMap<>();
+
+    /**
+     * 설정 기반 동의어를 덮어쓴다. 운영에서 yml만 바꿔 반영할 때 사용.
+     */
+    public static void applyTagSynonymSupplement(Map<String, String> extra) {
+        DYNAMIC_TAG_SYNONYMS.clear();
+        if (extra == null || extra.isEmpty()) {
+            return;
+        }
+        extra.forEach((k, v) -> {
+            if (k == null || v == null) {
+                return;
+            }
+            String key = k.trim();
+            String val = v.trim();
+            if (!key.isEmpty() && !val.isEmpty()) {
+                DYNAMIC_TAG_SYNONYMS.put(key, val);
+            }
+        });
     }
 
     private static final Map<String, String> TAG_SYNONYMS = Map.ofEntries(
@@ -53,6 +77,10 @@ public final class KeywordNormalizer {
         String trimmed = tag.trim();
         if (trimmed.isEmpty()) {
             return null;
+        }
+        String fromDynamic = DYNAMIC_TAG_SYNONYMS.get(trimmed);
+        if (fromDynamic != null) {
+            return fromDynamic;
         }
         String canonical = TAG_SYNONYMS.get(trimmed);
         return canonical != null ? canonical : trimmed;

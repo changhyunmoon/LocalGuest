@@ -21,4 +21,18 @@ public class LocalGuestAiProperties {
      * 지역명 → 인접 지역 목록 (예: 강릉: [속초, 동해]). 비우면 전부 내장 맵.
      */
     private Map<String, List<String>> adjacentRegions = new LinkedHashMap<>();
+
+    /**
+     * 파서 보강(태그 동의어). 비우면 내장 {@link com.team6.module.ai.parser.KeywordNormalizer}만 사용.
+     */
+    private ParserSettings parser = new ParserSettings();
+
+    @Getter
+    @Setter
+    public static class ParserSettings {
+        /**
+         * 입력 표현 → 정규 태그 (예: 커스텀별칭 → 카페).
+         */
+        private Map<String, String> tagSynonyms = new LinkedHashMap<>();
+    }
 }
