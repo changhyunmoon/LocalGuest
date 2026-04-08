@@ -67,7 +67,18 @@ public final class KeywordNormalizer {
             Map.entry("드라이브코스", "산책"),
             Map.entry("골목", "산책"),
             Map.entry("골목투어", "산책"),
-            Map.entry("먹거리", "맛집")
+            Map.entry("먹거리", "맛집"),
+            Map.entry("한옥마을", "한옥"),
+            Map.entry("한옥스테이", "한옥"),
+            Map.entry("놀이공원", "테마파크"),
+            Map.entry("놀이동산", "테마파크"),
+            Map.entry("글램핑", "캠핑"),
+            Map.entry("오토캠핑", "캠핑"),
+            Map.entry("고분", "유적"),
+            Map.entry("왕릉", "유적"),
+            Map.entry("사이클", "자전거"),
+            Map.entry("레포츠", "래프팅"),
+            Map.entry("짚라인", "래프팅")
     );
 
     public static String normalizeTag(String tag) {
