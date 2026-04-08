@@ -164,4 +164,55 @@ class AiRecommendationServiceTest {
         assertThat(response).isNotNull();
         assertThat(response.getRecommendations()).hasSize(1);
     }
+
+    @Test
+    void recommend_should_rerank_for_diversity_when_top_results_are_too_similar() {
+        AiRecommendationService aiRecommendationService = createService();
+
+        GuideRecommendRequest request = GuideRecommendRequest.builder()
+                .region("제주")
+                .budgetLevel("중간")
+                .activityTags(List.of("카페", "바다"))
+                .preferredLanguages(List.of("한국어"))
+                .topN(2)
+                .guideCandidates(List.of(
+                        // A and B are very similar (same region/style/tags) but B has slightly lower base score
+                        GuideRecommendRequest.GuideCandidateDto.builder()
+                                .guideId(1L)
+                                .guideName("A가이드")
+                                .region("제주")
+                                .guideStyle("감성")
+                                .priceLevel("중간")
+                                .specialtyTags(List.of("카페", "바다"))
+                                .languages(List.of("한국어"))
+                                .build(),
+                        GuideRecommendRequest.GuideCandidateDto.builder()
+                                .guideId(2L)
+                                .guideName("B가이드")
+                                .region("제주")
+                                .guideStyle("감성")
+                                .priceLevel("중간")
+                                .specialtyTags(List.of("카페", "바다"))
+                                .languages(List.of("한국어"))
+                                .build(),
+                        // C is slightly less matched but provides diversity (different style/tags)
+                        GuideRecommendRequest.GuideCandidateDto.builder()
+                                .guideId(3L)
+                                .guideName("C가이드")
+                                .region("제주")
+                                .guideStyle("로컬")
+                                .priceLevel("중간")
+                                .specialtyTags(List.of("카페", "바다"))
+                                .languages(List.of("한국어"))
+                                .build()
+                ))
+                .build();
+
+        GuideRecommendResponse response = aiRecommendationService.recommend(request);
+
+        assertThat(response.getRecommendations()).hasSize(2);
+        assertThat(response.getRecommendations().get(0).getGuideId()).isEqualTo(1L);
+        // Diversity rerank should prefer C over B for the second slot
+        assertThat(response.getRecommendations().get(1).getGuideId()).isEqualTo(3L);
+    }
 }
