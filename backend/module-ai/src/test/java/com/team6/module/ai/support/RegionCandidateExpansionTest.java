@@ -31,6 +31,17 @@ class RegionCandidateExpansionTest {
         assertThat(r.expansionUsed()).isTrue();
     }
 
+    @Test
+    void apply_should_expand_daegu_to_nearby_when_sparse() {
+        List<GuideRecommendRequest.GuideCandidateDto> pool = List.of(
+                g(1L, "대구"),
+                g(2L, "구미")
+        );
+        RegionCandidateExpansion.Result r = RegionCandidateExpansion.apply(pool, "대구");
+        assertThat(r.candidates()).hasSize(2);
+        assertThat(r.expansionUsed()).isTrue();
+    }
+
     private static GuideRecommendRequest.GuideCandidateDto g(long id, String region) {
         return GuideRecommendRequest.GuideCandidateDto.builder()
                 .guideId(id)

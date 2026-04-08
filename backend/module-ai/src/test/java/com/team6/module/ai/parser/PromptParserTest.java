@@ -78,4 +78,23 @@ class PromptParserTest {
         GuideRecommendRequest request = promptParser.parse("부산 브런치랑 일몰 보고 싶어", 3, List.of());
         assertThat(request.getActivityTags()).contains("카페", "야경");
     }
+
+    @Test
+    void parse_should_extract_additional_regions() {
+        assertThat(promptParser.parse("대구 야시장 맛집", 3, List.of()).getRegion()).isEqualTo("대구");
+        assertThat(promptParser.parse("여수 밤바다 야경", 3, List.of()).getRegion()).isEqualTo("여수");
+        assertThat(promptParser.parse("통영 케이블카", 3, List.of()).getRegion()).isEqualTo("통영");
+    }
+
+    @Test
+    void parse_should_extract_extra_languages_and_normalize_surfing() {
+        GuideRecommendRequest request = promptParser.parse(
+                "전주 한옥마을이랑 french 가이드, 서핑도 해보고 싶어",
+                3,
+                List.of()
+        );
+        assertThat(request.getRegion()).isEqualTo("전주");
+        assertThat(request.getPreferredLanguages()).contains("프랑스어");
+        assertThat(request.getActivityTags()).contains("바다");
+    }
 }

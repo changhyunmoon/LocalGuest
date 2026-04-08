@@ -34,7 +34,13 @@ public final class KeywordNormalizer {
             Map.entry("노을", "야경"),
             Map.entry("야경명소", "야경"),
             Map.entry("쇼핑몰", "쇼핑"),
-            Map.entry("아울렛", "쇼핑")
+            Map.entry("아울렛", "쇼핑"),
+            Map.entry("노천탕", "온천"),
+            Map.entry("스파", "온천"),
+            Map.entry("서핑", "바다"),
+            Map.entry("서핑하기", "바다"),
+            Map.entry("드라이브", "산책"),
+            Map.entry("드라이브코스", "산책")
     );
 
     public static String normalizeTag(String tag) {
@@ -63,6 +69,9 @@ public final class KeywordNormalizer {
             case "jp", "japanese", "ja", "일본어" -> "일본어";
             case "cn", "chinese", "zh", "중국어" -> "중국어";
             case "kr", "korean", "ko", "한국어" -> "한국어";
+            case "fr", "french", "français", "프랑스어", "프랑스" -> "프랑스어";
+            case "es", "spanish", "español", "스페인어", "스페인" -> "스페인어";
+            case "de", "german", "deutsch", "독일어", "독일" -> "독일어";
             default -> trimmed;
         };
     }

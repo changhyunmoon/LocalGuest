@@ -70,6 +70,18 @@ public class PromptParser {
         if (containsAny(prompt, "제주", "제주도")) return "제주";
         if (containsAny(prompt, "강릉")) return "강릉";
         if (containsAny(prompt, "경주")) return "경주";
+        if (containsAny(prompt, "대구")) return "대구";
+        if (containsAny(prompt, "전주")) return "전주";
+        if (containsAny(prompt, "여수")) return "여수";
+        if (containsAny(prompt, "순천")) return "순천";
+        if (containsAny(prompt, "군산")) return "군산";
+        if (containsAny(prompt, "춘천")) return "춘천";
+        if (containsAny(prompt, "통영")) return "통영";
+        if (containsAny(prompt, "거제")) return "거제";
+        if (containsAny(prompt, "목포")) return "목포";
+        if (containsAny(prompt, "태안")) return "태안";
+        if (containsAny(prompt, "인천")) return "인천";
+        if (containsAny(prompt, "수원")) return "수원";
         return null;
     }
 
@@ -98,7 +110,7 @@ public class PromptParser {
             return "높음";
         }
 
-        if (containsAny(prompt, "저렴", "가성비", "싸게", "예산 적게")) return "낮음";
+        if (containsAny(prompt, "저렴", "가성비", "싸게", "예산 적게", "착한 가격", "가격 부담")) return "낮음";
         if (containsAny(prompt, "적당", "무난", "보통", "중간")) return "중간";
         if (containsAny(prompt, "럭셔리", "고급", "비싸도", "프리미엄", "플렉스")) return "높음";
         return null;
@@ -130,6 +142,10 @@ public class PromptParser {
         if (containsAny(prompt, "술집", "클럽", "바")) tags.add("술집");
         if (containsAny(prompt, "브런치", "카페투어")) tags.add("브런치");
         if (containsAny(prompt, "쇼핑몰", "아울렛")) tags.add("쇼핑몰");
+        if (containsAny(prompt, "온천", "노천탕", "스파")) tags.add("온천");
+        if (containsAny(prompt, "골프", "골프장")) tags.add("골프");
+        if (containsAny(prompt, "서핑", "서핑하기")) tags.add("서핑");
+        if (containsAny(prompt, "드라이브", "드라이브코스")) tags.add("드라이브");
 
         return normalizeTagList(tags);
     }
@@ -171,6 +187,9 @@ public class PromptParser {
         if (containsAny(prompt, "영어", "english", "eng")) languages.add("영어");
         if (containsAny(prompt, "일본어", "japanese", "jp")) languages.add("일본어");
         if (containsAny(prompt, "중국어", "chinese", "cn")) languages.add("중국어");
+        if (containsAny(prompt, "프랑스어", "프랑스", "french", "français")) languages.add("프랑스어");
+        if (containsAny(prompt, "스페인어", "스페인", "spanish", "español")) languages.add("스페인어");
+        if (containsAny(prompt, "독일어", "독일", "german", "deutsch")) languages.add("독일어");
 
         return new ArrayList<>(languages);
     }
