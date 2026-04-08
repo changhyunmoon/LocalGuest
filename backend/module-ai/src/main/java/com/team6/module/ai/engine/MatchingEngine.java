@@ -36,8 +36,8 @@ public class MatchingEngine {
         List<ScoredGuide> scored = guides.stream()
                 .map(guide -> {
                     int score = scoreCalculator.calculate(preference, guide);
-                    String reason = reasonGenerator.generate(preference, guide, score);
-                    return new ScoredGuide(guide, score, reason);
+                    ReasonBundle bundle = reasonGenerator.generate(preference, guide, score);
+                    return new ScoredGuide(guide, score, bundle);
                 })
                 .sorted(Comparator.comparingInt(ScoredGuide::baseScore).reversed())
                 .toList();
@@ -48,7 +48,9 @@ public class MatchingEngine {
                         .guideId(sg.guide.getGuideId())
                         .guideName(sg.guide.getGuideName())
                         .score(sg.baseScore)
-                        .reason(sg.reason)
+                        .reason(sg.bundle.getText())
+                        .reasonCodes(sg.bundle.getReasonCodes())
+                        .reasonFacts(toResponseFacts(sg.bundle))
                         .matched(buildMatchedEvidence(preference, sg.guide))
                         .build())
                 .toList();
@@ -202,6 +204,18 @@ public class MatchingEngine {
                 .toList();
     }
 
-    private record ScoredGuide(GuideAiProfile guide, int baseScore, String reason) {
+    private List<GuideRecommendItem.ReasonFact> toResponseFacts(ReasonBundle bundle) {
+        if (bundle == null || bundle.getReasonFacts() == null || bundle.getReasonFacts().isEmpty()) {
+            return List.of();
+        }
+        return bundle.getReasonFacts().stream()
+                .map(f -> GuideRecommendItem.ReasonFact.builder()
+                        .code(f.getCode())
+                        .values(f.getValues())
+                        .build())
+                .toList();
+    }
+
+    private record ScoredGuide(GuideAiProfile guide, int baseScore, ReasonBundle bundle) {
     }
 }
