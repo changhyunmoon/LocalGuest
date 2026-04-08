@@ -4,10 +4,10 @@ import com.team6.module.ai.dto.request.GuideRecommendRequest;
 import com.team6.module.ai.dto.response.GuideRecommendResponse;
 import com.team6.module.ai.parser.PromptParser;
 import com.team6.module.ai.support.AdjacentRegionProvider;
+import com.team6.module.ai.support.AiRecommendationMetrics;
 import com.team6.module.ai.support.AiRecommendationTuning;
 import com.team6.module.ai.support.ConceptSummaryGenerator;
 import com.team6.module.ai.support.RegionCandidateExpansion;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -20,12 +20,24 @@ import java.util.stream.Collectors;
 
 @Service
 @Slf4j
-@RequiredArgsConstructor
 public class PromptRecommendationService {
 
     private final PromptParser promptParser;
     private final AiRecommendationService aiRecommendationService;
     private final AdjacentRegionProvider adjacentRegionProvider;
+    private final AiRecommendationMetrics metrics;
+
+    public PromptRecommendationService(
+            PromptParser promptParser,
+            AiRecommendationService aiRecommendationService,
+            AdjacentRegionProvider adjacentRegionProvider,
+            AiRecommendationMetrics metrics
+    ) {
+        this.promptParser = promptParser;
+        this.aiRecommendationService = aiRecommendationService;
+        this.adjacentRegionProvider = adjacentRegionProvider;
+        this.metrics = metrics;
+    }
 
     private static final String NOTICE_REGION_REQUIRED =
             "여행하고 싶은 지역을 알려주시면 더 정확하게 추천할 수 있어요.";
@@ -40,6 +52,8 @@ public class PromptRecommendationService {
             Integer topN,
             List<GuideRecommendRequest.GuideCandidateDto> guideCandidates
     ) {
+        metrics.recordPromptRecommendCall();
+
         Integer resolvedTopN = (topN == null || topN <= 0)
                 ? AiRecommendationTuning.DEFAULT_TOP_N
                 : topN;
@@ -62,6 +76,7 @@ public class PromptRecommendationService {
                     poolSize(parsed.getGuideCandidates()),
                     0
             );
+            metrics.recordNoRegionShortCircuit();
             return GuideRecommendResponse.builder()
                     .conceptSummary(ConceptSummaryGenerator.generate(parsed))
                     .keywords(keywordsFrom(parsed))
@@ -111,10 +126,16 @@ public class PromptRecommendationService {
         String notice = decision.notice;
         if (expansion.expansionUsed()) {
             notice = mergeNotice(NOTICE_ADJACENT_INCLUDED, notice);
+            metrics.recordRegionExpansion();
         }
         int effectivePoolSizeForNotice = poolSize(expansion.candidates());
         if (effectivePoolSizeForNotice == 1 && finalBase.getTotalCount() > 0) {
             notice = mergeNotice(NOTICE_SPARSE_GUIDE_POOL, notice);
+            metrics.recordSparsePoolNotice();
+        }
+
+        if (decision.shouldFallback) {
+            metrics.recordFallback(decision.stage.name());
         }
 
         logRecommendation(
