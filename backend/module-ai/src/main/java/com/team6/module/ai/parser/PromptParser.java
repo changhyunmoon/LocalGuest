@@ -15,9 +15,11 @@ import java.util.regex.Pattern;
 public class PromptParser {
 
     private static final Pattern BUDGET_WON = Pattern.compile("(\\d{1,3}(?:,\\d{3})+|\\d+)\\s*(원|만원)");
+    private static final Pattern BUDGET_MANWON_BAND = Pattern.compile("(\\d+)\\s*만원\\s*대");
     private static final Pattern HEADCOUNT = Pattern.compile("(\\d+)\\s*(명|인)");
     private static final Pattern DURATION_NIGHTS_DAYS = Pattern.compile("(\\d+)\\s*박\\s*(\\d+)\\s*일");
     private static final Pattern DURATION_DAYS = Pattern.compile("(\\d+)\\s*일");
+    private static final Pattern DURATION_WEEKS = Pattern.compile("(\\d+)\\s*주");
 
     public GuideRecommendRequest parse(
             String prompt,
@@ -85,9 +87,18 @@ public class PromptParser {
             return "높음";
         }
 
+        Integer band = extractBudgetBand(prompt);
+        if (band != null) {
+            // ex) "10만원대" -> 대략 10~19만원 구간으로 간주
+            int approx = band * 10_000;
+            if (approx <= 100_000) return "낮음";
+            if (approx <= 300_000) return "중간";
+            return "높음";
+        }
+
         if (containsAny(prompt, "저렴", "가성비", "싸게", "예산 적게")) return "낮음";
         if (containsAny(prompt, "적당", "무난", "보통", "중간")) return "중간";
-        if (containsAny(prompt, "럭셔리", "고급", "비싸도", "프리미엄")) return "높음";
+        if (containsAny(prompt, "럭셔리", "고급", "비싸도", "프리미엄", "플렉스")) return "높음";
         return null;
     }
 
@@ -95,6 +106,7 @@ public class PromptParser {
         if (containsAny(prompt, "혼자", "혼행", "1인")) return "혼자";
         if (containsAny(prompt, "친구", "친구랑", "우정", "동창")) return "친구";
         if (containsAny(prompt, "가족", "부모님", "엄마", "아빠", "아이", "애기")) return "가족";
+        if (containsAny(prompt, "반려견", "강아지", "댕댕이", "반려동물")) return "반려견";
         if (containsAny(prompt, "연인", "커플", "데이트", "여자친구", "남자친구")) return "연인";
         return null;
     }
@@ -118,12 +130,12 @@ public class PromptParser {
     }
 
     private List<String> extractExcludedActivityTags(String prompt) {
-        // 간단 룰: "<키워드> ... (빼고|제외|말고)" 형태를 포함하면 제외 태그로 등록
+        // 간단 룰: 제외 의도 + 태그 키워드가 같이 등장하면 제외 태그로 등록
         Set<String> excluded = new LinkedHashSet<>();
-        if (containsAny(prompt, "빼고", "제외", "말고")) {
-            if (containsAny(prompt, "술집", "클럽", "바") && containsAny(prompt, "빼고", "제외", "말고")) excluded.add("술집");
-            if (containsAny(prompt, "등산", "트레킹") && containsAny(prompt, "빼고", "제외", "말고")) excluded.add("등산");
-            if (containsAny(prompt, "쇼핑") && containsAny(prompt, "빼고", "제외", "말고")) excluded.add("쇼핑");
+        if (containsAny(prompt, "빼고", "제외", "말고", "싫어", "안 가", "안가", "원치 않아", "원치않아")) {
+            if (containsAny(prompt, "술집", "클럽", "바")) excluded.add("술집");
+            if (containsAny(prompt, "등산", "트레킹")) excluded.add("등산");
+            if (containsAny(prompt, "쇼핑")) excluded.add("쇼핑");
         }
         return new ArrayList<>(excluded);
     }
@@ -183,10 +195,26 @@ public class PromptParser {
     }
 
     private Integer extractDurationDays(String prompt) {
+        if (containsAny(prompt, "당일치기", "당일")) {
+            return 1;
+        }
+        if (containsAny(prompt, "주말")) {
+            return 2;
+        }
+
         Matcher m = DURATION_NIGHTS_DAYS.matcher(prompt);
         if (m.find()) {
             try {
                 int days = Integer.parseInt(m.group(2));
+                return (days <= 0 || days > 30) ? null : days;
+            } catch (NumberFormatException ignored) {
+            }
+        }
+        Matcher w = DURATION_WEEKS.matcher(prompt);
+        if (w.find()) {
+            try {
+                int weeks = Integer.parseInt(w.group(1));
+                int days = weeks * 7;
                 return (days <= 0 || days > 30) ? null : days;
             } catch (NumberFormatException ignored) {
             }
@@ -200,5 +228,18 @@ public class PromptParser {
             }
         }
         return null;
+    }
+
+    private Integer extractBudgetBand(String prompt) {
+        Matcher m = BUDGET_MANWON_BAND.matcher(prompt);
+        if (!m.find()) {
+            return null;
+        }
+        try {
+            int n = Integer.parseInt(m.group(1));
+            return (n <= 0 || n > 10_000) ? null : n;
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 }

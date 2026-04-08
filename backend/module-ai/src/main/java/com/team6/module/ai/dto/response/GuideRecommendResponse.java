@@ -10,6 +10,7 @@ import java.util.List;
 public class GuideRecommendResponse {
     private String conceptSummary;
     private Keywords keywords;
+    private String notice;
     private int totalCount;
     private List<GuideRecommendItem> recommendations;
 
