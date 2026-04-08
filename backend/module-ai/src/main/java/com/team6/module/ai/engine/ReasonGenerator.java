@@ -6,6 +6,8 @@ import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Component
 public class ReasonGenerator {
@@ -21,13 +23,28 @@ public class ReasonGenerator {
             reasons.add("여행 스타일이 유사");
         }
 
-        if (pref.getActivityTags() != null && guide.getSpecialtyTags() != null) {
-            long matched = pref.getActivityTags().stream()
-                    .filter(guide.getSpecialtyTags()::contains)
-                    .count();
+        if (safeEquals(pref.getBudgetLevel(), guide.getPriceLevel())) {
+            reasons.add("예산대가 비슷");
+        }
 
-            if (matched > 0) {
-                reasons.add("관심 활동 태그가 " + matched + "개 일치");
+        if (pref.getPreferredLanguages() != null && guide.getLanguages() != null) {
+            Set<String> matchedLanguages = pref.getPreferredLanguages().stream()
+                    .filter(guide.getLanguages()::contains)
+                    .collect(Collectors.toSet());
+            if (!matchedLanguages.isEmpty()) {
+                reasons.add("가능 언어(" + String.join("/", matchedLanguages) + ")");
+            }
+        }
+
+        if (pref.getActivityTags() != null && guide.getSpecialtyTags() != null) {
+            List<String> matched = pref.getActivityTags().stream()
+                    .filter(guide.getSpecialtyTags()::contains)
+                    .distinct()
+                    .toList();
+
+            if (!matched.isEmpty()) {
+                String head = matched.stream().limit(3).collect(Collectors.joining("/"));
+                reasons.add("관심 활동(" + head + (matched.size() > 3 ? " 외" : "") + ")");
             }
         }
 
@@ -35,7 +52,7 @@ public class ReasonGenerator {
             reasons.add("전체 선호도 기준으로 적합");
         }
 
-        return String.join(", ", reasons);
+        return String.join(" · ", reasons);
     }
 
     private boolean safeEquals(String a, String b) {
