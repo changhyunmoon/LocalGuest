@@ -16,6 +16,7 @@ import com.team6.module.ai.service.AiRecommendationServiceImpl;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Objects;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -47,6 +48,12 @@ class AiRecommendationRegressionTest {
                     .isEqualTo(s.expectedTop1GuideId());
 
             assertThat(top1.getReason()).as("reason should be present").isNotBlank();
+            assertThat(top1.getReasonCodes()).as("reasonCodes should be present for prompt: %s".formatted(s.prompt()))
+                    .isNotNull()
+                    .isNotEmpty();
+            assertThat(top1.getReasonCodes().stream().filter(Objects::nonNull).noneMatch(String::isBlank))
+                    .as("reasonCodes should not contain blank entries")
+                    .isTrue();
             assertThat(top1.getMatched()).as("matched evidence should be present").isNotNull();
 
             if (s.expectedTag() != null) {
@@ -81,7 +88,11 @@ class AiRecommendationRegressionTest {
                 new Scenario("제주 2박3일 4명 여행인데 술집은 빼고 카페 바다", 3, 2L, "카페", null),
                 new Scenario("부산 감성 사진 인생샷 카페", 3, 1L, "사진", null),
                 new Scenario("서울 전시 미술관 박물관", 3, 3L, "전시", null),
-                new Scenario("제주 시장 로컬 골목 여행", 3, 5L, "시장", null)
+                new Scenario("제주 시장 로컬 골목 여행", 3, 5L, "시장", null),
+                new Scenario("부산 브런치 감성 카페 추천해줘", 3, 1L, "카페", null),
+                new Scenario("제주 주말 바다 해수욕장 위주로", 3, 2L, "바다", null),
+                new Scenario("강릉 일몰 노을 바다 산책 코스", 3, 4L, "바다", null),
+                new Scenario("서울 아울렛 럭셔리 쇼핑 영어 가능한 가이드", 3, 3L, "쇼핑", "영어")
         );
     }
 

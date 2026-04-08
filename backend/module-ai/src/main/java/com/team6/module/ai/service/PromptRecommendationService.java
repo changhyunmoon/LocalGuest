@@ -8,9 +8,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import com.team6.module.ai.dto.response.GuideRecommendItem;
+
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -72,6 +75,23 @@ public class PromptRecommendationService {
             return 0;
         }
         return resp.getRecommendations().get(0).getScore();
+    }
+
+    /**
+     * 운영 로그용: Top1 추천의 구조화 근거 코드를 짧게 요약(개인정보 없음).
+     */
+    private static String summarizeTopReasonCodes(GuideRecommendResponse resp) {
+        if (resp == null || resp.getRecommendations() == null || resp.getRecommendations().isEmpty()) {
+            return "";
+        }
+        GuideRecommendItem top = resp.getRecommendations().get(0);
+        if (top.getReasonCodes() == null || top.getReasonCodes().isEmpty()) {
+            return "";
+        }
+        return top.getReasonCodes().stream()
+                .filter(Objects::nonNull)
+                .filter(s -> !s.isBlank())
+                .collect(Collectors.joining("|"));
     }
 
     private FallbackDecision decideFallback(GuideRecommendRequest request, GuideRecommendResponse base) {
@@ -166,8 +186,9 @@ public class PromptRecommendationService {
             int candidateCount = guideCandidates == null ? 0 : guideCandidates.size();
             int baseTopScore = topScore(base);
             int finalTopScore = topScore(finalBase);
+            String top1ReasonCodes = summarizeTopReasonCodes(finalBase);
 
-            log.info("[AI_RECOMMEND] promptHash={} topN={} candidates={} keywords={{region={},style={},budget={},companion={},headcount={},durationDays={},tags={},excluded={},langs={}}} base={{count={},topScore={}}} final={{count={},topScore={}}} fallback={{used={},stage={}}}",
+            log.info("[AI_RECOMMEND] promptHash={} topN={} candidates={} keywords={{region={},style={},budget={},companion={},headcount={},durationDays={},tags={},excluded={},langs={}}} base={{count={},topScore={}}} final={{count={},topScore={},top1ReasonCodes={}}} fallback={{used={},stage={}}}",
                     promptHash,
                     request == null ? null : request.getTopN(),
                     candidateCount,
@@ -184,6 +205,7 @@ public class PromptRecommendationService {
                     baseTopScore,
                     finalBase == null ? 0 : finalBase.getTotalCount(),
                     finalTopScore,
+                    top1ReasonCodes,
                     decision != null && decision.shouldFallback,
                     decision == null ? null : decision.stage
             );
