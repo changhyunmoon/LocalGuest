@@ -4,6 +4,7 @@ import com.team6.domain.auth.config.PasswordConfig;
 import com.team6.domain.member.entity.Member;
 import com.team6.domain.member.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
+import org.apache.catalina.security.SecurityUtil;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -39,5 +40,10 @@ public class MemberService {
             // [LOG] WARN : [Member-Domain] 중복 회원 가입 시도 감지
             throw new IllegalStateException("이미 존재하는 회원입니다. ");
         }
+    }
+
+    // 회원 탈퇴 기능 - common-module에 securityUtil구현 후 구현 가능
+    public void withdraw() {
+
     }
 }

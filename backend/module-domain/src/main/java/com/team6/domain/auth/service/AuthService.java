@@ -35,9 +35,24 @@ public class AuthService {
         // 검증 성공 시 토큰 생성 및 반환
         // [LOG] INFO : [Auth-Domain] 로그인 성공 및 토큰 발행 (Email : {})
         String role = member.getRole().name();
-        String token = jwtTokenProvider.createToken(member.getEmail(), role);
+        return jwtTokenProvider.createToken(member.getEmail(), role);
+    }
 
-        return token;
+    @Transactional
+    public void logout(String accessToken) {
+        // 1. 토큰에서 만료 시간 등을 추출 (jwtTokenProvider 이용)
+        // 2. Redis에 'logout:토큰값' 형식으로 저장하여 남은 시간 동안 접근 차단
+        // 지금은 Redis 설정 전이므로 로그와 함께 추후 구현 주석 남김
+
+        // [LOG] INFO : 로그아웃 요청 처리 중
+        if (accessToken == null || !accessToken.startsWith("Bearer ")) {
+            throw new IllegalArgumentException("유효하지 않은 토큰 형식입니다.");
+        }
+
+        String actualToken = accessToken.substring(7);
+
+        // TODO: redisTemplate.opsForValue().set(actualToken, "logout", expiration, TimeUnit.MILLISECONDS);
+        System.out.println("서버 측 로그아웃 처리 완료 (Blacklist 등록 대기): " + actualToken);
     }
 
 
