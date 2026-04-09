@@ -27,8 +27,10 @@ public class JwtTokenProvider {
 
     public String createToken(String email, String role) {
         // [LOG] INFO : [Auth-Domain] JWT 토큰 생성 시작 (Target : {})
-        Claims claims = Jwts.claims().subject(email).build();
-        claims.put("role", role);
+        Claims claims = Jwts.claims()
+                .subject(email)
+                .add("role", role)
+                .build();
 
         Date now = new Date();
         Date validity = new Date(now.getTime() + tokenValidityInMilliseconds);
@@ -39,5 +41,25 @@ public class JwtTokenProvider {
                 .setExpiration(validity)
                 .signWith(key, SignatureAlgorithm.HS256)
                 .compact();
+    }
+
+    public boolean validToken(String token) {
+        try{
+            Jwts.parser().setSigningKey(key).build().parseClaimsJws(token);
+            return true;
+        }catch (Exception e) {
+            //[LOG] Warn : 유효하지 않은 토큰입니다.
+            return false;
+
+        }
+    }
+
+    public String getEmail(String token) {
+        return Jwts.parser()
+                .setSigningKey(key)
+                .build()
+                .parseClaimsJws(token)
+                .getBody()
+                .getSubject();
     }
 }

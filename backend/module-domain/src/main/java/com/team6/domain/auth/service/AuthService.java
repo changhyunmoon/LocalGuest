@@ -15,7 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class AuthService {
     private final MemberRepository memberRepository;
     private final PasswordEncoder passwordEncoder;
-    private JwtTokenProvider jwtTokenProvider;
+    private final JwtTokenProvider jwtTokenProvider;
 
     // 로그인 로직
     public String login(String email, String password) {
@@ -30,11 +30,7 @@ public class AuthService {
 
         // 비밀번호 검증
         // [LOG] DEBUG : [Auth-Domain] 비밀번호 일치 여부 확인 중
-        if(!passwordEncoder.matches(password, member.getPassword())) {
-            // [LOG] Warn : 로그인 실패 - 비밀번호 불일치
-            System.out.println("로그인 실패 : 비밀번호 불일치");
-            throw new IllegalArgumentException("이메일 또는 비밀번호를 잘못 입력하였습니다. ");
-        }
+        member.validatePassword(passwordEncoder, password);
 
         // 검증 성공 시 토큰 생성 및 반환
         // [LOG] INFO : [Auth-Domain] 로그인 성공 및 토큰 발행 (Email : {})
