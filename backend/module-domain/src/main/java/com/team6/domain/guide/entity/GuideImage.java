@@ -20,7 +20,11 @@ public class GuideImage extends BaseTimeEntity {
     private Long id; // 이미지 고유 ID (PK)
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "guide_id", nullable = false)
+    @JoinColumn(
+            name = "guide_id",
+            nullable = false,
+            foreignKey = @ForeignKey(name = "fk_guide_images_guide")
+    )
     private GuideProfile guideProfile; // 가이드 프로필 (guide_profiles FK)
 
     @Column(name = "image_url", nullable = false, length = 500)

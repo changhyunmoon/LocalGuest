@@ -1,6 +1,8 @@
 package com.team6.domain.matching.entity;
 
 import com.team6.domain.matching.entity.enums.TourExtensionStatus;
+import com.team6.domain.matching.exception.MatchingErrorCode;
+import com.team6.domain.matching.exception.MatchingException;
 import com.team6.module.common.global.entity.BaseTimeEntity;
 import jakarta.persistence.*;
 import lombok.*;
@@ -26,7 +28,11 @@ public class TourExtension extends BaseTimeEntity {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "match_request_id", nullable = false)
+    @JoinColumn(
+            name = "match_request_id",
+            nullable = false,
+            foreignKey = @ForeignKey(name = "fk_extension_match_req")
+    )
     private MatchRequest matchRequest;  // MATCH_REQUEST FK
 
     // TODO: Member 엔티티 완성 후 @ManyToOne으로 교체
@@ -70,8 +76,19 @@ public class TourExtension extends BaseTimeEntity {
         this.status = TourExtensionStatus.AUTO_CANCELLED;
     }
 
+    // 게스트가 연장하지 않음을 선택
+    public void rejectByGuest() {
+        if (this.status != TourExtensionStatus.REQUESTED) {
+            throw new MatchingException(MatchingErrorCode.MATCH_REQUEST_INVALID_STATUS);
+        }
+        this.status = TourExtensionStatus.REJECTED;
+    }
+
     // 연장 결제 완료
-    public void completePay() {
+    public void completePayByGuestSelection() {
+        if (this.status != TourExtensionStatus.REQUESTED) {
+            throw new MatchingException(MatchingErrorCode.MATCH_REQUEST_INVALID_STATUS);
+        }
         this.status = TourExtensionStatus.PAID;
     }
 }
