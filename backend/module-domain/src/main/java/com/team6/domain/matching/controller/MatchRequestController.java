@@ -1,5 +1,6 @@
 package com.team6.domain.matching.controller;
 
+import com.team6.domain.matching.dto.request.CancelRequestDto;
 import com.team6.domain.matching.dto.request.MatchRequestDeclineRequest;
 import com.team6.domain.matching.dto.request.MatchRequestCreateRequest;
 import com.team6.domain.matching.dto.request.MatchRequestProposeRequest;
@@ -106,6 +107,30 @@ public class MatchRequestController {
             @RequestBody @Valid MatchRequestDeclineRequest request
     ) {
         MatchRequestActionResponse updated = matchRequestService.declineMatchRequest(guestId, requestId, request);
+        return ResponseEntity.ok(updated);
+    }
+
+    @PatchMapping("/{requestId}/guest/cancel")
+    public ResponseEntity<MatchRequestActionResponse> cancelByGuest(
+            @PathVariable Long requestId,
+            @RequestParam Long guestId,
+            @RequestBody @Valid CancelRequestDto request
+    ) {
+        // TODO: 인증 모듈 연동 시 guestId는 토큰 클레임에서 추출한다.
+        MatchRequestActionResponse updated =
+                matchRequestService.cancelByGuest(guestId, requestId, request.getCancelReason());
+        return ResponseEntity.ok(updated);
+    }
+
+    @PatchMapping("/{requestId}/guide/cancel")
+    public ResponseEntity<MatchRequestActionResponse> cancelByGuide(
+            @PathVariable Long requestId,
+            @RequestParam Long guideId,
+            @RequestBody @Valid CancelRequestDto request
+    ) {
+        // TODO: 인증 모듈 연동 시 guideId는 토큰 클레임에서 추출한다.
+        MatchRequestActionResponse updated =
+                matchRequestService.cancelByGuide(guideId, requestId, request.getCancelReason());
         return ResponseEntity.ok(updated);
     }
 }
