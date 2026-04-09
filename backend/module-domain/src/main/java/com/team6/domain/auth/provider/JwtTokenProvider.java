@@ -27,9 +27,10 @@ public class JwtTokenProvider {
 
     public String createToken(String email, String role) {
         // [LOG] INFO : [Auth-Domain] JWT 토큰 생성 시작 (Target : {})
+
         Claims claims = Jwts.claims()
                 .subject(email)
-                .add("role", member.getRole().name())
+                .add("role", role)
                 .build();
 
         Date now = new Date();
