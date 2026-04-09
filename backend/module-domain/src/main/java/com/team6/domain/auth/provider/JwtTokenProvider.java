@@ -1,4 +1,4 @@
-package com.team6.domain.member.service;
+package com.team6.domain.auth.provider;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
