@@ -1,15 +1,18 @@
 package com.team6.module.chat.dto.request;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
 import java.util.List;
 
-public record ChatRoomCreateRequest(
-        String title,
-        Long ownerId,
-        String ownerNickname,
-        List<ParticipantInfo> participants // 초대할 인원 목록
-) {
-    public record ParticipantInfo(
-            Long userId,
-            String nickname
-    ) {}
+@Getter
+@NoArgsConstructor
+public class ChatRoomCreateRequest {
+    @NotBlank(message = "채팅방 이름은 필수입니다.")
+    private String title;
+
+    @NotEmpty(message = "최소 한 명 이상의 참여자를 선택해야 합니다.")
+    private List<Long> participantUserIds; // 초대된 유저 ID 리스트
 }
