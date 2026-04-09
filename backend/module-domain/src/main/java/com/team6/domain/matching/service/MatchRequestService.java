@@ -1,6 +1,8 @@
 package com.team6.domain.matching.service;
 
 import com.team6.domain.matching.dto.request.MatchRequestCreateRequest;
+import com.team6.domain.matching.dto.request.MatchRequestDeclineRequest;
+import com.team6.domain.matching.dto.request.MatchRequestProposeRequest;
 import com.team6.domain.matching.dto.response.MatchRequestCreateResponse;
 import com.team6.domain.matching.dto.response.MatchRequestActionResponse;
 import com.team6.domain.matching.entity.MatchRequest;
@@ -12,7 +14,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.text.NumberFormat;
 import java.util.List;
+import java.util.Locale;
 
 @Slf4j
 @Service
@@ -26,16 +30,18 @@ public class MatchRequestService {
     public MatchRequestCreateResponse createMatchRequest(Long guestId, MatchRequestCreateRequest request) {
         validateCreateRequest(guestId, request);
 
+        String conceptSummary = resolveConceptSummary(request);
         MatchRequest matchRequest = MatchRequest.create(
                 guestId,
                 request.getGuideId(),
                 request.getDestination(),
                 request.getConcept(),
+                conceptSummary,
                 request.getDesiredDate(),
                 request.getDesiredBudget()
         );
 
-        log.info("[MatchRequest] 매칭 요청 생성 — guestId={}, guideId={}", guestId, request.getGuideId());
+        log.info("[F03-04] 매칭 요청 생성 — guestId={}, guideId={}", guestId, request.getGuideId());
         return MatchRequestCreateResponse.from(matchRequestRepository.save(matchRequest));
     }
 
@@ -62,7 +68,7 @@ public class MatchRequestService {
     }
 
     // 가이드 제안 단계로 변경
-    public MatchRequestActionResponse proposeMatchRequest(Long guideId, Long requestId) {
+    public MatchRequestActionResponse proposeMatchRequest(Long guideId, Long requestId, MatchRequestProposeRequest request) {
         MatchRequest matchRequest = matchRequestRepository.findById(requestId)
                 .orElseThrow(() -> new MatchingException(MatchingErrorCode.MATCH_REQUEST_NOT_FOUND));
 
@@ -70,8 +76,8 @@ public class MatchRequestService {
             throw new MatchingException(MatchingErrorCode.MATCH_REQUEST_UNAUTHORIZED);
         }
 
-        matchRequest.propose();
-        log.info("[MatchRequest] 가이드 제안 — requestId={}, guideId={}", requestId, guideId);
+        matchRequest.applyProposal(request.getProposedSchedule(), request.getProposeMessage());
+        log.info("[F03-05] 가이드 제시안 등록 — requestId={}, guideId={}", requestId, guideId);
         return MatchRequestActionResponse.from(matchRequest);
     }
 
@@ -85,7 +91,21 @@ public class MatchRequestService {
         }
 
         matchRequest.accept();
-        log.info("[MatchRequest] 게스트 수락 — requestId={}, guestId={}", requestId, guestId);
+        log.info("[F03-06] 게스트 최종 수락 — requestId={}, guestId={}", requestId, guestId);
+        return MatchRequestActionResponse.from(matchRequest);
+    }
+
+    // F03-06 게스트 최종 거절
+    public MatchRequestActionResponse declineMatchRequest(Long guestId, Long requestId, MatchRequestDeclineRequest request) {
+        MatchRequest matchRequest = matchRequestRepository.findById(requestId)
+                .orElseThrow(() -> new MatchingException(MatchingErrorCode.MATCH_REQUEST_NOT_FOUND));
+
+        if (!matchRequest.getGuestId().equals(guestId)) {
+            throw new MatchingException(MatchingErrorCode.MATCH_REQUEST_UNAUTHORIZED);
+        }
+
+        matchRequest.cancelByGuest(request.getReason());
+        log.info("[F03-06] 게스트 최종 거절 — requestId={}, guestId={}", requestId, guestId);
         return MatchRequestActionResponse.from(matchRequest);
     }
 
@@ -124,5 +144,57 @@ public class MatchRequestService {
         if (guestId.equals(request.getGuideId())) {
             throw new MatchingException(MatchingErrorCode.GUEST_GUIDE_SAME);
         }
+    }
+
+    private String resolveConceptSummary(MatchRequestCreateRequest request) {
+        if (request.getConceptSummary() != null && !request.getConceptSummary().isBlank()) {
+            return request.getConceptSummary().trim();
+        }
+
+        String destination = safeTrim(request.getDestination());
+        String concept = safeTrim(request.getConcept());
+        String date = request.getDesiredDate() == null ? null : request.getDesiredDate().toString();
+        String budget = formatBudget(request.getDesiredBudget());
+
+        StringBuilder sb = new StringBuilder();
+        if (destination != null) {
+            sb.append('[').append(destination).append("] ");
+        }
+        if (date != null) {
+            sb.append(date);
+        }
+        if (budget != null) {
+            if (sb.length() > 0) sb.append(", ");
+            sb.append("예산 ").append(budget);
+        }
+        if (concept != null) {
+            if (sb.length() > 0) sb.append(" · ");
+            sb.append("컨셉: ").append(concept);
+        }
+
+        String summary = sb.toString().trim();
+        if (summary.isBlank()) {
+            return null;
+        }
+        return summary.length() > 500 ? summary.substring(0, 500) : summary;
+    }
+
+    private String safeTrim(String value) {
+        if (value == null) {
+            return null;
+        }
+        String t = value.trim();
+        return t.isBlank() ? null : t;
+    }
+
+    private String formatBudget(Integer desiredBudget) {
+        if (desiredBudget == null) {
+            return null;
+        }
+        if (desiredBudget < 0) {
+            throw new MatchingException(MatchingErrorCode.INVALID_REQUEST);
+        }
+        NumberFormat nf = NumberFormat.getNumberInstance(Locale.KOREA);
+        return nf.format(desiredBudget) + "원";
     }
 }

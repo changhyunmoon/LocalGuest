@@ -49,11 +49,20 @@ public class MatchRequest extends BaseTimeEntity {
     @Column(columnDefinition = "TEXT")
     private String concept;             // 여행 컨셉 (AI 분석 원본)
 
+    @Column(name = "concept_summary", columnDefinition = "TEXT")
+    private String conceptSummary;      // AI가 정리한 여행 컨셉 요약 (가이드/게스트 확인용)
+
     @Column(name = "desired_date", nullable = false)
     private LocalDate desiredDate;      // 희망 여행 날짜
 
     @Column(name = "desired_budget")
     private Integer desiredBudget;      // 희망 예산(원)
+
+    @Column(name = "proposed_schedule", columnDefinition = "TEXT")
+    private String proposedSchedule;    // 가이드 제시 일정(간략)
+
+    @Column(name = "propose_message", columnDefinition = "TEXT")
+    private String proposeMessage;      // 가이드 제시 멘트(선택)
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
@@ -78,6 +87,7 @@ public class MatchRequest extends BaseTimeEntity {
             Long guideId,
             String destination,
             String concept,
+            String conceptSummary,
             LocalDate desiredDate,
             Integer desiredBudget
     ) {
@@ -86,6 +96,7 @@ public class MatchRequest extends BaseTimeEntity {
                 .guideId(guideId)
                 .destination(destination)
                 .concept(concept)
+                .conceptSummary(conceptSummary)
                 .desiredDate(desiredDate)
                 .desiredBudget(desiredBudget)
                 .build();
@@ -118,6 +129,15 @@ public class MatchRequest extends BaseTimeEntity {
         if (this.status != MatchRequestStatus.PENDING) {
             throw new MatchingException(MatchingErrorCode.MATCH_REQUEST_INVALID_STATUS);
         }
+        this.status = MatchRequestStatus.ACCEPTED;
+    }
+
+    public void applyProposal(String proposedSchedule, String proposeMessage) {
+        if (this.status != MatchRequestStatus.PENDING) {
+            throw new MatchingException(MatchingErrorCode.MATCH_REQUEST_INVALID_STATUS);
+        }
+        this.proposedSchedule = proposedSchedule;
+        this.proposeMessage = proposeMessage;
         this.status = MatchRequestStatus.ACCEPTED;
     }
 

@@ -6,6 +6,7 @@ import com.team6.module.ai.engine.MatchingEngine;
 import com.team6.module.ai.model.GuideAiProfile;
 import com.team6.module.ai.model.TravelerPreference;
 import com.team6.module.ai.support.AiRecommendationMapper;
+import com.team6.module.ai.support.AiRecommendationTuning;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -21,6 +22,7 @@ public class AiRecommendationServiceImpl implements AiRecommendationService {
     public GuideRecommendResponse recommend(GuideRecommendRequest request) {
         if (request == null || request.getGuideCandidates() == null || request.getGuideCandidates().isEmpty()) {
             return GuideRecommendResponse.builder()
+                    .policyVersion(AiRecommendationTuning.POLICY_VERSION)
                     .totalCount(0)
                     .recommendations(List.of())
                     .build();

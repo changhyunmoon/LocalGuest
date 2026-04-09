@@ -19,6 +19,12 @@ public class MatchRequestCreateRequest {
 
     private String concept;
 
+    /**
+     * AI가 정리한 컨셉 요약 (선택).
+     * 프론트에서 전달하지 않으면 서버에서 destination/concept 등을 기반으로 생성한다.
+     */
+    private String conceptSummary;
+
     private LocalDate desiredDate;
 
     private Integer desiredBudget;
