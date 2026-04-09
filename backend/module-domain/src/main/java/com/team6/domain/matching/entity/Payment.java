@@ -34,7 +34,11 @@ public class Payment extends BaseTimeEntity {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "match_request_id", nullable = false)
+    @JoinColumn(
+            name = "match_request_id",
+            nullable = false,
+            foreignKey = @ForeignKey(name = "fk_payment_match_req")
+    )
     private MatchRequest matchRequest;  // MATCH_REQUEST FK
 
     // TODO: Member 엔티티 완성 후 @ManyToOne으로 교체
