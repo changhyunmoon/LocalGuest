@@ -1,53 +1,96 @@
 package com.team6.module.chat.service;
 
+
 import com.team6.module.chat.dto.request.ChatRoomCreateRequest;
 import com.team6.module.chat.dto.response.ChatRoomListResponse;
 import com.team6.module.chat.dto.response.ChatRoomResponse;
+import com.team6.module.chat.dto.response.ChatRoomsResponse;
 import com.team6.module.chat.entity.mysql.ChatParticipant;
 import com.team6.module.chat.entity.mysql.ChatRoom;
+import com.team6.module.chat.exception.ChatExceptionCode;
+import com.team6.module.chat.exception.ParticipantNotFoundException;
+import com.team6.module.chat.repository.mongodb.ChatMessageRepository;
 import com.team6.module.chat.repository.mysql.ChatRoomRepository;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.beans.Transient;
+import java.util.Comparator;
 import java.util.List;
+
 
 @Service
 @RequiredArgsConstructor
 public class ChatRoomService {
 
     private final ChatRoomRepository chatRoomRepository;
+    private final ChatMessageRepository chatMessageRepository;
 
+    //채팅방 생성
     @Transactional
-    public ChatRoomResponse createChatRoom(ChatRoomCreateRequest request) {
-        // 채팅방 엔티티 생성
-        ChatRoom chatRoom = ChatRoom.create(request.title(), request.ownerId());
+    public ChatRoomResponse createChatRoom(Long ownerId, ChatRoomCreateRequest request){
 
-        // 방장 추가
-        ChatParticipant owner = ChatParticipant.create(request.ownerId(), request.ownerNickname());
+        //채팅방 엔티티 생성
+        ChatRoom chatRoom = ChatRoom.builder()
+                .title(request.getTitle())
+                .ownerId(ownerId)
+                .build();
+
+        //여기서 participant 정보들은 member 구현되면 조회해서 정보들 가져와야 된다.
+        //방장 참여자 추가
+        ChatParticipant owner = ChatParticipant.create(ownerId, "User_" + ownerId);
         chatRoom.addParticipant(owner);
+        //참여자 리스트 생성
+        request.getParticipantUserIds().forEach(userId -> {
+            ChatParticipant participant = ChatParticipant.create(userId, "User_" + userId); // 임시 닉네임
+            chatRoom.getParticipants().add(participant);
+        });
 
-        // 초대된 참가자들 추가 (null 체크 및 반복문)
-        if (request.participants() != null) {
-            request.participants().stream()
-                    .map(p -> ChatParticipant.create(p.userId(), p.nickname()))
-                    .forEach(chatRoom::addParticipant);
-        }
+        //참여 인원수 업데이트
+        chatRoom.updateParticipantCount();
 
-        // 저장 (Cascade로 인해 모든 참여자가 한 번에 저장됨)
+        //mysql에 저장
         ChatRoom savedRoom = chatRoomRepository.save(chatRoom);
 
         return ChatRoomResponse.from(savedRoom);
     }
 
-    @Transactional
-    public List<ChatRoomListResponse> getMyChatRooms(Long userId) {
-        List<ChatRoom> myRooms = chatRoomRepository.findAllByUserId(userId);
+    //채팅방 목록 조회
+    @Transactional(readOnly = true)
+    public ChatRoomsResponse getChatRoomList(Long userId){
 
-        return myRooms.stream()
-                .map(ChatRoomListResponse::from)
+        //참여중인 방 목록 조회
+        List<ChatRoom> userRooms = chatRoomRepository.findAllByUserId(userId);
+
+        List<ChatRoomListResponse> roomResponses = userRooms.stream()
+                .map(room -> {
+                    // 해당 방에서 나의 참여 정보(lastReadAt) 가져오기
+                    ChatParticipant me = room.getParticipants().stream()
+                            .filter(p -> p.getUserId().equals(userId))
+                            .findFirst()
+                            .orElseThrow(ParticipantNotFoundException::new);
+
+                    // MongoDB에서 안 읽은 메시지 수 카운트
+                    long unreadCount = chatMessageRepository.countByRoomIdAndCreatedAtAfter(
+                            room.getRoomId(),
+                            me.getLastReadAt()
+                    );
+
+                    return ChatRoomListResponse.builder()
+                            .roomId(room.getRoomId())
+                            .title(room.getTitle())
+                            .participantCount(room.getParticipantCount())
+                            .lastMessage(room.getLastMessage())
+                            .lastMessageAt(room.getLastMessageAt())
+                            .unreadCount(unreadCount)
+                            .build();
+                })
+                // 정렬 로직: 안 읽은 메시지가 있는 방 우선 -> 최신 메시지 수신순
+                .sorted(Comparator.comparing((ChatRoomListResponse res) -> res.getUnreadCount() > 0).reversed()
+                        .thenComparing(ChatRoomListResponse::getLastMessageAt, Comparator.nullsLast(Comparator.reverseOrder())))
                 .toList();
+
+        return ChatRoomsResponse.of(roomResponses);
     }
 
 }

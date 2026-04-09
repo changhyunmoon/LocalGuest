@@ -51,22 +51,18 @@ public class ChatRoom extends BaseTimeEntity {
         this.lastMessageAt = LocalDateTime.now();
     }
 
-    public static ChatRoom create(String title, Long ownerId) {
-        return ChatRoom.builder()
-                .title(title)
-                .ownerId(ownerId)
-                .build();
-    }
-
-    // 비즈니스 메서드: 참여자 추가 (인원수 자동 증가)
     public void addParticipant(ChatParticipant participant) {
         this.participants.add(participant);
         this.participantCount = this.participants.size();
     }
 
-    // 메시지 갱신
-    public void updateLastMessage(String message, LocalDateTime sentAt) {
+    public void updateLastMessage(String message) {
         this.lastMessage = message;
-        this.lastMessageAt = sentAt;
+        this.lastMessageAt = LocalDateTime.now();
     }
+
+    public void updateParticipantCount(){
+        this.participantCount = (this.participants != null) ? this.participants.size() : 0;
+    }
+
 }

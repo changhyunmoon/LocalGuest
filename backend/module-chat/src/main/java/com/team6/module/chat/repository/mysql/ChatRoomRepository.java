@@ -10,10 +10,14 @@ import java.util.Optional;
 
 public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
 
-    @Query("SELECT DISTINCT r FROM ChatRoom r " +
+    /**
+     * 특정 유저가 참여 중인 채팅방 목록 조회
+     * @param userId 조회할 유저의 PK
+     * @return 유저가 속한 ChatRoom 리스트
+     */
+    @Query("SELECT r FROM ChatRoom r " +
             "JOIN r.participants p " +
-            "WHERE p.userId = :userId " +
-            "ORDER BY r.lastMessageAt DESC")
+            "WHERE p.userId = :userId")
     List<ChatRoom> findAllByUserId(@Param("userId") Long userId);
 
 }

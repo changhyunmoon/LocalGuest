@@ -39,11 +39,5 @@ public class ChatParticipant extends BaseTimeEntity {
                 .build();
     }
 
-    public void updateLastRead() {
-        this.lastReadAt = LocalDateTime.now();
-    }
 
-    public void updateAlarm(boolean isAlarmOn) {
-        this.isAlarmOn = isAlarmOn;
-    }
 }
