@@ -2,8 +2,8 @@ package com.team6.domain.auth.service;
 
 import com.team6.domain.member.entity.Member;
 import com.team6.domain.member.repository.MemberRepository;
-import com.team6.domain.member.service.JwtTokenProvider;
-import com.team6.domain.member.service.MemberService;
+import com.team6.domain.auth.provider.JwtTokenProvider;
+import com.team6.module.common.global.util.SecurityUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -53,6 +53,16 @@ public class AuthService {
 
         // TODO: redisTemplate.opsForValue().set(actualToken, "logout", expiration, TimeUnit.MILLISECONDS);
         System.out.println("서버 측 로그아웃 처리 완료 (Blacklist 등록 대기): " + actualToken);
+    }
+
+    public void withdraw() {
+        String email = SecurityUtil.getCurrentUserEmail();
+        Member member = memberRepository.findByEmail(email)
+                .orElseThrow(()-> new IllegalArgumentException("회원을 찾을 수 없습니다. "));
+
+        memberRepository.delete(member);
+        System.out.println("회원 탈퇴 완료 : " + email);
+
     }
 
 

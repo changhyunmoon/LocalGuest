@@ -1,6 +1,6 @@
 package com.team6.domain.auth.filter;
 
-import com.team6.domain.member.service.JwtTokenProvider;
+import com.team6.domain.auth.provider.JwtTokenProvider;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;

@@ -1,9 +1,8 @@
 package com.team6.domain.auth.config;
 
 import com.team6.domain.auth.filter.JwtAuthenticationFilter;
-import com.team6.domain.member.service.JwtTokenProvider;
+import com.team6.domain.auth.provider.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
-import org.apache.catalina.util.SessionConfig;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
