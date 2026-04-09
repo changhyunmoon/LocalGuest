@@ -39,7 +39,7 @@ public class MemberJoinRequest {
                 .email(this.email)
                 .password(this.password)
                 .name(this.name)
-                .nickname(this.nickname)
+                .nickname(finalNickname)
                 .role(Role.GUEST)   // 기본 게스트로 역할 지정
                 .status(Status.ACTIVE)
                 .build();

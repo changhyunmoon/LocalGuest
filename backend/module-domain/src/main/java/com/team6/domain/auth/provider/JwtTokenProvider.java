@@ -29,7 +29,7 @@ public class JwtTokenProvider {
         // [LOG] INFO : [Auth-Domain] JWT 토큰 생성 시작 (Target : {})
         Claims claims = Jwts.claims()
                 .subject(email)
-                .add("role", role)
+                .add("role", member.getRole().name())
                 .build();
 
         Date now = new Date();
