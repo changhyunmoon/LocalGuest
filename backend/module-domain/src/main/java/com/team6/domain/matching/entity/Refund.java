@@ -26,7 +26,11 @@ public class Refund extends BaseTimeEntity {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "payment_id", nullable = false)
+    @JoinColumn(
+            name = "payment_id",
+            nullable = false,
+            foreignKey = @ForeignKey(name = "fk_refund_payment")
+    )
     private Payment payment;            // PAYMENT FK
 
     // TODO: Member 엔티티 완성 후 @ManyToOne으로 교체

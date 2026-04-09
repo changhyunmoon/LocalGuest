@@ -3,6 +3,7 @@ package com.team6.domain.matching.repository;
 import com.team6.domain.matching.entity.MatchRequest;
 import com.team6.domain.matching.entity.enums.MatchRequestStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
+import java.time.LocalDate;
 import java.util.List;
 
 public interface MatchRequestRepository extends JpaRepository<MatchRequest, Long> {
@@ -18,4 +19,7 @@ public interface MatchRequestRepository extends JpaRepository<MatchRequest, Long
 
     // 가이드 ID + 상태로 조회
     List<MatchRequest> findByGuideIdAndStatus(Long guideId, MatchRequestStatus status);
+
+    // 당일 진행 대상 매칭 조회 (연장 알림/선택 오픈용)
+    List<MatchRequest> findByDesiredDateAndStatusIn(LocalDate desiredDate, List<MatchRequestStatus> statuses);
 }
