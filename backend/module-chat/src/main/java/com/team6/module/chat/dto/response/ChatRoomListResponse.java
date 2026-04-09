@@ -1,21 +1,17 @@
 package com.team6.module.chat.dto.response;
 
-import com.team6.module.chat.entity.mysql.ChatRoom;
+import lombok.Builder;
+import lombok.Getter;
+import java.time.LocalDateTime;
 
-public record ChatRoomListResponse(
-        String roomId,
-        String title,
-        String lastMessage,
-        Integer participantCount,
-        java.time.LocalDateTime lastMessageAt
-) {
-    public static ChatRoomListResponse from(ChatRoom chatRoom) {
-        return new ChatRoomListResponse(
-                chatRoom.getRoomId(),
-                chatRoom.getTitle(),
-                chatRoom.getLastMessage(),
-                chatRoom.getParticipantCount(),
-                chatRoom.getLastMessageAt()
-        );
-    }
+@Getter
+@Builder
+public class ChatRoomListResponse {
+    private String roomId;
+    private String title;
+    private Integer participantCount;
+    private String lastMessage;
+    private LocalDateTime lastMessageAt;
+    private Long unreadCount;
+
 }
