@@ -64,6 +64,11 @@ public class GuideScheduleService {
         // 스케줄 조회
         GuideSchedule schedule = getVerifiedSchedule(scheduleId, guideId);
 
+        // 예약 확정된 스케줄은 수정 불가
+        if (schedule.getStatus() == GuideScheduleStatus.BOOKED) {
+            throw new GuideException(GuideErrorCode.SCHEDULE_ALREADY_BOOKED);
+        }
+
         // 스케줄 수정 — status가 null이면 기존 상태 유지
         GuideScheduleStatus newStatus = request.getStatus() != null
                 ? request.getStatus()
@@ -88,8 +93,9 @@ public class GuideScheduleService {
         // 스케줄 조회
         GuideSchedule schedule = getVerifiedSchedule(scheduleId, guideId);
 
-        // 예약된 스케줄은 삭제 불가
-        if (schedule.getStatus() == GuideScheduleStatus.BOOKED) {
+        // 예약됐거나 대기 중인 스케줄은 삭제 불가
+        if (schedule.getStatus() == GuideScheduleStatus.BOOKED ||
+                schedule.getStatus() == GuideScheduleStatus.PENDING) {
             throw new GuideException(GuideErrorCode.SCHEDULE_ALREADY_BOOKED);
         }
 
@@ -113,6 +119,10 @@ public class GuideScheduleService {
         // 스케줄 조회
         GuideSchedule schedule = getVerifiedSchedule(scheduleId, guideId);
 
+        // AVAILABLE ↔ BLOCKED 전환만 허용 (BOOKED/PENDING은 직접 설정 불가)
+        if (status != GuideScheduleStatus.AVAILABLE && status != GuideScheduleStatus.BLOCKED) {
+            throw new GuideException(GuideErrorCode.SCHEDULE_STATUS_INVALID);
+        }
         // 상태 변경
         schedule.changeStatus(status);
 

@@ -12,6 +12,7 @@ import com.team6.domain.guide.repository.GuideProfileRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.util.stream.IntStream;
 
 import java.util.List;
 
@@ -87,13 +88,11 @@ public class GuideFeedService {
         int totalSize = feeds.size();
         int openCount = (totalSize + 1) / 2; // 홀수일 때 앞쪽이 더 많도록 올림
 
-        return feeds.stream()
-                .map(feed -> {
-                    int index = feeds.indexOf(feed);
-                    return index < openCount
-                            ? GuideFeedResponse.fullFrom(feed)   // 앞 절반: 공개
-                            : GuideFeedResponse.lockedFrom(feed); // 뒤 절반: 잠금
-                })
+        // 인덱스를 직접 생성해서 순서 보장 (indexOf는 내용 기반 비교라 중복 시 오작동)
+        return IntStream.range(0, totalSize)
+                .mapToObj(i -> i < openCount
+                        ? GuideFeedResponse.fullFrom(feeds.get(i))    // 앞 절반: 공개
+                        : GuideFeedResponse.lockedFrom(feeds.get(i))) // 뒤 절반: 잠금 (결제/매칭 후 공개)
                 .toList();
     }
 
