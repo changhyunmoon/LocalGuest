@@ -66,7 +66,8 @@ public class GuideProfile extends BaseTimeEntity {
 
     // 수정 가능한 필드 업데이트
     public void update(String nickname, String profileImage, String bio,
-                       String region, String language, BigDecimal pricePerHour, Boolean isActive) {
+                       String region, String language, BigDecimal pricePerHour,
+                       Boolean isActive, Integer residenceYears, String localStory) {
         this.nickname = nickname;
         this.profileImage = profileImage;
         this.bio = bio;
@@ -74,5 +75,11 @@ public class GuideProfile extends BaseTimeEntity {
         this.language = language;
         this.pricePerHour = pricePerHour;
         this.isActive = isActive;
+        this.residenceYears = residenceYears;
+        this.localStory = localStory;
+    }
+    // 활성화 상태 토글
+    public void toggleActive() {
+        this.isActive = !this.isActive;
     }
 }
