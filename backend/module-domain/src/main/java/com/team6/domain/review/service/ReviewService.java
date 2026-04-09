@@ -6,8 +6,8 @@ import com.team6.domain.review.dto.reqeust.ReviewRequest;
 import com.team6.domain.review.dto.response.ReviewResponse;
 import com.team6.domain.review.entity.Review;
 import com.team6.domain.review.repository.ReviewRepository;
+import com.team6.module.common.global.util.SecurityUtil;
 import lombok.RequiredArgsConstructor;
-import org.apache.catalina.security.SecurityUtil;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,7 +27,7 @@ public class ReviewService {
         Member guest = memberRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다. "));
         Member guide = memberRepository.findById(request.getGuideId())
-                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다. "));
+                .orElseThrow(() -> new IllegalArgumentException("가이드를 찾을 수 없습니다. "));
 
         Review review = Review.builder()
                 .rating(request.getRating())

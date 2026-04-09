@@ -23,11 +23,11 @@ public class Review {
     @Column(columnDefinition = "Text")
     private String content;
 
-    //@ManyToOne(fetch = FetchType.Lazy)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "guest_id")
     private Member guest;
 
-    // @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "guide_id")
     private  Member guide;
 
