@@ -4,7 +4,6 @@ import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import javax.swing.*;
 import java.time.LocalDateTime;
 
 @Entity
@@ -40,6 +39,7 @@ public class Member {
     @Builder.Default
     private Status status = Status.ACTIVE;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "social_type", length = 50)
     private SocialType socialType;
 
