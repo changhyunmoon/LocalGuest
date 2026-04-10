@@ -20,4 +20,7 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
             "WHERE p.userId = :userId")
     List<ChatRoom> findAllByUserId(@Param("userId") Long userId);
 
+    // roomId(UUID)를 통해 채팅방 정보를 조회
+    Optional<ChatRoom> findByRoomId(String roomId);
+
 }

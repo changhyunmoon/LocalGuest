@@ -13,8 +13,6 @@ dependencies {
     // Driver
     runtimeOnly 'com.mysql:mysql-connector-j'
 
-
-
     // WebSocket 메시징을 위한 핵심 의존성
     implementation 'org.springframework.boot:spring-boot-starter-websocket'
 }

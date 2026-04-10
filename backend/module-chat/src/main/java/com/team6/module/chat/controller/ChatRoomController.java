@@ -2,6 +2,7 @@ package com.team6.module.chat.controller;
 
 
 import com.team6.module.chat.dto.request.ChatRoomCreateRequest;
+import com.team6.module.chat.dto.response.ChatMessagePageResponse;
 import com.team6.module.chat.dto.response.ChatRoomResponse;
 import com.team6.module.chat.dto.response.ChatRoomsResponse;
 import com.team6.module.chat.service.ChatRoomService;
@@ -42,5 +43,19 @@ public class ChatRoomController {
         ChatRoomsResponse response = chatRoomService.getChatRoomList(userId);
         return ResponseEntity.ok(response);
     }
+
+    //----------------------------------------------------------------------------------------
+    //채팅방 메시지 내용 조회
+    @GetMapping("/{roomId}/messages")
+    public ResponseEntity<ChatMessagePageResponse> getMessages(
+            @PathVariable String roomId,
+            @RequestParam(required = false) String cursor
+    ) {
+        ChatMessagePageResponse response = chatRoomService.getMessageLog(roomId, cursor);
+        return ResponseEntity.ok(response);
+    }
+
+
+
 
 }

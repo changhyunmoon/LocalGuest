@@ -56,9 +56,9 @@ public class ChatRoom extends BaseTimeEntity {
         this.participantCount = this.participants.size();
     }
 
-    public void updateLastMessage(String message) {
+    public void updateLastMessage(String message, LocalDateTime sentAt) {
         this.lastMessage = message;
-        this.lastMessageAt = LocalDateTime.now();
+        this.lastMessageAt = sentAt;
     }
 
     public void updateParticipantCount(){

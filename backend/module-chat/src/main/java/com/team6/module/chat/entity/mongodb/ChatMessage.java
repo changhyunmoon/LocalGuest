@@ -26,21 +26,25 @@ public class ChatMessage {
 
     private LocalDateTime createdAt; // 메시지 전송 시간
 
+    private int unreadCount; //이 메시지를 읽지 않은 사람 수 (초기값: 전체 참여자 수 - 1)
+
     @Builder
-    private ChatMessage(String roomId, Long senderId, String senderNickname, String message) {
+    private ChatMessage(String roomId, Long senderId, String senderNickname, String message, int unreadCount ) {
         this.roomId = roomId;
         this.senderId = senderId;
         this.senderNickname = senderNickname;
         this.message = message;
+        this.unreadCount = unreadCount;
         this.createdAt = LocalDateTime.now();
     }
 
-    public static ChatMessage create(String roomId, Long senderId, String senderNickname, String message) {
+    public static ChatMessage create(String roomId, Long senderId, String senderNickname, String message, int unreadCount) {
         return ChatMessage.builder()
                 .roomId(roomId)
                 .senderId(senderId)
                 .senderNickname(senderNickname)
                 .message(message)
+                .unreadCount(unreadCount)
                 .build();
     }
 }

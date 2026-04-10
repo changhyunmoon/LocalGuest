@@ -2,19 +2,22 @@ package com.team6.module.chat.service;
 
 
 import com.team6.module.chat.dto.request.ChatRoomCreateRequest;
-import com.team6.module.chat.dto.response.ChatRoomListResponse;
-import com.team6.module.chat.dto.response.ChatRoomResponse;
-import com.team6.module.chat.dto.response.ChatRoomsResponse;
+import com.team6.module.chat.dto.response.*;
+import com.team6.module.chat.entity.mongodb.ChatMessage;
 import com.team6.module.chat.entity.mysql.ChatParticipant;
 import com.team6.module.chat.entity.mysql.ChatRoom;
 import com.team6.module.chat.exception.ChatExceptionCode;
+import com.team6.module.chat.exception.ChatRoomNotFoundException;
 import com.team6.module.chat.exception.ParticipantNotFoundException;
 import com.team6.module.chat.repository.mongodb.ChatMessageRepository;
 import com.team6.module.chat.repository.mysql.ChatRoomRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
 
@@ -25,6 +28,8 @@ public class ChatRoomService {
 
     private final ChatRoomRepository chatRoomRepository;
     private final ChatMessageRepository chatMessageRepository;
+    private static final int PAGE_SIZE = 20;// 한 페이지당 20개씩 로드
+
 
     //채팅방 생성
     @Transactional
@@ -93,4 +98,41 @@ public class ChatRoomService {
         return ChatRoomsResponse.of(roomResponses);
     }
 
+    //채팅방 메시지 로딩
+    public ChatMessagePageResponse getMessageLog(String roomId, String cursor) {
+        Pageable pageable = PageRequest.of(0, PAGE_SIZE + 1); // 다음 페이지 여부 확인을 위해 +1개 조회
+
+        List<ChatMessage> entities;
+        if (cursor == null || cursor.isBlank()) {
+            // 처음 입장 시 최신 메시지 조회
+            entities = chatMessageRepository.findByRoomIdOrderByCreatedAtDesc(roomId, pageable);
+        } else {
+            // 커서(마지막 메시지 ID) 기준 이전 메시지 조회
+            entities = chatMessageRepository.findByRoomIdAndIdLessThanOrderByCreatedAtDesc(roomId, cursor, pageable);
+        }
+
+        boolean hasNext = entities.size() > PAGE_SIZE;
+        List<ChatMessageResponse> responses = entities.stream()
+                .limit(PAGE_SIZE) // 실제 사이즈만큼 제한
+                .map(ChatMessageResponse::from)
+                .toList();
+
+        return ChatMessagePageResponse.of(responses, hasNext);
+    }
+
+    @Transactional
+    public void updateLastMessage(String roomId, String message, LocalDateTime sentAt) {
+        chatRoomRepository.findByRoomId(roomId)
+                .ifPresent(room -> {
+                    room.updateLastMessage(message, sentAt);
+                    // Transactional 안에서 엔티티를 수정하므로 더티 체킹에 의해 자동 반영됩니다.
+                });
+    }
+
+    //채팅방 단순 조회
+    @Transactional(readOnly = true)
+    public ChatRoom getRoomEntity(String roomId) {
+        return chatRoomRepository.findByRoomId(roomId)
+                .orElseThrow(ChatRoomNotFoundException::new);
+    }
 }
