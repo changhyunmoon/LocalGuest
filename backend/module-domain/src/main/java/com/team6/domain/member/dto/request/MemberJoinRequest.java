@@ -16,7 +16,6 @@ public class MemberJoinRequest {
     @NotBlank(message = "이메일은 필수입니다. ")
     @Email(message = "이메일 형식이 아닙니다.")
     private String email;
-
     @NotBlank(message = "비밀번호는 필수입니다. ")
     @Length(min = 8, max = 16, message = "비밀번호는 8~16자 사이여야 합니다. ")
     private String password;
@@ -40,7 +39,7 @@ public class MemberJoinRequest {
                 .email(this.email)
                 .password(this.password)
                 .name(this.name)
-                .nickname(this.nickname)
+                .nickname(finalNickname)
                 .role(Role.GUEST)   // 기본 게스트로 역할 지정
                 .status(Status.ACTIVE)
                 .build();
