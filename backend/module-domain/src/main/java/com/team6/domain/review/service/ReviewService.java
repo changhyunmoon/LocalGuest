@@ -34,7 +34,7 @@ public class ReviewService {
         Member member = memberRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 
-        if(reviewRepository.existsByMatchRequestedId(request.getMatchRequestId())) {
+        if(reviewRepository.existsByMatchRequestId(request.getMatchRequestId())) {
             throw new IllegalStateException("이미 이 가이드에 대한 리뷰를 작성하셨습니다. ");
         }
 
