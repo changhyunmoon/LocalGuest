@@ -28,7 +28,7 @@ public class AuthController {
     @PostMapping("/logout")
     public ResponseEntity<Void> logout(HttpServletRequest request) {
         // 헤더에서 토큰 추출
-        String bearerToken = request.getHeader("Authrization");
+        String bearerToken = request.getHeader("Authorization");
         if(StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer ")){
             String token = bearerToken.substring(7);
             authService.logout(token);
