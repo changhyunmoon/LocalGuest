@@ -26,6 +26,7 @@ public class ReviewService {
     private final ReviewRepository reviewRepository;
     private final MemberRepository memberRepository;
 
+    // 리뷰 저장
     @Transactional
     public void saveReview(ReviewRequest request) {
         String email = SecurityUtil.getCurrentUserEmail();
@@ -33,7 +34,7 @@ public class ReviewService {
         Member member = memberRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 
-        if(reviewRepository.existsByMemberAndGuideId(member, request.getGuideId())) {
+        if(reviewRepository.existsByMemberAndGuideIdAndDeletedFalse(member, request.getGuideId())) {
             throw new IllegalStateException("이미 이 가이드에 대한 리뷰를 작성하셨습니다. ");
         }
 
@@ -50,7 +51,7 @@ public class ReviewService {
         reviewRepository.save(review);
     }
 
-    // 리뷰 수정(24시간 이내 1번만 수정 가능)
+    // 리뷰 수정 (24시간 이내만 수정 가능)
     @Transactional
     public void updateReview(Long reviewId, ReviewUpdateRequest request) {
         String email = SecurityUtil.getCurrentUserEmail();
@@ -74,14 +75,30 @@ public class ReviewService {
     // 모든 리뷰 조회
     @Transactional(readOnly = true)
     public Page<ReviewResponse> findAll(Pageable pageable) {
-        return reviewRepository.findAll(pageable)
+        return reviewRepository.findAllByDeletedFalse(pageable)
                 .map(ReviewResponse::new);
     }
 
     // 특정 가이드에 대한 모든 리뷰 페이징기법으로 조회
     @Transactional(readOnly = true)
     public Page<ReviewResponse> getReviewsByGuide(Long guideId, Pageable pageable) {
-        return reviewRepository.findAllByGuideId(guideId, pageable)
+        return reviewRepository.findAllByGuideIdAndDeletedFalse(guideId, pageable)
                 .map(ReviewResponse::new);
+    }
+
+    // 리뷰 삭제
+    @Transactional
+    public void deleteReview(Long reviewId) {
+        String email = SecurityUtil.getCurrentUserEmail();
+
+        Review review = reviewRepository.findById(reviewId)
+                .orElseThrow(() -> new IllegalArgumentException(("리뷰를 찾을 수 없습니다. ")));
+
+        // 본인 확인
+        if(!review.getMember().getEmail().equals(email)) {
+            throw new IllegalStateException("본인이 작성한 리뷰만 삭제할 수 있습니다.");
+        }
+
+        review.delete();
     }
 }

@@ -1,6 +1,7 @@
 package com.team6.domain.review.entity;
 
 import com.team6.domain.member.entity.Member;
+import com.team6.domain.member.service.MemberService;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -18,18 +19,21 @@ public class Review {
     @Id@GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "member_id", nullable = false)
+    private Member member;
+
+    @Column(name = "guide_id")
+    private Long guideId;
+
     @Column(nullable = false)
     private Integer rating;
 
     @Column(columnDefinition = "Text")
     private String content;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "member_id")
-    private Member member;
-
-    @Column(name = "guide_id")
-    private Long guideId;
+    @Column(nullable = false)
+    private boolean deleted = false;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false, columnDefinition = "DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6)")
@@ -38,6 +42,9 @@ public class Review {
     @UpdateTimestamp
     @Column(name = "updated_at", nullable = false, columnDefinition = "DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6)")
     private LocalDateTime updatedAt;
+
+    // 삭제된 날짜
+    private LocalDateTime deletedAt;
 
     @Builder
     public Review(Integer rating, String content, Member member, Long guideId) {
@@ -51,5 +58,10 @@ public class Review {
     public void update(Integer rating, String content) {
         this.rating = rating;
         this.content = content;
+    }
+
+    public void delete() {
+        this.deleted = true;
+        this.deletedAt = LocalDateTime.now();
     }
 }

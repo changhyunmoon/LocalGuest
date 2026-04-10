@@ -11,10 +11,9 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 @Repository
 public interface ReviewRepository extends JpaRepository<Review, Long> {
+    Page<Review> findAllByGuideIdAndDeletedFalse(Long guideId, Pageable pageable);
     @EntityGraph(attributePaths = {"member"})
-    Page<Review> findAllByGuideId(Long guideId , Pageable pageable);
-    @EntityGraph(attributePaths = {"member"})
-    Page<Review> findAll(Pageable pageable);
+    Page<Review> findAllByDeletedFalse(Pageable pageable);
 
-    boolean existsByMemberAndGuideId(Member member, Long guideId);
+    boolean existsByMemberAndGuideIdAndDeletedFalse(Member member, Long guideId);
 }
