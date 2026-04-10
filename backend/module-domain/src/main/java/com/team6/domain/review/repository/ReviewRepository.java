@@ -15,5 +15,5 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
     @EntityGraph(attributePaths = {"member"})
     Page<Review> findAllByDeletedFalse(Pageable pageable);
 
-    boolean existsByMemberAndGuideIdAndDeletedFalse(Member member, Long guideId);
+    boolean existsByMatchRequestedId(Long matchedRequestedId);
 }

@@ -19,6 +19,9 @@ public class Review {
     @Id@GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "match_request_id", nullable = false, unique = true)
+    private Long matchRequestId;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "member_id", nullable = false)
     private Member member;
@@ -47,11 +50,12 @@ public class Review {
     private LocalDateTime deletedAt;
 
     @Builder
-    public Review(Integer rating, String content, Member member, Long guideId) {
+    public Review(Integer rating, String content, Member member, Long guideId, Long matchRequestId) {
         this.rating = rating;
         this.content = content;
         this.member = member;
         this.guideId = guideId;
+        this.matchRequestId = matchRequestId;
     }
 
     // 리뷰 수정시 날짜 및 콘텐츠 수정
