@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 
 import java.security.Key;
 import java.util.Date;
+import java.util.UUID;
 
 @Component
 public class JwtTokenProvider {
@@ -31,6 +32,7 @@ public class JwtTokenProvider {
         Claims claims = Jwts.claims()
                 .subject(email)
                 .add("role", role)
+                .add("jti", UUID.randomUUID().toString())
                 .build();
 
         Date now = new Date();

@@ -5,6 +5,7 @@ import com.team6.domain.member.repository.MemberRepository;
 import com.team6.domain.auth.provider.JwtTokenProvider;
 import com.team6.module.common.global.util.SecurityUtil;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -45,14 +46,14 @@ public class AuthService {
         // 지금은 Redis 설정 전이므로 로그와 함께 추후 구현 주석 남김
 
         // [LOG] INFO : 로그아웃 요청 처리 중
-        if (accessToken == null || !accessToken.startsWith("Bearer ")) {
+        if (!jwtTokenProvider.validToken(accessToken)) {
             throw new IllegalArgumentException("유효하지 않은 토큰 형식입니다.");
         }
 
-        String actualToken = accessToken.substring(7);
-
-        // TODO: redisTemplate.opsForValue().set(actualToken, "logout", expiration, TimeUnit.MILLISECONDS);
-        System.out.println("서버 측 로그아웃 처리 완료 (Blacklist 등록 대기): " + actualToken);
+        // Redis로 수정 예정
+        // redisTemplate.opsForValue().set(token, "logout", expiration, TimeUnit.MILLISECONDS);
+        // 현재 시큐리티 컨텍스트 초기화
+        SecurityContextHolder.clearContext();
     }
 
     public void withdraw() {
