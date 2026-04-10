@@ -18,7 +18,7 @@ public class ReviewController {
 
     @PostMapping
     public ResponseEntity<String> create(@RequestBody ReviewRequest request) {
-        reviewService.saveReivew(request);
+        reviewService.saveReview(request);
         return ResponseEntity.ok("리뷰 등록 완료!");
     }
 

@@ -24,6 +24,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/auth/**").permitAll() // 로그인 관련은 누가나 접근 가능
                         .requestMatchers("/members/join").permitAll()
+                        .requestMatchers("/reviews/**").authenticated()
                         .anyRequest().authenticated() //그 외는 모두 로그인 필요
                 );
 

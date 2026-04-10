@@ -23,8 +23,9 @@ public class ReviewService {
     private final MemberRepository memberRepository;
 
     @Transactional
-    public void saveReivew(ReviewRequest request) {
+    public void saveReview(ReviewRequest request) {
         String email = SecurityUtil.getCurrentUserEmail();
+        System.out.println("email : " + email);
         Member guest = memberRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다. "));
         Member guide = memberRepository.findById(request.getGuideId())

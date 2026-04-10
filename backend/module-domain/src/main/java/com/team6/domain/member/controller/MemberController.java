@@ -5,10 +5,7 @@ import com.team6.domain.member.service.MemberService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
@@ -24,5 +21,11 @@ public class MemberController {
 
         // [LOG] INFO : [Member-API] 회원가입 성공 (ID : {})
         return ResponseEntity.ok(memberId);
+    }
+
+    @DeleteMapping("/me")
+    public ResponseEntity<String> withdraw() {
+        memberService.withdraw();
+        return ResponseEntity.ok("회원 탈퇴가 완료되었습니다. ");
     }
 }

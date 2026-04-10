@@ -70,4 +70,9 @@ public class Member {
         }
     }
 
+    // 회원 탈퇴
+    public void withdraw() {
+        this.status = Status.WITHDRAWN;
+    }
+
 }
