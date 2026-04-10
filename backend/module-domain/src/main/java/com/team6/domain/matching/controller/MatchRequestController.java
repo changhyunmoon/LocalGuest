@@ -1,5 +1,8 @@
 package com.team6.domain.matching.controller;
 
+import com.team6.domain.guide.repository.GuideProfileRepository;
+import com.team6.domain.matching.exception.MatchingErrorCode;
+import com.team6.domain.matching.exception.MatchingException;
 import com.team6.domain.matching.dto.request.CancelRequestDto;
 import com.team6.domain.matching.dto.request.MatchRequestDeclineRequest;
 import com.team6.domain.matching.dto.request.MatchRequestCreateRequest;
@@ -7,6 +10,10 @@ import com.team6.domain.matching.dto.request.MatchRequestProposeRequest;
 import com.team6.domain.matching.dto.response.MatchRequestActionResponse;
 import com.team6.domain.matching.dto.response.MatchRequestCreateResponse;
 import com.team6.domain.matching.service.MatchRequestService;
+import com.team6.domain.member.entity.Member;
+import com.team6.domain.member.entity.Role;
+import com.team6.domain.member.repository.MemberRepository;
+import com.team6.module.common.global.util.SecurityUtil;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -20,79 +27,53 @@ import java.util.List;
 public class MatchRequestController {
 
     private final MatchRequestService matchRequestService;
+    private final MemberRepository memberRepository;
+    private final GuideProfileRepository guideProfileRepository;
 
     @PostMapping
     public ResponseEntity<MatchRequestCreateResponse> createMatchRequest(
             @RequestBody @Valid MatchRequestCreateRequest request
     ) {
-        Long guestId = 1L; // TODO: JWT 연동 후 교체
+        Long guestId = getCurrentMemberId(Role.GUEST);
+        if (!guideProfileRepository.existsById(request.getGuideId())) {
+            throw new MatchingException(MatchingErrorCode.INVALID_REQUEST);
+        }
 
         MatchRequestCreateResponse saved = matchRequestService.createMatchRequest(guestId, request);
 
         return ResponseEntity.ok(saved);
     }
 
-    /**
-     * 가이드가 자신에게 들어온 매칭 요청 목록을 조회하는 API
-     *
-     * 현재는 guideId를 path variable로 받아 테스트한다.
-     * 추후 JWT 연동 시 guideId는 인증 정보에서 추출하도록 변경 가능하다.
-     */
-    @GetMapping("/guides/{guideId}")
-    public ResponseEntity<List<MatchRequestCreateResponse>> getGuideRequests(
-            @PathVariable Long guideId
-    ) {
+    @GetMapping("/guides/me")
+    public ResponseEntity<List<MatchRequestCreateResponse>> getGuideRequests() {
+        Long guideId = getCurrentGuideProfileId();
         return ResponseEntity.ok(matchRequestService.getGuideRequests(guideId));
     }
 
-    /**
-     * 가이드가 특정 매칭 요청을 거절하는 API
-     *
-     * 현재는 guideId를 request param으로 받아 권한을 검증한다.
-     * 추후 JWT 연동 시 guideId는 인증 정보에서 추출하도록 변경 가능하다.
-     */
     @PatchMapping("/{requestId}/reject")
     public ResponseEntity<MatchRequestActionResponse> rejectMatchRequest(
-            @PathVariable Long requestId,
-            @RequestParam Long guideId
+            @PathVariable Long requestId
     ) {
+        Long guideId = getCurrentGuideProfileId();
         MatchRequestActionResponse updated = matchRequestService.rejectMatchRequest(guideId, requestId);
         return ResponseEntity.ok(updated);
     }
 
-    /**
-     * 가이드가 특정 매칭 요청을 제안 단계(PROPOSED)로 변경하는 API
-     *
-     * 현재는 guideId를 request param으로 받아 권한을 검증한다.
-     * 추후 JWT 연동 시 guideId는 인증 정보에서 추출하도록 변경 가능하다.
-     *
-     * 주의:
-     * 현재 MatchRequest 엔티티에는 실제 제안 내용(일정/메시지) 저장 필드가 없어서
-     * 우선 상태만 PENDING -> PROPOSED 로 변경한다.
-     */
     @PatchMapping("/{requestId}/propose")
     public ResponseEntity<MatchRequestActionResponse> proposeMatchRequest(
             @PathVariable Long requestId,
-            @RequestParam Long guideId,
             @RequestBody @Valid MatchRequestProposeRequest request
     ) {
+        Long guideId = getCurrentGuideProfileId();
         MatchRequestActionResponse updated = matchRequestService.proposeMatchRequest(guideId, requestId, request);
         return ResponseEntity.ok(updated);
     }
 
-    /**
-     * 게스트가 가이드의 제안을 최종 수락하는 API
-     *
-     * 현재는 guestId를 request param으로 받아 권한을 검증한다.
-     * 추후 JWT 연동 시 guestId는 인증 정보에서 추출하도록 변경 가능하다.
-     *
-     * 현재 상태가 PROPOSED일 때만 ACCEPTED로 변경된다.
-     */
     @PatchMapping("/{requestId}/accept")
     public ResponseEntity<MatchRequestActionResponse> acceptMatchRequest(
-            @PathVariable Long requestId,
-            @RequestParam Long guestId
+            @PathVariable Long requestId
     ) {
+        Long guestId = getCurrentMemberId(Role.GUEST);
         MatchRequestActionResponse updated = matchRequestService.acceptMatchRequest(guestId, requestId);
         return ResponseEntity.ok(updated);
     }
@@ -103,9 +84,9 @@ public class MatchRequestController {
     @PatchMapping("/{requestId}/decline")
     public ResponseEntity<MatchRequestActionResponse> declineMatchRequest(
             @PathVariable Long requestId,
-            @RequestParam Long guestId,
             @RequestBody @Valid MatchRequestDeclineRequest request
     ) {
+        Long guestId = getCurrentMemberId(Role.GUEST);
         MatchRequestActionResponse updated = matchRequestService.declineMatchRequest(guestId, requestId, request);
         return ResponseEntity.ok(updated);
     }
@@ -113,10 +94,9 @@ public class MatchRequestController {
     @PatchMapping("/{requestId}/guest/cancel")
     public ResponseEntity<MatchRequestActionResponse> cancelByGuest(
             @PathVariable Long requestId,
-            @RequestParam Long guestId,
             @RequestBody @Valid CancelRequestDto request
     ) {
-        // TODO: 인증 모듈 연동 시 guestId는 토큰 클레임에서 추출한다.
+        Long guestId = getCurrentMemberId(Role.GUEST);
         MatchRequestActionResponse updated =
                 matchRequestService.cancelByGuest(guestId, requestId, request.getCancelReason());
         return ResponseEntity.ok(updated);
@@ -125,12 +105,32 @@ public class MatchRequestController {
     @PatchMapping("/{requestId}/guide/cancel")
     public ResponseEntity<MatchRequestActionResponse> cancelByGuide(
             @PathVariable Long requestId,
-            @RequestParam Long guideId,
             @RequestBody @Valid CancelRequestDto request
     ) {
-        // TODO: 인증 모듈 연동 시 guideId는 토큰 클레임에서 추출한다.
+        Long guideId = getCurrentGuideProfileId();
         MatchRequestActionResponse updated =
                 matchRequestService.cancelByGuide(guideId, requestId, request.getCancelReason());
         return ResponseEntity.ok(updated);
+    }
+
+    private Long getCurrentMemberId(Role requiredRole) {
+        String email = SecurityUtil.getCurrentUserEmail();
+        return memberRepository.findByEmail(email)
+                .map(member -> validateAndGetMemberId(member, requiredRole))
+                .orElseThrow(() -> new MatchingException(MatchingErrorCode.MATCH_REQUEST_UNAUTHORIZED));
+    }
+
+    private Long validateAndGetMemberId(Member member, Role requiredRole) {
+        if (requiredRole != null && member.getRole() != requiredRole) {
+            throw new MatchingException(MatchingErrorCode.MATCH_REQUEST_UNAUTHORIZED);
+        }
+        return member.getId();
+    }
+
+    private Long getCurrentGuideProfileId() {
+        Long memberId = getCurrentMemberId(Role.GUIDE);
+        return guideProfileRepository.findByMemberId(memberId)
+                .map(guideProfile -> guideProfile.getId())
+                .orElseThrow(() -> new MatchingException(MatchingErrorCode.MATCH_REQUEST_UNAUTHORIZED));
     }
 }

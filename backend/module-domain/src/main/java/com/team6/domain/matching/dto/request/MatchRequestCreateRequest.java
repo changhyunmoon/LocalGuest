@@ -12,6 +12,10 @@ import java.time.LocalDate;
 public class MatchRequestCreateRequest {
 
     @NotNull
+    /**
+     * 가이드 식별자 (guide_profiles.id)
+     * member.id가 아닌 guide_profiles PK를 전달해야 한다.
+     */
     private Long guideId;
 
     @NotBlank
