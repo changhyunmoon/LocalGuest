@@ -30,9 +30,16 @@ public class TourExtensionService {
     private final MatchRequestRepository matchRequestRepository;
 
     @Transactional(readOnly = true)
-    public TourExtensionResponseDto getByRequestId(Long requestId) {
+    public TourExtensionResponseDto getByRequestId(Long requestId, Long memberId) {
         TourExtension extension = tourExtensionRepository.findByMatchRequest_Id(requestId)
                 .orElseThrow(() -> new MatchingException(MatchingErrorCode.TOUR_EXTENSION_NOT_FOUND));
+
+        boolean isGuest = extension.getGuestId().equals(memberId);
+        boolean isGuide = extension.getMatchRequest().getGuideId().equals(memberId);
+        if (!isGuest && !isGuide) {
+            throw new MatchingException(MatchingErrorCode.MATCH_REQUEST_UNAUTHORIZED);
+        }
+
         return TourExtensionResponseDto.from(extension);
     }
 
