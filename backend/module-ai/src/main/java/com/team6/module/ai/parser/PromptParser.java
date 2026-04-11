@@ -46,6 +46,9 @@ public class PromptParser {
     }
 
     private static final Pattern BUDGET_WON = Pattern.compile("(\\d{1,3}(?:,\\d{3})+|\\d+)\\s*(원|만원)");
+    private static final Pattern BUDGET_RANGE_WON = Pattern.compile(
+            "(\\d{1,3}(?:,\\d{3})+|\\d+)\\s*(원|만원)\\s*(?:~|\\-|부터|에서)\\s*(\\d{1,3}(?:,\\d{3})+|\\d+)\\s*(원|만원)?"
+    );
     /**
      * "15만 안으로", "약 20만 전후", "30만 이내" 등 만 원 단위 구어체.
      */
@@ -53,10 +56,17 @@ public class PromptParser {
             "(?:약|대략)?\\s*(\\d{1,3}(?:,\\d{3})+|\\d+)\\s*만(?:원)?(?:\\s*(?:안(?:으로)?|이내|까지|전후|정도|쯤|수준|선))?"
     );
     private static final Pattern BUDGET_MANWON_BAND = Pattern.compile("(\\d+)\\s*만원\\s*대");
+    private static final Pattern BUDGET_MANWON_RANGE = Pattern.compile("(\\d+)\\s*[~-]\\s*(\\d+)\\s*만(?:원)?");
     private static final Pattern HEADCOUNT = Pattern.compile("(\\d+)\\s*(명|인)");
     private static final Pattern DURATION_NIGHTS_DAYS = Pattern.compile("(\\d+)\\s*박\\s*(\\d+)\\s*일");
+    private static final Pattern DURATION_NIGHTS_ONLY = Pattern.compile("(\\d+)\\s*박(?!\\s*\\d)");
     private static final Pattern DURATION_DAYS = Pattern.compile("(\\d+)\\s*일");
+    private static final Pattern DURATION_DAYS_SUFFIX = Pattern.compile("(\\d+)\\s*일(?:간|동안)");
+    private static final Pattern DURATION_RANGE_DAYS = Pattern.compile("(\\d+)\\s*[~-]\\s*(\\d+)\\s*일");
     private static final Pattern DURATION_WEEKS = Pattern.compile("(\\d+)\\s*주");
+    private static final Pattern DATE_RANGE_MONTH_DAY = Pattern.compile("(\\d{1,2})\\s*/\\s*(\\d{1,2})\\s*(?:~|\\-|부터)\\s*(\\d{1,2})\\s*/\\s*(\\d{1,2})");
+    private static final Pattern DATE_RANGE_DAY_ONLY = Pattern.compile("(\\d{1,2})\\s*일\\s*(?:~|\\-|부터)\\s*(\\d{1,2})\\s*일");
+    private static final int NEGATION_AFTER_WINDOW = 12;
 
     public GuideRecommendRequest parse(
             String prompt,
@@ -244,14 +254,38 @@ public class PromptParser {
     }
 
     private String extractTravelStyle(String prompt) {
-        if (containsAny(prompt, "감성", "감성적인", "감성샷", "핫플", "인스타", "인스타그램")) return "감성";
-        if (containsAny(prompt, "액티비티", "활동적인", "신나게", "역동적인", "익스트림", "스릴", "짜릿")) {
-            return "액티비티";
+        Map<String, List<String>> styleKeywords = Map.of(
+                "감성", List.of("감성", "감성적인", "감성샷", "핫플", "인스타", "인스타그램"),
+                "액티비티", List.of("액티비티", "활동적인", "신나게", "역동적인", "익스트림", "스릴", "짜릿"),
+                "힐링", List.of("조용", "힐링", "편안", "여유", "쉬고", "한적"),
+                "로컬", List.of("로컬", "현지", "동네", "시장", "골목", "문화", "역사", "유적", "문화재", "유네스코")
+        );
+        Map<String, Integer> scores = new LinkedHashMap<>();
+        styleKeywords.keySet().forEach(style -> scores.put(style, 0));
+
+        for (Map.Entry<String, List<String>> entry : styleKeywords.entrySet()) {
+            String style = entry.getKey();
+            for (String keyword : entry.getValue()) {
+                int idx = prompt.indexOf(keyword.toLowerCase(Locale.ROOT));
+                while (idx >= 0) {
+                    if (!isNegatedAround(prompt, idx, keyword.length())) {
+                        int score = scores.get(style) + 1;
+                        if (hasPriorityHintAround(prompt, idx, keyword.length())) {
+                            score += 2;
+                        }
+                        scores.put(style, score);
+                    }
+                    idx = prompt.indexOf(keyword.toLowerCase(Locale.ROOT), idx + keyword.length());
+                }
+            }
         }
-        if (containsAny(prompt, "조용", "힐링", "편안", "여유", "쉬고")) return "힐링";
-        if (containsAny(prompt, "로컬", "현지", "동네", "시장", "골목")) return "로컬";
-        if (containsAny(prompt, "문화", "역사", "유적", "문화재", "유네스코")) return "로컬";
-        return null;
+
+        return scores.entrySet().stream()
+                .filter(e -> e.getValue() > 0)
+                .max(Map.Entry.<String, Integer>comparingByValue()
+                        .thenComparing(e -> stylePriority(e.getKey())))
+                .map(Map.Entry::getKey)
+                .orElse(null);
     }
 
     private String extractBudgetLevel(String prompt) {
@@ -327,37 +361,50 @@ public class PromptParser {
     private List<String> extractActivityTags(String prompt) {
         Set<String> tags = new LinkedHashSet<>();
 
-        if (containsAny(prompt, "카페")) tags.add("카페");
-        if (containsAny(prompt, "야경", "밤거리")) tags.add("야경");
-        if (containsAny(prompt, "맛집", "먹방", "음식", "식도락")) tags.add("맛집");
-        if (containsAny(prompt, "산책", "걷기", "걷고")) tags.add("산책");
-        if (containsAny(prompt, "등산", "트레킹")) tags.add("등산");
-        if (containsAny(prompt, "사진", "포토", "인생샷")) tags.add("사진");
-        if (containsAny(prompt, "쇼핑")) tags.add("쇼핑");
-        if (containsAny(prompt, "바다", "해변", "오션뷰", "해수욕장", "스노클링", "다이빙", "스쿠버")) tags.add("바다");
-        if (containsAny(prompt, "일몰", "노을", "야경명소")) tags.add("일몰");
-        if (containsAny(prompt, "박물관", "미술관", "전시")) tags.add("전시");
-        if (containsAny(prompt, "시장", "전통시장", "로컬시장", "야시장")) tags.add("시장");
-        if (containsAny(prompt, "술집", "클럽", "바")) tags.add("술집");
-        if (containsAny(prompt, "브런치", "카페투어")) tags.add("브런치");
-        if (containsAny(prompt, "쇼핑몰", "아울렛")) tags.add("쇼핑몰");
-        if (containsAny(prompt, "온천", "노천탕", "스파")) tags.add("온천");
-        if (containsAny(prompt, "골프", "골프장")) tags.add("골프");
-        if (containsAny(prompt, "서핑", "서핑하기")) tags.add("서핑");
-        if (containsAny(prompt, "드라이브", "드라이브코스")) tags.add("드라이브");
-        if (containsAny(prompt, "한옥", "한옥마을", "한옥스테이")) tags.add("한옥");
-        if (containsAny(prompt, "테마파크", "놀이공원", "놀이동산")) tags.add("테마파크");
-        if (containsAny(prompt, "캠핑", "글램핑", "오토캠핑")) tags.add("캠핑");
-        if (containsAny(prompt, "사찰", "템플스테이", "사찰순례")) tags.add("사찰");
-        if (containsAny(prompt, "유적", "고분", "왕릉")) tags.add("유적");
-        if (containsAny(prompt, "자전거", "라이딩", "사이클")) tags.add("자전거");
-        if (containsAny(prompt, "래프팅", "레포츠", "짚라인")) tags.add("래프팅");
-        if (containsAny(prompt, "스키", "보드", "스노보드", "슬로프")) tags.add("스키");
-        if (containsAny(prompt, "계곡", "폭포", "계곡트레킹")) tags.add("계곡");
-        if (containsAny(prompt, "패러글라이딩", "패러")) tags.add("패러글라이딩");
-        if (containsAny(prompt, "낚시", "바다낚시")) tags.add("낚시");
+        addTagIfMentioned(prompt, tags, "카페", "카페");
+        addTagIfMentioned(prompt, tags, "야경", "야경", "밤거리");
+        addTagIfMentioned(prompt, tags, "맛집", "맛집", "먹방", "음식", "식도락");
+        addTagIfMentioned(prompt, tags, "산책", "산책", "걷기", "걷고");
+        addTagIfMentioned(prompt, tags, "등산", "등산", "트레킹");
+        addTagIfMentioned(prompt, tags, "사진", "사진", "포토", "인생샷");
+        addTagIfMentioned(prompt, tags, "쇼핑", "쇼핑");
+        addTagIfMentioned(prompt, tags, "바다", "바다", "해변", "오션뷰", "해수욕장", "스노클링", "다이빙", "스쿠버");
+        addTagIfMentioned(prompt, tags, "일몰", "일몰", "노을", "야경명소");
+        addTagIfMentioned(prompt, tags, "전시", "박물관", "미술관", "전시");
+        addTagIfMentioned(prompt, tags, "시장", "시장", "전통시장", "로컬시장", "야시장");
+        addTagIfMentioned(prompt, tags, "술집", "술집", "클럽", "바");
+        addTagIfMentioned(prompt, tags, "브런치", "브런치", "카페투어");
+        addTagIfMentioned(prompt, tags, "쇼핑몰", "쇼핑몰", "아울렛");
+        addTagIfMentioned(prompt, tags, "온천", "온천", "노천탕", "스파");
+        addTagIfMentioned(prompt, tags, "골프", "골프", "골프장");
+        addTagIfMentioned(prompt, tags, "서핑", "서핑", "서핑하기");
+        addTagIfMentioned(prompt, tags, "드라이브", "드라이브", "드라이브코스");
+        addTagIfMentioned(prompt, tags, "한옥", "한옥", "한옥마을", "한옥스테이");
+        addTagIfMentioned(prompt, tags, "테마파크", "테마파크", "놀이공원", "놀이동산");
+        addTagIfMentioned(prompt, tags, "캠핑", "캠핑", "글램핑", "오토캠핑");
+        addTagIfMentioned(prompt, tags, "사찰", "사찰", "템플스테이", "사찰순례");
+        addTagIfMentioned(prompt, tags, "유적", "유적", "고분", "왕릉");
+        addTagIfMentioned(prompt, tags, "자전거", "자전거", "라이딩", "사이클");
+        addTagIfMentioned(prompt, tags, "래프팅", "래프팅", "레포츠", "짚라인");
+        addTagIfMentioned(prompt, tags, "스키", "스키", "보드", "스노보드", "슬로프");
+        addTagIfMentioned(prompt, tags, "계곡", "계곡", "폭포", "계곡트레킹");
+        addTagIfMentioned(prompt, tags, "패러글라이딩", "패러글라이딩", "패러");
+        addTagIfMentioned(prompt, tags, "낚시", "낚시", "바다낚시");
 
         return normalizeTagList(tags);
+    }
+
+    private void addTagIfMentioned(String prompt, Set<String> tags, String tag, String... keywords) {
+        for (String keyword : keywords) {
+            int idx = prompt.indexOf(keyword.toLowerCase(Locale.ROOT));
+            while (idx >= 0) {
+                if (!isNegatedAround(prompt, idx, keyword.length())) {
+                    tags.add(tag);
+                    return;
+                }
+                idx = prompt.indexOf(keyword.toLowerCase(Locale.ROOT), idx + keyword.length());
+            }
+        }
     }
 
     /**
@@ -375,23 +422,32 @@ public class PromptParser {
     }
 
     private List<String> extractExcludedActivityTags(String prompt) {
-        // 간단 룰: 제외 의도 + 태그 키워드가 같이 등장하면 제외 태그로 등록
         Set<String> excluded = new LinkedHashSet<>();
-        if (containsAnyMerged(
-                prompt,
-                aiProperties.getParser().getExclusionIntentKeywords(),
-                DEFAULT_EXCLUSION_INTENT_KEYWORDS
-        )) {
-            if (containsAny(prompt, "술집", "클럽", "바")) excluded.add("술집");
-            if (containsAny(prompt, "등산", "트레킹")) excluded.add("등산");
-            if (containsAny(prompt, "쇼핑", "쇼핑몰", "아울렛")) excluded.add("쇼핑");
-        }
+        addExcludedIfNegated(prompt, excluded, "술집", "술집", "클럽", "바");
+        addExcludedIfNegated(prompt, excluded, "등산", "등산", "트레킹");
+        addExcludedIfNegated(prompt, excluded, "쇼핑", "쇼핑", "쇼핑몰", "아울렛");
+        addExcludedIfNegated(prompt, excluded, "맛집", "맛집", "먹방", "식도락");
+        addExcludedIfNegated(prompt, excluded, "카페", "카페", "브런치", "카페투어");
+        addExcludedIfNegated(prompt, excluded, "바다", "바다", "해변", "오션뷰", "해수욕장");
         LinkedHashSet<String> normalized = excluded.stream()
                 .map(KeywordNormalizer::normalizeTag)
                 .filter(Objects::nonNull)
                 .filter(s -> !s.isBlank())
                 .collect(Collectors.toCollection(LinkedHashSet::new));
         return new ArrayList<>(normalized);
+    }
+
+    private void addExcludedIfNegated(String prompt, Set<String> excluded, String tag, String... keywords) {
+        for (String keyword : keywords) {
+            int idx = prompt.indexOf(keyword.toLowerCase(Locale.ROOT));
+            while (idx >= 0) {
+                if (isNegatedAround(prompt, idx, keyword.length())) {
+                    excluded.add(tag);
+                    return;
+                }
+                idx = prompt.indexOf(keyword.toLowerCase(Locale.ROOT), idx + keyword.length());
+            }
+        }
     }
 
     /**
@@ -476,18 +532,31 @@ public class PromptParser {
     private List<String> extractLanguages(String prompt) {
         Set<String> languages = new LinkedHashSet<>();
 
-        if (containsAny(prompt, "한국어")) languages.add("한국어");
-        if (containsAny(prompt, "영어", "english", "eng")) languages.add("영어");
-        if (containsAny(prompt, "일본어", "japanese", "jp")) languages.add("일본어");
-        if (containsAny(prompt, "중국어", "chinese", "cn")) languages.add("중국어");
-        if (containsAny(prompt, "프랑스어", "프랑스", "french", "français")) languages.add("프랑스어");
-        if (containsAny(prompt, "스페인어", "스페인", "spanish", "español")) languages.add("스페인어");
-        if (containsAny(prompt, "독일어", "독일", "german", "deutsch")) languages.add("독일어");
-        if (containsAny(prompt, "베트남어", "베트남", "vietnamese", "vn")) languages.add("베트남어");
-        if (containsAny(prompt, "태국어", "태국", "thai", "ภาษาไทย")) languages.add("태국어");
-        if (containsAny(prompt, "이탈리아어", "이탈리아", "italian", "italiano")) languages.add("이탈리아어");
+        addLanguageIfMentioned(prompt, languages, "한국어", "한국어");
+        addLanguageIfMentioned(prompt, languages, "영어", "영어", "english", "eng");
+        addLanguageIfMentioned(prompt, languages, "일본어", "일본어", "japanese", "jp");
+        addLanguageIfMentioned(prompt, languages, "중국어", "중국어", "chinese", "cn");
+        addLanguageIfMentioned(prompt, languages, "프랑스어", "프랑스어", "프랑스", "french", "français");
+        addLanguageIfMentioned(prompt, languages, "스페인어", "스페인어", "스페인", "spanish", "español");
+        addLanguageIfMentioned(prompt, languages, "독일어", "독일어", "독일", "german", "deutsch");
+        addLanguageIfMentioned(prompt, languages, "베트남어", "베트남어", "베트남", "vietnamese", "vn");
+        addLanguageIfMentioned(prompt, languages, "태국어", "태국어", "태국", "thai", "ภาษาไทย");
+        addLanguageIfMentioned(prompt, languages, "이탈리아어", "이탈리아어", "이탈리아", "italian", "italiano");
 
         return new ArrayList<>(languages);
+    }
+
+    private void addLanguageIfMentioned(String prompt, Set<String> languages, String language, String... keywords) {
+        for (String keyword : keywords) {
+            int idx = prompt.indexOf(keyword.toLowerCase(Locale.ROOT));
+            while (idx >= 0) {
+                if (!isNegatedAround(prompt, idx, keyword.length())) {
+                    languages.add(language);
+                    return;
+                }
+                idx = prompt.indexOf(keyword.toLowerCase(Locale.ROOT), idx + keyword.length());
+            }
+        }
     }
 
     private boolean containsAny(String prompt, String... keywords) {
@@ -500,12 +569,25 @@ public class PromptParser {
     }
 
     private Integer extractBudgetAmount(String prompt) {
+        Matcher range = BUDGET_RANGE_WON.matcher(prompt);
+        if (range.find()) {
+            Integer start = convertWon(range.group(1), range.group(2));
+            String endUnit = range.group(4) == null ? range.group(2) : range.group(4);
+            Integer end = convertWon(range.group(3), endUnit);
+            if (start != null && end != null) {
+                return (start + end) / 2;
+            }
+        }
+
         Matcher m = BUDGET_WON.matcher(prompt);
         if (!m.find()) {
             return null;
         }
-        String number = m.group(1).replace(",", "");
-        String unit = m.group(2);
+        return convertWon(m.group(1), m.group(2));
+    }
+
+    private Integer convertWon(String rawNumber, String unit) {
+        String number = rawNumber.replace(",", "");
         try {
             long value = Long.parseLong(number);
             if ("만원".equals(unit)) {
@@ -534,10 +616,17 @@ public class PromptParser {
     }
 
     private Integer extractDurationDays(String prompt) {
+        Integer dateRangeDays = extractDateRangeDays(prompt);
+        if (dateRangeDays != null) {
+            return dateRangeDays;
+        }
         if (containsAny(prompt, "당일치기", "당일")) {
             return 1;
         }
-        if (containsAny(prompt, "주말")) {
+        if (containsAny(prompt, "주말", "이번 주말", "다음 주말", "다다음 주말")) {
+            return 2;
+        }
+        if (containsAny(prompt, "1박2일")) {
             return 2;
         }
 
@@ -549,11 +638,38 @@ public class PromptParser {
             } catch (NumberFormatException ignored) {
             }
         }
+        Matcher nightsOnly = DURATION_NIGHTS_ONLY.matcher(prompt);
+        if (nightsOnly.find()) {
+            try {
+                int nights = Integer.parseInt(nightsOnly.group(1));
+                int days = nights + 1;
+                return (days <= 0 || days > 30) ? null : days;
+            } catch (NumberFormatException ignored) {
+            }
+        }
         Matcher w = DURATION_WEEKS.matcher(prompt);
         if (w.find()) {
             try {
                 int weeks = Integer.parseInt(w.group(1));
                 int days = weeks * 7;
+                return (days <= 0 || days > 30) ? null : days;
+            } catch (NumberFormatException ignored) {
+            }
+        }
+        Matcher range = DURATION_RANGE_DAYS.matcher(prompt);
+        if (range.find()) {
+            try {
+                int start = Integer.parseInt(range.group(1));
+                int end = Integer.parseInt(range.group(2));
+                int days = Math.max(start, end);
+                return (days <= 0 || days > 30) ? null : days;
+            } catch (NumberFormatException ignored) {
+            }
+        }
+        Matcher dSuffix = DURATION_DAYS_SUFFIX.matcher(prompt);
+        if (dSuffix.find()) {
+            try {
+                int days = Integer.parseInt(dSuffix.group(1));
                 return (days <= 0 || days > 30) ? null : days;
             } catch (NumberFormatException ignored) {
             }
@@ -570,6 +686,15 @@ public class PromptParser {
     }
 
     private Integer extractBudgetBand(String prompt) {
+        Matcher range = BUDGET_MANWON_RANGE.matcher(prompt);
+        if (range.find()) {
+            try {
+                int start = Integer.parseInt(range.group(1));
+                int end = Integer.parseInt(range.group(2));
+                return Math.max(start, end);
+            } catch (NumberFormatException ignored) {
+            }
+        }
         Matcher m = BUDGET_MANWON_BAND.matcher(prompt);
         if (!m.find()) {
             return null;
@@ -580,5 +705,62 @@ public class PromptParser {
         } catch (NumberFormatException e) {
             return null;
         }
+    }
+
+    private Integer extractDateRangeDays(String prompt) {
+        Matcher monthDay = DATE_RANGE_MONTH_DAY.matcher(prompt);
+        if (monthDay.find()) {
+            try {
+                int startMonth = Integer.parseInt(monthDay.group(1));
+                int startDay = Integer.parseInt(monthDay.group(2));
+                int endMonth = Integer.parseInt(monthDay.group(3));
+                int endDay = Integer.parseInt(monthDay.group(4));
+                if (startMonth == endMonth && endDay >= startDay) {
+                    int days = endDay - startDay + 1;
+                    return (days <= 0 || days > 30) ? null : days;
+                }
+            } catch (NumberFormatException ignored) {
+            }
+        }
+
+        Matcher dayOnly = DATE_RANGE_DAY_ONLY.matcher(prompt);
+        if (dayOnly.find()) {
+            try {
+                int startDay = Integer.parseInt(dayOnly.group(1));
+                int endDay = Integer.parseInt(dayOnly.group(2));
+                if (endDay >= startDay) {
+                    int days = endDay - startDay + 1;
+                    return (days <= 0 || days > 30) ? null : days;
+                }
+            } catch (NumberFormatException ignored) {
+            }
+        }
+        return null;
+    }
+
+    private boolean isNegatedAround(String prompt, int idx, int keywordLength) {
+        String after = prompt.substring(idx + keywordLength, Math.min(prompt.length(), idx + keywordLength + NEGATION_AFTER_WINDOW));
+        return containsAnyMerged(
+                after,
+                aiProperties.getParser().getExclusionIntentKeywords(),
+                DEFAULT_EXCLUSION_INTENT_KEYWORDS
+        ) || containsAny(after, "부담", "별로", "안 좋아", "안좋아", "원하지 않", "원하지않", "아니어도", "안 해도", "안해도");
+    }
+
+    private boolean hasPriorityHintAround(String prompt, int idx, int keywordLength) {
+        int start = Math.max(0, idx - 10);
+        int end = Math.min(prompt.length(), idx + keywordLength + 10);
+        String window = prompt.substring(start, end);
+        return containsAny(window, "위주", "중심", "우선", "선호", "좋아", "좋고", "좋겠", "좋은");
+    }
+
+    private int stylePriority(String style) {
+        return switch (style) {
+            case "힐링" -> 4;
+            case "감성" -> 3;
+            case "로컬" -> 2;
+            case "액티비티" -> 1;
+            default -> 0;
+        };
     }
 }

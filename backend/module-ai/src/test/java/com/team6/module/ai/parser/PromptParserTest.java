@@ -145,6 +145,74 @@ class PromptParserTest {
     }
 
     @Test
+    void parse_should_prefer_positive_tags_over_negated_tags_in_long_prompt() {
+        GuideRecommendRequest request = promptParser.parse(
+                "부산에서 카페랑 바다는 좋고 술집이나 클럽은 말고, 붐비는 쇼핑몰도 싫어요",
+                3,
+                List.of()
+        );
+
+        assertThat(request.getActivityTags()).contains("카페", "바다");
+        assertThat(request.getActivityTags()).doesNotContain("술집", "쇼핑");
+        assertThat(request.getExcludedActivityTags()).contains("술집", "쇼핑");
+    }
+
+    @Test
+    void parse_should_extract_budget_from_range_and_per_person_style_expressions() {
+        GuideRecommendRequest request = promptParser.parse(
+                "제주 여행 총 예산은 20만원~30만원 정도고 1인당 7만원쯤 생각해",
+                3,
+                List.of()
+        );
+
+        assertThat(request.getBudgetLevel()).isEqualTo("중간");
+    }
+
+    @Test
+    void parse_should_extract_duration_from_date_range_and_nights_only() {
+        GuideRecommendRequest byDate = promptParser.parse("부산 4/20~4/22 여행으로 맛집 추천", 3, List.of());
+        assertThat(byDate.getDurationDays()).isEqualTo(3);
+
+        GuideRecommendRequest byNight = promptParser.parse("제주 1박 여행으로 바다 보고 싶어", 3, List.of());
+        assertThat(byNight.getDurationDays()).isEqualTo(2);
+    }
+
+    @Test
+    void parse_should_pick_prioritized_style_from_complex_prompt() {
+        GuideRecommendRequest request = promptParser.parse(
+                "서울에서 액티비티도 조금 하고 싶지만 전체적으로는 조용하고 힐링 위주 여행 원해",
+                3,
+                List.of()
+        );
+
+        assertThat(request.getTravelStyle()).isEqualTo("힐링");
+    }
+
+    @Test
+    void parse_should_ignore_negated_language_requirement() {
+        GuideRecommendRequest request = promptParser.parse(
+                "부산 여행인데 영어는 꼭 아니어도 되고 일본어 가이드면 좋겠어",
+                3,
+                List.of()
+        );
+
+        assertThat(request.getPreferredLanguages()).contains("일본어");
+        assertThat(request.getPreferredLanguages()).doesNotContain("영어");
+    }
+
+    @Test
+    void parse_should_extract_duration_from_day_range_expression() {
+        GuideRecommendRequest request = promptParser.parse(
+                "강릉 2~3일 정도 산책이랑 바다 중심으로 가고 싶어",
+                3,
+                List.of()
+        );
+
+        assertThat(request.getDurationDays()).isEqualTo(3);
+        assertThat(request.getActivityTags()).contains("산책", "바다");
+    }
+
+    @Test
     void parse_should_apply_yaml_region_aliases_over_defaults() {
         LocalGuestAiProperties props = new LocalGuestAiProperties();
         props.getParser().getRegionAliases().put("jeju", "부산");
