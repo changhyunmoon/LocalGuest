@@ -5,6 +5,7 @@ package com.team6.module.ai.engine;
  * <p>
  * 유사도는 대략 0~1로 정규화한 뒤 {@code DIVERSITY_LAMBDA}를 곱해 점수에서 뺀다.
  * 가중치 합({@link #REGION_SIM_WEIGHT}+…+{@link #PRICE_TIER_SIM_WEIGHT})으로 나누어 스케일을 맞춘다.
+ * 지역 차원은 동일 지역(1.0) 또는 희망 지역 권역 내 서로 다른 지역 쌍({@link #REGION_CLUSTER_SIMILARITY_RATIO})으로만 채운다.
  */
 public final class DiversityRerankConstants {
 
@@ -14,6 +15,11 @@ public final class DiversityRerankConstants {
     /** 유사도 패널티 강도. 클수록 Top-N에서 중복 성향 후보를 덜 고른다. */
     public static final double DIVERSITY_LAMBDA = 15.0;
     public static final double REGION_SIM_WEIGHT = 1.0;
+    /**
+     * 두 가이드 활동 지역이 다르지만, 모두 여행자 희망 지역 또는 그 인접 지역 안에 있을 때 지역 유사도(0~1).
+     * {@link MatchingEngine}에서 {@link #REGION_SIM_WEIGHT}에 곱해 합산한다.
+     */
+    public static final double REGION_CLUSTER_SIMILARITY_RATIO = 0.42;
     public static final double STYLE_SIM_WEIGHT = 0.8;
     /** 전문 태그 Jaccard에 곱함. */
     public static final double TAG_SIM_WEIGHT = 0.8;
