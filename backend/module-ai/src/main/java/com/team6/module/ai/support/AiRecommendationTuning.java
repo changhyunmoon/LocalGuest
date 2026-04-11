@@ -14,9 +14,12 @@ public final class AiRecommendationTuning {
     /**
      * 룰/스코어/Reason/응답 계약이 바뀔 때마다 올린다. 로그·API에서 동일 프롬프트 비교 시 정책 변경 여부를 구분하는 데 쓴다.
      */
-    public static final String POLICY_VERSION = "2026.04.11";
+    public static final String POLICY_VERSION = "2026.04.12";
 
     public static final int DEFAULT_TOP_N = 3;
+
+    /** 추천 카드·응답에 실을 공개 피드 썸네일 URL 상한(최신순). */
+    public static final int PUBLIC_FEED_THUMBNAIL_MAX = 4;
 
     /** 이 점수 미만이면 기존 조건 완화(fallback) 재시도를 시도한다. */
     public static final int LOW_SIGNAL_SCORE_THRESHOLD = 15;

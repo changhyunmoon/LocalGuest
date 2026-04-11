@@ -194,6 +194,8 @@ public class DbBackedGuideCandidateProvider implements GuideCandidateProvider {
                 .matchRequestCount(matchRequestCount)
                 .progressedMatchCount(progressedMatchCount)
                 .chatStartCount(chatStartCount)
+                .representativeImageUrl(d.getRepresentativeImageUrl())
+                .publicFeedThumbnailUrls(d.getPublicFeedThumbnailUrls())
                 .build();
     }
 }

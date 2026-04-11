@@ -5,9 +5,11 @@ import com.team6.domain.guide.entity.GuideFeed;
 import com.team6.domain.guide.entity.GuideProfile;
 import com.team6.module.ai.dto.request.GuideRecommendRequest;
 import org.junit.jupiter.api.Test;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -49,5 +51,51 @@ class GuideProfileAiCandidateMapperTest {
                 .contains("카페", "바다", "사진", "시장", "맛집", "야경", "산책");
         assertThat(candidate.getLanguages()).containsExactly("한국어", "English");
         assertThat(candidate.getPriceLevel()).isEqualTo("중간");
+    }
+
+    @Test
+    void toCandidate_should_map_profile_image_and_feed_thumbnails_newest_first() {
+        GuideProfile profile = GuideProfile.builder()
+                .id(1L)
+                .memberId(10L)
+                .nickname("이미지가이드")
+                .profileImage("https://cdn.example.com/profile/1.jpg")
+                .region("제주")
+                .language("한국어")
+                .pricePerHour(new BigDecimal("40000"))
+                .build();
+
+        GuideFeed older = GuideFeed.builder()
+                .id(1L)
+                .guideProfile(profile)
+                .content("옛날 피드")
+                .imageUrl("https://cdn.example.com/feed/old.jpg")
+                .build();
+        ReflectionTestUtils.setField(older, "createdAt", LocalDateTime.of(2023, 6, 1, 12, 0));
+
+        GuideFeed newer = GuideFeed.builder()
+                .id(2L)
+                .guideProfile(profile)
+                .content("최근 피드")
+                .imageUrl("https://cdn.example.com/feed/new.jpg")
+                .build();
+        ReflectionTestUtils.setField(newer, "createdAt", LocalDateTime.of(2025, 1, 15, 9, 0));
+
+        GuideFeed noImage = GuideFeed.builder()
+                .id(3L)
+                .guideProfile(profile)
+                .content("이미지 없음")
+                .build();
+        ReflectionTestUtils.setField(noImage, "createdAt", LocalDateTime.of(2025, 2, 1, 9, 0));
+
+        GuideRecommendRequest.GuideCandidateDto candidate = GuideProfileAiCandidateMapper.toCandidate(
+                profile,
+                List.of(older, newer, noImage),
+                List.of()
+        );
+
+        assertThat(candidate.getRepresentativeImageUrl()).isEqualTo("https://cdn.example.com/profile/1.jpg");
+        assertThat(candidate.getPublicFeedThumbnailUrls())
+                .containsExactly("https://cdn.example.com/feed/new.jpg", "https://cdn.example.com/feed/old.jpg");
     }
 }
