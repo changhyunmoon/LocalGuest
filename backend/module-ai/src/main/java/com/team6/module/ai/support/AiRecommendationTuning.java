@@ -14,7 +14,7 @@ public final class AiRecommendationTuning {
     /**
      * 룰/스코어/Reason/응답 계약이 바뀔 때마다 올린다. 로그·API에서 동일 프롬프트 비교 시 정책 변경 여부를 구분하는 데 쓴다.
      */
-    public static final String POLICY_VERSION = "2026.04.9";
+    public static final String POLICY_VERSION = "2026.04.10";
 
     public static final int DEFAULT_TOP_N = 3;
 
