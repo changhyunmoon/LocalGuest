@@ -1,8 +1,8 @@
 package com.team6.integration.ai;
 
-import com.team6.domain.guide.entity.GuideProfile;
 import com.team6.domain.guide.entity.GuideCareer;
 import com.team6.domain.guide.entity.GuideFeed;
+import com.team6.domain.guide.entity.GuideProfile;
 import com.team6.domain.guide.repository.GuideCareerRepository;
 import com.team6.domain.guide.repository.GuideFeedRepository;
 import com.team6.domain.guide.repository.GuideProfileRepository;
