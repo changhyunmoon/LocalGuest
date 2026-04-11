@@ -34,7 +34,7 @@ public class GuideRecommendItem {
     @Getter
     @Builder
     public static class ReasonFact {
-        @Schema(description = "ReasonGenerator 코드(예: REGION_MATCH, SOFT_ACTIVITY_PENALTY)")
+        @Schema(description = "ReasonGenerator 코드(예: REGION_MATCH, BUDGET_ADJACENT, FEEDBACK_VERY_LOW_RATING)")
         private String code;
         @Schema(description = "해당 근거에 대응하는 값 목록")
         private List<String> values;
