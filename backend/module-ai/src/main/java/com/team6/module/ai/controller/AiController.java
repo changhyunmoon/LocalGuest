@@ -67,7 +67,11 @@ public class AiController {
             )
             @RequestBody PromptRecommendApiRequest request) {
         List<GuideRecommendRequest.GuideCandidateDto> candidates =
-                guideCandidateProvider.getCandidates(request.getGuideCandidates());
+                guideCandidateProvider.getCandidates(
+                        request.getPrompt(),
+                        request.getTopN(),
+                        request.getGuideCandidates()
+                );
 
         GuideRecommendResponse body = promptRecommendationService.recommendByPrompt(
                 request.getPrompt(),
