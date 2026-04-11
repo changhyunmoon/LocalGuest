@@ -24,6 +24,9 @@ public final class GuideProfileAiCandidateMapper {
                 .priceLevel(priceLevelFromHourly(profile.getPricePerHour()))
                 .specialtyTags(List.of())
                 .languages(splitLanguages(profile.getLanguage()))
+                .averageRating(profile.getAverageRating())
+                .reviewCount(profile.getReviewCount())
+                .approvedRefundCount(null)
                 .build();
     }
 

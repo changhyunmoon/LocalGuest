@@ -7,6 +7,7 @@ import com.team6.module.ai.engine.ReasonGenerator;
 import com.team6.module.ai.engine.ScoreCalculator;
 import com.team6.module.ai.policy.ActivityMatchPolicy;
 import com.team6.module.ai.policy.BudgetMatchPolicy;
+import com.team6.module.ai.policy.FeedbackMatchPolicy;
 import com.team6.module.ai.policy.LanguageMatchPolicy;
 import com.team6.module.ai.policy.RegionMatchPolicy;
 import com.team6.module.ai.policy.StyleMatchPolicy;
@@ -25,7 +26,8 @@ class AiRecommendationServiceTest {
                 new StyleMatchPolicy(),
                 new BudgetMatchPolicy(),
                 new ActivityMatchPolicy(),
-                new LanguageMatchPolicy()
+                new LanguageMatchPolicy(),
+                new FeedbackMatchPolicy()
         );
 
         return new AiRecommendationServiceImpl(

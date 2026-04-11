@@ -2,6 +2,8 @@ package com.team6.integration.ai;
 
 import com.team6.domain.guide.entity.GuideProfile;
 import com.team6.domain.guide.repository.GuideProfileRepository;
+import com.team6.domain.matching.entity.enums.RefundStatus;
+import com.team6.domain.matching.repository.RefundRepository;
 import com.team6.module.ai.config.LocalGuestAiProperties;
 import com.team6.module.ai.dto.request.GuideRecommendRequest;
 import com.team6.module.ai.parser.PromptParser;
@@ -30,12 +32,16 @@ class DbBackedGuideCandidateProviderTest {
     @Mock
     private GuideProfileRepository guideProfileRepository;
 
+    @Mock
+    private RefundRepository refundRepository;
+
     private DbBackedGuideCandidateProvider provider;
 
     @BeforeEach
     void setUp() {
         provider = new DbBackedGuideCandidateProvider(
                 guideProfileRepository,
+                refundRepository,
                 new PromptParser(new LocalGuestAiProperties())
         );
     }
@@ -57,6 +63,7 @@ class DbBackedGuideCandidateProviderTest {
                 provider.getCandidates("제주 2박", 3, client);
         assertThat(out).isSameAs(client);
         verify(guideProfileRepository, never()).findByIsApprovedTrueAndIsActiveTrue(any(Pageable.class));
+        verify(refundRepository, never()).countApprovedRefundsGroupedByGuideId(any(), any());
     }
 
     @Test
@@ -75,6 +82,8 @@ class DbBackedGuideCandidateProviderTest {
                 eq("제주"),
                 any(Pageable.class)
         )).thenReturn(new PageImpl<>(List.of(p)));
+        when(refundRepository.countApprovedRefundsGroupedByGuideId(any(), eq(RefundStatus.APPROVED)))
+                .thenReturn(List.of());
 
         List<GuideRecommendRequest.GuideCandidateDto> out =
                 provider.getCandidates("제주에서 힐링하고 싶어요", 3, List.of());
@@ -84,6 +93,7 @@ class DbBackedGuideCandidateProviderTest {
         assertThat(out.get(0).getRegion()).isEqualTo("제주");
         assertThat(out.get(0).getLanguages()).containsExactly("한국어", "English");
         assertThat(out.get(0).getPriceLevel()).isEqualTo("낮음");
+        assertThat(out.get(0).getApprovedRefundCount()).isZero();
     }
 
     @Test
@@ -104,6 +114,8 @@ class DbBackedGuideCandidateProviderTest {
                 .build();
         when(guideProfileRepository.findByIsApprovedTrueAndIsActiveTrue(PageRequest.of(0, DbBackedGuideCandidateProvider.MAX_SERVER_CANDIDATES)))
                 .thenReturn(new PageImpl<>(List.of(p)));
+        when(refundRepository.countApprovedRefundsGroupedByGuideId(any(), eq(RefundStatus.APPROVED)))
+                .thenReturn(List.of());
 
         List<GuideRecommendRequest.GuideCandidateDto> out =
                 provider.getCandidates("제주 가고 싶어요", 3, null);
@@ -127,6 +139,8 @@ class DbBackedGuideCandidateProviderTest {
                 .build();
         when(guideProfileRepository.findByIsApprovedTrueAndIsActiveTrue(any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(p)));
+        when(refundRepository.countApprovedRefundsGroupedByGuideId(any(), eq(RefundStatus.APPROVED)))
+                .thenReturn(List.of());
 
         List<GuideRecommendRequest.GuideCandidateDto> out =
                 provider.getCandidates("그냥 여행 가고 싶어요", 3, List.of());

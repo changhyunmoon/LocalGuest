@@ -12,6 +12,7 @@ import com.team6.module.ai.support.AdjacentRegionProvider;
 import com.team6.module.ai.support.AiRecommendationMetrics;
 import com.team6.module.ai.support.RecommendationNoticeCodes;
 import com.team6.module.ai.policy.BudgetMatchPolicy;
+import com.team6.module.ai.policy.FeedbackMatchPolicy;
 import com.team6.module.ai.policy.LanguageMatchPolicy;
 import com.team6.module.ai.policy.RegionMatchPolicy;
 import com.team6.module.ai.policy.StyleMatchPolicy;
@@ -31,7 +32,8 @@ class PromptRecommendationServiceTest {
                 new StyleMatchPolicy(),
                 new BudgetMatchPolicy(),
                 new ActivityMatchPolicy(),
-                new LanguageMatchPolicy()
+                new LanguageMatchPolicy(),
+                new FeedbackMatchPolicy()
         );
         AiRecommendationService aiRecommendationService =
                 new AiRecommendationServiceImpl(new MatchingEngine(scoreCalculator, new ReasonGenerator()));

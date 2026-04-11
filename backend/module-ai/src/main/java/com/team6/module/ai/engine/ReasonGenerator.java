@@ -3,6 +3,7 @@ package com.team6.module.ai.engine;
 import com.team6.module.ai.model.GuideAiProfile;
 import com.team6.module.ai.model.TravelerPreference;
 import com.team6.module.ai.parser.KeywordNormalizer;
+import com.team6.module.ai.support.AiRecommendationTuning;
 import com.team6.module.ai.support.BudgetTier;
 import org.springframework.stereotype.Component;
 
@@ -22,6 +23,8 @@ public class ReasonGenerator {
     public static final String CODE_SOFT_ACTIVITY_PENALTY = "SOFT_ACTIVITY_PENALTY";
     public static final String CODE_BUDGET_MATCH = "BUDGET_MATCH";
     public static final String CODE_GENERAL_FALLBACK = "GENERAL_FALLBACK";
+    public static final String CODE_FEEDBACK_REFUND_APPROVED = "FEEDBACK_REFUND_APPROVED";
+    public static final String CODE_FEEDBACK_LOW_RATING = "FEEDBACK_LOW_RATING";
 
     /** soft 부담 등이 잘리지 않도록 여유를 둔다. */
     private static final int MAX_DISPLAY_SEGMENTS = 4;
@@ -161,6 +164,32 @@ public class ReasonGenerator {
                     "예산 범위가 한 단계 차이로 가까움",
                     listNonNull(guide.getPriceLevel())
             ));
+        }
+
+        if (guide.getApprovedRefundCount() != null && guide.getApprovedRefundCount() > 0) {
+            segments.add(new Segment(
+                    CODE_FEEDBACK_REFUND_APPROVED,
+                    "승인된 환불 이력이 있어 점수에서 보수적으로 반영",
+                    List.of(String.valueOf(guide.getApprovedRefundCount()))
+            ));
+        }
+
+        if (guide.getAverageRating() != null && guide.getReviewCount() != null
+                && guide.getReviewCount() >= AiRecommendationTuning.FEEDBACK_LOW_RATING_MIN_REVIEWS) {
+            double a = guide.getAverageRating().doubleValue();
+            if (a < AiRecommendationTuning.FEEDBACK_VERY_LOW_RATING_THRESHOLD) {
+                segments.add(new Segment(
+                        CODE_FEEDBACK_LOW_RATING,
+                        "리뷰 평균이 매우 낮아 신중히 반영",
+                        List.of(guide.getAverageRating().toPlainString(), String.valueOf(guide.getReviewCount()))
+                ));
+            } else if (a < AiRecommendationTuning.FEEDBACK_LOW_RATING_THRESHOLD) {
+                segments.add(new Segment(
+                        CODE_FEEDBACK_LOW_RATING,
+                        "리뷰 평균이 낮은 편이라 보수적으로 반영",
+                        List.of(guide.getAverageRating().toPlainString(), String.valueOf(guide.getReviewCount()))
+                ));
+            }
         }
 
         return segments;

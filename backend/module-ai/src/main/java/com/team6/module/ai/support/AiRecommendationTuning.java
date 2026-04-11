@@ -14,7 +14,7 @@ public final class AiRecommendationTuning {
     /**
      * 룰/스코어/Reason/응답 계약이 바뀔 때마다 올린다. 로그·API에서 동일 프롬프트 비교 시 정책 변경 여부를 구분하는 데 쓴다.
      */
-    public static final String POLICY_VERSION = "2026.04.5";
+    public static final String POLICY_VERSION = "2026.04.6";
 
     public static final int DEFAULT_TOP_N = 3;
 
@@ -32,4 +32,15 @@ public final class AiRecommendationTuning {
      * 와 겹칠 때마다 활동 점수에서 차감하는 값(한 태그당, {@link com.team6.module.ai.policy.ScoreWeight#ACTIVITY}와 동일 스케일).
      */
     public static final int SOFT_ACTIVITY_PENALTY_PER_TAG = 6;
+
+    /** 승인 환불 1건당 감점(상한 {@link #FEEDBACK_REFUND_PENALTY_MAX}). */
+    public static final int FEEDBACK_REFUND_PENALTY_PER_APPROVED = 8;
+    public static final int FEEDBACK_REFUND_PENALTY_MAX = 24;
+
+    /** 평균 평점 감점: 최소 리뷰 수(노이즈 완화). */
+    public static final int FEEDBACK_LOW_RATING_MIN_REVIEWS = 3;
+    public static final double FEEDBACK_LOW_RATING_THRESHOLD = 3.5;
+    public static final int FEEDBACK_LOW_RATING_PENALTY = 10;
+    public static final double FEEDBACK_VERY_LOW_RATING_THRESHOLD = 2.5;
+    public static final int FEEDBACK_VERY_LOW_RATING_PENALTY = 16;
 }
