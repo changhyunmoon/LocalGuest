@@ -135,4 +135,31 @@ class PromptParserTest {
         );
         assertThat(request.getSoftPenaltyActivityTags()).contains("쇼핑");
     }
+
+    @Test
+    void parse_should_resolve_region_from_english_and_romanization() {
+        assertThat(promptParser.parse("Jeju cafe tour 감성", 3, List.of()).getRegion()).isEqualTo("제주");
+        assertThat(promptParser.parse("Busan night food 맛집", 3, List.of()).getRegion()).isEqualTo("부산");
+        assertThat(promptParser.parse("Seoul shopping day", 3, List.of()).getRegion()).isEqualTo("서울");
+        assertThat(promptParser.parse("Gangneung beach walk", 3, List.of()).getRegion()).isEqualTo("강릉");
+    }
+
+    @Test
+    void parse_should_apply_yaml_region_aliases_over_defaults() {
+        LocalGuestAiProperties props = new LocalGuestAiProperties();
+        props.getParser().getRegionAliases().put("jeju", "부산");
+        PromptParser custom = new PromptParser(props);
+        assertThat(custom.parse("Jeju 카페", 3, List.of()).getRegion()).isEqualTo("부산");
+    }
+
+    @Test
+    void parse_should_extract_solo_companion_and_insta_style_and_marine_activity() {
+        GuideRecommendRequest r = promptParser.parse("부산 솔로 여행 인스타 핫플 카페", 3, List.of());
+        assertThat(r.getCompanionType()).isEqualTo("혼자");
+        assertThat(r.getTravelStyle()).isEqualTo("감성");
+
+        GuideRecommendRequest r2 = promptParser.parse("제주 스노클링 다이빙 하고 싶어", 3, List.of());
+        assertThat(r2.getRegion()).isEqualTo("제주");
+        assertThat(r2.getActivityTags()).contains("바다");
+    }
 }

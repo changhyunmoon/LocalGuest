@@ -6,9 +6,12 @@ import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -34,9 +37,12 @@ public class PromptParser {
     };
 
     private final LocalGuestAiProperties aiProperties;
+    /** 길이 내림차순: {@code jeju island}가 {@code jeju}보다 먼저 매칭되도록 */
+    private final List<Map.Entry<String, String>> regionAliasEntries;
 
     public PromptParser(LocalGuestAiProperties aiProperties) {
         this.aiProperties = aiProperties;
+        this.regionAliasEntries = buildRegionAliasEntries(aiProperties);
     }
 
     private static final Pattern BUDGET_WON = Pattern.compile("(\\d{1,3}(?:,\\d{3})+|\\d+)\\s*(원|만원)");
@@ -144,11 +150,101 @@ public class PromptParser {
         if (containsAny(prompt, "구례")) return "구례";
         if (containsAny(prompt, "보성")) return "보성";
         if (containsAny(prompt, "익산")) return "익산";
+        return resolveRegionFromAliases(prompt);
+    }
+
+    /**
+     * 한글 고정 목록에 없을 때 영문·로마자·팀 YAML({@code region-aliases})로 지역을 짐작한다.
+     */
+    private String resolveRegionFromAliases(String prompt) {
+        for (Map.Entry<String, String> e : regionAliasEntries) {
+            if (prompt.contains(e.getKey())) {
+                return e.getValue();
+            }
+        }
         return null;
     }
 
+    private static List<Map.Entry<String, String>> buildRegionAliasEntries(LocalGuestAiProperties props) {
+        LinkedHashMap<String, String> merged = new LinkedHashMap<>(defaultEnglishRegionAliases());
+        Map<String, String> yaml = props.getParser().getRegionAliases();
+        if (yaml != null) {
+            for (Map.Entry<String, String> e : yaml.entrySet()) {
+                if (e.getKey() == null || e.getValue() == null) {
+                    continue;
+                }
+                String k = e.getKey().trim().toLowerCase(Locale.ROOT);
+                String v = e.getValue().trim();
+                if (!k.isEmpty() && !v.isEmpty()) {
+                    merged.put(k, v);
+                }
+            }
+        }
+        return merged.entrySet().stream()
+                .sorted(Comparator.comparingInt((Map.Entry<String, String> en) -> en.getKey().length()).reversed())
+                .toList();
+    }
+
+    /**
+     * 여행광고·검색에 흔한 영문 표기. 키는 소문자.
+     */
+    private static LinkedHashMap<String, String> defaultEnglishRegionAliases() {
+        LinkedHashMap<String, String> m = new LinkedHashMap<>();
+        String[][] pairs = {
+                {"jeju island", "제주"}, {"jeju-do", "제주"}, {"jejudo", "제주"}, {"jeju", "제주"},
+                {"busan", "부산"}, {"pusan", "부산"},
+                {"seoul", "서울"},
+                {"gangneung", "강릉"}, {"kangnung", "강릉"},
+                {"gyeongju", "경주"}, {"kyongju", "경주"},
+                {"daegu", "대구"}, {"taegu", "대구"},
+                {"jeonju", "전주"},
+                {"yeosu", "여수"},
+                {"suncheon", "순천"},
+                {"gunsan", "군산"},
+                {"chuncheon", "춘천"},
+                {"tongyeong", "통영"},
+                {"geojedo", "거제"}, {"geoje", "거제"},
+                {"mokpo", "목포"},
+                {"taean", "태안"},
+                {"incheon", "인천"},
+                {"suwon", "수원"},
+                {"sokcho", "속초"},
+                {"donghae", "동해"},
+                {"samcheok", "삼척"},
+                {"yangyang", "양양"},
+                {"pyeongchang", "평창"},
+                {"hongcheon", "홍천"},
+                {"taebaek", "태백"},
+                {"ulsan", "울산"},
+                {"changwon", "창원"},
+                {"pohang", "포항"},
+                {"andong", "안동"},
+                {"gwangju", "광주"},
+                {"daejeon", "대전"},
+                {"namhae", "남해"},
+                {"miryang", "밀양"},
+                {"gimhae", "김해"},
+                {"gapyeong", "가평"},
+                {"yangpyeong", "양평"},
+                {"paju", "파주"},
+                {"yeoju", "여주"},
+                {"jecheon", "제천"},
+                {"danyang", "단양"},
+                {"jeongseon", "정선"},
+                {"inje", "인제"},
+                {"hadong", "하동"},
+                {"gurye", "구례"},
+                {"boseong", "보성"},
+                {"iksan", "익산"}
+        };
+        for (String[] p : pairs) {
+            m.put(p[0].toLowerCase(Locale.ROOT), p[1]);
+        }
+        return m;
+    }
+
     private String extractTravelStyle(String prompt) {
-        if (containsAny(prompt, "감성", "감성적인", "감성샷")) return "감성";
+        if (containsAny(prompt, "감성", "감성적인", "감성샷", "핫플", "인스타", "인스타그램")) return "감성";
         if (containsAny(prompt, "액티비티", "활동적인", "신나게", "역동적인", "익스트림", "스릴", "짜릿")) {
             return "액티비티";
         }
@@ -219,7 +315,7 @@ public class PromptParser {
     }
 
     private String extractCompanionType(String prompt) {
-        if (containsAny(prompt, "혼자", "혼행", "1인")) return "혼자";
+        if (containsAny(prompt, "혼자", "혼행", "1인", "솔로")) return "혼자";
         if (containsAny(prompt, "친구", "친구랑", "우정", "동창")) return "친구";
         if (containsAny(prompt, "가족", "부모님", "엄마", "아빠", "아이", "애기")) return "가족";
         if (containsAny(prompt, "반려견", "강아지", "댕댕이", "반려동물")) return "반려견";
@@ -238,7 +334,7 @@ public class PromptParser {
         if (containsAny(prompt, "등산", "트레킹")) tags.add("등산");
         if (containsAny(prompt, "사진", "포토", "인생샷")) tags.add("사진");
         if (containsAny(prompt, "쇼핑")) tags.add("쇼핑");
-        if (containsAny(prompt, "바다", "해변", "오션뷰", "해수욕장")) tags.add("바다");
+        if (containsAny(prompt, "바다", "해변", "오션뷰", "해수욕장", "스노클링", "다이빙", "스쿠버")) tags.add("바다");
         if (containsAny(prompt, "일몰", "노을", "야경명소")) tags.add("일몰");
         if (containsAny(prompt, "박물관", "미술관", "전시")) tags.add("전시");
         if (containsAny(prompt, "시장", "전통시장", "로컬시장", "야시장")) tags.add("시장");
