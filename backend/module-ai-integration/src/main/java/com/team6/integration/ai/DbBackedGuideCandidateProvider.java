@@ -1,0 +1,63 @@
+package com.team6.integration.ai;
+
+import com.team6.domain.guide.entity.GuideProfile;
+import com.team6.domain.guide.repository.GuideProfileRepository;
+import com.team6.module.ai.dto.request.GuideRecommendRequest;
+import com.team6.module.ai.parser.PromptParser;
+import com.team6.module.ai.support.AiRecommendationTuning;
+import com.team6.module.ai.support.GuideCandidateProvider;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Primary;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Component;
+
+import java.util.List;
+
+/**
+ * 클라이언트가 후보를 내려보내지 않은 경우, 승인·활성 {@link GuideProfile}을 DB에서 읽어 AI 후보로 채운다.
+ */
+@Slf4j
+@Component
+@Primary
+@RequiredArgsConstructor
+public class DbBackedGuideCandidateProvider implements GuideCandidateProvider {
+
+    static final int MAX_SERVER_CANDIDATES = 200;
+
+    private final GuideProfileRepository guideProfileRepository;
+    private final PromptParser promptParser;
+
+    @Override
+    public List<GuideRecommendRequest.GuideCandidateDto> getCandidates(
+            String prompt,
+            Integer topN,
+            List<GuideRecommendRequest.GuideCandidateDto> candidates
+    ) {
+        if (candidates != null && !candidates.isEmpty()) {
+            return candidates;
+        }
+        String safePrompt = prompt == null ? "" : prompt;
+        int resolvedTopN = (topN == null || topN <= 0) ? AiRecommendationTuning.DEFAULT_TOP_N : topN;
+        GuideRecommendRequest parsed = promptParser.parse(safePrompt, resolvedTopN, List.of());
+        String region = parsed.getRegion();
+
+        Pageable pageable = PageRequest.of(0, MAX_SERVER_CANDIDATES);
+        List<GuideProfile> profiles;
+        if (region != null && !region.isBlank()) {
+            String fragment = region.trim();
+            profiles = guideProfileRepository
+                    .findByIsApprovedTrueAndIsActiveTrueAndRegionContainingIgnoreCase(fragment, pageable)
+                    .getContent();
+            if (profiles.isEmpty()) {
+                log.info("[AI_RECOMMEND] No approved-active guides for region fragment={}, using global pool", fragment);
+                profiles = guideProfileRepository.findByIsApprovedTrueAndIsActiveTrue(pageable).getContent();
+            }
+        } else {
+            log.info("[AI_RECOMMEND] No region in prompt; loading global approved-active guide pool");
+            profiles = guideProfileRepository.findByIsApprovedTrueAndIsActiveTrue(pageable).getContent();
+        }
+        return profiles.stream().map(GuideProfileAiCandidateMapper::toCandidate).toList();
+    }
+}

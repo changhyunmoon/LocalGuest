@@ -4,6 +4,7 @@ dependencies {
     implementation project(':module-common')
     implementation project(':module-domain')
     implementation project(':module-ai')
+    implementation project(':module-ai-integration')
     implementation project(':module-chat')
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.7.0'
 

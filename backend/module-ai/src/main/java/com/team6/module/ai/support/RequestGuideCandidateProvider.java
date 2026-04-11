@@ -10,6 +10,8 @@ public class RequestGuideCandidateProvider implements com.team6.module.ai.suppor
 
     @Override
     public List<GuideRecommendRequest.GuideCandidateDto> getCandidates(
+            String prompt,
+            Integer topN,
             List<GuideRecommendRequest.GuideCandidateDto> candidates
     ) {
         return candidates == null ? List.of() : candidates;
