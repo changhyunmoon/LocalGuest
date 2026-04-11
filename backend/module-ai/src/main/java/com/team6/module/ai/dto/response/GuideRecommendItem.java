@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.Getter;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Schema(name = "GuideRecommendItem", description = "단일 가이드 추천 결과")
@@ -12,6 +13,25 @@ import java.util.List;
 public class GuideRecommendItem {
     private Long guideId;
     private String guideName;
+
+    @Schema(description = "프로필 대표 이미지 URL")
+    private String representativeImageUrl;
+
+    @Schema(description = "활동 지역(가이드 프로필 기준)")
+    private String region;
+
+    @Schema(description = "가격대 티어(낮음/중간/높음 등, 후보 프로필에서 전달된 값)")
+    private String priceLevel;
+
+    @Schema(description = "평균 평점(미전달 시 null)")
+    private BigDecimal averageRating;
+
+    @Schema(description = "리뷰 수(미전달 시 null)")
+    private Integer reviewCount;
+
+    @Schema(description = "공개 피드 이미지 URL(최신순, 상한 적용)")
+    private List<String> publicFeedThumbnailUrls;
+
     @Schema(description = "룰 기반 합산 점수")
     private int score;
     @Schema(description = "사람이 읽는 추천 이유(상위 근거 문구 연결)")

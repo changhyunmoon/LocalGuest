@@ -27,4 +27,10 @@ public class GuideAiProfile {
     private Integer progressedMatchCount;
     /** 실제 채팅방 시작 횟수. */
     private Integer chatStartCount;
+
+    /** 프로필 대표 이미지 URL. */
+    private String representativeImageUrl;
+
+    /** 공개 피드 썸네일 URL(최신순, 상한 적용된 목록). */
+    private List<String> publicFeedThumbnailUrls;
 }

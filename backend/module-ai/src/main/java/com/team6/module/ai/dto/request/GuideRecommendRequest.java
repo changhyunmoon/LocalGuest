@@ -52,5 +52,11 @@ public class GuideRecommendRequest {
         private Integer progressedMatchCount;
         @Schema(description = "가이드가 참여한 채팅방 시작 횟수. 추천 이후 실제 대화 연결 신호로 활용")
         private Integer chatStartCount;
+
+        @Schema(description = "프로필 대표 이미지 URL(카드 썸네일)")
+        private String representativeImageUrl;
+
+        @Schema(description = "공개 피드 이미지 URL 목록(최신순·개수 상한은 서버/클라이언트 합의)")
+        private List<String> publicFeedThumbnailUrls;
     }
 }

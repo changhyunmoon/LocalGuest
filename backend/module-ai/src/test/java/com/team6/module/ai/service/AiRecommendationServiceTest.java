@@ -18,6 +18,7 @@ import com.team6.module.ai.support.AiRecommendationTuning;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Test;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -64,6 +65,10 @@ class AiRecommendationServiceTest {
                                 .priceLevel("중간")
                                 .specialtyTags(List.of("카페", "야경"))
                                 .languages(List.of("한국어"))
+                                .averageRating(new BigDecimal("4.8"))
+                                .reviewCount(12)
+                                .representativeImageUrl("https://cdn.example.com/a.jpg")
+                                .publicFeedThumbnailUrls(List.of("https://cdn.example.com/a/f1.jpg"))
                                 .build(),
                         GuideRecommendRequest.GuideCandidateDto.builder()
                                 .guideId(2L)
@@ -88,6 +93,14 @@ class AiRecommendationServiceTest {
         assertThat(response.getRecommendations().get(0).getMatched()).isNotNull();
         assertThat(response.getRecommendations().get(0).getMatched().isRegion()).isTrue();
         assertThat(response.getRecommendations().get(0).getMatched().isRegionAdjacent()).isFalse();
+        assertThat(response.getRecommendations().get(0).getRepresentativeImageUrl())
+                .isEqualTo("https://cdn.example.com/a.jpg");
+        assertThat(response.getRecommendations().get(0).getRegion()).isEqualTo("부산");
+        assertThat(response.getRecommendations().get(0).getPriceLevel()).isEqualTo("중간");
+        assertThat(response.getRecommendations().get(0).getAverageRating()).isEqualByComparingTo("4.8");
+        assertThat(response.getRecommendations().get(0).getReviewCount()).isEqualTo(12);
+        assertThat(response.getRecommendations().get(0).getPublicFeedThumbnailUrls())
+                .containsExactly("https://cdn.example.com/a/f1.jpg");
         assertThat(response.getPolicyVersion()).isEqualTo(AiRecommendationTuning.POLICY_VERSION);
     }
 

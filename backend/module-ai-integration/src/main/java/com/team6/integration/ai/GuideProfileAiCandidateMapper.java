@@ -4,9 +4,11 @@ import com.team6.domain.guide.entity.GuideProfile;
 import com.team6.domain.guide.entity.GuideCareer;
 import com.team6.domain.guide.entity.GuideFeed;
 import com.team6.module.ai.dto.request.GuideRecommendRequest;
+import com.team6.module.ai.support.AiRecommendationTuning;
 
 import java.math.BigDecimal;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -35,7 +37,22 @@ public final class GuideProfileAiCandidateMapper {
                 .averageRating(profile.getAverageRating())
                 .reviewCount(profile.getReviewCount())
                 .approvedRefundCount(null)
+                .representativeImageUrl(profile.getProfileImage())
+                .publicFeedThumbnailUrls(publicFeedThumbnailUrls(feeds, AiRecommendationTuning.PUBLIC_FEED_THUMBNAIL_MAX))
                 .build();
+    }
+
+    private static List<String> publicFeedThumbnailUrls(List<GuideFeed> feeds, int max) {
+        if (feeds == null || feeds.isEmpty() || max <= 0) {
+            return List.of();
+        }
+        return feeds.stream()
+                .filter(f -> f.getImageUrl() != null && !f.getImageUrl().isBlank())
+                .sorted(Comparator.comparing(GuideFeed::getCreatedAt, Comparator.nullsLast(Comparator.naturalOrder()))
+                        .reversed())
+                .map(GuideFeed::getImageUrl)
+                .limit(max)
+                .toList();
     }
 
     private static String priceLevelFromHourly(BigDecimal pricePerHour) {
