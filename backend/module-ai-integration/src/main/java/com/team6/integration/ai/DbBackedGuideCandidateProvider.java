@@ -1,6 +1,10 @@
 package com.team6.integration.ai;
 
 import com.team6.domain.guide.entity.GuideProfile;
+import com.team6.domain.guide.entity.GuideCareer;
+import com.team6.domain.guide.entity.GuideFeed;
+import com.team6.domain.guide.repository.GuideCareerRepository;
+import com.team6.domain.guide.repository.GuideFeedRepository;
 import com.team6.domain.guide.repository.GuideProfileRepository;
 import com.team6.domain.matching.entity.enums.RefundStatus;
 import com.team6.domain.matching.repository.RefundRepository;
@@ -19,6 +23,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * 클라이언트가 후보를 내려보내지 않은 경우, 승인·활성 {@link GuideProfile}을 DB에서 읽어 AI 후보로 채운다.
@@ -32,6 +37,8 @@ public class DbBackedGuideCandidateProvider implements GuideCandidateProvider {
     static final int MAX_SERVER_CANDIDATES = 200;
 
     private final GuideProfileRepository guideProfileRepository;
+    private final GuideFeedRepository guideFeedRepository;
+    private final GuideCareerRepository guideCareerRepository;
     private final RefundRepository refundRepository;
     private final PromptParser promptParser;
 
@@ -65,8 +72,41 @@ public class DbBackedGuideCandidateProvider implements GuideCandidateProvider {
             profiles = guideProfileRepository.findByIsApprovedTrueAndIsActiveTrue(pageable).getContent();
         }
         List<GuideRecommendRequest.GuideCandidateDto> mapped =
-                profiles.stream().map(GuideProfileAiCandidateMapper::toCandidate).toList();
+                mapProfilesToCandidates(profiles);
         return mergeApprovedRefundCounts(mapped);
+    }
+
+    private List<GuideRecommendRequest.GuideCandidateDto> mapProfilesToCandidates(List<GuideProfile> profiles) {
+        List<Long> guideIds = profiles.stream()
+                .map(GuideProfile::getId)
+                .filter(Objects::nonNull)
+                .toList();
+
+        Map<Long, List<GuideFeed>> feedsByGuide = guideIds.isEmpty()
+                ? Map.of()
+                : guideFeedRepository.findByGuideProfile_IdInAndIsDeletedFalse(guideIds).stream()
+                .filter(feed -> feed.getGuideProfile() != null && feed.getGuideProfile().getId() != null)
+                .collect(Collectors.groupingBy(
+                        feed -> feed.getGuideProfile().getId(),
+                        Collectors.toList()
+                ));
+
+        Map<Long, List<GuideCareer>> careersByGuide = guideIds.isEmpty()
+                ? Map.of()
+                : guideCareerRepository.findByGuideProfile_IdIn(guideIds).stream()
+                .filter(career -> career.getGuideProfile() != null && career.getGuideProfile().getId() != null)
+                .collect(Collectors.groupingBy(
+                        career -> career.getGuideProfile().getId(),
+                        Collectors.toList()
+                ));
+
+        return profiles.stream()
+                .map(profile -> GuideProfileAiCandidateMapper.toCandidate(
+                        profile,
+                        feedsByGuide.getOrDefault(profile.getId(), List.of()),
+                        careersByGuide.getOrDefault(profile.getId(), List.of())
+                ))
+                .toList();
     }
 
     private List<GuideRecommendRequest.GuideCandidateDto> mergeApprovedRefundCounts(
