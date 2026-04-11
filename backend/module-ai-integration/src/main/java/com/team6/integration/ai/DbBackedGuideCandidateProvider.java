@@ -6,8 +6,11 @@ import com.team6.domain.guide.entity.GuideProfile;
 import com.team6.domain.guide.repository.GuideCareerRepository;
 import com.team6.domain.guide.repository.GuideFeedRepository;
 import com.team6.domain.guide.repository.GuideProfileRepository;
+import com.team6.domain.matching.entity.enums.MatchRequestStatus;
 import com.team6.domain.matching.entity.enums.RefundStatus;
+import com.team6.domain.matching.repository.MatchRequestRepository;
 import com.team6.domain.matching.repository.RefundRepository;
+import com.team6.module.chat.repository.mysql.ChatRoomRepository;
 import com.team6.module.ai.dto.request.GuideRecommendRequest;
 import com.team6.module.ai.parser.PromptParser;
 import com.team6.module.ai.support.AiRecommendationTuning;
@@ -35,11 +38,19 @@ import java.util.stream.Collectors;
 public class DbBackedGuideCandidateProvider implements GuideCandidateProvider {
 
     static final int MAX_SERVER_CANDIDATES = 200;
+    private static final List<MatchRequestStatus> PROGRESSED_MATCH_STATUSES = List.of(
+            MatchRequestStatus.ACCEPTED,
+            MatchRequestStatus.PAID,
+            MatchRequestStatus.IN_PROGRESS,
+            MatchRequestStatus.COMPLETED
+    );
 
     private final GuideProfileRepository guideProfileRepository;
     private final GuideFeedRepository guideFeedRepository;
     private final GuideCareerRepository guideCareerRepository;
+    private final MatchRequestRepository matchRequestRepository;
     private final RefundRepository refundRepository;
+    private final ChatRoomRepository chatRoomRepository;
     private final PromptParser promptParser;
 
     @Override
@@ -73,7 +84,7 @@ public class DbBackedGuideCandidateProvider implements GuideCandidateProvider {
         }
         List<GuideRecommendRequest.GuideCandidateDto> mapped =
                 mapProfilesToCandidates(profiles);
-        return mergeApprovedRefundCounts(mapped);
+        return mergeBehaviorSignals(mapped, profiles);
     }
 
     private List<GuideRecommendRequest.GuideCandidateDto> mapProfilesToCandidates(List<GuideProfile> profiles) {
@@ -109,8 +120,9 @@ public class DbBackedGuideCandidateProvider implements GuideCandidateProvider {
                 .toList();
     }
 
-    private List<GuideRecommendRequest.GuideCandidateDto> mergeApprovedRefundCounts(
-            List<GuideRecommendRequest.GuideCandidateDto> candidates
+    private List<GuideRecommendRequest.GuideCandidateDto> mergeBehaviorSignals(
+            List<GuideRecommendRequest.GuideCandidateDto> candidates,
+            List<GuideProfile> profiles
     ) {
         List<Long> guideIds = candidates.stream()
                 .map(GuideRecommendRequest.GuideCandidateDto::getGuideId)
@@ -127,14 +139,46 @@ public class DbBackedGuideCandidateProvider implements GuideCandidateProvider {
             int cnt = ((Number) row[1]).intValue();
             countByGuide.put(gid, cnt);
         }
+
+        Map<Long, Integer> requestCountByGuide = toCountMap(matchRequestRepository.countAllGroupedByGuideId(guideIds));
+        Map<Long, Integer> progressedCountByGuide = toCountMap(
+                matchRequestRepository.countByGuideIdAndStatusInGrouped(guideIds, PROGRESSED_MATCH_STATUSES)
+        );
+        Map<Long, Long> memberIdByGuide = profiles.stream()
+                .filter(profile -> profile.getId() != null && profile.getMemberId() != null)
+                .collect(Collectors.toMap(GuideProfile::getId, GuideProfile::getMemberId));
+        List<Long> memberIds = memberIdByGuide.values().stream().distinct().toList();
+        Map<Long, Integer> chatCountByMember = memberIds.isEmpty()
+                ? Map.of()
+                : toCountMap(chatRoomRepository.countRoomsGroupedByParticipantUserId(memberIds));
+
         return candidates.stream()
-                .map(d -> rebuildWithRefund(d, countByGuide.getOrDefault(d.getGuideId(), 0)))
+                .map(d -> rebuildWithSignals(
+                        d,
+                        countByGuide.getOrDefault(d.getGuideId(), 0),
+                        requestCountByGuide.getOrDefault(d.getGuideId(), 0),
+                        progressedCountByGuide.getOrDefault(d.getGuideId(), 0),
+                        chatCountByMember.getOrDefault(memberIdByGuide.get(d.getGuideId()), 0)
+                ))
                 .toList();
     }
 
-    private static GuideRecommendRequest.GuideCandidateDto rebuildWithRefund(
+    private static Map<Long, Integer> toCountMap(List<Object[]> rows) {
+        Map<Long, Integer> counts = new HashMap<>();
+        for (Object[] row : rows) {
+            Long id = (Long) row[0];
+            int cnt = ((Number) row[1]).intValue();
+            counts.put(id, cnt);
+        }
+        return counts;
+    }
+
+    private static GuideRecommendRequest.GuideCandidateDto rebuildWithSignals(
             GuideRecommendRequest.GuideCandidateDto d,
-            int approvedRefundCount
+            int approvedRefundCount,
+            int matchRequestCount,
+            int progressedMatchCount,
+            int chatStartCount
     ) {
         return GuideRecommendRequest.GuideCandidateDto.builder()
                 .guideId(d.getGuideId())
@@ -147,6 +191,9 @@ public class DbBackedGuideCandidateProvider implements GuideCandidateProvider {
                 .averageRating(d.getAverageRating())
                 .reviewCount(d.getReviewCount())
                 .approvedRefundCount(approvedRefundCount)
+                .matchRequestCount(matchRequestCount)
+                .progressedMatchCount(progressedMatchCount)
+                .chatStartCount(chatStartCount)
                 .build();
     }
 }

@@ -6,8 +6,11 @@ import com.team6.domain.guide.entity.GuideProfile;
 import com.team6.domain.guide.repository.GuideCareerRepository;
 import com.team6.domain.guide.repository.GuideFeedRepository;
 import com.team6.domain.guide.repository.GuideProfileRepository;
+import com.team6.domain.matching.entity.enums.MatchRequestStatus;
 import com.team6.domain.matching.entity.enums.RefundStatus;
+import com.team6.domain.matching.repository.MatchRequestRepository;
 import com.team6.domain.matching.repository.RefundRepository;
+import com.team6.module.chat.repository.mysql.ChatRoomRepository;
 import com.team6.module.ai.config.LocalGuestAiProperties;
 import com.team6.module.ai.dto.request.GuideRecommendRequest;
 import com.team6.module.ai.parser.PromptParser;
@@ -46,6 +49,12 @@ class DbBackedGuideCandidateProviderTest {
     @Mock
     private RefundRepository refundRepository;
 
+    @Mock
+    private MatchRequestRepository matchRequestRepository;
+
+    @Mock
+    private ChatRoomRepository chatRoomRepository;
+
     private DbBackedGuideCandidateProvider provider;
 
     @BeforeEach
@@ -54,7 +63,9 @@ class DbBackedGuideCandidateProviderTest {
                 guideProfileRepository,
                 guideFeedRepository,
                 guideCareerRepository,
+                matchRequestRepository,
                 refundRepository,
+                chatRoomRepository,
                 new PromptParser(new LocalGuestAiProperties())
         );
     }
@@ -79,6 +90,9 @@ class DbBackedGuideCandidateProviderTest {
         verify(guideFeedRepository, never()).findByGuideProfile_IdInAndIsDeletedFalse(any());
         verify(guideCareerRepository, never()).findByGuideProfile_IdIn(any());
         verify(refundRepository, never()).countApprovedRefundsGroupedByGuideId(any(), any());
+        verify(matchRequestRepository, never()).countAllGroupedByGuideId(any());
+        verify(matchRequestRepository, never()).countByGuideIdAndStatusInGrouped(any(), any());
+        verify(chatRoomRepository, never()).countRoomsGroupedByParticipantUserId(any());
     }
 
     @Test
@@ -118,6 +132,20 @@ class DbBackedGuideCandidateProviderTest {
                 ));
         when(refundRepository.countApprovedRefundsGroupedByGuideId(any(), eq(RefundStatus.APPROVED)))
                 .thenReturn(List.of());
+        when(matchRequestRepository.countAllGroupedByGuideId(List.of(1L)))
+                .thenReturn(List.<Object[]>of(new Object[]{1L, 4L}));
+        when(matchRequestRepository.countByGuideIdAndStatusInGrouped(
+                eq(List.of(1L)),
+                eq(List.of(
+                        MatchRequestStatus.ACCEPTED,
+                        MatchRequestStatus.PAID,
+                        MatchRequestStatus.IN_PROGRESS,
+                        MatchRequestStatus.COMPLETED
+                ))
+        )).thenReturn(List.<Object[]>of(new Object[]{1L, 2L}));
+
+        when(chatRoomRepository.countRoomsGroupedByParticipantUserId(List.of(10L)))
+                .thenReturn(List.<Object[]>of(new Object[]{10L, 3L}));
 
         List<GuideRecommendRequest.GuideCandidateDto> out =
                 provider.getCandidates("제주에서 힐링하고 싶어요", 3, List.of());
@@ -130,6 +158,9 @@ class DbBackedGuideCandidateProviderTest {
         assertThat(out.get(0).getGuideStyle()).isEqualTo("감성");
         assertThat(out.get(0).getSpecialtyTags()).contains("카페", "바다", "사진", "시장", "야경", "맛집");
         assertThat(out.get(0).getApprovedRefundCount()).isZero();
+        assertThat(out.get(0).getMatchRequestCount()).isEqualTo(4);
+        assertThat(out.get(0).getProgressedMatchCount()).isEqualTo(2);
+        assertThat(out.get(0).getChatStartCount()).isEqualTo(3);
     }
 
     @Test
@@ -155,6 +186,12 @@ class DbBackedGuideCandidateProviderTest {
         when(guideCareerRepository.findByGuideProfile_IdIn(List.of(2L)))
                 .thenReturn(List.of());
         when(refundRepository.countApprovedRefundsGroupedByGuideId(any(), eq(RefundStatus.APPROVED)))
+                .thenReturn(List.of());
+        when(matchRequestRepository.countAllGroupedByGuideId(List.of(2L)))
+                .thenReturn(List.of());
+        when(matchRequestRepository.countByGuideIdAndStatusInGrouped(any(), any()))
+                .thenReturn(List.of());
+        when(chatRoomRepository.countRoomsGroupedByParticipantUserId(List.of(11L)))
                 .thenReturn(List.of());
 
         List<GuideRecommendRequest.GuideCandidateDto> out =
@@ -184,6 +221,12 @@ class DbBackedGuideCandidateProviderTest {
         when(guideCareerRepository.findByGuideProfile_IdIn(List.of(3L)))
                 .thenReturn(List.of());
         when(refundRepository.countApprovedRefundsGroupedByGuideId(any(), eq(RefundStatus.APPROVED)))
+                .thenReturn(List.of());
+        when(matchRequestRepository.countAllGroupedByGuideId(List.of(3L)))
+                .thenReturn(List.of());
+        when(matchRequestRepository.countByGuideIdAndStatusInGrouped(any(), any()))
+                .thenReturn(List.of());
+        when(chatRoomRepository.countRoomsGroupedByParticipantUserId(List.of(12L)))
                 .thenReturn(List.of());
 
         List<GuideRecommendRequest.GuideCandidateDto> out =

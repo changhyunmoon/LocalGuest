@@ -60,6 +60,9 @@ public class AiRecommendationMapper {
                         .averageRating(candidate.getAverageRating())
                         .reviewCount(candidate.getReviewCount())
                         .approvedRefundCount(candidate.getApprovedRefundCount())
+                        .matchRequestCount(candidate.getMatchRequestCount())
+                        .progressedMatchCount(candidate.getProgressedMatchCount())
+                        .chatStartCount(candidate.getChatStartCount())
                         .build())
                 .toList();
     }
