@@ -6,6 +6,7 @@ dependencies {
     implementation project(':module-common')
     implementation project(':module-domain')
     implementation project(':module-ai')
+    implementation project(':module-chat')
 
     // module-domain의 implementation 의존성은 전이되지 않으므로, 스프링 컴포넌트 컴파일용으로 명시
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'

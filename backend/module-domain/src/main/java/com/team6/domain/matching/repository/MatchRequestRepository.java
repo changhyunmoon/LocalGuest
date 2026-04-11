@@ -3,6 +3,9 @@ package com.team6.domain.matching.repository;
 import com.team6.domain.matching.entity.MatchRequest;
 import com.team6.domain.matching.entity.enums.MatchRequestStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
 import java.time.LocalDate;
 import java.util.List;
 
@@ -22,4 +25,24 @@ public interface MatchRequestRepository extends JpaRepository<MatchRequest, Long
 
     // 당일 진행 대상 매칭 조회 (연장 알림/선택 오픈용)
     List<MatchRequest> findByDesiredDateAndStatusIn(LocalDate desiredDate, List<MatchRequestStatus> statuses);
+
+    @Query("""
+            SELECT mr.guideId, COUNT(mr)
+            FROM MatchRequest mr
+            WHERE mr.guideId IN :guideIds
+            GROUP BY mr.guideId
+            """)
+    List<Object[]> countAllGroupedByGuideId(@Param("guideIds") List<Long> guideIds);
+
+    @Query("""
+            SELECT mr.guideId, COUNT(mr)
+            FROM MatchRequest mr
+            WHERE mr.guideId IN :guideIds
+              AND mr.status IN :statuses
+            GROUP BY mr.guideId
+            """)
+    List<Object[]> countByGuideIdAndStatusInGrouped(
+            @Param("guideIds") List<Long> guideIds,
+            @Param("statuses") List<MatchRequestStatus> statuses
+    );
 }

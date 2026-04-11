@@ -21,4 +21,10 @@ public class GuideAiProfile {
     private Integer reviewCount;
     /** 승인 환불 건수. null이면 환불 감점 없음. */
     private Integer approvedRefundCount;
+    /** 추천 이후 매칭 요청이 실제로 생성된 횟수. */
+    private Integer matchRequestCount;
+    /** 수락/진행 단계까지 이어진 매칭 횟수. */
+    private Integer progressedMatchCount;
+    /** 실제 채팅방 시작 횟수. */
+    private Integer chatStartCount;
 }

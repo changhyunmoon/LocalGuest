@@ -14,7 +14,7 @@ public final class AiRecommendationTuning {
     /**
      * 룰/스코어/Reason/응답 계약이 바뀔 때마다 올린다. 로그·API에서 동일 프롬프트 비교 시 정책 변경 여부를 구분하는 데 쓴다.
      */
-    public static final String POLICY_VERSION = "2026.04.10";
+    public static final String POLICY_VERSION = "2026.04.11";
 
     public static final int DEFAULT_TOP_N = 3;
 
@@ -43,4 +43,12 @@ public final class AiRecommendationTuning {
     public static final int FEEDBACK_LOW_RATING_PENALTY = 10;
     public static final double FEEDBACK_VERY_LOW_RATING_THRESHOLD = 2.5;
     public static final int FEEDBACK_VERY_LOW_RATING_PENALTY = 16;
+
+    /** 실제 행동 데이터 기반 보정(요청/진행/채팅)은 과적합을 피하기 위해 소폭 가산만 적용한다. */
+    public static final int FEEDBACK_MATCH_REQUEST_BONUS_PER_COUNT = 1;
+    public static final int FEEDBACK_MATCH_REQUEST_BONUS_MAX = 5;
+    public static final int FEEDBACK_PROGRESS_MATCH_BONUS_PER_COUNT = 3;
+    public static final int FEEDBACK_PROGRESS_MATCH_BONUS_MAX = 12;
+    public static final int FEEDBACK_CHAT_START_BONUS_PER_COUNT = 2;
+    public static final int FEEDBACK_CHAT_START_BONUS_MAX = 8;
 }

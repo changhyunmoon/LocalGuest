@@ -1,7 +1,6 @@
 package com.team6.module.ai.policy;
 
 import com.team6.module.ai.model.GuideAiProfile;
-import com.team6.module.ai.model.TravelerPreference;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -14,44 +13,41 @@ class FeedbackMatchPolicyTest {
     private final FeedbackMatchPolicy policy = new FeedbackMatchPolicy();
 
     @Test
-    void no_signal_returns_zero() {
-        TravelerPreference pref = TravelerPreference.builder().region("제주").activityTags(List.of()).build();
+    void score_should_add_bonus_for_behavior_signals() {
         GuideAiProfile guide = GuideAiProfile.builder()
                 .guideId(1L)
-                .guideName("a")
+                .guideName("활성 가이드")
                 .region("제주")
-                .languages(List.of())
-                .specialtyTags(List.of())
+                .guideStyle("감성")
+                .priceLevel("중간")
+                .specialtyTags(List.of("카페"))
+                .languages(List.of("한국어"))
+                .matchRequestCount(4)
+                .progressedMatchCount(2)
+                .chatStartCount(3)
                 .build();
-        assertThat(policy.score(pref, guide)).isZero();
+
+        int score = policy.score(null, guide);
+
+        assertThat(score).isEqualTo(16);
     }
 
     @Test
-    void approved_refunds_apply_penalty_capped() {
-        TravelerPreference pref = TravelerPreference.builder().region("제주").activityTags(List.of()).build();
+    void score_should_offset_bonus_with_penalties() {
         GuideAiProfile guide = GuideAiProfile.builder()
-                .guideId(1L)
-                .guideName("a")
-                .region("제주")
-                .languages(List.of())
-                .specialtyTags(List.of())
-                .approvedRefundCount(5)
-                .build();
-        assertThat(policy.score(pref, guide)).isEqualTo(-24);
-    }
-
-    @Test
-    void low_average_rating_penalty() {
-        TravelerPreference pref = TravelerPreference.builder().region("제주").activityTags(List.of()).build();
-        GuideAiProfile guide = GuideAiProfile.builder()
-                .guideId(1L)
-                .guideName("a")
-                .region("제주")
-                .languages(List.of())
-                .specialtyTags(List.of())
-                .averageRating(new BigDecimal("2.4"))
+                .guideId(2L)
+                .guideName("주의 가이드")
+                .region("부산")
+                .approvedRefundCount(2)
+                .averageRating(BigDecimal.valueOf(3.2))
                 .reviewCount(5)
+                .matchRequestCount(3)
+                .progressedMatchCount(1)
+                .chatStartCount(1)
                 .build();
-        assertThat(policy.score(pref, guide)).isEqualTo(-16);
+
+        int score = policy.score(null, guide);
+
+        assertThat(score).isEqualTo(-18);
     }
 }

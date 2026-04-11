@@ -6,7 +6,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
-import java.util.Optional;
 
 public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
 
@@ -20,4 +19,12 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
             "WHERE p.userId = :userId")
     List<ChatRoom> findAllByUserId(@Param("userId") Long userId);
 
+    @Query("""
+            SELECT p.userId, COUNT(DISTINCT r.id)
+            FROM ChatRoom r
+            JOIN r.participants p
+            WHERE p.userId IN :userIds
+            GROUP BY p.userId
+            """)
+    List<Object[]> countRoomsGroupedByParticipantUserId(@Param("userIds") List<Long> userIds);
 }

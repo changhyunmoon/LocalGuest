@@ -8,13 +8,15 @@ import org.springframework.stereotype.Component;
 import java.math.BigDecimal;
 
 /**
- * 리뷰·환불 등 **사후 피드백** 기반 감점. 선호(TravelerPreference)와 무관하게 가이드 신호만 본다.
+ * 리뷰·환불 감점 + 실제 전환 행동 데이터 기반 소폭 가산.
+ * 선호(TravelerPreference)와 무관하게 가이드의 운영 품질/서비스 연결 신호만 본다.
  */
 @Component
 public class FeedbackMatchPolicy {
 
     public int score(TravelerPreference pref, GuideAiProfile guide) {
         int penalty = 0;
+        int bonus = 0;
 
         Integer refunds = guide.getApprovedRefundCount();
         if (refunds != null && refunds > 0) {
@@ -36,6 +38,30 @@ public class FeedbackMatchPolicy {
             }
         }
 
-        return -penalty;
+        Integer matchRequests = guide.getMatchRequestCount();
+        if (matchRequests != null && matchRequests > 0) {
+            bonus += Math.min(
+                    matchRequests * AiRecommendationTuning.FEEDBACK_MATCH_REQUEST_BONUS_PER_COUNT,
+                    AiRecommendationTuning.FEEDBACK_MATCH_REQUEST_BONUS_MAX
+            );
+        }
+
+        Integer progressedMatches = guide.getProgressedMatchCount();
+        if (progressedMatches != null && progressedMatches > 0) {
+            bonus += Math.min(
+                    progressedMatches * AiRecommendationTuning.FEEDBACK_PROGRESS_MATCH_BONUS_PER_COUNT,
+                    AiRecommendationTuning.FEEDBACK_PROGRESS_MATCH_BONUS_MAX
+            );
+        }
+
+        Integer chatStarts = guide.getChatStartCount();
+        if (chatStarts != null && chatStarts > 0) {
+            bonus += Math.min(
+                    chatStarts * AiRecommendationTuning.FEEDBACK_CHAT_START_BONUS_PER_COUNT,
+                    AiRecommendationTuning.FEEDBACK_CHAT_START_BONUS_MAX
+            );
+        }
+
+        return bonus - penalty;
     }
 }
