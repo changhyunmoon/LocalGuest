@@ -44,5 +44,10 @@ public class LocalGuestAiProperties {
         private List<String> softPenaltyShoppingActivityContext = new ArrayList<>();
         /** 제외 의도(빼고·싫어 등). 비어 있으면 내장. */
         private List<String> exclusionIntentKeywords = new ArrayList<>();
+        /**
+         * 프롬프트에 부분 문자열로 등장하는 표기 → canonical 지역명(한글).
+         * 키는 소문자로 정규화되어 매칭된다. 내장 영문·로마자 맵 이후에 병합되며 동일 키는 YAML이 덮어쓴다.
+         */
+        private Map<String, String> regionAliases = new LinkedHashMap<>();
     }
 }

@@ -46,6 +46,7 @@ public final class KeywordNormalizer {
             Map.entry("브런치", "카페"),
             Map.entry("카페투어", "카페"),
             Map.entry("포토", "사진"),
+            Map.entry("포토스팟", "사진"),
             Map.entry("인생샷", "사진"),
             Map.entry("전시", "전시"),
             Map.entry("미술관", "전시"),

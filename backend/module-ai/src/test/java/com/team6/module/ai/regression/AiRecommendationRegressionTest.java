@@ -80,6 +80,7 @@ class AiRecommendationRegressionTest {
                 scenario("부산 감성 카페 여행하고 싶어요", 3, 1L, "카페", null),
                 scenario("부산 야경 맛집 위주로 추천", 3, 1L, "야경", null),
                 scenario("제주 감성 오션뷰(바다) 필수!", 3, 2L, "바다", null),
+                scenario("Jeju trip 오션뷰 바다 감성으로 추천", 3, 2L, "바다", null),
                 scenario("제주 식도락(맛집) + 카페", 3, 2L, "맛집", null),
                 scenario("서울 액티비티 등산 트레킹 하고 싶어요", 3, 3L, "등산", null),
                 scenario("서울 쇼핑 + 맛집 코스", 3, 3L, "쇼핑", null),
