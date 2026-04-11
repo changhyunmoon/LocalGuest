@@ -1,4 +1,4 @@
-package com.team6.apiserver.ai;
+package com.team6.integration.ai;
 
 import com.team6.domain.guide.entity.GuideProfile;
 import com.team6.module.ai.dto.request.GuideRecommendRequest;
