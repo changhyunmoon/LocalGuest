@@ -73,11 +73,18 @@ class PromptRecommendationServiceTest {
 
         assertThat(response.getConceptSummary()).isNotBlank();
         assertThat(response.getKeywords()).isNotNull();
+        assertThat(response.getMatchRequestDraft()).isNotNull();
         assertThat(response.getKeywords().getRegion()).isEqualTo("제주");
         assertThat(response.getKeywords().getDurationDays()).isEqualTo(3);
         assertThat(response.getKeywords().getHeadcount()).isEqualTo(4);
         assertThat(response.getKeywords().getActivityTags()).contains("바다", "맛집");
         assertThat(response.getKeywords().getExcludedActivityTags()).contains("술집");
+        assertThat(response.getMatchRequestDraft().getDestination()).isEqualTo("제주");
+        assertThat(response.getMatchRequestDraft().getConceptSummary()).isEqualTo(response.getConceptSummary());
+        assertThat(response.getMatchRequestDraft().getConcept()).contains("제주 여행");
+        assertThat(response.getMatchRequestDraft().getConcept()).contains("희망 활동");
+        assertThat(response.getMatchRequestDraft().getConcept()).contains("맛집");
+        assertThat(response.getMatchRequestDraft().getConcept()).contains("바다");
         assertThat(response.getPolicyVersion()).isEqualTo(AiRecommendationTuning.POLICY_VERSION);
         assertThat(response.getNotice()).contains("한 분뿐");
         assertThat(response.getNoticeCodes()).contains(
@@ -108,6 +115,9 @@ class PromptRecommendationServiceTest {
         assertThat(response.getRecommendations()).isEmpty();
         assertThat(response.getTotalCount()).isEqualTo(0);
         assertThat(response.getNotice()).contains("지역");
+        assertThat(response.getMatchRequestDraft()).isNotNull();
+        assertThat(response.getMatchRequestDraft().getDestination()).isNull();
+        assertThat(response.getMatchRequestDraft().getConcept()).contains("희망 활동 카페");
         assertThat(response.getNoticeCodes()).containsExactly(RecommendationNoticeCodes.REGION_REQUIRED);
         assertThat(response.getPolicyVersion()).isEqualTo(AiRecommendationTuning.POLICY_VERSION);
     }
@@ -143,4 +153,3 @@ class PromptRecommendationServiceTest {
         assertThat(response.getRecommendations().get(0).getGuideId()).isEqualTo(99L);
     }
 }
-

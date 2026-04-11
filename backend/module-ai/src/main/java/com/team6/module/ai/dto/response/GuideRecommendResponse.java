@@ -14,6 +14,8 @@ public class GuideRecommendResponse {
     private String conceptSummary;
     @Schema(description = "파싱된 키워드 묶음")
     private Keywords keywords;
+    @Schema(description = "매칭 요청 화면에서 재사용하기 쉬운 AI 정리 초안")
+    private MatchRequestDraft matchRequestDraft;
     @Schema(description = "사용자 안내(지역 누락, 인접 지역 포함, 희소 풀 등)")
     private String notice;
     @Schema(
@@ -46,6 +48,27 @@ public class GuideRecommendResponse {
         private List<String> excludedActivityTags;
         @Schema(description = "soft 부정: 가이드 전문 태그와 겹치면 활동 점수에 패널티")
         private List<String> softPenaltyActivityTags;
+        private List<String> preferredLanguages;
+    }
+
+    @Schema(name = "GuideRecommendResponseMatchRequestDraft", description = "매칭 요청 폼 재사용용 AI 초안")
+    @Getter
+    @Builder
+    public static class MatchRequestDraft {
+        @Schema(description = "목적지 기본값")
+        private String destination;
+        @Schema(description = "가이드에게 전달할 컨셉 원문 초안")
+        private String concept;
+        @Schema(description = "가이드에게 보여줄 요약 문장")
+        private String conceptSummary;
+        @Schema(description = "예산 힌트(낮음/중간/높음)")
+        private String budgetHint;
+        private Integer headcount;
+        private Integer durationDays;
+        private String travelStyle;
+        private String companionType;
+        private List<String> activityTags;
+        private List<String> excludedActivityTags;
         private List<String> preferredLanguages;
     }
 }
