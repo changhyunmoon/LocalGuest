@@ -45,4 +45,21 @@ class AiRecommendationMetricsTest {
         assertThat(registry.summary("localguest.ai.recommend.effective_pool_size", "policy_version", "test-policy").count())
                 .isEqualTo(1);
     }
+
+    @Test
+    void feedback_penalty_should_increment_hit_and_magnitude() {
+        metrics.recordFeedbackPenalty(16, "test-policy");
+
+        assertThat(registry.counter("localguest.ai.recommend.feedback_penalty_hits", "policy_version", "test-policy")
+                .count()).isEqualTo(1);
+        assertThat(registry.summary("localguest.ai.recommend.feedback_penalty_magnitude", "policy_version", "test-policy")
+                .count()).isEqualTo(1);
+    }
+
+    @Test
+    void feedback_penalty_zero_should_noop() {
+        metrics.recordFeedbackPenalty(0, "test-policy");
+        assertThat(registry.counter("localguest.ai.recommend.feedback_penalty_hits", "policy_version", "test-policy")
+                .count()).isZero();
+    }
 }

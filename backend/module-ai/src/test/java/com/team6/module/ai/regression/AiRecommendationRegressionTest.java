@@ -15,6 +15,8 @@ import com.team6.module.ai.policy.RegionMatchPolicy;
 import com.team6.module.ai.policy.StyleMatchPolicy;
 import com.team6.module.ai.service.AiRecommendationService;
 import com.team6.module.ai.service.AiRecommendationServiceImpl;
+import com.team6.module.ai.support.AiRecommendationMetrics;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -199,7 +201,8 @@ class AiRecommendationRegressionTest {
                 new BudgetMatchPolicy(),
                 new ActivityMatchPolicy(),
                 new LanguageMatchPolicy(),
-                new FeedbackMatchPolicy()
+                new FeedbackMatchPolicy(),
+                new AiRecommendationMetrics(new SimpleMeterRegistry())
         );
 
         return new AiRecommendationServiceImpl(new MatchingEngine(scoreCalculator, new ReasonGenerator()));
