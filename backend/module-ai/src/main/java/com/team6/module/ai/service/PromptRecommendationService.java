@@ -88,6 +88,7 @@ public class PromptRecommendationService {
                 GuideRecommendResponse out = GuideRecommendResponse.builder()
                         .conceptSummary(ConceptSummaryGenerator.generate(parsed))
                         .keywords(keywordsFrom(parsed))
+                        .matchRequestDraft(matchRequestDraftFrom(parsed))
                         .notice(NOTICE_REGION_REQUIRED)
                         .noticeCodes(List.of(RecommendationNoticeCodes.REGION_REQUIRED))
                         .policyVersion(POLICY_VERSION)
@@ -173,6 +174,7 @@ public class PromptRecommendationService {
             GuideRecommendResponse out = GuideRecommendResponse.builder()
                     .conceptSummary(ConceptSummaryGenerator.generate(parsed))
                     .keywords(keywordsFrom(parsed))
+                    .matchRequestDraft(matchRequestDraftFrom(parsed))
                     .notice(notice)
                     .noticeCodes(noticeCodes)
                     .policyVersion(POLICY_VERSION)
@@ -204,6 +206,22 @@ public class PromptRecommendationService {
                 .activityTags(request.getActivityTags())
                 .excludedActivityTags(request.getExcludedActivityTags())
                 .softPenaltyActivityTags(request.getSoftPenaltyActivityTags())
+                .preferredLanguages(request.getPreferredLanguages())
+                .build();
+    }
+
+    private static GuideRecommendResponse.MatchRequestDraft matchRequestDraftFrom(GuideRecommendRequest request) {
+        return GuideRecommendResponse.MatchRequestDraft.builder()
+                .destination(request.getRegion())
+                .concept(ConceptSummaryGenerator.generateMatchRequestConcept(request))
+                .conceptSummary(ConceptSummaryGenerator.generate(request))
+                .budgetHint(request.getBudgetLevel())
+                .headcount(request.getHeadcount())
+                .durationDays(request.getDurationDays())
+                .travelStyle(request.getTravelStyle())
+                .companionType(request.getCompanionType())
+                .activityTags(request.getActivityTags())
+                .excludedActivityTags(request.getExcludedActivityTags())
                 .preferredLanguages(request.getPreferredLanguages())
                 .build();
     }
