@@ -49,6 +49,11 @@ public final class GuideAiCandidateFeaturesExtractor {
         TAG_KEYWORDS.put("패러글라이딩", List.of("패러글라이딩", "패러"));
         TAG_KEYWORDS.put("자전거", List.of("자전거", "라이딩", "사이클"));
         TAG_KEYWORDS.put("낚시", List.of("낚시", "바다낚시"));
+        TAG_KEYWORDS.put("드라이브", List.of("드라이브", "드라이브코스"));
+        TAG_KEYWORDS.put("한옥", List.of("한옥", "한옥마을", "한옥스테이"));
+        TAG_KEYWORDS.put("테마파크", List.of("테마파크", "놀이공원", "놀이동산"));
+        TAG_KEYWORDS.put("스키", List.of("스키", "보드", "스노보드", "슬로프"));
+        TAG_KEYWORDS.put("계곡", List.of("계곡", "폭포"));
     }
 
     public static Features extract(
@@ -60,7 +65,6 @@ public final class GuideAiCandidateFeaturesExtractor {
         String styleCorpus = buildStyleCorpus(profile, feeds, careers);
         return new Features(inferStyle(styleCorpus), inferTags(tagCorpus));
     }
-
     private static String buildTagCorpus(
             GuideProfile profile,
             List<GuideFeed> feeds,
@@ -82,7 +86,7 @@ public final class GuideAiCandidateFeaturesExtractor {
     }
 
     /**
-     * 스타일은 로컬 스토리만으로 과하게 쏠리지 않도록 bio/feed/career를 더 우선한다.
+     * 스타일은 localStory만으로 로컬 쏠림이 생기지 않도록 bio/feed/career를 더 강하게 반영한다.
      */
     private static String buildStyleCorpus(
             GuideProfile profile,

@@ -71,7 +71,8 @@ public class DbBackedGuideCandidateProvider implements GuideCandidateProvider {
             log.info("[AI_RECOMMEND] No region in prompt; loading global approved-active guide pool");
             profiles = guideProfileRepository.findByIsApprovedTrueAndIsActiveTrue(pageable).getContent();
         }
-        List<GuideRecommendRequest.GuideCandidateDto> mapped = mapProfilesToCandidates(profiles);
+        List<GuideRecommendRequest.GuideCandidateDto> mapped =
+                mapProfilesToCandidates(profiles);
         return mergeApprovedRefundCounts(mapped);
     }
 
@@ -85,13 +86,19 @@ public class DbBackedGuideCandidateProvider implements GuideCandidateProvider {
                 ? Map.of()
                 : guideFeedRepository.findByGuideProfile_IdInAndIsDeletedFalse(guideIds).stream()
                 .filter(feed -> feed.getGuideProfile() != null && feed.getGuideProfile().getId() != null)
-                .collect(Collectors.groupingBy(feed -> feed.getGuideProfile().getId(), Collectors.toList()));
+                .collect(Collectors.groupingBy(
+                        feed -> feed.getGuideProfile().getId(),
+                        Collectors.toList()
+                ));
 
         Map<Long, List<GuideCareer>> careersByGuide = guideIds.isEmpty()
                 ? Map.of()
                 : guideCareerRepository.findByGuideProfile_IdIn(guideIds).stream()
                 .filter(career -> career.getGuideProfile() != null && career.getGuideProfile().getId() != null)
-                .collect(Collectors.groupingBy(career -> career.getGuideProfile().getId(), Collectors.toList()));
+                .collect(Collectors.groupingBy(
+                        career -> career.getGuideProfile().getId(),
+                        Collectors.toList()
+                ));
 
         return profiles.stream()
                 .map(profile -> GuideProfileAiCandidateMapper.toCandidate(
