@@ -24,7 +24,7 @@ public class GuideRecommendResponse {
     /**
      * 룰 기반 추천 정책 버전({@link com.team6.module.ai.support.AiRecommendationTuning#POLICY_VERSION}).
      */
-    @Schema(description = "룰 기반 추천 정책 버전(동일 프롬프트라도 정책 변경 구분용)", example = "2026.04.8")
+    @Schema(description = "룰 기반 추천 정책 버전(동일 프롬프트라도 정책 변경 구분용)", example = "2026.04.9")
     private String policyVersion;
     @Schema(description = "추천 항목 개수")
     private int totalCount;
