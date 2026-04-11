@@ -3,8 +3,10 @@ package com.team6.module.ai.engine;
 import com.team6.module.ai.model.GuideAiProfile;
 import com.team6.module.ai.model.TravelerPreference;
 import com.team6.module.ai.parser.KeywordNormalizer;
+import com.team6.module.ai.support.AdjacentRegionProvider;
 import com.team6.module.ai.support.AiRecommendationTuning;
 import com.team6.module.ai.support.BudgetTier;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -14,9 +16,13 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 @Component
+@RequiredArgsConstructor
 public class ReasonGenerator {
 
+    private final AdjacentRegionProvider adjacentRegionProvider;
+
     public static final String CODE_REGION_MATCH = "REGION_MATCH";
+    public static final String CODE_REGION_ADJACENT = "REGION_ADJACENT";
     public static final String CODE_STYLE_MATCH = "STYLE_MATCH";
     public static final String CODE_LANGUAGE_MATCH = "LANGUAGE_MATCH";
     public static final String CODE_ACTIVITY_MATCH = "ACTIVITY_MATCH";
@@ -78,6 +84,12 @@ public class ReasonGenerator {
             segments.add(new Segment(
                     CODE_REGION_MATCH,
                     "희망 지역과 가이드 활동 지역이 같음",
+                    listNonNull(guide.getRegion())
+            ));
+        } else if (adjacentRegionProvider.isAdjacentTo(pref.getRegion(), guide.getRegion())) {
+            segments.add(new Segment(
+                    CODE_REGION_ADJACENT,
+                    "희망 지역과 인접한 활동 지역(이동 가능권)",
                     listNonNull(guide.getRegion())
             ));
         }

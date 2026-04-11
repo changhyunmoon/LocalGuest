@@ -1,6 +1,7 @@
 package com.team6.module.ai.regression;
 
 import com.team6.module.ai.config.LocalGuestAiProperties;
+import com.team6.module.ai.support.AdjacentRegionProvider;
 import com.team6.module.ai.dto.request.GuideRecommendRequest;
 import com.team6.module.ai.dto.response.GuideRecommendResponse;
 import com.team6.module.ai.engine.MatchingEngine;
@@ -196,8 +197,10 @@ class AiRecommendationRegressionTest {
     }
 
     private AiRecommendationService createService() {
+        LocalGuestAiProperties aiProps = new LocalGuestAiProperties();
+        AdjacentRegionProvider adjacent = new AdjacentRegionProvider(aiProps);
         ScoreCalculator scoreCalculator = new ScoreCalculator(
-                new RegionMatchPolicy(),
+                new RegionMatchPolicy(adjacent),
                 new StyleMatchPolicy(),
                 new BudgetMatchPolicy(),
                 new ActivityMatchPolicy(),
@@ -205,8 +208,9 @@ class AiRecommendationRegressionTest {
                 new FeedbackMatchPolicy(),
                 new AiRecommendationMetrics(new SimpleMeterRegistry())
         );
+        ReasonGenerator reasonGenerator = new ReasonGenerator(adjacent);
 
-        return new AiRecommendationServiceImpl(new MatchingEngine(scoreCalculator, new ReasonGenerator()));
+        return new AiRecommendationServiceImpl(new MatchingEngine(scoreCalculator, reasonGenerator, adjacent));
     }
 
     private record Scenario(

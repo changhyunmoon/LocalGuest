@@ -34,4 +34,22 @@ public class AdjacentRegionProvider {
         }
         return AdjacentRegionMap.neighbors(r);
     }
+
+    /**
+     * 여행자 희망 지역과 가이드 활동 지역이 다르지만, 내장/YAML 인접 맵상 이웃이면 true.
+     */
+    public boolean isAdjacentTo(String travelerRegion, String guideRegion) {
+        if (travelerRegion == null || guideRegion == null) {
+            return false;
+        }
+        String tr = travelerRegion.trim();
+        String gr = guideRegion.trim();
+        if (tr.isEmpty() || gr.isEmpty()) {
+            return false;
+        }
+        if (tr.equalsIgnoreCase(gr)) {
+            return false;
+        }
+        return neighbors(tr).stream().anyMatch(n -> n.equalsIgnoreCase(gr));
+    }
 }
