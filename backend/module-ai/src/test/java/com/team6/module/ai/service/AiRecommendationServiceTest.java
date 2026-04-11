@@ -11,7 +11,9 @@ import com.team6.module.ai.policy.FeedbackMatchPolicy;
 import com.team6.module.ai.policy.LanguageMatchPolicy;
 import com.team6.module.ai.policy.RegionMatchPolicy;
 import com.team6.module.ai.policy.StyleMatchPolicy;
+import com.team6.module.ai.support.AiRecommendationMetrics;
 import com.team6.module.ai.support.AiRecommendationTuning;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -27,7 +29,8 @@ class AiRecommendationServiceTest {
                 new BudgetMatchPolicy(),
                 new ActivityMatchPolicy(),
                 new LanguageMatchPolicy(),
-                new FeedbackMatchPolicy()
+                new FeedbackMatchPolicy(),
+                new AiRecommendationMetrics(new SimpleMeterRegistry())
         );
 
         return new AiRecommendationServiceImpl(

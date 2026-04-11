@@ -9,13 +9,13 @@ import com.team6.module.ai.config.LocalGuestAiProperties;
 import com.team6.module.ai.parser.PromptParser;
 import com.team6.module.ai.policy.ActivityMatchPolicy;
 import com.team6.module.ai.support.AdjacentRegionProvider;
-import com.team6.module.ai.support.AiRecommendationMetrics;
 import com.team6.module.ai.support.RecommendationNoticeCodes;
 import com.team6.module.ai.policy.BudgetMatchPolicy;
 import com.team6.module.ai.policy.FeedbackMatchPolicy;
 import com.team6.module.ai.policy.LanguageMatchPolicy;
 import com.team6.module.ai.policy.RegionMatchPolicy;
 import com.team6.module.ai.policy.StyleMatchPolicy;
+import com.team6.module.ai.support.AiRecommendationMetrics;
 import com.team6.module.ai.support.AiRecommendationTuning;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Test;
@@ -27,13 +27,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 class PromptRecommendationServiceTest {
 
     private PromptRecommendationService createService() {
+        SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
         ScoreCalculator scoreCalculator = new ScoreCalculator(
                 new RegionMatchPolicy(),
                 new StyleMatchPolicy(),
                 new BudgetMatchPolicy(),
                 new ActivityMatchPolicy(),
                 new LanguageMatchPolicy(),
-                new FeedbackMatchPolicy()
+                new FeedbackMatchPolicy(),
+                new AiRecommendationMetrics(meterRegistry)
         );
         AiRecommendationService aiRecommendationService =
                 new AiRecommendationServiceImpl(new MatchingEngine(scoreCalculator, new ReasonGenerator()));
@@ -42,7 +44,7 @@ class PromptRecommendationServiceTest {
                 new PromptParser(new LocalGuestAiProperties()),
                 aiRecommendationService,
                 new AdjacentRegionProvider(new LocalGuestAiProperties()),
-                new AiRecommendationMetrics(new SimpleMeterRegistry())
+                new AiRecommendationMetrics(meterRegistry)
         );
     }
 
