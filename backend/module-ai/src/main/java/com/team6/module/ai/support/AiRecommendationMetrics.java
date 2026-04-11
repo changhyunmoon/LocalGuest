@@ -15,7 +15,7 @@ import java.util.concurrent.TimeUnit;
  *   <li>{@code .no_region_short_circuit} — 지역 미입력 단축</li>
  *   <li>{@code .region_expansion} — 인접 지역 후보 확장 사용</li>
  *   <li>{@code .sparse_pool_notice} — 희소 풀 안내 부착</li>
- *   <li>{@code .fallback(stage=...)} — 조건 완화 재시도</li>
+     *   <li>{@code .fallback(stage=...)} — 조건 완화 재시도({@code DROP_ACTIVITY_TAGS_ONLY} 등 또는 {@code STRATEGIC_EXHAUSTED})</li>
  *   <li>{@code .outcome(type=no_region|empty|success)} — 최종 건수 결과</li>
  *   <li>{@code .feedback_penalty_hits(policy_version=...)} — 후보 1명 스코어링 시
  *       {@link com.team6.module.ai.policy.FeedbackMatchPolicy} 감점이 적용된 횟수(0보다 작은 기여)</li>
@@ -56,7 +56,7 @@ public class AiRecommendationMetrics {
     }
 
     /**
-     * @param relaxStage 조건 완화 단계 이름(예: DROP_REGION). 없으면 NONE.
+     * @param relaxStage 조건 완화 단계 이름(예: {@code DROP_ACTIVITY_TAGS_ONLY}). 체인 실패 시 {@code STRATEGIC_EXHAUSTED}.
      */
     public void recordFallback(String relaxStage) {
         String stage = relaxStage == null || relaxStage.isBlank() ? "NONE" : relaxStage;
