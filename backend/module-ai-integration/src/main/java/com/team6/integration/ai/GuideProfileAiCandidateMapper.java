@@ -1,6 +1,8 @@
 package com.team6.integration.ai;
 
 import com.team6.domain.guide.entity.GuideProfile;
+import com.team6.domain.guide.entity.GuideCareer;
+import com.team6.domain.guide.entity.GuideFeed;
 import com.team6.module.ai.dto.request.GuideRecommendRequest;
 
 import java.math.BigDecimal;
@@ -15,14 +17,20 @@ public final class GuideProfileAiCandidateMapper {
     private GuideProfileAiCandidateMapper() {
     }
 
-    public static GuideRecommendRequest.GuideCandidateDto toCandidate(GuideProfile profile) {
+    public static GuideRecommendRequest.GuideCandidateDto toCandidate(
+            GuideProfile profile,
+            List<GuideFeed> feeds,
+            List<GuideCareer> careers
+    ) {
+        GuideAiCandidateFeaturesExtractor.Features features =
+                GuideAiCandidateFeaturesExtractor.extract(profile, feeds, careers);
         return GuideRecommendRequest.GuideCandidateDto.builder()
                 .guideId(profile.getId())
                 .guideName(profile.getNickname())
                 .region(profile.getRegion())
-                .guideStyle(null)
+                .guideStyle(features.guideStyle())
                 .priceLevel(priceLevelFromHourly(profile.getPricePerHour()))
-                .specialtyTags(List.of())
+                .specialtyTags(features.specialtyTags())
                 .languages(splitLanguages(profile.getLanguage()))
                 .averageRating(profile.getAverageRating())
                 .reviewCount(profile.getReviewCount())

@@ -14,6 +14,9 @@ public interface GuideFeedRepository extends JpaRepository<GuideFeed, Long> {
     // 특정 가이드의 삭제되지 않은 피드 목록 조회 — 최신순 정렬 (F06-03)
     List<GuideFeed> findByGuideProfile_IdAndIsDeletedFalseOrderByCreatedAtDesc(Long guideId);
 
+    // 여러 가이드의 삭제되지 않은 피드 목록 조회 — AI 후보 특징 추출용
+    List<GuideFeed> findByGuideProfile_IdInAndIsDeletedFalse(List<Long> guideIds);
+
     // 피드 단건 조회 — 삭제되지 않은 피드만 (F06-03)
     Optional<GuideFeed> findByIdAndIsDeletedFalse(Long id);
 }

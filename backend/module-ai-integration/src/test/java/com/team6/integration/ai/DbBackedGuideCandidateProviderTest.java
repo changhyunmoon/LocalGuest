@@ -1,6 +1,10 @@
 package com.team6.integration.ai;
 
+import com.team6.domain.guide.entity.GuideCareer;
+import com.team6.domain.guide.entity.GuideFeed;
 import com.team6.domain.guide.entity.GuideProfile;
+import com.team6.domain.guide.repository.GuideCareerRepository;
+import com.team6.domain.guide.repository.GuideFeedRepository;
 import com.team6.domain.guide.repository.GuideProfileRepository;
 import com.team6.domain.matching.entity.enums.RefundStatus;
 import com.team6.domain.matching.repository.RefundRepository;
@@ -17,6 +21,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -33,6 +38,12 @@ class DbBackedGuideCandidateProviderTest {
     private GuideProfileRepository guideProfileRepository;
 
     @Mock
+    private GuideFeedRepository guideFeedRepository;
+
+    @Mock
+    private GuideCareerRepository guideCareerRepository;
+
+    @Mock
     private RefundRepository refundRepository;
 
     private DbBackedGuideCandidateProvider provider;
@@ -41,6 +52,8 @@ class DbBackedGuideCandidateProviderTest {
     void setUp() {
         provider = new DbBackedGuideCandidateProvider(
                 guideProfileRepository,
+                guideFeedRepository,
+                guideCareerRepository,
                 refundRepository,
                 new PromptParser(new LocalGuestAiProperties())
         );
@@ -63,6 +76,8 @@ class DbBackedGuideCandidateProviderTest {
                 provider.getCandidates("제주 2박", 3, client);
         assertThat(out).isSameAs(client);
         verify(guideProfileRepository, never()).findByIsApprovedTrueAndIsActiveTrue(any(Pageable.class));
+        verify(guideFeedRepository, never()).findByGuideProfile_IdInAndIsDeletedFalse(any());
+        verify(guideCareerRepository, never()).findByGuideProfile_IdIn(any());
         verify(refundRepository, never()).countApprovedRefundsGroupedByGuideId(any(), any());
     }
 
@@ -73,6 +88,7 @@ class DbBackedGuideCandidateProviderTest {
                 .memberId(10L)
                 .nickname("가이드A")
                 .region("제주")
+                .bio("감성 사진과 카페 중심 여행을 안내합니다.")
                 .language("한국어, English")
                 .pricePerHour(new BigDecimal("40000"))
                 .isApproved(true)
@@ -82,6 +98,24 @@ class DbBackedGuideCandidateProviderTest {
                 eq("제주"),
                 any(Pageable.class)
         )).thenReturn(new PageImpl<>(List.of(p)));
+        when(guideFeedRepository.findByGuideProfile_IdInAndIsDeletedFalse(List.of(1L)))
+                .thenReturn(List.of(
+                        GuideFeed.builder()
+                                .id(100L)
+                                .guideProfile(p)
+                                .content("감성 카페와 오션뷰 해변 포토스팟을 안내합니다.")
+                                .build()
+                ));
+        when(guideCareerRepository.findByGuideProfile_IdIn(List.of(1L)))
+                .thenReturn(List.of(
+                        GuideCareer.builder()
+                                .id(200L)
+                                .guideProfile(p)
+                                .title("현지 시장 로컬 투어")
+                                .description("야경 맛집 코스 운영")
+                                .acquiredAt(LocalDate.of(2024, 1, 1))
+                                .build()
+                ));
         when(refundRepository.countApprovedRefundsGroupedByGuideId(any(), eq(RefundStatus.APPROVED)))
                 .thenReturn(List.of());
 
@@ -93,6 +127,8 @@ class DbBackedGuideCandidateProviderTest {
         assertThat(out.get(0).getRegion()).isEqualTo("제주");
         assertThat(out.get(0).getLanguages()).containsExactly("한국어", "English");
         assertThat(out.get(0).getPriceLevel()).isEqualTo("낮음");
+        assertThat(out.get(0).getGuideStyle()).isEqualTo("감성");
+        assertThat(out.get(0).getSpecialtyTags()).contains("카페", "바다", "사진", "시장", "야경", "맛집");
         assertThat(out.get(0).getApprovedRefundCount()).isZero();
     }
 
@@ -114,6 +150,10 @@ class DbBackedGuideCandidateProviderTest {
                 .build();
         when(guideProfileRepository.findByIsApprovedTrueAndIsActiveTrue(PageRequest.of(0, DbBackedGuideCandidateProvider.MAX_SERVER_CANDIDATES)))
                 .thenReturn(new PageImpl<>(List.of(p)));
+        when(guideFeedRepository.findByGuideProfile_IdInAndIsDeletedFalse(List.of(2L)))
+                .thenReturn(List.of());
+        when(guideCareerRepository.findByGuideProfile_IdIn(List.of(2L)))
+                .thenReturn(List.of());
         when(refundRepository.countApprovedRefundsGroupedByGuideId(any(), eq(RefundStatus.APPROVED)))
                 .thenReturn(List.of());
 
@@ -139,6 +179,10 @@ class DbBackedGuideCandidateProviderTest {
                 .build();
         when(guideProfileRepository.findByIsApprovedTrueAndIsActiveTrue(any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(p)));
+        when(guideFeedRepository.findByGuideProfile_IdInAndIsDeletedFalse(List.of(3L)))
+                .thenReturn(List.of());
+        when(guideCareerRepository.findByGuideProfile_IdIn(List.of(3L)))
+                .thenReturn(List.of());
         when(refundRepository.countApprovedRefundsGroupedByGuideId(any(), eq(RefundStatus.APPROVED)))
                 .thenReturn(List.of());
 
