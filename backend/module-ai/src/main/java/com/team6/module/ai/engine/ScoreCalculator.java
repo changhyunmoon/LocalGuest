@@ -4,6 +4,7 @@ import com.team6.module.ai.model.GuideAiProfile;
 import com.team6.module.ai.model.TravelerPreference;
 import com.team6.module.ai.policy.ActivityMatchPolicy;
 import com.team6.module.ai.policy.BudgetMatchPolicy;
+import com.team6.module.ai.policy.FeedbackMatchPolicy;
 import com.team6.module.ai.policy.LanguageMatchPolicy;
 import com.team6.module.ai.policy.RegionMatchPolicy;
 import com.team6.module.ai.policy.StyleMatchPolicy;
@@ -19,6 +20,7 @@ public class ScoreCalculator {
     private final BudgetMatchPolicy budgetMatchPolicy;
     private final ActivityMatchPolicy activityMatchPolicy;
     private final LanguageMatchPolicy languageMatchPolicy;
+    private final FeedbackMatchPolicy feedbackMatchPolicy;
 
     public int calculate(TravelerPreference pref, GuideAiProfile guide) {
         int score = 0;
@@ -27,6 +29,7 @@ public class ScoreCalculator {
         score += budgetMatchPolicy.score(pref, guide);
         score += activityMatchPolicy.score(pref, guide);
         score += languageMatchPolicy.score(pref, guide);
+        score += feedbackMatchPolicy.score(pref, guide);
         return score;
     }
 }

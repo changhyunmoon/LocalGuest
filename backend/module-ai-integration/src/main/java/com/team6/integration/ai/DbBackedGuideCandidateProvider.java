@@ -2,6 +2,8 @@ package com.team6.integration.ai;
 
 import com.team6.domain.guide.entity.GuideProfile;
 import com.team6.domain.guide.repository.GuideProfileRepository;
+import com.team6.domain.matching.entity.enums.RefundStatus;
+import com.team6.domain.matching.repository.RefundRepository;
 import com.team6.module.ai.dto.request.GuideRecommendRequest;
 import com.team6.module.ai.parser.PromptParser;
 import com.team6.module.ai.support.AiRecommendationTuning;
@@ -13,7 +15,10 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 /**
  * 클라이언트가 후보를 내려보내지 않은 경우, 승인·활성 {@link GuideProfile}을 DB에서 읽어 AI 후보로 채운다.
@@ -27,6 +32,7 @@ public class DbBackedGuideCandidateProvider implements GuideCandidateProvider {
     static final int MAX_SERVER_CANDIDATES = 200;
 
     private final GuideProfileRepository guideProfileRepository;
+    private final RefundRepository refundRepository;
     private final PromptParser promptParser;
 
     @Override
@@ -58,6 +64,49 @@ public class DbBackedGuideCandidateProvider implements GuideCandidateProvider {
             log.info("[AI_RECOMMEND] No region in prompt; loading global approved-active guide pool");
             profiles = guideProfileRepository.findByIsApprovedTrueAndIsActiveTrue(pageable).getContent();
         }
-        return profiles.stream().map(GuideProfileAiCandidateMapper::toCandidate).toList();
+        List<GuideRecommendRequest.GuideCandidateDto> mapped =
+                profiles.stream().map(GuideProfileAiCandidateMapper::toCandidate).toList();
+        return mergeApprovedRefundCounts(mapped);
+    }
+
+    private List<GuideRecommendRequest.GuideCandidateDto> mergeApprovedRefundCounts(
+            List<GuideRecommendRequest.GuideCandidateDto> candidates
+    ) {
+        List<Long> guideIds = candidates.stream()
+                .map(GuideRecommendRequest.GuideCandidateDto::getGuideId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+        if (guideIds.isEmpty()) {
+            return candidates;
+        }
+        List<Object[]> rows = refundRepository.countApprovedRefundsGroupedByGuideId(guideIds, RefundStatus.APPROVED);
+        Map<Long, Integer> countByGuide = new HashMap<>();
+        for (Object[] row : rows) {
+            Long gid = (Long) row[0];
+            int cnt = ((Number) row[1]).intValue();
+            countByGuide.put(gid, cnt);
+        }
+        return candidates.stream()
+                .map(d -> rebuildWithRefund(d, countByGuide.getOrDefault(d.getGuideId(), 0)))
+                .toList();
+    }
+
+    private static GuideRecommendRequest.GuideCandidateDto rebuildWithRefund(
+            GuideRecommendRequest.GuideCandidateDto d,
+            int approvedRefundCount
+    ) {
+        return GuideRecommendRequest.GuideCandidateDto.builder()
+                .guideId(d.getGuideId())
+                .guideName(d.getGuideName())
+                .region(d.getRegion())
+                .guideStyle(d.getGuideStyle())
+                .priceLevel(d.getPriceLevel())
+                .specialtyTags(d.getSpecialtyTags())
+                .languages(d.getLanguages())
+                .averageRating(d.getAverageRating())
+                .reviewCount(d.getReviewCount())
+                .approvedRefundCount(approvedRefundCount)
+                .build();
     }
 }

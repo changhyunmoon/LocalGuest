@@ -57,6 +57,9 @@ public class AiRecommendationMapper {
                         .priceLevel(candidate.getPriceLevel())
                         .specialtyTags(candidate.getSpecialtyTags())
                         .languages(candidate.getLanguages())
+                        .averageRating(candidate.getAverageRating())
+                        .reviewCount(candidate.getReviewCount())
+                        .approvedRefundCount(candidate.getApprovedRefundCount())
                         .build())
                 .toList();
     }
