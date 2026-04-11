@@ -9,8 +9,10 @@ import com.team6.module.ai.policy.ActivityMatchPolicy;
 import com.team6.module.ai.policy.BudgetMatchPolicy;
 import com.team6.module.ai.policy.FeedbackMatchPolicy;
 import com.team6.module.ai.policy.LanguageMatchPolicy;
+import com.team6.module.ai.config.LocalGuestAiProperties;
 import com.team6.module.ai.policy.RegionMatchPolicy;
 import com.team6.module.ai.policy.StyleMatchPolicy;
+import com.team6.module.ai.support.AdjacentRegionProvider;
 import com.team6.module.ai.support.AiRecommendationMetrics;
 import com.team6.module.ai.support.AiRecommendationTuning;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -23,8 +25,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 class AiRecommendationServiceTest {
 
     private AiRecommendationService createService() {
+        LocalGuestAiProperties aiProps = new LocalGuestAiProperties();
+        AdjacentRegionProvider adjacent = new AdjacentRegionProvider(aiProps);
         ScoreCalculator scoreCalculator = new ScoreCalculator(
-                new RegionMatchPolicy(),
+                new RegionMatchPolicy(adjacent),
                 new StyleMatchPolicy(),
                 new BudgetMatchPolicy(),
                 new ActivityMatchPolicy(),
@@ -32,9 +36,10 @@ class AiRecommendationServiceTest {
                 new FeedbackMatchPolicy(),
                 new AiRecommendationMetrics(new SimpleMeterRegistry())
         );
+        ReasonGenerator reasonGenerator = new ReasonGenerator(adjacent);
 
         return new AiRecommendationServiceImpl(
-                new MatchingEngine(scoreCalculator, new ReasonGenerator())
+                new MatchingEngine(scoreCalculator, reasonGenerator, adjacent)
         );
     }
 
@@ -82,7 +87,41 @@ class AiRecommendationServiceTest {
         assertThat(response.getRecommendations().get(0).getReasonFacts()).isNotEmpty();
         assertThat(response.getRecommendations().get(0).getMatched()).isNotNull();
         assertThat(response.getRecommendations().get(0).getMatched().isRegion()).isTrue();
+        assertThat(response.getRecommendations().get(0).getMatched().isRegionAdjacent()).isFalse();
         assertThat(response.getPolicyVersion()).isEqualTo(AiRecommendationTuning.POLICY_VERSION);
+    }
+
+    @Test
+    void recommend_adjacent_region_should_add_partial_score_and_matched_flag() {
+        AiRecommendationService aiRecommendationService = createService();
+
+        GuideRecommendRequest request = GuideRecommendRequest.builder()
+                .region("강릉")
+                .travelStyle("힐링")
+                .budgetLevel("낮음")
+                .activityTags(List.of("산책", "바다"))
+                .preferredLanguages(List.of("한국어"))
+                .topN(1)
+                .guideCandidates(List.of(
+                        GuideRecommendRequest.GuideCandidateDto.builder()
+                                .guideId(10L)
+                                .guideName("속초힐링")
+                                .region("속초")
+                                .guideStyle("힐링")
+                                .priceLevel("낮음")
+                                .specialtyTags(List.of("산책", "바다", "카페"))
+                                .languages(List.of("한국어"))
+                                .build()
+                ))
+                .build();
+
+        GuideRecommendResponse response = aiRecommendationService.recommend(request);
+
+        assertThat(response.getRecommendations()).hasSize(1);
+        var top = response.getRecommendations().get(0);
+        assertThat(top.getMatched().isRegion()).isFalse();
+        assertThat(top.getMatched().isRegionAdjacent()).isTrue();
+        assertThat(top.getReasonCodes()).contains(ReasonGenerator.CODE_REGION_ADJACENT);
     }
 
     @Test

@@ -45,6 +45,8 @@ public class GuideRecommendItem {
     @Builder
     public static class MatchedEvidence {
         private boolean region;
+        @Schema(description = "희망 지역과 정확히 같지는 않지만 인접 지역으로 매칭된 경우")
+        private boolean regionAdjacent;
         private boolean style;
         @Schema(description = "예산 티어(낮음/중간/높음) 완전 일치")
         private boolean budget;

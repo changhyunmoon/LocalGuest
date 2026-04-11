@@ -5,6 +5,7 @@ import com.team6.module.ai.dto.response.GuideRecommendResponse;
 import com.team6.module.ai.model.GuideAiProfile;
 import com.team6.module.ai.model.TravelerPreference;
 import com.team6.module.ai.parser.KeywordNormalizer;
+import com.team6.module.ai.support.AdjacentRegionProvider;
 import com.team6.module.ai.support.AiRecommendationTuning;
 import com.team6.module.ai.support.BudgetTier;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +25,7 @@ public class MatchingEngine {
 
     private final ScoreCalculator scoreCalculator;
     private final ReasonGenerator reasonGenerator;
+    private final AdjacentRegionProvider adjacentRegionProvider;
 
 
     public GuideRecommendResponse recommend(
@@ -214,6 +216,7 @@ public class MatchingEngine {
 
     private GuideRecommendItem.MatchedEvidence buildMatchedEvidence(TravelerPreference pref, GuideAiProfile guide) {
         boolean region = safeEquals(pref.getRegion(), guide.getRegion());
+        boolean regionAdjacent = !region && adjacentRegionProvider.isAdjacentTo(pref.getRegion(), guide.getRegion());
         boolean style = safeEquals(pref.getTravelStyle(), guide.getGuideStyle());
         boolean budgetExact = safeEquals(pref.getBudgetLevel(), guide.getPriceLevel());
         boolean budgetAdjacent = !budgetExact
@@ -225,6 +228,7 @@ public class MatchingEngine {
 
         return GuideRecommendItem.MatchedEvidence.builder()
                 .region(region)
+                .regionAdjacent(regionAdjacent)
                 .style(style)
                 .budget(budgetExact)
                 .budgetAdjacent(budgetAdjacent)

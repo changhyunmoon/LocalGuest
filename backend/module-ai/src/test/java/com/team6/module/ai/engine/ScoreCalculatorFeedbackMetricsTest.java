@@ -6,8 +6,10 @@ import com.team6.module.ai.policy.ActivityMatchPolicy;
 import com.team6.module.ai.policy.BudgetMatchPolicy;
 import com.team6.module.ai.policy.FeedbackMatchPolicy;
 import com.team6.module.ai.policy.LanguageMatchPolicy;
+import com.team6.module.ai.config.LocalGuestAiProperties;
 import com.team6.module.ai.policy.RegionMatchPolicy;
 import com.team6.module.ai.policy.StyleMatchPolicy;
+import com.team6.module.ai.support.AdjacentRegionProvider;
 import com.team6.module.ai.support.AiRecommendationMetrics;
 import com.team6.module.ai.support.AiRecommendationTuning;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -24,8 +26,9 @@ class ScoreCalculatorFeedbackMetricsTest {
     void calculate_records_feedback_penalty_metrics() {
         SimpleMeterRegistry registry = new SimpleMeterRegistry();
         AiRecommendationMetrics metrics = new AiRecommendationMetrics(registry);
+        AdjacentRegionProvider adjacent = new AdjacentRegionProvider(new LocalGuestAiProperties());
         ScoreCalculator calculator = new ScoreCalculator(
-                new RegionMatchPolicy(),
+                new RegionMatchPolicy(adjacent),
                 new StyleMatchPolicy(),
                 new BudgetMatchPolicy(),
                 new ActivityMatchPolicy(),

@@ -28,8 +28,10 @@ class PromptRecommendationServiceTest {
 
     private PromptRecommendationService createService() {
         SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
+        LocalGuestAiProperties aiProps = new LocalGuestAiProperties();
+        AdjacentRegionProvider adjacent = new AdjacentRegionProvider(aiProps);
         ScoreCalculator scoreCalculator = new ScoreCalculator(
-                new RegionMatchPolicy(),
+                new RegionMatchPolicy(adjacent),
                 new StyleMatchPolicy(),
                 new BudgetMatchPolicy(),
                 new ActivityMatchPolicy(),
@@ -37,13 +39,14 @@ class PromptRecommendationServiceTest {
                 new FeedbackMatchPolicy(),
                 new AiRecommendationMetrics(meterRegistry)
         );
+        ReasonGenerator reasonGenerator = new ReasonGenerator(adjacent);
         AiRecommendationService aiRecommendationService =
-                new AiRecommendationServiceImpl(new MatchingEngine(scoreCalculator, new ReasonGenerator()));
+                new AiRecommendationServiceImpl(new MatchingEngine(scoreCalculator, reasonGenerator, adjacent));
 
         return new PromptRecommendationService(
-                new PromptParser(new LocalGuestAiProperties()),
+                new PromptParser(aiProps),
                 aiRecommendationService,
-                new AdjacentRegionProvider(new LocalGuestAiProperties()),
+                adjacent,
                 new AiRecommendationMetrics(meterRegistry)
         );
     }
