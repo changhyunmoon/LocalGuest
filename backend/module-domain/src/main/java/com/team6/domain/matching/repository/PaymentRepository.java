@@ -8,6 +8,8 @@ import java.util.Optional;
 
 public interface PaymentRepository extends JpaRepository<Payment, Long> {
 
+    Optional<Payment> findByMatchRequest_IdAndPaymentType(Long matchRequestId, String paymentType);
+
     // 매칭 요청 ID로 결제 목록 조회
     List<Payment> findByMatchRequest_Id(Long requestId);
 
