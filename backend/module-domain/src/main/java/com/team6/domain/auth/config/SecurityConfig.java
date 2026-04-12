@@ -26,6 +26,18 @@ public class SecurityConfig {
                         // 1. 누구나 접근 가능한 경로 (화이트리스트)
                         .requestMatchers("/auth/**", "/members/join").permitAll()
 
+                        // Swagger UI + OpenAPI (springdoc). context-path 사용 시 환경에 따라 둘 다 허용
+                        .requestMatchers(
+                                "/v3/api-docs",
+                                "/v3/api-docs/**",
+                                "/swagger-ui/**",
+                                "/swagger-ui.html",
+                                "/api/v3/api-docs",
+                                "/api/v3/api-docs/**",
+                                "/api/swagger-ui/**",
+                                "/api/swagger-ui.html"
+                        ).permitAll()
+
                         // 2. 리뷰 조회는 비로그인 유저도 가능
                         .requestMatchers(HttpMethod.GET, "/reviews/**").permitAll()
 
