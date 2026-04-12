@@ -19,14 +19,14 @@ public class ChatRoom extends BaseTimeEntity {
     private Long id;
 
     @Column(nullable = false, unique = true)
-    private String roomId; // 비즈니스 고유 식별자 (UUID)
+    private String roomId; // 비즈니스 고유 식별자
 
     @Column(nullable = false)
     private String title; // 단톡방 이름
 
-    private String lastMessage; // 목록용 마지막 메시지 캐시
+    private String lastMessage; // 마지막 메시지
 
-    private LocalDateTime lastMessageAt; // 정렬용 마지막 메시지 시간
+    private LocalDateTime lastMessageAt; // 마지막 메시지 시간
 
     private Integer participantCount; // 현재 참여 인원수
 
@@ -61,8 +61,6 @@ public class ChatRoom extends BaseTimeEntity {
         this.lastMessageAt = sentAt;
     }
 
-    public void updateParticipantCount(){
-        this.participantCount = (this.participants != null) ? this.participants.size() : 0;
-    }
+
 
 }

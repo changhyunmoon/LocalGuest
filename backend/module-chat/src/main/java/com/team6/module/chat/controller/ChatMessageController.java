@@ -1,50 +1,40 @@
 package com.team6.module.chat.controller;
 
 
-import com.team6.module.chat.dto.request.ChatMessageRequest;
-import com.team6.module.chat.dto.response.ChatMessageResponse;
-import com.team6.module.chat.dto.response.ChatScrollResponse;
-import com.team6.module.chat.entity.mongodb.ChatMessage;
+import com.team6.module.chat.dto.chatMessage.ChatMessageResponse;
+import com.team6.module.chat.dto.chatMessage.ChatPagingResponse;
 import com.team6.module.chat.service.ChatMessageService;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
-import org.springframework.messaging.handler.annotation.MessageMapping;
-import org.springframework.messaging.handler.annotation.Payload;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
+@RequestMapping("/chat/rooms")
 @RequiredArgsConstructor
 public class ChatMessageController {
 
-    private final SimpMessagingTemplate messagingTemplate;
     private final ChatMessageService chatMessageService;
 
-    /**
-     * [STOMP] 메시지 전송
-     */
-    @MessageMapping("/chat/message")
-    public void sendMessage(@Payload ChatMessageRequest request) {
 
-        ChatMessageResponse response = chatMessageService.processSendMessage(request);
+    @GetMapping("/{roomId}/messages")
+    public ResponseEntity<ChatPagingResponse<ChatMessageResponse>> getChatMessages(
+            @PathVariable String roomId,
+            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
+    ) {
+        // 1. 서비스에서 Slice<ChatMessageResponse>를 가져옴
+        Slice<ChatMessageResponse> slice = chatMessageService.getChatMessages(roomId, pageable);
 
-        // 결과 브로드캐스팅
-        messagingTemplate.convertAndSend("/sub/chat/room/" + request.roomId(), response);
+        // 2. 가공된 페이징 응답 객체로 변환하여 반환
+        return ResponseEntity.ok(ChatPagingResponse.from(slice));
     }
 
-    /**
-     * [HTTP] 이전 대화 내용 조회 (무한 스크롤)
-     */
-    @GetMapping("/api/chat/rooms/{roomId}/messages")
-    public ResponseEntity<ChatScrollResponse> getMessages(
-            @PathVariable String roomId,
-            @RequestParam(required = false) String lastMessageId) {
-
-        return ResponseEntity.ok(chatMessageService.getMessagesBefore(roomId, lastMessageId));
+    @PostMapping("/{roomId}/read")
+    public ResponseEntity<Void> markAsRead(@PathVariable String roomId, @RequestParam String email) {
+        chatMessageService.markAsRead(roomId, email);
+        return ResponseEntity.ok().build();
     }
 }

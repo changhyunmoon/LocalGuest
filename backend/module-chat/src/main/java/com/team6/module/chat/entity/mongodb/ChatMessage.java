@@ -1,7 +1,10 @@
 package com.team6.module.chat.entity.mongodb;
 
-import jakarta.persistence.Id;
+
+import com.team6.module.common.global.entity.BaseTimeEntity;
 import lombok.*;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -9,13 +12,12 @@ import java.time.LocalDateTime;
 
 @Getter
 @Document(collection = "chat_messages")
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@CompoundIndex(def = "{'roomId': 1, 'createdAt': -1}")
 public class ChatMessage {
 
     @Id
     private String id; // MongoDB 전용 ObjectId
 
-    @Indexed
     private String roomId; // MySQL ChatRoom의 roomId와 일치함
 
     private String senderEmail; // 메시지 보낸 사람의 PK
@@ -28,23 +30,18 @@ public class ChatMessage {
 
     private int unreadCount; //이 메시지를 읽지 않은 사람 수 (초기값: 전체 참여자 수 - 1)
 
+    private MessageType type;
+
     @Builder
-    private ChatMessage(String roomId, String senderEmail, String senderNickname, String message, int unreadCount ) {
+    private ChatMessage(String roomId, String senderEmail, String senderNickname, String message, int unreadCount, MessageType type) {
         this.roomId = roomId;
         this.senderEmail = senderEmail;
         this.senderNickname = senderNickname;
         this.message = message;
         this.unreadCount = unreadCount;
+        this.type = type;
         this.createdAt = LocalDateTime.now();
     }
 
-    public static ChatMessage create(String roomId, String senderEmail, String senderNickname, String message, int unreadCount) {
-        return ChatMessage.builder()
-                .roomId(roomId)
-                .senderEmail(senderEmail)
-                .senderNickname(senderNickname)
-                .message(message)
-                .unreadCount(unreadCount)
-                .build();
-    }
+
 }

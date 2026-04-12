@@ -38,9 +38,15 @@ public class ChatParticipant extends BaseTimeEntity {
                 .userNickname(userNickname)
                 .build();
     }
+
     public void updateLastReadAt() {
         this.lastReadAt = LocalDateTime.now();
     }
+
+    public void toggleAlarm(boolean isAlarmOn) {
+        this.isAlarmOn = isAlarmOn;
+    }
+
 
 
 

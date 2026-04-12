@@ -1,8 +1,9 @@
 package com.team6.module.chat.config;
 
-
 import com.team6.module.chat.service.ChatRoomService;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.ObjectProvider; // 추가
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
@@ -11,75 +12,65 @@ import org.springframework.messaging.simp.stomp.StompCommand;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.messaging.support.ChannelInterceptor;
 import org.springframework.messaging.support.MessageHeaderAccessor;
-import org.springframework.stereotype.Component;
 
-import java.util.HashMap;
 import java.util.Map;
 
-@Component
+@RequiredArgsConstructor
 @Slf4j
 public class PresenceInterceptor implements ChannelInterceptor {
 
     private final RedisTemplate<String, String> redisTemplate;
-    private final SimpMessagingTemplate messagingTemplate; // @Lazy 주입 예정
+    // ObjectProvider를 사용하여 빈 생성 시점이 아닌 사용 시점에 주입받도록 함
+    private final ObjectProvider<SimpMessagingTemplate> messagingTemplateProvider;
     private final ChatRoomService chatRoomService;
 
-    // Redis Key 규칙
     private static final String ROOM_PARTICIPANTS = "CHAT_ROOM_PARTICIPANTS:";
     private static final String USER_SESSION = "USER_SESSION:";
-
-    // 💡 생성자를 직접 작성하고 SimpMessagingTemplate에 @Lazy를 붙여 순환 고리를 끊습니다.
-    public PresenceInterceptor(
-            RedisTemplate<String, String> redisTemplate,
-            @org.springframework.context.annotation.Lazy SimpMessagingTemplate messagingTemplate,
-            ChatRoomService chatRoomService) {
-        this.redisTemplate = redisTemplate;
-        this.messagingTemplate = messagingTemplate;
-        this.chatRoomService = chatRoomService;
-    }
 
     @Override
     public Message<?> preSend(Message<?> message, MessageChannel channel) {
         StompHeaderAccessor accessor = MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
         if (accessor == null) return message;
 
-        String userEmail = (String) accessor.getSessionAttributes().get("userEmail");
         String sessionId = accessor.getSessionId();
-        StompCommand command = accessor.getCommand();
+        String userEmail = (String) accessor.getSessionAttributes().get("userEmail");
 
-        if (StompCommand.SUBSCRIBE.equals(command)) {
+        if (StompCommand.SUBSCRIBE.equals(accessor.getCommand())) {
             String roomId = getRoomId(accessor.getDestination());
             if (roomId != null && userEmail != null) {
                 redisTemplate.opsForSet().add(ROOM_PARTICIPANTS + roomId, userEmail);
+                Map<String, String> sessionData = Map.of("email", userEmail, "roomId", roomId);
+                redisTemplate.opsForHash().putAll(USER_SESSION + sessionId, sessionData);
 
-                String sessionKey = USER_SESSION + sessionId;
-                redisTemplate.opsForHash().put(sessionKey, "userEmail", userEmail);
-                redisTemplate.opsForHash().put(sessionKey, "roomId", roomId);
-
-                chatRoomService.updateLastReadTime(roomId, userEmail);
+                chatRoomService.updateLastReadAt(roomId, userEmail);
                 sendReadUpdate(roomId, userEmail);
-
-                log.info("[Presence] 입성 - 유저: {}, 방: {}", userEmail, roomId);
+                log.info("[Presence] User {} entered room {}", userEmail, roomId);
             }
-        } else if (StompCommand.DISCONNECT.equals(command)) {
-            String sessionKey = USER_SESSION + sessionId;
-            String savedEmail = (String) redisTemplate.opsForHash().get(sessionKey, "userEmail");
-            String savedRoomId = (String) redisTemplate.opsForHash().get(sessionKey, "roomId");
+        }
+        else if (StompCommand.DISCONNECT.equals(accessor.getCommand())) {
+            Map<Object, Object> sessionData = redisTemplate.opsForHash().entries(USER_SESSION + sessionId);
+            if (!sessionData.isEmpty()) {
+                String email = (String) sessionData.get("email");
+                String roomId = (String) sessionData.get("roomId");
 
-            if (savedEmail != null && savedRoomId != null) {
-                redisTemplate.opsForSet().remove(ROOM_PARTICIPANTS + savedRoomId, savedEmail);
-                redisTemplate.delete(sessionKey);
-                log.info("[Presence] 퇴장 - 유저: {}, 방: {}", savedEmail, savedRoomId);
+                // 퇴장 시에도 마지막 읽은 시간 업데이트
+                chatRoomService.updateLastReadAt(roomId, email);
+
+                redisTemplate.opsForSet().remove(ROOM_PARTICIPANTS + roomId, email);
+                redisTemplate.delete(USER_SESSION + sessionId);
+                log.info("[Presence] User {} left room {}", email, roomId);
             }
         }
         return message;
     }
 
     private void sendReadUpdate(String roomId, String userEmail) {
-        Map<String, String> alert = new HashMap<>();
-        alert.put("type", "READ_UPDATE");
-        alert.put("userEmail", userEmail);
-        messagingTemplate.convertAndSend("/sub/chat/room/" + roomId, alert);
+        Map<String, String> payload = Map.of("type", "READ_UPDATE", "userEmail", userEmail);
+        // 필요할 때 getIfAvailable()로 꺼내서 사용
+        SimpMessagingTemplate messagingTemplate = messagingTemplateProvider.getIfAvailable();
+        if (messagingTemplate != null) {
+            messagingTemplate.convertAndSend("/sub/chat/room/" + roomId, payload);
+        }
     }
 
     private String getRoomId(String destination) {

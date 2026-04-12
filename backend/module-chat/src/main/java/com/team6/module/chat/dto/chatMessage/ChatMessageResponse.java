@@ -1,17 +1,19 @@
-package com.team6.module.chat.dto.response;
+package com.team6.module.chat.dto.chatMessage;
+
 
 import com.team6.module.chat.entity.mongodb.ChatMessage;
+import java.time.LocalDateTime;
 
 public record ChatMessageResponse(
-        String id,
+        String id, // MongoDB의 ID
         String roomId,
         String senderEmail,
         String senderNickname,
         String message,
         int unreadCount,
-        String createdAt
+        LocalDateTime createdAt
 ) {
-    public static ChatMessageResponse fromEntity(ChatMessage entity) {
+    public static ChatMessageResponse from(ChatMessage entity) {
         return new ChatMessageResponse(
                 entity.getId(),
                 entity.getRoomId(),
@@ -19,7 +21,7 @@ public record ChatMessageResponse(
                 entity.getSenderNickname(),
                 entity.getMessage(),
                 entity.getUnreadCount(),
-                entity.getCreatedAt().toString()
+                entity.getCreatedAt()
         );
     }
 }
