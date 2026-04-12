@@ -16,6 +16,11 @@ public enum MatchingErrorCode {
     PAYMENT_NOT_FOUND(404, "결제 정보를 찾을 수 없습니다"),
     PAYMENT_ALREADY_CANCELLED(400, "이미 취소된 결제입니다"),
     PAYMENT_NOT_COMPLETED(400, "완료된 결제가 아닙니다"),
+    PAYMENT_NOT_PENDING(400, "대기 중인 결제가 아닙니다"),
+    PAYMENT_ALREADY_COMPLETED(400, "이미 완료된 결제입니다"),
+    PAYMENT_DUPLICATE_TYPE(400, "해당 매칭 요청에 동일 유형의 결제가 이미 존재합니다"),
+    PAYMENT_AMOUNT_MISMATCH(400, "결제 금액이 일치하지 않습니다"),
+    PAYMENT_PG_VERIFICATION_FAILED(400, "PG 승인 검증에 실패했습니다"),
 
     // Refund 관련
     REFUND_DEADLINE_EXCEEDED(400, "환불 가능 시간(2시간)이 초과되었습니다"),
