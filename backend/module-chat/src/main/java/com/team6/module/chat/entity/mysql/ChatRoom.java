@@ -30,7 +30,7 @@ public class ChatRoom extends BaseTimeEntity {
 
     private Integer participantCount; // 현재 참여 인원수
 
-    private Long ownerId; // 방장 ID
+    private String ownerEmail; // 방장 ID
 
     /**
      * 단방향 OneToMany 설정
@@ -43,10 +43,10 @@ public class ChatRoom extends BaseTimeEntity {
     private List<ChatParticipant> participants = new ArrayList<>();
 
     @Builder
-    private ChatRoom(String title, Long ownerId) {
+    private ChatRoom(String title, String ownerEmail) {
         this.roomId = UUID.randomUUID().toString();
         this.title = title;
-        this.ownerId = ownerId;
+        this.ownerEmail = ownerEmail;
         this.participantCount = 0;
         this.lastMessageAt = LocalDateTime.now();
     }

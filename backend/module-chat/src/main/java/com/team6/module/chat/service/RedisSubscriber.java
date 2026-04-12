@@ -1,7 +1,7 @@
 package com.team6.module.chat.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.team6.module.chat.dto.request.ChatMessageRequest;
+import com.team6.module.chat.dto.response.ChatMessageResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.connection.Message;
@@ -22,9 +22,12 @@ public class RedisSubscriber implements MessageListener {
     public void onMessage(Message message, byte[] pattern) {
         try {
             String publishMessage = (String) redisTemplate.getValueSerializer().deserialize(message.getBody());
-            ChatMessageRequest roomMessage = objectMapper.readValue(publishMessage, ChatMessageRequest.class);
 
-            messagingTemplate.convertAndSend("/sub/chat/room/" + roomMessage.getRoomId(), roomMessage);
+            ChatMessageResponse roomMessage = objectMapper.readValue(publishMessage, ChatMessageResponse.class);
+
+            messagingTemplate.convertAndSend("/sub/chat/room/" + roomMessage.roomId(), roomMessage);
+
+            log.info("Redis Subscribed message sent to: /sub/chat/room/{}", roomMessage.roomId());
 
         } catch (Exception e) {
             log.error("Redis Subscribe Error: {}", e.getMessage());

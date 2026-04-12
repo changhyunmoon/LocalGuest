@@ -5,6 +5,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
 import org.springframework.http.server.ServletServerHttpRequest;
+import org.springframework.messaging.simp.config.ChannelRegistration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
 import org.springframework.web.socket.WebSocketHandler;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
@@ -19,7 +20,14 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
-    private final ChatHandshakeInterceptor chatHandshakeInterceptor;
+    private final AuthInterceptor authInterceptor;
+    private final PresenceInterceptor presenceInterceptor;
+
+    @Override
+    public void configureClientInboundChannel(ChannelRegistration registration) {
+        // 인증 인터셉터를 가장 먼저 실행하도록 등록
+        registration.interceptors(authInterceptor, presenceInterceptor);
+    }
 
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
@@ -33,7 +41,6 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry.addEndpoint("/ws-stomp")
                 .setAllowedOriginPatterns("*")
-                .addInterceptors(chatHandshakeInterceptor) // 분리한 인터셉터 적용
                 .withSockJS();
     }
 }

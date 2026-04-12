@@ -18,7 +18,7 @@ public class ChatMessage {
     @Indexed
     private String roomId; // MySQL ChatRoom의 roomId와 일치함
 
-    private Long senderId; // 메시지 보낸 사람의 PK
+    private String senderEmail; // 메시지 보낸 사람의 PK
 
     private String senderNickname; // 보낸 사람 닉네임
 
@@ -29,19 +29,19 @@ public class ChatMessage {
     private int unreadCount; //이 메시지를 읽지 않은 사람 수 (초기값: 전체 참여자 수 - 1)
 
     @Builder
-    private ChatMessage(String roomId, Long senderId, String senderNickname, String message, int unreadCount ) {
+    private ChatMessage(String roomId, String senderEmail, String senderNickname, String message, int unreadCount ) {
         this.roomId = roomId;
-        this.senderId = senderId;
+        this.senderEmail = senderEmail;
         this.senderNickname = senderNickname;
         this.message = message;
         this.unreadCount = unreadCount;
         this.createdAt = LocalDateTime.now();
     }
 
-    public static ChatMessage create(String roomId, Long senderId, String senderNickname, String message, int unreadCount) {
+    public static ChatMessage create(String roomId, String senderEmail, String senderNickname, String message, int unreadCount) {
         return ChatMessage.builder()
                 .roomId(roomId)
-                .senderId(senderId)
+                .senderEmail(senderEmail)
                 .senderNickname(senderNickname)
                 .message(message)
                 .unreadCount(unreadCount)

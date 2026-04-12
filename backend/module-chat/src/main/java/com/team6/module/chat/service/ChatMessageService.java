@@ -2,83 +2,121 @@ package com.team6.module.chat.service;
 
 import com.team6.module.chat.dto.request.ChatMessageRequest;
 import com.team6.module.chat.dto.response.ChatMessageResponse;
+import com.team6.module.chat.dto.response.ChatScrollResponse;
 import com.team6.module.chat.entity.mongodb.ChatMessage;
-import com.team6.module.chat.entity.mysql.ChatParticipant;
 import com.team6.module.chat.entity.mysql.ChatRoom;
 import com.team6.module.chat.repository.mongodb.ChatMessageRepository;
+import com.team6.module.chat.repository.mysql.ChatRoomRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class ChatMessageService {
 
-    private final ChatMessageRepository chatMessageRepository;
-    private final ChatRoomPresenceService presenceService;
-    private final ChatRoomService chatRoomService;
-    private final MongoTemplate mongoTemplate;
+    private final RedisTemplate<String, String> redisTemplate;
+    private final ChatMessageRepository chatMessageRepository; // MongoDB
+    private final ChatRoomRepository chatRoomRepository;       // MySQL
+    private final SimpMessagingTemplate messagingTemplate;      // 알림 전송용 추가
 
-    /**
-     * 메시지 저장 및 unreadCount 계산
-     */
+    private static final String ROOM_PARTICIPANTS = "CHAT_ROOM_PARTICIPANTS:";
+    private static final int PAGE_SIZE = 20;
+
     @Transactional
-    public ChatMessageResponse saveMessage(ChatMessageRequest request) {
-        ChatRoom room = chatRoomService.getRoomEntity(request.getRoomId());
+    public ChatMessageResponse processSendMessage(ChatMessageRequest request) {
+        String roomId = request.roomId();
 
-        // 개선 4: 참여자 ID 리스트를 뽑아서 한 번에 Redis 조회 (N+1 해결)
-        List<Long> participantIds = room.getParticipants().stream()
-                .map(ChatParticipant::getUserId)
-                .toList();
+        // 1. 실시간 unreadCount 계산
+        int unreadCount = calculateUnreadCount(roomId);
 
-        int onlineCount = presenceService.countOnlineUsers(room.getRoomId(), participantIds);
-        int unreadCount = Math.max(0, room.getParticipantCount() - onlineCount);
-
-        // 3. 메시지 생성 및 MongoDB 저장
-        ChatMessage chatMessage = ChatMessage.builder()
-                .roomId(request.getRoomId())
-                .senderId(request.getSenderId())
-                .senderNickname(request.getSenderNickname())
-                .message(request.getMessage())
-                .unreadCount(unreadCount)
-                .build();
-
-        ChatMessage savedMessage = chatMessageRepository.save(chatMessage);
-
-        // 4. MySQL 방 정보 업데이트
-        chatRoomService.updateLastMessage(
-                request.getRoomId(),
-                request.getMessage(),
-                savedMessage.getCreatedAt()
+        // 2. MongoDB 엔티티 생성 및 저장
+        ChatMessage messageEntity = ChatMessage.create(
+                roomId,
+                request.senderEmail(),
+                request.senderNickname(),
+                request.message(),
+                unreadCount
         );
+        chatMessageRepository.save(messageEntity);
 
-        return ChatMessageResponse.from(savedMessage);
+        // 3. MySQL ChatRoom 정보 업데이트 (마지막 메시지, 시간)
+        updateChatRoomStatus(roomId, request.message(), messageEntity.getCreatedAt());
+
+        ChatMessageResponse response = ChatMessageResponse.fromEntity(messageEntity);
+
+        // 4. [추가] 실시간 리스트 갱신 알림 전송
+        // 채팅방 목록 페이지에 있는 참여자들에게 새 메시지 발생을 알림
+        notifyChatListUpdate(roomId, response);
+
+        return response;
     }
 
     /**
-     * 방 입장 시 읽음 처리 (Bulk Update)
+     * 방 참여자 전원에게 리스트 갱신 신호를 보냄
      */
-    @Transactional
-    public void decreaseUnreadCount(String roomId, Long myId) {
-        // 내가 읽지 않은(senderId != myId) 다른 사람들의 메시지 중 숫자가 남은 것들
-        Query query = new Query(
-                Criteria.where("roomId").is(roomId)
-                        .and("senderId").ne(myId)
-                        .and("unreadCount").gt(0)
-        );
+    private void notifyChatListUpdate(String roomId, ChatMessageResponse response) {
+        ChatRoom room = chatRoomRepository.findByRoomId(roomId)
+                .orElseThrow(() -> new RuntimeException("방을 찾을 수 없습니다."));
 
-        Update update = new Update().inc("unreadCount", -1);
+        // 방에 속한 모든 참여자에게 본인의 이메일을 토픽으로 알림 전송
+        room.getParticipants().forEach(participant -> {
+            String topic = "/sub/chat/list/" + participant.getUserEmail();
+            messagingTemplate.convertAndSend(topic, response);
+            log.info("[List Update] Sent to: {}, Room: {}", topic, roomId);
+        });
+    }
 
-        // 몽고DB 대량 업데이트 실행
-        mongoTemplate.updateMulti(query, update, ChatMessage.class);
-        log.info("방 {} 에서 유저 {} 가 메시지 읽음 처리를 수행했습니다.", roomId, myId);
+    public ChatScrollResponse getMessagesBefore(String roomId, String lastMessageId) {
+
+        Pageable pageable = PageRequest.of(0, PAGE_SIZE + 1); // 하나 더 가져와서 hasNext 확인
+
+        List<ChatMessage> entities;
+
+        if (lastMessageId == null || lastMessageId.isEmpty()) {
+            // 첫 페이지 조회
+            entities = chatMessageRepository.findByRoomIdOrderByIdDesc(roomId, pageable);
+        } else {
+            // 이전 데이터 조회 (String을 ObjectId로 변환 필수)
+            entities = chatMessageRepository.findBeforeId(roomId, new org.bson.types.ObjectId(lastMessageId), pageable);
+        }
+
+        boolean hasNext = entities.size() > PAGE_SIZE;
+        List<ChatMessageResponse> messages = entities.stream()
+                .limit(PAGE_SIZE)
+                .map(ChatMessageResponse::fromEntity)
+                .toList();
+
+        return ChatScrollResponse.of(messages, hasNext);
+    }
+
+    private int calculateUnreadCount(String roomId) {
+        Long connectedCount = redisTemplate.opsForSet().size(ROOM_PARTICIPANTS + roomId);
+
+        ChatRoom room = chatRoomRepository.findByRoomId(roomId)
+                .orElseThrow(() -> new RuntimeException("방을 찾을 수 없습니다."));
+
+        int total = room.getParticipantCount();
+        return Math.max(0, total - (connectedCount != null ? connectedCount.intValue() : 0)); // 1대신 0으로 보정 (본인 포함 여부에 따라 조정 가능)
+    }
+
+    private void updateChatRoomStatus(String roomId, String lastMsg, LocalDateTime sentAt) {
+        chatRoomRepository.findByRoomId(roomId).ifPresent(room -> {
+            room.updateLastMessage(lastMsg, sentAt);
+        });
     }
 }
