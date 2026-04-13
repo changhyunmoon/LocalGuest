@@ -16,7 +16,7 @@ public class ChatParticipant extends BaseTimeEntity {
     private Long id;
 
     @Column(nullable = false)
-    private Long userId; // 참여 유저의 PK
+    private String userEmail; // 참여 유저의 PK
 
     private String userNickname; // 채팅 시 노출될 닉네임 캐싱
 
@@ -26,18 +26,28 @@ public class ChatParticipant extends BaseTimeEntity {
     private boolean isAlarmOn = true; //알림 설정: 해당 방의 알림 활성화 여부
 
     @Builder
-    private ChatParticipant(Long userId, String userNickname) {
-        this.userId = userId;
+    private ChatParticipant(String userEmail, String userNickname) {
+        this.userEmail = userEmail;
         this.userNickname = userNickname;
         this.lastReadAt = LocalDateTime.now();
     }
 
-    public static ChatParticipant create(Long userId, String userNickname) {
+    public static ChatParticipant create(String userEmail, String userNickname) {
         return ChatParticipant.builder()
-                .userId(userId)
+                .userEmail(userEmail)
                 .userNickname(userNickname)
                 .build();
     }
+
+    public void updateLastReadAt() {
+        this.lastReadAt = LocalDateTime.now();
+    }
+
+    public void toggleAlarm(boolean isAlarmOn) {
+        this.isAlarmOn = isAlarmOn;
+    }
+
+
 
 
 }
