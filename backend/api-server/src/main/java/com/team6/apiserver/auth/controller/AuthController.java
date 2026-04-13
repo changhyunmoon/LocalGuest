@@ -1,4 +1,4 @@
-package com.team6.domain.auth.controller;
+package com.team6.apiserver.auth.controller;
 
 import com.team6.domain.auth.dto.LoginRequest;
 import com.team6.domain.auth.service.AuthService;

@@ -7,13 +7,18 @@
         <processorPath useClasspath="false">
           <entry name="$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.projectlombok/lombok/1.18.38/57f8f5e02e92a30fd21b80cbd426a4172b5f8e29/lombok-1.18.38.jar" />
         </processorPath>
-        <module name="backend.module-ai.main" />
-        <module name="backend.module-common.main" />
+        <module name="backend.module-ai-integration.main" />
         <module name="backend.api-server.main" />
         <module name="backend.module-chat.main" />
         <module name="backend.module-domain.main" />
+        <module name="backend.module-auth.main" />
+        <module name="backend.module-ai.main" />
+        <module name="backend.module-common.main" />
       </profile>
     </annotationProcessing>
+    <bytecodeTargetLevel>
+      <module name="backend.module-auth" target="17" />
+    </bytecodeTargetLevel>
   </component>
   <component name="JavacSettings">
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
@@ -23,8 +28,14 @@
       <module name="backend.api-server.test" options="-parameters" />
       <module name="backend.main" options="-parameters" />
       <module name="backend.module-ai" options="-parameters" />
+      <module name="backend.module-ai-integration" options="-parameters" />
+      <module name="backend.module-ai-integration.main" options="-parameters" />
+      <module name="backend.module-ai-integration.test" options="-parameters" />
       <module name="backend.module-ai.main" options="-parameters" />
       <module name="backend.module-ai.test" options="-parameters" />
+      <module name="backend.module-auth" options="-parameters" />
+      <module name="backend.module-auth.main" options="-parameters" />
+      <module name="backend.module-auth.test" options="-parameters" />
       <module name="backend.module-chat" options="-parameters" />
       <module name="backend.module-chat.main" options="-parameters" />
       <module name="backend.module-chat.test" options="-parameters" />

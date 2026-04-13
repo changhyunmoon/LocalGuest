@@ -1,4 +1,4 @@
-package com.team6.domain.auth.filter;
+package com.team6.apiserver.auth.filter;
 
 import com.team6.domain.auth.provider.JwtTokenProvider;
 import jakarta.servlet.FilterChain;
@@ -54,5 +54,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         return null;
+    }
+
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String path = request.getRequestURI();
+        return path.startsWith("/oauth2/") || path.startsWith("/login/");
     }
 }

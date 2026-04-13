@@ -1,7 +1,8 @@
 package com.team6.domain.member.service;
 
-import com.team6.domain.auth.config.PasswordConfig;
 import com.team6.domain.member.entity.Member;
+import com.team6.domain.member.entity.Role;
+import com.team6.domain.member.entity.SocialType;
 import com.team6.domain.member.entity.Status;
 import com.team6.domain.member.repository.MemberRepository;
 import com.team6.module.common.global.util.SecurityUtil;
@@ -54,5 +55,25 @@ public class MemberService {
         }
 
         member.withdraw();
+    }
+
+    // 소셜로그인을 통한 위한 회원 조회 및 회원가입
+    @Transactional
+    public Member findOrCreateMember(String email, String name, String picture) {
+        return memberRepository.findByEmail(email)
+                .orElseGet(() -> {
+                    String tempNickname = email.split("@")[0]
+                            + "_" + (int)(Math.random()*10000);
+                    // 조회 후 없으면 신규 소셜 회원 가입
+                    Member newMember = Member.builder()
+                            .email(email)
+                            .name(name)
+                            .password("")
+                            .nickname(tempNickname)
+                            .role(Role.GUEST)
+                            .socialType(SocialType.GOOGLE)
+                            .build();
+                    return memberRepository.save(newMember);
+                });
     }
 }
