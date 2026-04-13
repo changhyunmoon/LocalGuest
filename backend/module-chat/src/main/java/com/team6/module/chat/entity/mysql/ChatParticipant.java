@@ -15,6 +15,9 @@ public class ChatParticipant extends BaseTimeEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column
+    private Long userId = 0L;
+
     @Column(nullable = false)
     private String userEmail; // 참여 유저의 PK
 

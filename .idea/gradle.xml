@@ -11,6 +11,7 @@
             <option value="$PROJECT_DIR$/backend" />
             <option value="$PROJECT_DIR$/backend/api-server" />
             <option value="$PROJECT_DIR$/backend/module-ai" />
+            <option value="$PROJECT_DIR$/backend/module-ai-integration" />
             <option value="$PROJECT_DIR$/backend/module-chat" />
             <option value="$PROJECT_DIR$/backend/module-common" />
             <option value="$PROJECT_DIR$/backend/module-domain" />
