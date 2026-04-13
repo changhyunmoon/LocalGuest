@@ -19,7 +19,7 @@ public class ChatMessageStompController {
     public void message(ChatMessageRequest request) {
         log.info("[WebSocket] 메시지 수신 - Room: {}, Sender: {}", request.roomId(), request.senderEmail());
 
-        // ChatMessageService에서 Redis 인원 파악, DB 저장, 메시지 발행(send)을 모두 처리합니다.
+        // ChatMessageService에서 Redis 인원 파악, DB 저장, 메시지 발행(send)을 모두 처리
         chatMessageService.sendMessage(request);
     }
 

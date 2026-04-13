@@ -12,15 +12,16 @@ import org.springframework.messaging.simp.stomp.StompCommand;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.messaging.support.ChannelInterceptor;
 import org.springframework.messaging.support.MessageHeaderAccessor;
+import org.springframework.stereotype.Component;
 
 import java.util.Map;
 
+@Component
 @RequiredArgsConstructor
 @Slf4j
 public class PresenceInterceptor implements ChannelInterceptor {
 
     private final RedisTemplate<String, String> redisTemplate;
-    // ObjectProvider를 사용하여 빈 생성 시점이 아닌 사용 시점에 주입받도록 함
     private final ObjectProvider<SimpMessagingTemplate> messagingTemplateProvider;
     private final ChatRoomService chatRoomService;
 
@@ -53,7 +54,6 @@ public class PresenceInterceptor implements ChannelInterceptor {
                 String email = (String) sessionData.get("email");
                 String roomId = (String) sessionData.get("roomId");
 
-                // 퇴장 시에도 마지막 읽은 시간 업데이트
                 chatRoomService.updateLastReadAt(roomId, email);
 
                 redisTemplate.opsForSet().remove(ROOM_PARTICIPANTS + roomId, email);
@@ -66,7 +66,6 @@ public class PresenceInterceptor implements ChannelInterceptor {
 
     private void sendReadUpdate(String roomId, String userEmail) {
         Map<String, String> payload = Map.of("type", "READ_UPDATE", "userEmail", userEmail);
-        // 필요할 때 getIfAvailable()로 꺼내서 사용
         SimpMessagingTemplate messagingTemplate = messagingTemplateProvider.getIfAvailable();
         if (messagingTemplate != null) {
             messagingTemplate.convertAndSend("/sub/chat/room/" + roomId, payload);

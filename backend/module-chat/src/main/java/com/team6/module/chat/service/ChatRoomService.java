@@ -11,12 +11,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
 public class ChatRoomService {
 
     private final ChatRoomRepository chatRoomRepository;
@@ -80,17 +80,14 @@ public class ChatRoomService {
 
     @Transactional
     public void updateLastReadAt(String roomId, String userEmail) {
-        // 1. 방 조회 (비즈니스 키인 roomId 사용)
         ChatRoom chatRoom = chatRoomRepository.findByRoomId(roomId)
                 .orElseThrow(() -> new RuntimeException("채팅방을 찾을 수 없습니다."));
 
-        // 2. 해당 방의 참여자 중 나를 찾아서 시간 업데이트
         chatRoom.getParticipants().stream()
                 .filter(p -> p.getUserEmail().equals(userEmail))
                 .findFirst()
                 .ifPresent(ChatParticipant::updateLastReadAt);
 
-        // @Transactional 덕분에 별도의 save 호출 없이도 더티 체킹에 의해 업데이트 쿼리가 나갑니다.
     }
 
 }
