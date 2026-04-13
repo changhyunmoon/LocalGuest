@@ -16,6 +16,9 @@ public class ChatParticipant extends BaseTimeEntity {
     private Long id;
 
     @Column(nullable = false)
+    private String userId;
+
+    @Column(nullable = false)
     private String userEmail; // 참여 유저의 PK
 
     private String userNickname; // 채팅 시 노출될 닉네임 캐싱
