@@ -2,7 +2,10 @@ package com.team6.domain.guide.service;
 
 import com.team6.domain.guide.dto.request.CreateGuideProfileRequest;
 import com.team6.domain.guide.dto.request.UpdateGuideProfileRequest;
+import com.team6.domain.guide.dto.request.UpdateGuideRatingRequest;
 import com.team6.domain.guide.dto.response.GuideProfileResponse;
+import com.team6.domain.guide.dto.response.GuideReviewSummaryResponse;
+import com.team6.domain.guide.dto.response.GuideSettlementResponse;
 import com.team6.domain.guide.entity.GuideProfile;
 import com.team6.domain.guide.exception.GuideErrorCode;
 import com.team6.domain.guide.exception.GuideException;
@@ -10,6 +13,8 @@ import com.team6.domain.guide.repository.GuideProfileRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
 
 import java.util.List;
 
@@ -68,7 +73,10 @@ public class GuideProfileService {
                 request.getPricePerHour(),
                 request.getIsActive(),
                 request.getResidenceYears(),
-                request.getLocalStory()
+                request.getLocalStory(),
+                request.getKeywords(),
+                request.getDefaultCourse(),
+                request.getGuideStyle()
         );
 
         return GuideProfileResponse.from(profile);
@@ -89,6 +97,49 @@ public class GuideProfileService {
         return guideProfileRepository.findAll().stream()
                 .map(GuideProfileResponse::from)
                 .toList();
+    }
+
+    // 정산 예정 금액 조회 — 본인만 조회 가능 (F06-05)
+    @Transactional(readOnly = true)
+    public GuideSettlementResponse getExpectedSettlement(Long guideId, Long userId) {
+        // 가이드 프로필 조회
+        GuideProfile profile = guideProfileRepository.findById(guideId)
+                .orElseThrow(() -> new GuideException(GuideErrorCode.GUIDE_NOT_FOUND));
+
+        // 본인 프로필인지 확인
+        if (!profile.getMemberId().equals(userId)) {
+            throw new GuideException(GuideErrorCode.GUIDE_UNAUTHORIZED);
+        }
+
+        // TODO: matching 도메인 Payment 확정 후 실제 정산 로직으로 교체
+        return GuideSettlementResponse.builder()
+                .guideId(guideId)
+                .expectedAmount(BigDecimal.ZERO)
+                .description("정산 기능 준비 중입니다")
+                .build();
+    }
+
+    // 가이드 리뷰 요약 조회 — averageRating, reviewCount 반환 (F06-07)
+    @Transactional(readOnly = true)
+    public GuideReviewSummaryResponse getReviewSummary(Long guideId) {
+        // 가이드 프로필 조회
+        GuideProfile profile = guideProfileRepository.findById(guideId)
+                .orElseThrow(() -> new GuideException(GuideErrorCode.GUIDE_NOT_FOUND));
+
+        return GuideReviewSummaryResponse.from(profile);
+    }
+
+    // 평균 평점 및 리뷰 수 갱신 — review 도메인이 리뷰 작성/삭제 후 호출 (F06-07)
+    @Transactional
+    public GuideProfileResponse updateRating(Long guideId, UpdateGuideRatingRequest request) {
+        // 가이드 프로필 조회
+        GuideProfile profile = guideProfileRepository.findById(guideId)
+                .orElseThrow(() -> new GuideException(GuideErrorCode.GUIDE_NOT_FOUND));
+
+        // 평점 및 리뷰 수 갱신
+        profile.updateRating(request.getAverageRating(), request.getReviewCount());
+
+        return GuideProfileResponse.from(profile);
     }
 
     // 가이드 활성화/비활성화 토글 (F06-06)

@@ -94,6 +94,33 @@ public class GuideScheduleController {
         return ResponseEntity.ok(guideScheduleService.rejectSchedule(scheduleId, guideId, userId));
     }
 
+    // [matching 연동] AVAILABLE → PENDING 전환 — matching 도메인이 매칭 요청 시 호출 (F03-04)
+    @PatchMapping("/{scheduleId}/pending")
+    public ResponseEntity<GuideScheduleResponse> markAsPending(
+            @PathVariable Long guideId,
+            @PathVariable Long scheduleId
+    ) {
+        return ResponseEntity.ok(guideScheduleService.markAsPending(scheduleId, guideId));
+    }
+
+    // [matching 연동] PENDING → BOOKED 전환 — matching 도메인이 최종 확정 시 호출 (F03-05)
+    @PatchMapping("/{scheduleId}/book")
+    public ResponseEntity<GuideScheduleResponse> markAsBooked(
+            @PathVariable Long guideId,
+            @PathVariable Long scheduleId
+    ) {
+        return ResponseEntity.ok(guideScheduleService.markAsBooked(scheduleId, guideId));
+    }
+
+    // [matching 연동] BOOKED → AVAILABLE 복구 — matching 도메인이 취소 시 호출 (F05-01/02)
+    @PatchMapping("/{scheduleId}/cancel")
+    public ResponseEntity<GuideScheduleResponse> cancelToAvailable(
+            @PathVariable Long guideId,
+            @PathVariable Long scheduleId
+    ) {
+        return ResponseEntity.ok(guideScheduleService.cancelToAvailable(scheduleId, guideId));
+    }
+
     // 스케줄 상태 변경 — AVAILABLE ↔ BLOCKED (F06-04)
     @PatchMapping("/{scheduleId}/status")
     public ResponseEntity<GuideScheduleResponse> changeStatus(

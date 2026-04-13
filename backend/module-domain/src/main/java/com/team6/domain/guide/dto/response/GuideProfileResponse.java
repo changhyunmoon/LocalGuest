@@ -28,6 +28,9 @@ public class GuideProfileResponse {
     private Boolean isActive;           // 활성화 여부
     private Integer residenceYears;     // 해당 지역 거주 연수
     private String localStory;          // 지역 스토리
+    private String keywords;            // AI 매칭용 키워드 (F06-02)
+    private String defaultCourse;       // 디폴트 코스 (F06-02)
+    private String guideStyle;          // 가이드 스타일 (F06-02)
     private LocalDateTime createdAt;    // 등록일시
     private LocalDateTime updatedAt;    // 수정일시
 
@@ -48,6 +51,9 @@ public class GuideProfileResponse {
                 .isActive(profile.getIsActive())
                 .residenceYears(profile.getResidenceYears())
                 .localStory(profile.getLocalStory())
+                .keywords(profile.getKeywords())
+                .defaultCourse(profile.getDefaultCourse())
+                .guideStyle(profile.getGuideStyle())
                 .createdAt(profile.getCreatedAt())
                 .updatedAt(profile.getUpdatedAt())
                 .build();

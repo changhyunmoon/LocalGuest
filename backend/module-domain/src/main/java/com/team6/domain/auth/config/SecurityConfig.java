@@ -25,6 +25,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // 1. 누구나 접근 가능한 경로 (화이트리스트)
                         .requestMatchers("/auth/**", "/members/join").permitAll()
+                        .requestMatchers("/guides/**").permitAll()
 
                         // Swagger UI + OpenAPI (springdoc). context-path 사용 시 환경에 따라 둘 다 허용
                         .requestMatchers(

@@ -182,6 +182,57 @@ public class GuideScheduleService {
         return GuideScheduleResponse.from(schedule);
     }
 
+    // [matching 연동] AVAILABLE → PENDING 전환 — matching 도메인이 매칭 요청 시 호출
+    @Transactional
+    public GuideScheduleResponse markAsPending(Long scheduleId, Long guideId) {
+        // 스케줄 조회
+        GuideSchedule schedule = getVerifiedSchedule(scheduleId, guideId);
+
+        // AVAILABLE 상태인지 확인 (PENDING 전환은 예약 가능 상태에서만 허용)
+        if (schedule.getStatus() != GuideScheduleStatus.AVAILABLE) {
+            throw new GuideException(GuideErrorCode.SCHEDULE_NOT_AVAILABLE);
+        }
+
+        // 상태 변경: AVAILABLE → PENDING
+        schedule.changeStatus(GuideScheduleStatus.PENDING);
+
+        return GuideScheduleResponse.from(schedule);
+    }
+
+    // [matching 연동] PENDING → BOOKED 전환 — matching 도메인이 최종 확정 시 호출
+    @Transactional
+    public GuideScheduleResponse markAsBooked(Long scheduleId, Long guideId) {
+        // 스케줄 조회
+        GuideSchedule schedule = getVerifiedSchedule(scheduleId, guideId);
+
+        // PENDING 상태인지 확인 (BOOKED 전환은 대기 중 스케줄에만 허용)
+        if (schedule.getStatus() != GuideScheduleStatus.PENDING) {
+            throw new GuideException(GuideErrorCode.SCHEDULE_NOT_PENDING);
+        }
+
+        // 상태 변경: PENDING → BOOKED
+        schedule.changeStatus(GuideScheduleStatus.BOOKED);
+
+        return GuideScheduleResponse.from(schedule);
+    }
+
+    // [matching 연동] BOOKED → AVAILABLE 복구 — matching 도메인이 취소 시 호출
+    @Transactional
+    public GuideScheduleResponse cancelToAvailable(Long scheduleId, Long guideId) {
+        // 스케줄 조회
+        GuideSchedule schedule = getVerifiedSchedule(scheduleId, guideId);
+
+        // BOOKED 상태인지 확인 (복구는 예약 확정 상태에서만 허용)
+        if (schedule.getStatus() != GuideScheduleStatus.BOOKED) {
+            throw new GuideException(GuideErrorCode.SCHEDULE_NOT_BOOKED);
+        }
+
+        // 상태 복구: BOOKED → AVAILABLE
+        schedule.changeStatus(GuideScheduleStatus.AVAILABLE);
+
+        return GuideScheduleResponse.from(schedule);
+    }
+
     // 시작 시간 < 종료 시간 검증 공통 메서드 — DB의 CHECK 제약과 이중 보호
     private void validateTimeRange(java.time.LocalTime startTime, java.time.LocalTime endTime) {
         // startTime이 endTime과 같거나 이후인 경우 유효하지 않은 시간 범위로 판단

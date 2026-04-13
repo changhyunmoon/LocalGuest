@@ -2,7 +2,10 @@ package com.team6.domain.guide.controller;
 
 import com.team6.domain.guide.dto.request.CreateGuideProfileRequest;
 import com.team6.domain.guide.dto.request.UpdateGuideProfileRequest;
+import com.team6.domain.guide.dto.request.UpdateGuideRatingRequest;
 import com.team6.domain.guide.dto.response.GuideProfileResponse;
+import com.team6.domain.guide.dto.response.GuideReviewSummaryResponse;
+import com.team6.domain.guide.dto.response.GuideSettlementResponse;
 import com.team6.domain.guide.service.GuideProfileService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -54,6 +57,32 @@ public class GuideProfileController {
             @RequestHeader("X-User-Id") Long userId // JWT 연동 전 임시 헤더
     ) {
         return ResponseEntity.ok(guideProfileService.updateProfile(guideId, request, userId));
+    }
+
+    // 정산 예정 금액 조회 — 본인만 조회 가능 (F06-05)
+    @GetMapping("/{guideId}/settlement/expected")
+    public ResponseEntity<GuideSettlementResponse> getExpectedSettlement(
+            @PathVariable Long guideId,
+            @RequestHeader("X-User-Id") Long userId // JWT 연동 전 임시 헤더
+    ) {
+        return ResponseEntity.ok(guideProfileService.getExpectedSettlement(guideId, userId));
+    }
+
+    // 가이드 리뷰 요약 조회 — averageRating, reviewCount 반환 (F06-07)
+    @GetMapping("/{guideId}/reviews/summary")
+    public ResponseEntity<GuideReviewSummaryResponse> getReviewSummary(
+            @PathVariable Long guideId
+    ) {
+        return ResponseEntity.ok(guideProfileService.getReviewSummary(guideId));
+    }
+
+    // 평균 평점 및 리뷰 수 갱신 — review 도메인이 리뷰 작성/삭제 후 호출 (F06-07)
+    @PatchMapping("/{guideId}/rating")
+    public ResponseEntity<GuideProfileResponse> updateRating(
+            @PathVariable Long guideId,
+            @RequestBody @Valid UpdateGuideRatingRequest request
+    ) {
+        return ResponseEntity.ok(guideProfileService.updateRating(guideId, request));
     }
 
     // 가이드 활성화/비활성화 토글 (F06-06)
