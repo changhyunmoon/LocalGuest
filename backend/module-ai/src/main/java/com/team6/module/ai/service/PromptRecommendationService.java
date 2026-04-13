@@ -88,6 +88,7 @@ public class PromptRecommendationService {
                 GuideRecommendResponse out = GuideRecommendResponse.builder()
                         .conceptSummary(ConceptSummaryGenerator.generate(parsed))
                         .keywords(keywordsFrom(parsed))
+                        .matchRequestDraft(matchRequestDraftFrom(parsed))
                         .notice(NOTICE_REGION_REQUIRED)
                         .noticeCodes(List.of(RecommendationNoticeCodes.REGION_REQUIRED))
                         .policyVersion(POLICY_VERSION)
@@ -121,20 +122,10 @@ public class PromptRecommendationService {
                 .build();
 
         GuideRecommendResponse base = aiRecommendationService.recommend(effective);
-        FallbackDecision decision = decideFallback(effective, base);
-        GuideRecommendResponse finalBase = base;
+        FallbackOutcome fallback = resolveFallbackWithStrategicRelaxation(effective, base);
+        GuideRecommendResponse finalBase = fallback.responseAfterFallback();
 
-        if (decision.shouldFallback) {
-            GuideRecommendRequest relaxed = relax(effective, decision.stage);
-            GuideRecommendResponse retried = aiRecommendationService.recommend(relaxed);
-
-            if (retried != null && retried.getTotalCount() > 0
-                    && topScore(retried) >= AiRecommendationTuning.LOW_SIGNAL_SCORE_THRESHOLD) {
-                finalBase = retried;
-            }
-        }
-
-        String notice = decision.notice;
+        String notice = fallback.fallbackNotice();
         if (expansion.expansionUsed()) {
             notice = mergeNotice(NOTICE_ADJACENT_INCLUDED, notice);
             metrics.recordRegionExpansion();
@@ -145,12 +136,15 @@ public class PromptRecommendationService {
             metrics.recordSparsePoolNotice();
         }
 
-        if (decision.shouldFallback) {
-            metrics.recordFallback(decision.stage.name());
+        if (fallback.attemptedRelaxChain()) {
+            String metricStage = fallback.winningRelaxStage() != RelaxStage.NONE
+                    ? fallback.winningRelaxStage().name()
+                    : "STRATEGIC_EXHAUSTED";
+            metrics.recordFallback(metricStage);
         }
 
             List<String> noticeCodes = buildNoticeCodes(
-                    decision,
+                    fallback,
                     expansion.expansionUsed(),
                     effectivePoolSizeForNotice,
                     finalBase.getTotalCount()
@@ -163,7 +157,7 @@ public class PromptRecommendationService {
                     guideCandidates,
                     base,
                     finalBase,
-                    decision,
+                    fallback,
                     false,
                     expansion.expansionUsed(),
                     poolSize(expansion.candidates()),
@@ -173,6 +167,7 @@ public class PromptRecommendationService {
             GuideRecommendResponse out = GuideRecommendResponse.builder()
                     .conceptSummary(ConceptSummaryGenerator.generate(parsed))
                     .keywords(keywordsFrom(parsed))
+                    .matchRequestDraft(matchRequestDraftFrom(parsed))
                     .notice(notice)
                     .noticeCodes(noticeCodes)
                     .policyVersion(POLICY_VERSION)
@@ -208,6 +203,22 @@ public class PromptRecommendationService {
                 .build();
     }
 
+    private static GuideRecommendResponse.MatchRequestDraft matchRequestDraftFrom(GuideRecommendRequest request) {
+        return GuideRecommendResponse.MatchRequestDraft.builder()
+                .destination(request.getRegion())
+                .concept(ConceptSummaryGenerator.generateMatchRequestConcept(request))
+                .conceptSummary(ConceptSummaryGenerator.generate(request))
+                .budgetHint(request.getBudgetLevel())
+                .headcount(request.getHeadcount())
+                .durationDays(request.getDurationDays())
+                .travelStyle(request.getTravelStyle())
+                .companionType(request.getCompanionType())
+                .activityTags(request.getActivityTags())
+                .excludedActivityTags(request.getExcludedActivityTags())
+                .preferredLanguages(request.getPreferredLanguages())
+                .build();
+    }
+
     private static int poolSize(List<GuideRecommendRequest.GuideCandidateDto> candidates) {
         return candidates == null ? 0 : candidates.size();
     }
@@ -220,14 +231,21 @@ public class PromptRecommendationService {
     }
 
     private static List<String> buildNoticeCodes(
-            FallbackDecision decision,
+            FallbackOutcome fallback,
             boolean expansionUsed,
             int effectivePoolSize,
             int resultCount
     ) {
         LinkedHashSet<String> codes = new LinkedHashSet<>();
-        if (decision.noticeCodes != null) {
-            codes.addAll(decision.noticeCodes);
+        if (fallback.coreNoticeCodes() != null) {
+            codes.addAll(fallback.coreNoticeCodes());
+        }
+        if (fallback.attemptedRelaxChain()) {
+            if (fallback.winningRelaxStage() != RelaxStage.NONE) {
+                codes.add(noticeCodeForWinningStage(fallback.winningRelaxStage()));
+            } else if (fallback.chainExhausted()) {
+                codes.add(RecommendationNoticeCodes.FALLBACK_STRATEGIC_EXHAUSTED);
+            }
         }
         if (expansionUsed) {
             codes.add(RecommendationNoticeCodes.ADJACENT_REGION_INCLUDED);
@@ -236,6 +254,15 @@ public class PromptRecommendationService {
             codes.add(RecommendationNoticeCodes.SPARSE_GUIDE_POOL);
         }
         return new ArrayList<>(codes);
+    }
+
+    private static String noticeCodeForWinningStage(RelaxStage stage) {
+        return switch (stage) {
+            case DROP_ACTIVITY_TAGS_ONLY -> RecommendationNoticeCodes.FALLBACK_RELAXED_ACTIVITY_TAGS;
+            case DROP_TRAVEL_STYLE_ONLY -> RecommendationNoticeCodes.FALLBACK_RELAXED_TRAVEL_STYLE;
+            case DROP_REGION_ONLY -> RecommendationNoticeCodes.FALLBACK_RELAXED_REGION;
+            default -> RecommendationNoticeCodes.FALLBACK_STRATEGIC_EXHAUSTED;
+        };
     }
 
     private static int topScore(GuideRecommendResponse resp) {
@@ -262,33 +289,145 @@ public class PromptRecommendationService {
                 .collect(Collectors.joining("|"));
     }
 
-    private FallbackDecision decideFallback(GuideRecommendRequest request, GuideRecommendResponse base) {
-        int candidateCount = request.getGuideCandidates() == null ? 0 : request.getGuideCandidates().size();
+    private static final List<RelaxStage> STRATEGIC_RELAX_ORDER = List.of(
+            RelaxStage.DROP_ACTIVITY_TAGS_ONLY,
+            RelaxStage.DROP_TRAVEL_STYLE_ONLY,
+            RelaxStage.DROP_REGION_ONLY
+    );
+
+    /**
+     * 후보·신호가 있으나 결과가 없거나 Top1 점수가 낮을 때,
+     * 활동 태그 → 여행 스타일 → 지역 순으로 한 차원씩만 누적 완화하며 재추천한다.
+     * 선호 언어·제외/소프트 패널티 태그는 원 요청({@code languageAnchor}) 기준으로 끝까지 유지한다.
+     */
+    private FallbackOutcome resolveFallbackWithStrategicRelaxation(
+            GuideRecommendRequest effective,
+            GuideRecommendResponse base
+    ) {
+        int candidateCount = effective.getGuideCandidates() == null ? 0 : effective.getGuideCandidates().size();
         if (candidateCount == 0) {
-            return new FallbackDecision(false, RelaxStage.NONE,
+            return FallbackOutcome.errorNotice(
+                    base,
                     "연결 가능한 가이드 후보가 없어 추천을 제공하기 어려워요. 지역을 바꾸거나 나중에 다시 시도해 주세요.",
-                    List.of(RecommendationNoticeCodes.NO_GUIDE_CANDIDATES));
+                    List.of(RecommendationNoticeCodes.NO_GUIDE_CANDIDATES)
+            );
         }
 
-        int score = topScore(base);
-        boolean extractedAnySignal = hasAnySignal(request);
-        if (!extractedAnySignal) {
-            return new FallbackDecision(false, RelaxStage.NONE,
+        if (!hasAnySignal(effective)) {
+            return FallbackOutcome.errorNotice(
+                    base,
                     "원하는 조건(지역/스타일/예산/활동/언어/기간/인원)을 조금 더 구체적으로 알려주세요.",
-                    List.of(RecommendationNoticeCodes.PROMPT_DETAIL_REQUESTED));
+                    List.of(RecommendationNoticeCodes.PROMPT_DETAIL_REQUESTED)
+            );
         }
 
-        if (base == null || base.getTotalCount() == 0) {
-            return new FallbackDecision(true, RelaxStage.DROP_REGION_STYLE, "조건을 일부 완화해 비슷한 가이드를 다시 찾아봤어요.",
-                    List.of(RecommendationNoticeCodes.FALLBACK_RELAXED_NO_MATCH));
+        boolean noResults = base == null || base.getTotalCount() == 0;
+        int score = topScore(base);
+        boolean lowScore = !noResults && score < AiRecommendationTuning.LOW_SIGNAL_SCORE_THRESHOLD;
+        if (!noResults && !lowScore) {
+            return FallbackOutcome.noRelax(base);
         }
 
-        if (score < AiRecommendationTuning.LOW_SIGNAL_SCORE_THRESHOLD) {
-            return new FallbackDecision(true, RelaxStage.DROP_REGION, "조건을 일부 완화해 더 많은 후보를 찾아봤어요.",
-                    List.of(RecommendationNoticeCodes.FALLBACK_LOW_SCORE_RELAXED));
+        List<String> coreCodes = noResults
+                ? List.of(RecommendationNoticeCodes.FALLBACK_RELAXED_NO_MATCH)
+                : List.of(RecommendationNoticeCodes.FALLBACK_LOW_SCORE_RELAXED);
+        String noticeIfExhausted = noResults
+                ? "활동·스타일·지역 순으로 조건을 단계적으로 완화해 찾아봤어요."
+                : "활동·스타일·지역 순으로 조건을 단계적으로 완화해 추천을 다시 구성해 봤어요.";
+
+        StrategicChainResult chain = runStrategicRelaxationChain(effective, base);
+        boolean improved = chain.winningStage() != RelaxStage.NONE;
+        GuideRecommendResponse finalResp = improved ? chain.bestResponse() : base;
+        boolean exhausted = !improved;
+        String notice = improved
+                ? "일부 조건을 순서대로 완화해 다시 추천했어요."
+                : noticeIfExhausted;
+
+        return new FallbackOutcome(
+                true,
+                finalResp,
+                chain.winningStage(),
+                exhausted,
+                notice,
+                coreCodes
+        );
+    }
+
+    private StrategicChainResult runStrategicRelaxationChain(
+            GuideRecommendRequest languageAnchor,
+            GuideRecommendResponse baseline
+    ) {
+        GuideRecommendRequest current = languageAnchor;
+        for (RelaxStage step : STRATEGIC_RELAX_ORDER) {
+            if (!isStrategicRelaxApplicable(current, step)) {
+                continue;
+            }
+            current = applyStrategicRelaxStep(languageAnchor, current, step);
+            GuideRecommendResponse retried = aiRecommendationService.recommend(current);
+            if (acceptsStrategicRetry(retried)) {
+                return new StrategicChainResult(retried, step);
+            }
+        }
+        return new StrategicChainResult(baseline, RelaxStage.NONE);
+    }
+
+    private static boolean acceptsStrategicRetry(GuideRecommendResponse resp) {
+        return resp != null
+                && resp.getTotalCount() > 0
+                && topScore(resp) >= AiRecommendationTuning.LOW_SIGNAL_SCORE_THRESHOLD;
+    }
+
+    private static boolean isStrategicRelaxApplicable(GuideRecommendRequest req, RelaxStage step) {
+        return switch (step) {
+            case DROP_ACTIVITY_TAGS_ONLY ->
+                    req.getActivityTags() != null && !req.getActivityTags().isEmpty();
+            case DROP_TRAVEL_STYLE_ONLY -> notBlank(req.getTravelStyle());
+            case DROP_REGION_ONLY -> notBlank(req.getRegion());
+            default -> false;
+        };
+    }
+
+    /**
+     * {@code languageAnchor}의 선호 언어를 항상 유지하고, {@code current}에서 한 차원만 완화한다.
+     */
+    private static GuideRecommendRequest applyStrategicRelaxStep(
+            GuideRecommendRequest languageAnchor,
+            GuideRecommendRequest current,
+            RelaxStage step
+    ) {
+        String region = current.getRegion();
+        String style = current.getTravelStyle();
+        List<String> tags = current.getActivityTags() == null ? List.of() : current.getActivityTags();
+
+        if (step == RelaxStage.DROP_ACTIVITY_TAGS_ONLY) {
+            tags = List.of();
+        } else if (step == RelaxStage.DROP_TRAVEL_STYLE_ONLY) {
+            style = null;
+        } else if (step == RelaxStage.DROP_REGION_ONLY) {
+            region = null;
         }
 
-        return new FallbackDecision(false, RelaxStage.NONE, null, List.of());
+        List<String> pinnedLangs = languageAnchor.getPreferredLanguages() == null
+                ? List.of()
+                : languageAnchor.getPreferredLanguages();
+
+        return GuideRecommendRequest.builder()
+                .region(region)
+                .travelStyle(style)
+                .budgetLevel(current.getBudgetLevel())
+                .companionType(current.getCompanionType())
+                .activityTags(tags)
+                .preferredLanguages(pinnedLangs)
+                .headcount(current.getHeadcount())
+                .durationDays(current.getDurationDays())
+                .excludedActivityTags(current.getExcludedActivityTags())
+                .softPenaltyActivityTags(current.getSoftPenaltyActivityTags())
+                .topN(current.getTopN())
+                .guideCandidates(current.getGuideCandidates())
+                .build();
+    }
+
+    private record StrategicChainResult(GuideRecommendResponse bestResponse, RelaxStage winningStage) {
     }
 
     private static boolean hasAnySignal(GuideRecommendRequest req) {
@@ -305,58 +444,13 @@ public class PromptRecommendationService {
                 || (req.getSoftPenaltyActivityTags() != null && !req.getSoftPenaltyActivityTags().isEmpty());
     }
 
-    /**
-     * 조건 완화 단계. {@code excludedActivityTags}·{@code softPenaltyActivityTags}는 사용자 의도로 간주해 항상 원본을 유지한다.
-     */
-    private GuideRecommendRequest relax(GuideRecommendRequest original, RelaxStage stage) {
-        if (original == null) {
-            return null;
-        }
-
-        String region = original.getRegion();
-        String style = original.getTravelStyle();
-        List<String> langs = original.getPreferredLanguages();
-        List<String> tags = original.getActivityTags();
-
-        if (stage == RelaxStage.DROP_REGION) {
-            region = null;
-        } else if (stage == RelaxStage.DROP_REGION_STYLE) {
-            region = null;
-            style = null;
-        } else if (stage == RelaxStage.DROP_REGION_STYLE_LANGUAGE) {
-            region = null;
-            style = null;
-            langs = List.of();
-        } else if (stage == RelaxStage.DROP_REGION_STYLE_TAGS_LANGUAGE) {
-            region = null;
-            style = null;
-            langs = List.of();
-            tags = List.of();
-        }
-
-        return GuideRecommendRequest.builder()
-                .region(region)
-                .travelStyle(style)
-                .budgetLevel(original.getBudgetLevel())
-                .companionType(original.getCompanionType())
-                .activityTags(tags)
-                .preferredLanguages(langs)
-                .headcount(original.getHeadcount())
-                .durationDays(original.getDurationDays())
-                .excludedActivityTags(original.getExcludedActivityTags())
-                .softPenaltyActivityTags(original.getSoftPenaltyActivityTags())
-                .topN(original.getTopN())
-                .guideCandidates(original.getGuideCandidates())
-                .build();
-    }
-
     private void logRecommendation(
             String prompt,
             GuideRecommendRequest request,
             List<GuideRecommendRequest.GuideCandidateDto> guideCandidates,
             GuideRecommendResponse base,
             GuideRecommendResponse finalBase,
-            FallbackDecision decision,
+            FallbackOutcome fallback,
             boolean noRegionShortCircuit,
             boolean regionExpansionUsed,
             int effectivePoolSize,
@@ -397,8 +491,8 @@ public class PromptRecommendationService {
                     finalTopScore,
                     top1GuideId,
                     top1ReasonCodes,
-                    decision != null && decision.shouldFallback,
-                    decision == null ? null : decision.stage
+                    fallback != null && fallback.attemptedRelaxChain(),
+                    fallback == null ? null : fallback.winningRelaxStage()
             );
         } catch (Exception e) {
             log.debug("[AI_RECOMMEND] logging skipped: {}", e.toString());
@@ -418,23 +512,25 @@ public class PromptRecommendationService {
 
     private enum RelaxStage {
         NONE,
-        DROP_REGION,
-        DROP_REGION_STYLE,
-        DROP_REGION_STYLE_LANGUAGE,
-        DROP_REGION_STYLE_TAGS_LANGUAGE
+        DROP_ACTIVITY_TAGS_ONLY,
+        DROP_TRAVEL_STYLE_ONLY,
+        DROP_REGION_ONLY
     }
 
-    private static class FallbackDecision {
-        private final boolean shouldFallback;
-        private final RelaxStage stage;
-        private final String notice;
-        private final List<String> noticeCodes;
+    private record FallbackOutcome(
+            boolean attemptedRelaxChain,
+            GuideRecommendResponse responseAfterFallback,
+            RelaxStage winningRelaxStage,
+            boolean chainExhausted,
+            String fallbackNotice,
+            List<String> coreNoticeCodes
+    ) {
+        static FallbackOutcome noRelax(GuideRecommendResponse base) {
+            return new FallbackOutcome(false, base, RelaxStage.NONE, false, null, List.of());
+        }
 
-        private FallbackDecision(boolean shouldFallback, RelaxStage stage, String notice, List<String> noticeCodes) {
-            this.shouldFallback = shouldFallback;
-            this.stage = stage;
-            this.notice = notice;
-            this.noticeCodes = noticeCodes == null ? List.of() : noticeCodes;
+        static FallbackOutcome errorNotice(GuideRecommendResponse base, String notice, List<String> codes) {
+            return new FallbackOutcome(false, base, RelaxStage.NONE, false, notice, codes);
         }
     }
 }

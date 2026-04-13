@@ -7,12 +7,13 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.Collections;
+import java.util.List;
 
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
@@ -36,10 +37,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if(token != null && jwtTokenProvider.validToken(token)) {
             // 토큰에서 이메일 추출
             String email = jwtTokenProvider.getEmail(token);
+            String role = jwtTokenProvider.getRole(token);
+            String authority = role != null && role.startsWith("ROLE_") ? role : "ROLE_" + role;
 
             // 시큐리티 전용 인증 토큰 생성
             UsernamePasswordAuthenticationToken authentication =
-                    new UsernamePasswordAuthenticationToken(email, null, Collections.emptyList());
+                    new UsernamePasswordAuthenticationToken(
+                            email,
+                            null,
+                            List.of(new SimpleGrantedAuthority(authority))
+                    );
 
             // 시큐리티 보관함에 저장
             SecurityContextHolder.getContext().setAuthentication(authentication);

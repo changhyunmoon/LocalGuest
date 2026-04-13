@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.Getter;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Schema(name = "GuideRecommendRequest", description = "파싱 결과 또는 직접 구성한 추천 요청(내부/테스트용)")
@@ -37,5 +38,25 @@ public class GuideRecommendRequest {
         private String priceLevel;
         private List<String> specialtyTags;
         private List<String> languages;
+        /** 도메인 집계: 평균 평점(없으면 null — 감점 미적용). */
+        @Schema(description = "가이드 평균 평점(리뷰 집계). 미전달 시 피드백 감점에 쓰이지 않음")
+        private BigDecimal averageRating;
+        @Schema(description = "리뷰 수. averageRating과 함께 쓰여 저평점 감점 여부를 판단")
+        private Integer reviewCount;
+        /** 승인된 환불 건수(가이드 기준). 미전달 시 환불 감점 미적용. */
+        @Schema(description = "승인(APPROVED) 환불 건수. 집계해 전달하면 룰 기반 감점에 반영")
+        private Integer approvedRefundCount;
+        @Schema(description = "추천 이후 실제 매칭 요청으로 이어진 횟수. 행동 기반 보정에 활용")
+        private Integer matchRequestCount;
+        @Schema(description = "수락/진행 단계까지 이어진 매칭 횟수. 전환 품질 신호로 활용")
+        private Integer progressedMatchCount;
+        @Schema(description = "가이드가 참여한 채팅방 시작 횟수. 추천 이후 실제 대화 연결 신호로 활용")
+        private Integer chatStartCount;
+
+        @Schema(description = "프로필 대표 이미지 URL(카드 썸네일)")
+        private String representativeImageUrl;
+
+        @Schema(description = "공개 피드 이미지 URL 목록(최신순·개수 상한은 서버/클라이언트 합의)")
+        private List<String> publicFeedThumbnailUrls;
     }
 }

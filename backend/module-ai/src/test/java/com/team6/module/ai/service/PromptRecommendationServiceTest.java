@@ -9,12 +9,13 @@ import com.team6.module.ai.config.LocalGuestAiProperties;
 import com.team6.module.ai.parser.PromptParser;
 import com.team6.module.ai.policy.ActivityMatchPolicy;
 import com.team6.module.ai.support.AdjacentRegionProvider;
-import com.team6.module.ai.support.AiRecommendationMetrics;
 import com.team6.module.ai.support.RecommendationNoticeCodes;
 import com.team6.module.ai.policy.BudgetMatchPolicy;
+import com.team6.module.ai.policy.FeedbackMatchPolicy;
 import com.team6.module.ai.policy.LanguageMatchPolicy;
 import com.team6.module.ai.policy.RegionMatchPolicy;
 import com.team6.module.ai.policy.StyleMatchPolicy;
+import com.team6.module.ai.support.AiRecommendationMetrics;
 import com.team6.module.ai.support.AiRecommendationTuning;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Test;
@@ -26,21 +27,27 @@ import static org.assertj.core.api.Assertions.assertThat;
 class PromptRecommendationServiceTest {
 
     private PromptRecommendationService createService() {
+        SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
+        LocalGuestAiProperties aiProps = new LocalGuestAiProperties();
+        AdjacentRegionProvider adjacent = new AdjacentRegionProvider(aiProps);
         ScoreCalculator scoreCalculator = new ScoreCalculator(
-                new RegionMatchPolicy(),
+                new RegionMatchPolicy(adjacent),
                 new StyleMatchPolicy(),
                 new BudgetMatchPolicy(),
                 new ActivityMatchPolicy(),
-                new LanguageMatchPolicy()
+                new LanguageMatchPolicy(),
+                new FeedbackMatchPolicy(),
+                new AiRecommendationMetrics(meterRegistry)
         );
+        ReasonGenerator reasonGenerator = new ReasonGenerator(adjacent);
         AiRecommendationService aiRecommendationService =
-                new AiRecommendationServiceImpl(new MatchingEngine(scoreCalculator, new ReasonGenerator()));
+                new AiRecommendationServiceImpl(new MatchingEngine(scoreCalculator, reasonGenerator, adjacent));
 
         return new PromptRecommendationService(
-                new PromptParser(new LocalGuestAiProperties()),
+                new PromptParser(aiProps),
                 aiRecommendationService,
-                new AdjacentRegionProvider(new LocalGuestAiProperties()),
-                new AiRecommendationMetrics(new SimpleMeterRegistry())
+                adjacent,
+                new AiRecommendationMetrics(meterRegistry)
         );
     }
 
@@ -66,11 +73,18 @@ class PromptRecommendationServiceTest {
 
         assertThat(response.getConceptSummary()).isNotBlank();
         assertThat(response.getKeywords()).isNotNull();
+        assertThat(response.getMatchRequestDraft()).isNotNull();
         assertThat(response.getKeywords().getRegion()).isEqualTo("제주");
         assertThat(response.getKeywords().getDurationDays()).isEqualTo(3);
         assertThat(response.getKeywords().getHeadcount()).isEqualTo(4);
         assertThat(response.getKeywords().getActivityTags()).contains("바다", "맛집");
         assertThat(response.getKeywords().getExcludedActivityTags()).contains("술집");
+        assertThat(response.getMatchRequestDraft().getDestination()).isEqualTo("제주");
+        assertThat(response.getMatchRequestDraft().getConceptSummary()).isEqualTo(response.getConceptSummary());
+        assertThat(response.getMatchRequestDraft().getConcept()).contains("제주 여행");
+        assertThat(response.getMatchRequestDraft().getConcept()).contains("희망 활동");
+        assertThat(response.getMatchRequestDraft().getConcept()).contains("맛집");
+        assertThat(response.getMatchRequestDraft().getConcept()).contains("바다");
         assertThat(response.getPolicyVersion()).isEqualTo(AiRecommendationTuning.POLICY_VERSION);
         assertThat(response.getNotice()).contains("한 분뿐");
         assertThat(response.getNoticeCodes()).contains(
@@ -101,6 +115,9 @@ class PromptRecommendationServiceTest {
         assertThat(response.getRecommendations()).isEmpty();
         assertThat(response.getTotalCount()).isEqualTo(0);
         assertThat(response.getNotice()).contains("지역");
+        assertThat(response.getMatchRequestDraft()).isNotNull();
+        assertThat(response.getMatchRequestDraft().getDestination()).isNull();
+        assertThat(response.getMatchRequestDraft().getConcept()).contains("희망 활동 카페");
         assertThat(response.getNoticeCodes()).containsExactly(RecommendationNoticeCodes.REGION_REQUIRED);
         assertThat(response.getPolicyVersion()).isEqualTo(AiRecommendationTuning.POLICY_VERSION);
     }
@@ -136,4 +153,3 @@ class PromptRecommendationServiceTest {
         assertThat(response.getRecommendations().get(0).getGuideId()).isEqualTo(99L);
     }
 }
-

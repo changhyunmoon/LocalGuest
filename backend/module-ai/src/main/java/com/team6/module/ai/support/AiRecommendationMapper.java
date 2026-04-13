@@ -57,7 +57,22 @@ public class AiRecommendationMapper {
                         .priceLevel(candidate.getPriceLevel())
                         .specialtyTags(candidate.getSpecialtyTags())
                         .languages(candidate.getLanguages())
+                        .averageRating(candidate.getAverageRating())
+                        .reviewCount(candidate.getReviewCount())
+                        .approvedRefundCount(candidate.getApprovedRefundCount())
+                        .matchRequestCount(candidate.getMatchRequestCount())
+                        .progressedMatchCount(candidate.getProgressedMatchCount())
+                        .chatStartCount(candidate.getChatStartCount())
+                        .representativeImageUrl(candidate.getRepresentativeImageUrl())
+                        .publicFeedThumbnailUrls(copyUrlList(candidate.getPublicFeedThumbnailUrls()))
                         .build())
                 .toList();
+    }
+
+    private static List<String> copyUrlList(List<String> urls) {
+        if (urls == null || urls.isEmpty()) {
+            return List.of();
+        }
+        return List.copyOf(urls);
     }
 }

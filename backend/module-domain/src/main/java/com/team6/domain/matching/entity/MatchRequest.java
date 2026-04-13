@@ -152,6 +152,16 @@ public class MatchRequest extends BaseTimeEntity {
         this.status = MatchRequestStatus.ACCEPTED;
     }
 
+    /**
+     * 결제 완료 시 매칭 요청을 PAID로 전이한다. 이미 PAID 이후이면 변경하지 않는다(연장 결제 등).
+     */
+    public void markAsPaidIfAccepted() {
+        if (this.status == MatchRequestStatus.ACCEPTED) {
+            this.status = MatchRequestStatus.PAID;
+            log.info("[Payment] 매칭 요청 결제 반영 — status=PAID, requestId={}", this.id);
+        }
+    }
+
     // 게스트 취소 처리 (F05-01)
     public void cancelByGuest(String reason) {
         if (this.status != MatchRequestStatus.ACCEPTED &&

@@ -44,7 +44,7 @@ public class AiController {
             headers = @Header(
                     name = RecommendationHttpHeaders.X_RECOMMENDATION_POLICY,
                     description = "룰 정책 버전(응답 body의 policyVersion과 동일). 캐시 키·디버깅에 활용 가능.",
-                    schema = @Schema(implementation = String.class, example = "2026.04.5")
+                    schema = @Schema(implementation = String.class, example = "2026.04.10")
             ),
             content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = GuideRecommendResponse.class))
     )
@@ -67,7 +67,11 @@ public class AiController {
             )
             @RequestBody PromptRecommendApiRequest request) {
         List<GuideRecommendRequest.GuideCandidateDto> candidates =
-                guideCandidateProvider.getCandidates(request.getGuideCandidates());
+                guideCandidateProvider.getCandidates(
+                        request.getPrompt(),
+                        request.getTopN(),
+                        request.getGuideCandidates()
+                );
 
         GuideRecommendResponse body = promptRecommendationService.recommendByPrompt(
                 request.getPrompt(),

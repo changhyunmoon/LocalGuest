@@ -1,6 +1,7 @@
 package com.team6.module.ai.regression;
 
 import com.team6.module.ai.config.LocalGuestAiProperties;
+import com.team6.module.ai.support.AdjacentRegionProvider;
 import com.team6.module.ai.dto.request.GuideRecommendRequest;
 import com.team6.module.ai.dto.response.GuideRecommendResponse;
 import com.team6.module.ai.engine.MatchingEngine;
@@ -9,11 +10,15 @@ import com.team6.module.ai.engine.ScoreCalculator;
 import com.team6.module.ai.parser.PromptParser;
 import com.team6.module.ai.policy.ActivityMatchPolicy;
 import com.team6.module.ai.policy.BudgetMatchPolicy;
+import com.team6.module.ai.policy.FeedbackMatchPolicy;
 import com.team6.module.ai.policy.LanguageMatchPolicy;
 import com.team6.module.ai.policy.RegionMatchPolicy;
 import com.team6.module.ai.policy.StyleMatchPolicy;
 import com.team6.module.ai.service.AiRecommendationService;
 import com.team6.module.ai.service.AiRecommendationServiceImpl;
+import com.team6.module.ai.support.AiRecommendationMetrics;
+import com.team6.module.ai.support.AiRecommendationTuning;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -23,8 +28,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * 룰 기반 AI 추천의 회귀(품질 퇴보)를 빠르게 감지하기 위한 테스트.
- * - 프롬프트 파싱 → 추천 엔진까지 end-to-end로 검증
- * - 과도하게 빡센 기대값 대신 "Top1 안정성/근거 필드 유효성" 위주로 체크
+ * <ul>
+ *   <li>프롬프트 파싱 → 추천 엔진까지 end-to-end로 검증</li>
+ *   <li>과도하게 빡센 기대값 대신 Top1 안정성·근거 필드 유효성 위주</li>
+ * </ul>
+ * <p><b>유지보수</b>: 스코어·Reason·응답 계약을 바꾼 PR에서는
+ * {@link com.team6.module.ai.support.AiRecommendationTuning#POLICY_VERSION} 상향 여부를 검토하고,
+ * 이 클래스의 시나리오·별도 엣지 테스트({@code regression_*})를 함께 갱신한다.
  */
 class AiRecommendationRegressionTest {
 
@@ -72,11 +82,79 @@ class AiRecommendationRegressionTest {
         }
     }
 
+    @Test
+    void regression_adjacent_region_when_pool_lacks_exact_region() {
+        List<GuideRecommendRequest.GuideCandidateDto> pool = List.of(
+                GuideRecommendRequest.GuideCandidateDto.builder()
+                        .guideId(70L)
+                        .guideName("속초인접")
+                        .region("속초")
+                        .guideStyle("힐링")
+                        .priceLevel("낮음")
+                        .specialtyTags(List.of("산책", "바다", "카페"))
+                        .languages(List.of("한국어"))
+                        .build(),
+                GuideRecommendRequest.GuideCandidateDto.builder()
+                        .guideId(71L)
+                        .guideName("부산비교")
+                        .region("부산")
+                        .guideStyle("힐링")
+                        .priceLevel("낮음")
+                        .specialtyTags(List.of("산책", "바다"))
+                        .languages(List.of("한국어"))
+                        .build()
+        );
+        GuideRecommendRequest parsed = promptParser.parse("강릉 힐링 산책 바다", 2, pool);
+        GuideRecommendResponse response = aiRecommendationService.recommend(parsed);
+
+        assertThat(response.getRecommendations()).isNotEmpty();
+        var top1 = response.getRecommendations().get(0);
+        assertThat(top1.getGuideId()).isEqualTo(70L);
+        assertThat(top1.getMatched().isRegion()).isFalse();
+        assertThat(top1.getMatched().isRegionAdjacent()).isTrue();
+        assertThat(top1.getReasonCodes()).contains(ReasonGenerator.CODE_REGION_ADJACENT);
+    }
+
+    @Test
+    void regression_budget_adjacent_reason_on_tier_gap() {
+        List<GuideRecommendRequest.GuideCandidateDto> pool = List.of(
+                GuideRecommendRequest.GuideCandidateDto.builder()
+                        .guideId(80L)
+                        .guideName("부산가이드")
+                        .region("부산")
+                        .guideStyle("감성")
+                        .priceLevel("중간")
+                        .specialtyTags(List.of("카페", "야경"))
+                        .languages(List.of("한국어"))
+                        .build()
+        );
+        GuideRecommendRequest parsed = promptParser.parse("부산 가성비 저렴 감성 카페", 1, pool);
+        GuideRecommendResponse response = aiRecommendationService.recommend(parsed);
+
+        assertThat(response.getRecommendations()).hasSize(1);
+        assertThat(response.getRecommendations().get(0).getGuideId()).isEqualTo(80L);
+        assertThat(response.getRecommendations().get(0).getReasonCodes())
+                .contains(ReasonGenerator.CODE_BUDGET_ADJACENT);
+    }
+
+    @Test
+    void regression_policy_version_echoes_tuning_constant() {
+        GuideRecommendRequest parsed = promptParser.parse(
+                "부산 감성 카페",
+                1,
+                List.of(defaultCandidates().get(0))
+        );
+        GuideRecommendResponse response = aiRecommendationService.recommend(parsed);
+
+        assertThat(response.getPolicyVersion()).isEqualTo(AiRecommendationTuning.POLICY_VERSION);
+    }
+
     private List<Scenario> regressionScenarios() {
         return List.of(
                 scenario("부산 감성 카페 여행하고 싶어요", 3, 1L, "카페", null),
                 scenario("부산 야경 맛집 위주로 추천", 3, 1L, "야경", null),
                 scenario("제주 감성 오션뷰(바다) 필수!", 3, 2L, "바다", null),
+                scenario("Jeju trip 오션뷰 바다 감성으로 추천", 3, 2L, "바다", null),
                 scenario("제주 식도락(맛집) + 카페", 3, 2L, "맛집", null),
                 scenario("서울 액티비티 등산 트레킹 하고 싶어요", 3, 3L, "등산", null),
                 scenario("서울 쇼핑 + 맛집 코스", 3, 3L, "쇼핑", null),
@@ -192,15 +270,20 @@ class AiRecommendationRegressionTest {
     }
 
     private AiRecommendationService createService() {
+        LocalGuestAiProperties aiProps = new LocalGuestAiProperties();
+        AdjacentRegionProvider adjacent = new AdjacentRegionProvider(aiProps);
         ScoreCalculator scoreCalculator = new ScoreCalculator(
-                new RegionMatchPolicy(),
+                new RegionMatchPolicy(adjacent),
                 new StyleMatchPolicy(),
                 new BudgetMatchPolicy(),
                 new ActivityMatchPolicy(),
-                new LanguageMatchPolicy()
+                new LanguageMatchPolicy(),
+                new FeedbackMatchPolicy(),
+                new AiRecommendationMetrics(new SimpleMeterRegistry())
         );
+        ReasonGenerator reasonGenerator = new ReasonGenerator(adjacent);
 
-        return new AiRecommendationServiceImpl(new MatchingEngine(scoreCalculator, new ReasonGenerator()));
+        return new AiRecommendationServiceImpl(new MatchingEngine(scoreCalculator, reasonGenerator, adjacent));
     }
 
     private record Scenario(

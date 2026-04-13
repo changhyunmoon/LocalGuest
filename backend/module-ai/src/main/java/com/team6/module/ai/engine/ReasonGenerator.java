@@ -3,7 +3,10 @@ package com.team6.module.ai.engine;
 import com.team6.module.ai.model.GuideAiProfile;
 import com.team6.module.ai.model.TravelerPreference;
 import com.team6.module.ai.parser.KeywordNormalizer;
+import com.team6.module.ai.support.AdjacentRegionProvider;
+import com.team6.module.ai.support.AiRecommendationTuning;
 import com.team6.module.ai.support.BudgetTier;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -13,18 +16,28 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 @Component
+@RequiredArgsConstructor
 public class ReasonGenerator {
 
+    private final AdjacentRegionProvider adjacentRegionProvider;
+
     public static final String CODE_REGION_MATCH = "REGION_MATCH";
+    public static final String CODE_REGION_ADJACENT = "REGION_ADJACENT";
     public static final String CODE_STYLE_MATCH = "STYLE_MATCH";
     public static final String CODE_LANGUAGE_MATCH = "LANGUAGE_MATCH";
     public static final String CODE_ACTIVITY_MATCH = "ACTIVITY_MATCH";
     public static final String CODE_SOFT_ACTIVITY_PENALTY = "SOFT_ACTIVITY_PENALTY";
     public static final String CODE_BUDGET_MATCH = "BUDGET_MATCH";
+    /** 예산 티어가 한 단계 차이(인접)일 때. {@link #CODE_BUDGET_MATCH}는 완전 일치. */
+    public static final String CODE_BUDGET_ADJACENT = "BUDGET_ADJACENT";
     public static final String CODE_GENERAL_FALLBACK = "GENERAL_FALLBACK";
+    public static final String CODE_FEEDBACK_REFUND_APPROVED = "FEEDBACK_REFUND_APPROVED";
+    public static final String CODE_FEEDBACK_LOW_RATING = "FEEDBACK_LOW_RATING";
+    /** 평균 평점이 매우 낮을 때(정책 임계값은 {@link AiRecommendationTuning}). */
+    public static final String CODE_FEEDBACK_VERY_LOW_RATING = "FEEDBACK_VERY_LOW_RATING";
 
-    /** soft 부담 등이 잘리지 않도록 여유를 둔다. */
-    private static final int MAX_DISPLAY_SEGMENTS = 4;
+    /** 상위 근거 노출 개수(지역·활동·부담·스타일·예산·피드백 등이 겹칠 때 잘리지 않도록 여유). */
+    private static final int MAX_DISPLAY_SEGMENTS = 5;
 
     /**
      * @param score 현재는 reason 문구 생성에 직접 쓰지 않지만, 추후 임계값/요약에 활용 가능하도록 유지
@@ -34,7 +47,7 @@ public class ReasonGenerator {
         if (segments.isEmpty()) {
             segments = List.of(new Segment(
                     CODE_GENERAL_FALLBACK,
-                    "프롬프트 선호와 가이드 프로필을 종합한 매칭",
+                    "선호 조건과 가이드 프로필을 종합해 매칭했습니다",
                     List.of()
             ));
         }
@@ -65,8 +78,8 @@ public class ReasonGenerator {
     }
 
     /**
-     * 우선순위: 지역 → (선호)활동 → soft 부담 → 스타일 → 언어 → 예산.
-     * 상위 {@link #MAX_DISPLAY_SEGMENTS}개만 노출되므로 부담 활동이 앞쪽에 오도록 순서를 맞춘다.
+     * 우선순위: 지역 → (선호)활동 → soft 부담 → 스타일 → 언어 → 예산 → 피드백(환불·평점).
+     * 상위 {@link #MAX_DISPLAY_SEGMENTS}개만 노출된다.
      */
     private List<Segment> buildSegments(TravelerPreference pref, GuideAiProfile guide) {
         List<Segment> segments = new ArrayList<>();
@@ -74,7 +87,13 @@ public class ReasonGenerator {
         if (safeEquals(pref.getRegion(), guide.getRegion())) {
             segments.add(new Segment(
                     CODE_REGION_MATCH,
-                    "희망 지역과 가이드 활동 지역이 같음",
+                    "희망 지역과 가이드 활동 지역이 동일합니다",
+                    listNonNull(guide.getRegion())
+            ));
+        } else if (adjacentRegionProvider.isAdjacentTo(pref.getRegion(), guide.getRegion())) {
+            segments.add(new Segment(
+                    CODE_REGION_ADJACENT,
+                    "희망 지역과 인접한 지역에서 활동합니다",
                     listNonNull(guide.getRegion())
             ));
         }
@@ -94,7 +113,8 @@ public class ReasonGenerator {
 
             if (!matched.isEmpty()) {
                 String head = matched.stream().limit(3).collect(Collectors.joining("/"));
-                String display = "관심 활동 맞춤(" + head + (matched.size() > 3 ? " 외" : "") + ")";
+                String suffix = matched.size() > 3 ? " 외" : "";
+                String display = "관심 활동 분야가 맞습니다(" + head + suffix + ")";
                 segments.add(new Segment(CODE_ACTIVITY_MATCH, display, matched));
             }
         }
@@ -114,7 +134,8 @@ public class ReasonGenerator {
 
             if (!penalized.isEmpty()) {
                 String head = penalized.stream().limit(3).collect(Collectors.joining("/"));
-                String display = "부담되는 활동 반영(" + head + (penalized.size() > 3 ? " 외" : "") + ")";
+                String suffix = penalized.size() > 3 ? " 외" : "";
+                String display = "부담되시는 활동이 겹쳐 가중치를 조정했습니다(" + head + suffix + ")";
                 segments.add(new Segment(CODE_SOFT_ACTIVITY_PENALTY, display, penalized));
             }
         }
@@ -122,7 +143,7 @@ public class ReasonGenerator {
         if (safeEquals(pref.getTravelStyle(), guide.getGuideStyle())) {
             segments.add(new Segment(
                     CODE_STYLE_MATCH,
-                    "여행 스타일이 비슷함",
+                    "여행 스타일이 잘 맞습니다",
                     listNonNull(guide.getGuideStyle())
             ));
         }
@@ -143,7 +164,7 @@ public class ReasonGenerator {
                 List<String> langValues = new ArrayList<>(matchedLanguages);
                 segments.add(new Segment(
                         CODE_LANGUAGE_MATCH,
-                        "가능 언어(" + String.join("/", langValues) + ")",
+                        "요청하신 언어 안내가 가능합니다(" + String.join("/", langValues) + ")",
                         langValues
                 ));
             }
@@ -152,15 +173,41 @@ public class ReasonGenerator {
         if (safeEquals(pref.getBudgetLevel(), guide.getPriceLevel())) {
             segments.add(new Segment(
                     CODE_BUDGET_MATCH,
-                    "예산 범위가 같은 편",
+                    "예산 수준이 동일한 편입니다",
                     listNonNull(guide.getPriceLevel())
             ));
         } else if (BudgetTier.adjacentTiers(pref.getBudgetLevel(), guide.getPriceLevel())) {
             segments.add(new Segment(
-                    CODE_BUDGET_MATCH,
-                    "예산 범위가 한 단계 차이로 가까움",
+                    CODE_BUDGET_ADJACENT,
+                    "예산 수준이 한 단계 차이로 가깝습니다",
                     listNonNull(guide.getPriceLevel())
             ));
+        }
+
+        if (guide.getApprovedRefundCount() != null && guide.getApprovedRefundCount() > 0) {
+            segments.add(new Segment(
+                    CODE_FEEDBACK_REFUND_APPROVED,
+                    "승인된 환불 이력이 있어 점수에 반영했습니다",
+                    List.of(String.valueOf(guide.getApprovedRefundCount()))
+            ));
+        }
+
+        if (guide.getAverageRating() != null && guide.getReviewCount() != null
+                && guide.getReviewCount() >= AiRecommendationTuning.FEEDBACK_LOW_RATING_MIN_REVIEWS) {
+            double a = guide.getAverageRating().doubleValue();
+            if (a < AiRecommendationTuning.FEEDBACK_VERY_LOW_RATING_THRESHOLD) {
+                segments.add(new Segment(
+                        CODE_FEEDBACK_VERY_LOW_RATING,
+                        "평균 리뷰가 매우 낮아 신중히 반영했습니다",
+                        List.of(guide.getAverageRating().toPlainString(), String.valueOf(guide.getReviewCount()))
+                ));
+            } else if (a < AiRecommendationTuning.FEEDBACK_LOW_RATING_THRESHOLD) {
+                segments.add(new Segment(
+                        CODE_FEEDBACK_LOW_RATING,
+                        "평균 리뷰가 낮은 편이라 보수적으로 반영했습니다",
+                        List.of(guide.getAverageRating().toPlainString(), String.valueOf(guide.getReviewCount()))
+                ));
+            }
         }
 
         return segments;

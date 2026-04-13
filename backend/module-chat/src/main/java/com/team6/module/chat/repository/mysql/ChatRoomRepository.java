@@ -6,7 +6,6 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
-import java.util.Optional;
 
 public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
 
@@ -15,6 +14,7 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
             "JOIN FETCH r.participants p " +
             "WHERE r.id IN (SELECT r2.id FROM ChatRoom r2 JOIN r2.participants p2 WHERE p2.userEmail = :userEmail)")
     List<ChatRoom> findAllByUserEmail(@Param("userEmail") String userEmail);
-
+  
     Optional<ChatRoom> findByRoomId(String roomId);
 }
+

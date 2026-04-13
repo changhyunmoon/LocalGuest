@@ -5,6 +5,7 @@ import com.team6.module.ai.dto.response.GuideRecommendResponse;
 import com.team6.module.ai.model.GuideAiProfile;
 import com.team6.module.ai.model.TravelerPreference;
 import com.team6.module.ai.parser.KeywordNormalizer;
+import com.team6.module.ai.support.AdjacentRegionProvider;
 import com.team6.module.ai.support.AiRecommendationTuning;
 import com.team6.module.ai.support.BudgetTier;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +25,7 @@ public class MatchingEngine {
 
     private final ScoreCalculator scoreCalculator;
     private final ReasonGenerator reasonGenerator;
+    private final AdjacentRegionProvider adjacentRegionProvider;
 
 
     public GuideRecommendResponse recommend(
@@ -40,11 +42,17 @@ public class MatchingEngine {
                 .sorted(Comparator.comparingInt(ScoredGuide::baseScore).reversed())
                 .toList();
 
-        List<ScoredGuide> picked = pickWithDiversityPenalty(scored, topN);
+        List<ScoredGuide> picked = pickWithDiversityPenalty(scored, topN, preference);
         List<GuideRecommendItem> items = picked.stream()
                 .map(sg -> GuideRecommendItem.builder()
                         .guideId(sg.guide.getGuideId())
                         .guideName(sg.guide.getGuideName())
+                        .representativeImageUrl(sg.guide.getRepresentativeImageUrl())
+                        .region(sg.guide.getRegion())
+                        .priceLevel(sg.guide.getPriceLevel())
+                        .averageRating(sg.guide.getAverageRating())
+                        .reviewCount(sg.guide.getReviewCount())
+                        .publicFeedThumbnailUrls(sg.guide.getPublicFeedThumbnailUrls())
                         .score(sg.baseScore)
                         .reason(sg.bundle.getText())
                         .reasonCodes(sg.bundle.getReasonCodes())
@@ -60,7 +68,11 @@ public class MatchingEngine {
                 .build();
     }
 
-    private List<ScoredGuide> pickWithDiversityPenalty(List<ScoredGuide> candidates, int topN) {
+    private List<ScoredGuide> pickWithDiversityPenalty(
+            List<ScoredGuide> candidates,
+            int topN,
+            TravelerPreference preference
+    ) {
         if (topN <= 0 || candidates.isEmpty()) {
             return List.of();
         }
@@ -77,7 +89,9 @@ public class MatchingEngine {
                 if (c.guide.getGuideId() == null || used.contains(c.guide.getGuideId())) {
                     continue;
                 }
-                double penalty = selected.isEmpty() ? 0.0 : maxSimilarityToSelected(c.guide, selected) * DiversityRerankConstants.DIVERSITY_LAMBDA;
+                double penalty = selected.isEmpty()
+                        ? 0.0
+                        : maxSimilarityToSelected(c.guide, selected, preference) * DiversityRerankConstants.DIVERSITY_LAMBDA;
                 double finalScore = c.baseScore - penalty;
 
                 if (isBetterCandidate(finalScore, c, bestFinal, best)) {
@@ -125,20 +139,26 @@ public class MatchingEngine {
         return a < b;
     }
 
-    private double maxSimilarityToSelected(GuideAiProfile candidate, List<ScoredGuide> selected) {
+    private double maxSimilarityToSelected(
+            GuideAiProfile candidate,
+            List<ScoredGuide> selected,
+            TravelerPreference preference
+    ) {
         double max = 0.0;
         for (ScoredGuide s : selected) {
-            max = Math.max(max, similarity(candidate, s.guide));
+            max = Math.max(max, similarity(preference, candidate, s.guide));
         }
         return max;
     }
 
-    private double similarity(GuideAiProfile a, GuideAiProfile b) {
+    /**
+     * 0~1에 가깝게 정규화한 프로필 유사도. 여행자 희망 지역이 있으면 인접권 안의 서로 다른 지역도 부분 유사로 본다.
+     */
+    private double similarity(TravelerPreference preference, GuideAiProfile a, GuideAiProfile b) {
         double sim = 0.0;
 
-        if (safeEquals(a.getRegion(), b.getRegion())) {
-            sim += DiversityRerankConstants.REGION_SIM_WEIGHT;
-        }
+        sim += DiversityRerankConstants.REGION_SIM_WEIGHT * regionSimilarityForDiversity(preference, a, b);
+
         if (safeEquals(a.getGuideStyle(), b.getGuideStyle())) {
             sim += DiversityRerankConstants.STYLE_SIM_WEIGHT;
         }
@@ -159,6 +179,31 @@ public class MatchingEngine {
                 + DiversityRerankConstants.LANGUAGE_SIM_WEIGHT
                 + DiversityRerankConstants.PRICE_TIER_SIM_WEIGHT;
         return max == 0.0 ? 0.0 : (sim / max);
+    }
+
+    /**
+     * 가이드 둘의 활동 지역이 같으면 1.0. 다르지만 둘 다 여행자 희망 지역 또는 그 인접 지역이면
+     * {@link DiversityRerankConstants#REGION_CLUSTER_SIMILARITY_RATIO}. 그 외 0.
+     */
+    private double regionSimilarityForDiversity(TravelerPreference preference, GuideAiProfile a, GuideAiProfile b) {
+        String ra = a.getRegion();
+        String rb = b.getRegion();
+        if (ra == null || rb == null) {
+            return 0.0;
+        }
+        if (ra.equalsIgnoreCase(rb)) {
+            return 1.0;
+        }
+        if (preference == null || preference.getRegion() == null || preference.getRegion().isBlank()) {
+            return 0.0;
+        }
+        String tr = preference.getRegion().trim();
+        boolean aInTravelZone = tr.equalsIgnoreCase(ra.trim()) || adjacentRegionProvider.isAdjacentTo(tr, ra);
+        boolean bInTravelZone = tr.equalsIgnoreCase(rb.trim()) || adjacentRegionProvider.isAdjacentTo(tr, rb);
+        if (aInTravelZone && bInTravelZone) {
+            return DiversityRerankConstants.REGION_CLUSTER_SIMILARITY_RATIO;
+        }
+        return 0.0;
     }
 
     private double languageJaccard(List<String> la, List<String> lb) {
@@ -214,6 +259,7 @@ public class MatchingEngine {
 
     private GuideRecommendItem.MatchedEvidence buildMatchedEvidence(TravelerPreference pref, GuideAiProfile guide) {
         boolean region = safeEquals(pref.getRegion(), guide.getRegion());
+        boolean regionAdjacent = !region && adjacentRegionProvider.isAdjacentTo(pref.getRegion(), guide.getRegion());
         boolean style = safeEquals(pref.getTravelStyle(), guide.getGuideStyle());
         boolean budgetExact = safeEquals(pref.getBudgetLevel(), guide.getPriceLevel());
         boolean budgetAdjacent = !budgetExact
@@ -225,6 +271,7 @@ public class MatchingEngine {
 
         return GuideRecommendItem.MatchedEvidence.builder()
                 .region(region)
+                .regionAdjacent(regionAdjacent)
                 .style(style)
                 .budget(budgetExact)
                 .budgetAdjacent(budgetAdjacent)

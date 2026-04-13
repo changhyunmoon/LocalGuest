@@ -4,9 +4,12 @@ import com.team6.module.ai.model.GuideAiProfile;
 import com.team6.module.ai.model.TravelerPreference;
 import com.team6.module.ai.policy.ActivityMatchPolicy;
 import com.team6.module.ai.policy.BudgetMatchPolicy;
+import com.team6.module.ai.policy.FeedbackMatchPolicy;
 import com.team6.module.ai.policy.LanguageMatchPolicy;
 import com.team6.module.ai.policy.RegionMatchPolicy;
 import com.team6.module.ai.policy.StyleMatchPolicy;
+import com.team6.module.ai.support.AiRecommendationMetrics;
+import com.team6.module.ai.support.AiRecommendationTuning;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -19,6 +22,8 @@ public class ScoreCalculator {
     private final BudgetMatchPolicy budgetMatchPolicy;
     private final ActivityMatchPolicy activityMatchPolicy;
     private final LanguageMatchPolicy languageMatchPolicy;
+    private final FeedbackMatchPolicy feedbackMatchPolicy;
+    private final AiRecommendationMetrics recommendationMetrics;
 
     public int calculate(TravelerPreference pref, GuideAiProfile guide) {
         int score = 0;
@@ -27,6 +32,11 @@ public class ScoreCalculator {
         score += budgetMatchPolicy.score(pref, guide);
         score += activityMatchPolicy.score(pref, guide);
         score += languageMatchPolicy.score(pref, guide);
+        int feedback = feedbackMatchPolicy.score(pref, guide);
+        score += feedback;
+        if (feedback < 0) {
+            recommendationMetrics.recordFeedbackPenalty(-feedback, AiRecommendationTuning.POLICY_VERSION);
+        }
         return score;
     }
 }
