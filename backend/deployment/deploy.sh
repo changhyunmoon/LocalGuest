@@ -46,11 +46,13 @@ fi
 echo "✅ 사전 환경 검사 완료!"
 
 # 4. Blue/Green 결정 (이하 로직 동일)
-IS_BLUE=$($DOCKER_COMPOSE_APP ps | grep "backend-blue" | grep "running" || true)
+EXIST_BLUE=$(docker ps --filter "name=backend-blue" --filter "status=running" -q)
 
-if [ -z "$IS_BLUE" ]; then
+if [ -z "$EXIST_BLUE" ]; then
+    # Blue가 없으면 Blue를 타겟으로 삼음
     TARGET_COLOR="blue"; TARGET_PORT=8081; OLD_COLOR="green"; INC_FILE="be_blue.inc"
 else
+    # Blue가 떠 있으면 Green을 타겟으로 삼음
     TARGET_COLOR="green"; TARGET_PORT=8082; OLD_COLOR="blue"; INC_FILE="be_green.inc"
 fi
 
