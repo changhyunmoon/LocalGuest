@@ -3,7 +3,12 @@ package com.team6.domain.guide.controller;
 import com.team6.domain.guide.dto.request.CreateGuideCareerRequest;
 import com.team6.domain.guide.dto.request.UpdateGuideCareerRequest;
 import com.team6.domain.guide.dto.response.GuideCareerResponse;
+import com.team6.domain.guide.exception.GuideErrorCode;
+import com.team6.domain.guide.exception.GuideException;
 import com.team6.domain.guide.service.GuideCareerService;
+import com.team6.domain.member.entity.Member;
+import com.team6.domain.member.repository.MemberRepository;
+import com.team6.module.common.global.util.SecurityUtil;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -21,14 +26,15 @@ import java.util.List;
 public class GuideCareerController {
 
     private final GuideCareerService guideCareerService;
+    private final MemberRepository memberRepository;
 
     // 경력 등록
     @PostMapping
     public ResponseEntity<GuideCareerResponse> addCareer(
             @PathVariable Long guideId,
-            @RequestBody @Valid CreateGuideCareerRequest request,
-            @RequestHeader("X-User-Id") Long userId // JWT 연동 전 임시 헤더
+            @RequestBody @Valid CreateGuideCareerRequest request
     ) {
+        Long userId = getCurrentUserId();
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(guideCareerService.addCareer(guideId, request, userId));
     }
@@ -46,9 +52,9 @@ public class GuideCareerController {
     public ResponseEntity<GuideCareerResponse> updateCareer(
             @PathVariable Long guideId,
             @PathVariable Long careerId,
-            @RequestBody @Valid UpdateGuideCareerRequest request,
-            @RequestHeader("X-User-Id") Long userId // JWT 연동 전 임시 헤더
+            @RequestBody @Valid UpdateGuideCareerRequest request
     ) {
+        Long userId = getCurrentUserId();
         return ResponseEntity.ok(guideCareerService.updateCareer(careerId, guideId, request, userId));
     }
 
@@ -56,10 +62,18 @@ public class GuideCareerController {
     @DeleteMapping("/{careerId}")
     public ResponseEntity<Void> deleteCareer(
             @PathVariable Long guideId,
-            @PathVariable Long careerId,
-            @RequestHeader("X-User-Id") Long userId // JWT 연동 전 임시 헤더
+            @PathVariable Long careerId
     ) {
+        Long userId = getCurrentUserId();
         guideCareerService.deleteCareer(careerId, guideId, userId);
         return ResponseEntity.noContent().build();
+    }
+
+    // JWT에서 현재 로그인 사용자의 memberId 추출
+    private Long getCurrentUserId() {
+        String email = SecurityUtil.getCurrentUserEmail();
+        return memberRepository.findByEmail(email)
+                .map(Member::getId)
+                .orElseThrow(() -> new GuideException(GuideErrorCode.MEMBER_NOT_FOUND));
     }
 }

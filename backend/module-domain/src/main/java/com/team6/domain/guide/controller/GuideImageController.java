@@ -2,7 +2,12 @@ package com.team6.domain.guide.controller;
 
 import com.team6.domain.guide.dto.request.CreateGuideImageRequest;
 import com.team6.domain.guide.dto.response.GuideImageResponse;
+import com.team6.domain.guide.exception.GuideErrorCode;
+import com.team6.domain.guide.exception.GuideException;
 import com.team6.domain.guide.service.GuideImageService;
+import com.team6.domain.member.entity.Member;
+import com.team6.domain.member.repository.MemberRepository;
+import com.team6.module.common.global.util.SecurityUtil;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -20,14 +25,15 @@ import java.util.List;
 public class GuideImageController {
 
     private final GuideImageService guideImageService;
+    private final MemberRepository memberRepository;
 
     // 이미지 등록 (F06-03)
     @PostMapping
     public ResponseEntity<GuideImageResponse> addImage(
             @PathVariable Long guideId,
-            @RequestBody @Valid CreateGuideImageRequest request,
-            @RequestHeader("X-User-Id") Long userId // JWT 연동 전 임시 헤더
+            @RequestBody @Valid CreateGuideImageRequest request
     ) {
+        Long userId = getCurrentUserId();
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(guideImageService.addImage(guideId, request, userId));
     }
@@ -44,10 +50,18 @@ public class GuideImageController {
     @DeleteMapping("/{imageId}")
     public ResponseEntity<Void> deleteImage(
             @PathVariable Long guideId,
-            @PathVariable Long imageId,
-            @RequestHeader("X-User-Id") Long userId // JWT 연동 전 임시 헤더
+            @PathVariable Long imageId
     ) {
+        Long userId = getCurrentUserId();
         guideImageService.deleteImage(imageId, guideId, userId);
         return ResponseEntity.noContent().build();
+    }
+
+    // JWT에서 현재 로그인 사용자의 memberId 추출
+    private Long getCurrentUserId() {
+        String email = SecurityUtil.getCurrentUserEmail();
+        return memberRepository.findByEmail(email)
+                .map(Member::getId)
+                .orElseThrow(() -> new GuideException(GuideErrorCode.MEMBER_NOT_FOUND));
     }
 }

@@ -21,7 +21,9 @@ public enum GuideErrorCode {
     // GuideSchedule 관련
     SCHEDULE_NOT_FOUND(404, "스케줄을 찾을 수 없습니다"),
     SCHEDULE_ALREADY_BOOKED(409, "이미 예약된 스케줄입니다"),
+    SCHEDULE_NOT_AVAILABLE(409, "예약 가능 상태인 스케줄이 아닙니다"),
     SCHEDULE_NOT_PENDING(409, "대기 중인 스케줄이 아닙니다"),
+    SCHEDULE_NOT_BOOKED(409, "예약 확정 상태인 스케줄이 아닙니다"),
     SCHEDULE_INVALID_TIME(400, "시작 시간은 종료 시간보다 이전이어야 합니다"),
     SCHEDULE_STATUS_INVALID(400, "AVAILABLE 또는 BLOCKED 상태로만 변경할 수 있습니다"),
 
@@ -29,7 +31,17 @@ public enum GuideErrorCode {
     CAREER_NOT_FOUND(404, "경력을 찾을 수 없습니다"),
 
     // GuideFeed 관련
-    FEED_NOT_FOUND(404, "피드를 찾을 수 없습니다");
+    FEED_NOT_FOUND(404, "피드를 찾을 수 없습니다"),
+
+    // Member 연동
+    MEMBER_NOT_FOUND(404, "회원을 찾을 수 없습니다"),
+
+    // 관리자 승인
+    GUIDE_ALREADY_APPROVED(409, "이미 승인된 가이드입니다"),
+    GUIDE_NOT_APPROVED(403, "승인되지 않은 가이드입니다"),
+
+    // 스케줄 양식
+    SCHEDULE_FORM_NOT_BOOKED(409, "예약 확정된 스케줄에만 양식을 작성할 수 있습니다");
 
     private final int status;     // HTTP 상태 코드
     private final String message; // 에러 메시지

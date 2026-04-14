@@ -12,7 +12,6 @@ import com.team6.domain.guide.repository.GuideProfileRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import java.util.stream.IntStream;
 
 import java.util.List;
 
@@ -70,29 +69,15 @@ public class GuideFeedService {
         feed.delete();
     }
 
-    // 피드 목록 조회 — 매칭 여부에 따라 공개 범위 결정 (F06-03)
+    // 피드 목록 조회 — 전체 공개 (F06-03)
     @Transactional(readOnly = true)
-    public List<GuideFeedResponse> getFeeds(Long guideId, boolean isMatched) {
+    public List<GuideFeedResponse> getFeeds(Long guideId) {
         // 삭제되지 않은 피드만 최신순으로 조회
         List<GuideFeed> feeds = guideFeedRepository
                 .findByGuideProfile_IdAndIsDeletedFalseOrderByCreatedAtDesc(guideId);
 
-        if (isMatched) {
-            // 매칭 완료 시 전체 공개
-            return feeds.stream()
-                    .map(GuideFeedResponse::fullFrom)
-                    .toList();
-        }
-
-        // 매칭 전: 앞 절반 공개, 나머지 절반 잠금 처리
-        int totalSize = feeds.size();
-        int openCount = (totalSize + 1) / 2; // 홀수일 때 앞쪽이 더 많도록 올림
-
-        // 인덱스를 직접 생성해서 순서 보장 (indexOf는 내용 기반 비교라 중복 시 오작동)
-        return IntStream.range(0, totalSize)
-                .mapToObj(i -> i < openCount
-                        ? GuideFeedResponse.fullFrom(feeds.get(i))    // 앞 절반: 공개
-                        : GuideFeedResponse.lockedFrom(feeds.get(i))) // 뒤 절반: 잠금 (결제/매칭 후 공개)
+        return feeds.stream()
+                .map(GuideFeedResponse::fullFrom)
                 .toList();
     }
 
