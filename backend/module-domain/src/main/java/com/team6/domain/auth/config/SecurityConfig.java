@@ -8,6 +8,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
@@ -46,9 +47,6 @@ public class SecurityConfig {
                         // 2. 리뷰 조회는 비로그인 유저도 가능
                         .requestMatchers(HttpMethod.GET, "/reviews/**").permitAll()
 
-                        // Actuator 경로 추가 (배포시 헬스채크용)
-                        .requestMatchers("/actuator/**").permitAll()
-
                         // 3. 그 외 (리뷰 등록, 채팅, 마이페이지 등)는 무조건 로그인 필요
                         .anyRequest().authenticated()
                 );
@@ -71,5 +69,13 @@ public class SecurityConfig {
         org.springframework.web.cors.UrlBasedCorsConfigurationSource source = new org.springframework.web.cors.UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration); // 모든 경로에 적용
         return source;
+    }
+
+    // 배포시 헬스채크용
+    @Bean
+    public WebSecurityCustomizer webSecurityCustomizer() {
+        return (web) -> web.ignoring()
+                .requestMatchers("/actuator/**", "/api/actuator/**")
+                .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/api/v3/api-docs/**", "/api/swagger-ui/**");
     }
 }
