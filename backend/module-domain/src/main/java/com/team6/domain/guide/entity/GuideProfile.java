@@ -96,6 +96,11 @@ public class GuideProfile extends BaseTimeEntity {
         this.isActive = !this.isActive;
     }
 
+    // 관리자 승인
+    public void approve() {
+        this.isApproved = true;
+    }
+
     // 평균 평점 및 리뷰 수 갱신 — review 도메인 연동 시 호출 (F06-07)
     public void updateRating(BigDecimal averageRating, Integer reviewCount) {
         this.averageRating = averageRating;

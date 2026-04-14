@@ -15,26 +15,30 @@ import java.time.LocalTime;
 @Builder
 public class GuideScheduleFormResponse {
 
-    private Long scheduleId;        // 스케줄 ID
-    private Long matchRequestId;    // 매칭 요청 ID (연동용)
+    private Long scheduleId;         // 스케줄 ID
+    private Long matchRequestId;     // 매칭 요청 ID (연동용)
     private LocalDate availableDate; // 투어 날짜
-    private LocalTime startTime;    // 시작 시간
-    private LocalTime endTime;      // 종료 시간
-    private String meetingPoint;    // 만남 장소 (가이드 작성 예정, 초기값 빈 문자열)
-    private String guideMessage;    // 가이드 안내 메시지 (가이드 작성 예정, 초기값 빈 문자열)
-    private String courseDetail;    // 코스 상세 정보 (가이드 작성 예정, 초기값 빈 문자열)
+    private LocalTime startTime;     // 시작 시간
+    private LocalTime endTime;       // 종료 시간
+    private String meetingPoint;     // 만남 장소
+    private String guideMessage;     // 가이드 안내 메시지
+    private String courseDetail;     // 코스 상세 — 결제 완료(isPaid=true) 전까지 null 반환
+    private Boolean isPaid;          // 결제 완료 여부 (프론트 잠금 처리 기준)
 
-    // Entity → 수락 양식 DTO 변환 (작성 필드는 빈 문자열로 초기화)
+    // Entity → 양식 응답 DTO 변환
+    // courseDetail은 isPaid=true일 때만 반환, 결제 전이면 null (잠금)
     public static GuideScheduleFormResponse from(GuideSchedule schedule) {
+        boolean paid = Boolean.TRUE.equals(schedule.getIsPaid());
         return GuideScheduleFormResponse.builder()
                 .scheduleId(schedule.getId())
                 .matchRequestId(schedule.getMatchRequestId())
                 .availableDate(schedule.getAvailableDate())
                 .startTime(schedule.getStartTime())
                 .endTime(schedule.getEndTime())
-                .meetingPoint("")   // 가이드가 이후 작성할 항목
-                .guideMessage("")   // 가이드가 이후 작성할 항목
-                .courseDetail("")   // 가이드가 이후 작성할 항목
+                .meetingPoint(schedule.getMeetingPoint() != null ? schedule.getMeetingPoint() : "")
+                .guideMessage(schedule.getGuideMessage() != null ? schedule.getGuideMessage() : "")
+                .courseDetail(paid ? schedule.getCourseDetail() : null) // 결제 전 잠금
+                .isPaid(paid)
                 .build();
     }
 }

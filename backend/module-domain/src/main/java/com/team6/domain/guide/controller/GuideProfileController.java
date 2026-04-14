@@ -3,10 +3,16 @@ package com.team6.domain.guide.controller;
 import com.team6.domain.guide.dto.request.CreateGuideProfileRequest;
 import com.team6.domain.guide.dto.request.UpdateGuideProfileRequest;
 import com.team6.domain.guide.dto.request.UpdateGuideRatingRequest;
+import com.team6.domain.guide.dto.response.GuideDetailResponse;
 import com.team6.domain.guide.dto.response.GuideProfileResponse;
 import com.team6.domain.guide.dto.response.GuideReviewSummaryResponse;
 import com.team6.domain.guide.dto.response.GuideSettlementResponse;
+import com.team6.domain.guide.exception.GuideErrorCode;
+import com.team6.domain.guide.exception.GuideException;
 import com.team6.domain.guide.service.GuideProfileService;
+import com.team6.domain.member.entity.Member;
+import com.team6.domain.member.repository.MemberRepository;
+import com.team6.module.common.global.util.SecurityUtil;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -24,13 +30,14 @@ import java.util.List;
 public class GuideProfileController {
 
     private final GuideProfileService guideProfileService;
+    private final MemberRepository memberRepository;
 
     // 가이드 프로필 등록 (F06-01)
     @PostMapping
     public ResponseEntity<GuideProfileResponse> createProfile(
-            @RequestBody @Valid CreateGuideProfileRequest request,
-            @RequestHeader("X-User-Id") Long userId // JWT 연동 전 임시 헤더
+            @RequestBody @Valid CreateGuideProfileRequest request
     ) {
+        Long userId = getCurrentUserId();
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(guideProfileService.createProfile(request, userId));
     }
@@ -43,6 +50,14 @@ public class GuideProfileController {
         return ResponseEntity.ok(guideProfileService.getProfile(guideId));
     }
 
+    // 가이드 상세 통합 조회 — 프로필 + 피드 + 경력 + 이미지 한 번에 반환
+    @GetMapping("/{guideId}/detail")
+    public ResponseEntity<GuideDetailResponse> getDetail(
+            @PathVariable Long guideId
+    ) {
+        return ResponseEntity.ok(guideProfileService.getDetail(guideId));
+    }
+
     // 가이드 프로필 목록 조회
     @GetMapping
     public ResponseEntity<List<GuideProfileResponse>> getProfileList() {
@@ -53,18 +68,26 @@ public class GuideProfileController {
     @PutMapping("/{guideId}")
     public ResponseEntity<GuideProfileResponse> updateProfile(
             @PathVariable Long guideId,
-            @RequestBody @Valid UpdateGuideProfileRequest request,
-            @RequestHeader("X-User-Id") Long userId // JWT 연동 전 임시 헤더
+            @RequestBody @Valid UpdateGuideProfileRequest request
     ) {
+        Long userId = getCurrentUserId();
         return ResponseEntity.ok(guideProfileService.updateProfile(guideId, request, userId));
+    }
+
+    // 관리자 승인 (F06-01) — isApproved false → true
+    @PatchMapping("/{guideId}/approve")
+    public ResponseEntity<GuideProfileResponse> approveProfile(
+            @PathVariable Long guideId
+    ) {
+        return ResponseEntity.ok(guideProfileService.approveProfile(guideId));
     }
 
     // 정산 예정 금액 조회 — 본인만 조회 가능 (F06-05)
     @GetMapping("/{guideId}/settlement/expected")
     public ResponseEntity<GuideSettlementResponse> getExpectedSettlement(
-            @PathVariable Long guideId,
-            @RequestHeader("X-User-Id") Long userId // JWT 연동 전 임시 헤더
+            @PathVariable Long guideId
     ) {
+        Long userId = getCurrentUserId();
         return ResponseEntity.ok(guideProfileService.getExpectedSettlement(guideId, userId));
     }
 
@@ -88,9 +111,17 @@ public class GuideProfileController {
     // 가이드 활성화/비활성화 토글 (F06-06)
     @PatchMapping("/{guideId}/active")
     public ResponseEntity<GuideProfileResponse> toggleActive(
-            @PathVariable Long guideId,
-            @RequestHeader("X-User-Id") Long userId // JWT 연동 전 임시 헤더
+            @PathVariable Long guideId
     ) {
+        Long userId = getCurrentUserId();
         return ResponseEntity.ok(guideProfileService.toggleActive(guideId, userId));
+    }
+
+    // JWT에서 현재 로그인 사용자의 memberId 추출
+    private Long getCurrentUserId() {
+        String email = SecurityUtil.getCurrentUserEmail();
+        return memberRepository.findByEmail(email)
+                .map(Member::getId)
+                .orElseThrow(() -> new GuideException(GuideErrorCode.MEMBER_NOT_FOUND));
     }
 }

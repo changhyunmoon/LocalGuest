@@ -3,7 +3,12 @@ package com.team6.domain.guide.controller;
 import com.team6.domain.guide.dto.request.CreateGuideFeedRequest;
 import com.team6.domain.guide.dto.request.UpdateGuideFeedRequest;
 import com.team6.domain.guide.dto.response.GuideFeedResponse;
+import com.team6.domain.guide.exception.GuideErrorCode;
+import com.team6.domain.guide.exception.GuideException;
 import com.team6.domain.guide.service.GuideFeedService;
+import com.team6.domain.member.entity.Member;
+import com.team6.domain.member.repository.MemberRepository;
+import com.team6.module.common.global.util.SecurityUtil;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -21,25 +26,25 @@ import java.util.List;
 public class GuideFeedController {
 
     private final GuideFeedService guideFeedService;
+    private final MemberRepository memberRepository;
 
     // 피드 등록
     @PostMapping
     public ResponseEntity<GuideFeedResponse> createFeed(
             @PathVariable Long guideId,
-            @RequestBody @Valid CreateGuideFeedRequest request,
-            @RequestHeader("X-User-Id") Long userId // JWT 연동 전 임시 헤더
+            @RequestBody @Valid CreateGuideFeedRequest request
     ) {
+        Long userId = getCurrentUserId();
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(guideFeedService.createFeed(guideId, request, userId));
     }
 
-    // 피드 목록 조회 — isMatched로 공개 범위 결정 (F06-03)
+    // 피드 목록 조회 — 전체 공개 (F06-03)
     @GetMapping
     public ResponseEntity<List<GuideFeedResponse>> getFeeds(
-            @PathVariable Long guideId,
-            @RequestParam(defaultValue = "false") boolean isMatched // 매칭 여부 (기본값: 미매칭)
+            @PathVariable Long guideId
     ) {
-        return ResponseEntity.ok(guideFeedService.getFeeds(guideId, isMatched));
+        return ResponseEntity.ok(guideFeedService.getFeeds(guideId));
     }
 
     // 피드 수정
@@ -47,9 +52,9 @@ public class GuideFeedController {
     public ResponseEntity<GuideFeedResponse> updateFeed(
             @PathVariable Long guideId,
             @PathVariable Long feedId,
-            @RequestBody @Valid UpdateGuideFeedRequest request,
-            @RequestHeader("X-User-Id") Long userId // JWT 연동 전 임시 헤더
+            @RequestBody @Valid UpdateGuideFeedRequest request
     ) {
+        Long userId = getCurrentUserId();
         return ResponseEntity.ok(guideFeedService.updateFeed(guideId, feedId, request, userId));
     }
 
@@ -57,10 +62,18 @@ public class GuideFeedController {
     @DeleteMapping("/{feedId}")
     public ResponseEntity<Void> deleteFeed(
             @PathVariable Long guideId,
-            @PathVariable Long feedId,
-            @RequestHeader("X-User-Id") Long userId // JWT 연동 전 임시 헤더
+            @PathVariable Long feedId
     ) {
+        Long userId = getCurrentUserId();
         guideFeedService.deleteFeed(guideId, feedId, userId);
         return ResponseEntity.noContent().build();
+    }
+
+    // JWT에서 현재 로그인 사용자의 memberId 추출
+    private Long getCurrentUserId() {
+        String email = SecurityUtil.getCurrentUserEmail();
+        return memberRepository.findByEmail(email)
+                .map(Member::getId)
+                .orElseThrow(() -> new GuideException(GuideErrorCode.MEMBER_NOT_FOUND));
     }
 }
