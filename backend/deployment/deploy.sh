@@ -5,11 +5,9 @@ BASE_DIR="/home/ubuntu/backend-deploy"
 DOCKER_DIR="$BASE_DIR/docker"
 NGINX_CONF_DIR="$BASE_DIR/nginx"
 
-# 설정 파일 경로 정의
 COMPOSE_APP="$DOCKER_DIR/docker-compose.yml"
 COMPOSE_INFRA="$DOCKER_DIR/docker-compose.infra.yml"
 
-# 도커 컴포즈 명령어 정의
 DOCKER_COMPOSE_APP="docker compose -f $COMPOSE_APP"
 DOCKER_COMPOSE_INFRA="docker compose -f $COMPOSE_INFRA"
 
@@ -17,119 +15,89 @@ echo "--- 🚀 멀티모듈(api-server) 배포 프로세스 시작 ---"
 cd "$DOCKER_DIR"
 
 # 2. 인프라(Redis, MongoDB) 및 네트워크 점검
-echo "--- 📦 1. 인프라 환경 점검 ---"
-
-# 공통 네트워크가 없다면 생성
-docker network inspect team6-backend >/dev/null 2>&1 || {
-    echo "🌐 team6-backend 네트워크 생성 중..."
-    docker network create team6-backend
-}
+echo "--- 📦 1. 인프라 환경 및 네트워크 점검 ---"
 
 if [ -f "$COMPOSE_INFRA" ]; then
-    # 실행 중인 인프라 컨테이너 상태 확인 (이름 기준)
-    # redis와 mongodb라는 이름의 컨테이너가 'running' 상태인지 체크합니다.
+    # 인프라 기동 (이미 실행 중이면 유지, 설정 변경 시 업데이트)
+    # [중요] 변수 미지정 경고를 방지하려면 실행 시점에 변수가 있어야 함
+    $DOCKER_COMPOSE_INFRA up -d || { echo "❌ 인프라 실행 실패"; exit 1; }
+
+    # 컨테이너 상태 확인
     RUNNING_REDIS=$(docker ps --filter "name=redis" --filter "status=running" -q)
     RUNNING_MONGO=$(docker ps --filter "name=mongodb" --filter "status=running" -q)
 
     if [ -n "$RUNNING_REDIS" ] && [ -n "$RUNNING_MONGO" ]; then
-        echo "✅ Redis 및 MongoDB가 이미 실행 중입니다. (기존 컨테이너 유지)"
+        echo "✅ 인프라 컨테이너 가동 확인 완료."
     else
-        echo "⚠️  일부 인프라 컨테이너가 없거나 중지된 상태입니다. 재실행합니다..."
-        $DOCKER_COMPOSE_INFRA up -d
-        echo "⏳ 인프라 서비스 안정화 대기 중 (10s)..."
-        sleep 10
+        echo "⏳ 인프라 안정화 대기 (15s)..."
+        sleep 15
+
     fi
 else
     echo "❌ 에러: $COMPOSE_INFRA 파일을 찾을 수 없습니다."
     exit 1
 fi
 
-# 3. 필수 환경 변수 주입 확인
-if [ -z "$DOCKER_IMAGE_TAG" ] || [ -z "$DOCKERHUB_USERNAME" ]; then
-    echo "❌ 에러: 필수 환경 변수(DOCKER_IMAGE_TAG 등)가 설정되지 않았습니다."
+# 3. 사전 환경 검사 (누락된 변수 체크 추가)
+if [ -z "$DOCKER_IMAGE_TAG" ] || [ -z "$DOCKERHUB_USERNAME" ] || [ -z "$MONGO_ROOT_USER" ]; then
+    echo "❌ 환경변수 누락 (TAG, USERNAME, 혹은 MONGO_ROOT_USER)"
     exit 1
 fi
 
-if [ ! -f "$COMPOSE_APP" ]; then
-    echo "❌ 에러: $COMPOSE_APP 파일을 찾을 수 없습니다."
-    exit 1
-fi
+echo "✅ 사전 환경 검사 완료!"
 
-# 4. Nginx 조각 파일(.inc) 존재 확인
-if [ ! -f "$NGINX_CONF_DIR/be_blue.inc" ] || [ ! -f "$NGINX_CONF_DIR/be_green.inc" ]; then
-    echo "❌ 에러: Nginx 설정 파일(.inc)이 $NGINX_CONF_DIR 에 없습니다."
-    exit 1
-fi
-
-echo "✅ 사전 환경 검사 통과!"
-
-# 5. 현재 실행 중인 컨테이너 확인 (Blue/Green 결정)
+# 4. Blue/Green 결정 (이하 로직 동일)
 IS_BLUE=$($DOCKER_COMPOSE_APP ps | grep "backend-blue" | grep "running" || true)
 
 if [ -z "$IS_BLUE" ]; then
-    TARGET_COLOR="blue"
-    TARGET_PORT=8081
-    OLD_COLOR="green"
-    INC_FILE="be_blue.inc"
+    TARGET_COLOR="blue"; TARGET_PORT=8081; OLD_COLOR="green"; INC_FILE="be_blue.inc"
 else
-    TARGET_COLOR="green"
-    TARGET_PORT=8082
-    OLD_COLOR="blue"
-    INC_FILE="be_green.inc"
+    TARGET_COLOR="green"; TARGET_PORT=8082; OLD_COLOR="blue"; INC_FILE="be_green.inc"
 fi
 
-echo "### 배포 타겟: $TARGET_COLOR (Port: $TARGET_PORT) ###"
+echo "### 🚢 배포 타겟: $TARGET_COLOR (Port: $TARGET_PORT) ###"
 
-# 6. 새 버전 이미지 가져오기
-echo "1. $TARGET_COLOR 이미지 Pull (Tag: $DOCKER_IMAGE_TAG)..."
+# 5. 새 버전 이미지 Pull
+echo "1. $TARGET_COLOR 이미지 Pull..."
 $DOCKER_COMPOSE_APP pull backend-$TARGET_COLOR || exit 1
 
-# 7. 새 컨테이너 실행
+# 6. 새 컨테이너 실행
 echo "2. $TARGET_COLOR 컨테이너 실행..."
 $DOCKER_COMPOSE_APP up -d backend-$TARGET_COLOR || exit 1
 
-# 8. 헬스체크 (Spring Actuator 활용)
+# 7. 헬스체크 (Spring Actuator)
 for i in {1..30}; do
     echo "3. $TARGET_COLOR 헬스체크 중... ($i/30)"
     sleep 10
-
     HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:$TARGET_PORT/api/actuator/health)
 
     if [ "$HTTP_STATUS" -eq 200 ]; then
-        echo "✅ 헬스체크 성공! (HTTP Status: $HTTP_STATUS)"
+        echo "✅ 헬스체크 성공!"
         break
     fi
 
     if [ $i -eq 30 ]; then
-        echo "❌ 헬스체크 최종 실패 (마지막 응답 코드: $HTTP_STATUS)"
-        echo "--- 최신 컨테이너 로그(마지막 50줄) ---"
+        echo "❌ 헬스체크 실패. 로그 확인 후 롤백합니다."
         docker logs --tail 50 backend-$TARGET_COLOR
-        echo "❌ $TARGET_COLOR 배포를 중단하고 롤백합니다."
         $DOCKER_COMPOSE_APP stop backend-$TARGET_COLOR
         exit 1
     fi
 done
 
-# 9. Nginx 설정 전환
+# 8. Nginx 설정 전환
 echo "4. Nginx 설정 교체 및 Reload..."
-if [ -f "$NGINX_CONF_DIR/$INC_FILE" ]; then
-    sudo cp "$NGINX_CONF_DIR/$INC_FILE" /etc/nginx/conf.d/backend.inc
+sudo cp "$NGINX_CONF_DIR/$INC_FILE" /etc/nginx/conf.d/backend.inc
+sudo nginx -t && sudo nginx -s reload || { echo "❌ Nginx Reload 실패"; exit 1; }
 
-    if sudo nginx -t; then
-        sudo nginx -s reload
-        echo "✅ Nginx 설정 로드 완료 ($TARGET_COLOR)"
-    else
-        echo "❌ Nginx 설정 오류! 배포를 중단합니다."
-        exit 1
-    fi
-else
-    echo "❌ 에러: $INC_FILE 파일을 찾을 수 없습니다."
-    exit 1
-fi
-
-# 10. 구 버전 컨테이너 정리
-echo "5. 이전 컨테이너($OLD_COLOR) 정리..."
+# 9. 구 버전 정리 및 최적화
+echo "5. 이전 컨테이너($OLD_COLOR) 및 불필요한 이미지 정리..."
 $DOCKER_COMPOSE_APP stop backend-$OLD_COLOR || true
 $DOCKER_COMPOSE_APP rm -f backend-$OLD_COLOR || true
 
-echo "🎊 LocalMate(api-server) $TARGET_COLOR 배포 완료!"
+# 디스크 공간 확보
+docker image prune -af
+docker builder prune -f # 추가: 빌드 캐시 정리
+
+echo "🎊 배포 완료 및 디스크 정리 완료!"
+echo "--- 현재 디스크 사용량 ---"
+df -h | grep '/$'
