@@ -31,4 +31,4 @@ services:
 networks:
   team6-backend:
     name: team6-backend
-    external: true
+    driver: bridge
