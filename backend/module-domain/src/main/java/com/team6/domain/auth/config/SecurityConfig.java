@@ -46,6 +46,9 @@ public class SecurityConfig {
                         // 2. 리뷰 조회는 비로그인 유저도 가능
                         .requestMatchers(HttpMethod.GET, "/reviews/**").permitAll()
 
+                        // Actuator 경로 추가 (배포시 헬스채크용)
+                        .requestMatchers("/actuator/**").permitAll()
+
                         // 3. 그 외 (리뷰 등록, 채팅, 마이페이지 등)는 무조건 로그인 필요
                         .anyRequest().authenticated()
                 );
