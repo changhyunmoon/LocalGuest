@@ -15,6 +15,8 @@ public class PaymentResponseDto {
     private Integer amount;              // 결제 금액
     private String paymentType;          // CHAT/ACCOMPANY/EXTENSION
     private PaymentStatus status;        // 결제 상태
+    private String pgOrderNo;            // PG 주문번호 (승인 요청 시 사용)
+    private String pgTransactionId;    // PG 거래 ID (완료 후)
     private LocalDateTime paidAt;        // 결제 완료일시
     private LocalDateTime refundDeadline; // 환불 마감일시
 
@@ -26,6 +28,8 @@ public class PaymentResponseDto {
                 .amount(payment.getAmount())
                 .paymentType(payment.getPaymentType())
                 .status(payment.getStatus())
+                .pgOrderNo(payment.getPgOrderNo())
+                .pgTransactionId(payment.getPgTransactionId())
                 .paidAt(payment.getPaidAt())
                 .refundDeadline(payment.getRefundDeadline())
                 .build();

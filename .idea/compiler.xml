@@ -8,6 +8,11 @@
           <entry name="$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.projectlombok/lombok/1.18.38/57f8f5e02e92a30fd21b80cbd426a4172b5f8e29/lombok-1.18.38.jar" />
         </processorPath>
         <module name="backend.module-ai-integration.main" />
+<<<<<<< HEAD
+=======
+        <module name="backend.module-ai.main" />
+        <module name="backend.module-common.main" />
+>>>>>>> e6c81af43010f256dfe8e92a2d11f65326648544
         <module name="backend.api-server.main" />
         <module name="backend.module-chat.main" />
         <module name="backend.module-domain.main" />

@@ -23,6 +23,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
         throws ServletException, IOException {
 
+        // 💡 웹소켓 핸드셰이크 요청(/ws-stomp)은 JWT 검사 없이 통과시킵니다.
+        String path = request.getRequestURI();
+        if (path.startsWith("/ws-stomp")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         // 헤더에서 토큰 추출
         String token = resolveToken(request);
 
