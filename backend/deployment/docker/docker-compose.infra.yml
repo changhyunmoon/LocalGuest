@@ -1,46 +1,30 @@
 version: '3.8'
 
 services:
-  # Blue 환경 (Port: 8081)
-  backend-blue:
-    # GitHub Actions 및 deploy.sh에서 넘겨준 변수명과 일치시킵니다.
-    image: ${DOCKERHUB_USERNAME}/${BACKEND_IMAGE_NAME}:${DOCKER_IMAGE_TAG}
-    container_name: backend-blue
-    environment:
-      - SPRING_PROFILES_ACTIVE=prod
-      - TZ=Asia/Seoul
+  # Redis: 채팅 실시간 상태 관리 및 캐싱용
+  redis:
+    image: redis:latest
+    container_name: redis
     ports:
-      - "8081:8080"
-    restart: always
+      - "6379:6379"
     networks:
       - team6-backend
-    # 멀티모듈 api-server의 Actuator 경로를 확인하세요.
-    # 보통 context-path가 없다면 /actuator/health 입니다.
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8080/api/actuator/health || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 60s # 멀티모듈은 초기 빈 등록 시간이 길 수 있어 60초로 넉넉히 잡았습니다.
+    restart: always
 
-  # Green 환경 (Port: 8082)
-  backend-green:
-    image: ${DOCKERHUB_USERNAME}/${BACKEND_IMAGE_NAME}:${DOCKER_IMAGE_TAG}
-    container_name: backend-green
-    environment:
-      - SPRING_PROFILES_ACTIVE=prod
-      - TZ=Asia/Seoul
+  # MongoDB: 채팅 메시지 및 로그 저장용
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb
     ports:
-      - "8082:8080"
-    restart: always
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_USERNAME}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_PASSWORD}
+    volumes:
+      - ./mongo/data:/data/db
     networks:
       - team6-backend
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8080/api/actuator/health || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 60s
+    restart: always
 
 networks:
   team6-backend:

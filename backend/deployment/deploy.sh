@@ -1,13 +1,13 @@
 #!/bin/bash
 
-# 1. 환경 설정 (경로 확인 필수)
+# 1. 환경 설정
 BASE_DIR="/home/ubuntu/backend-deploy"
 DOCKER_DIR="$BASE_DIR/docker"
 NGINX_CONF_DIR="$BASE_DIR/nginx"
 
 # 설정 파일 경로 정의
 COMPOSE_APP="$DOCKER_DIR/docker-compose.yml"
-COMPOSE_INFRA="$DOCKER_DIR/docker-compose.infra.yml" # 인프라 파일 추가
+COMPOSE_INFRA="$DOCKER_DIR/docker-compose.infra.yml"
 
 # 도커 컴포즈 명령어 정의
 DOCKER_COMPOSE_APP="docker compose -f $COMPOSE_APP"
@@ -16,20 +16,29 @@ DOCKER_COMPOSE_INFRA="docker compose -f $COMPOSE_INFRA"
 echo "--- 🚀 멀티모듈(api-server) 배포 프로세스 시작 ---"
 cd "$DOCKER_DIR"
 
-# [추가] 2. 인프라(Redis, MongoDB) 및 네트워크 체크
-echo "--- 📦 1. 인프라 환경 점검 (Redis, MongoDB) ---"
+# 2. 인프라(Redis, MongoDB) 및 네트워크 점검
+echo "--- 📦 1. 인프라 환경 점검 ---"
 
 # 공통 네트워크가 없다면 생성
-docker network inspect team6-backend >/dev/null 2>&1 || \
+docker network inspect team6-backend >/dev/null 2>&1 || {
+    echo "🌐 team6-backend 네트워크 생성 중..."
     docker network create team6-backend
+}
 
 if [ -f "$COMPOSE_INFRA" ]; then
-    echo "✅ 인프라 컨테이너 상태 확인 및 실행..."
-    $DOCKER_COMPOSE_INFRA up -d
+    # 실행 중인 인프라 컨테이너 상태 확인 (이름 기준)
+    # redis와 mongodb라는 이름의 컨테이너가 'running' 상태인지 체크합니다.
+    RUNNING_REDIS=$(docker ps --filter "name=redis" --filter "status=running" -q)
+    RUNNING_MONGO=$(docker ps --filter "name=mongodb" --filter "status=running" -q)
 
-    # [추가] 인프라가 준비될 때까지 잠시 대기 (이름 해석 에러 방지용)
-    echo "⏳ 인프라 서비스 안정화 대기 중 (10s)..."
-    sleep 10
+    if [ -n "$RUNNING_REDIS" ] && [ -n "$RUNNING_MONGO" ]; then
+        echo "✅ Redis 및 MongoDB가 이미 실행 중입니다. (기존 컨테이너 유지)"
+    else
+        echo "⚠️  일부 인프라 컨테이너가 없거나 중지된 상태입니다. 재실행합니다..."
+        $DOCKER_COMPOSE_INFRA up -d
+        echo "⏳ 인프라 서비스 안정화 대기 중 (10s)..."
+        sleep 10
+    fi
 else
     echo "❌ 에러: $COMPOSE_INFRA 파일을 찾을 수 없습니다."
     exit 1
