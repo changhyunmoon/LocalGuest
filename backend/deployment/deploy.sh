@@ -31,6 +31,7 @@ if [ -f "$COMPOSE_INFRA" ]; then
     else
         echo "⏳ 인프라 안정화 대기 (15s)..."
         sleep 15
+
     fi
 else
     echo "❌ 에러: $COMPOSE_INFRA 파일을 찾을 수 없습니다."
