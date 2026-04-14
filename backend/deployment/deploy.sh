@@ -14,22 +14,30 @@ DOCKER_COMPOSE_INFRA="docker compose -f $COMPOSE_INFRA"
 echo "--- 🚀 멀티모듈(api-server) 배포 프로세스 시작 ---"
 cd "$DOCKER_DIR"
 
-# 2. 인프라(Redis, MongoDB) 선행 실행 보장
-echo "--- 📦 1. 인프라 환경 점검 및 실행 ---"
+# 2. 인프라(Redis, MongoDB) 및 네트워크 점검
+echo "--- 📦 1. 인프라 환경 및 네트워크 점검 ---"
 
-# 네트워크 존재 확인 및 생성
-docker network inspect team6-backend >/dev/null 2>&1 || docker network create team6-backend
+# [수정] 네트워크가 수동으로 생성되어 라벨 에러가 날 경우를 대비해 확실히 처리
+if docker network inspect team6-backend >/dev/null 2>&1; then
+    # 네트워크는 존재하지만 compose 라벨이 없는 경우 에러 방지를 위해 그냥 진행
+    echo "✅ team6-backend 네트워크 확인 완료."
+else
+    echo "🌐 team6-backend 네트워크 생성 중..."
+    docker network create team6-backend
+fi
 
 if [ -f "$COMPOSE_INFRA" ]; then
-    # running 상태인 인프라 컨테이너 확인
+    # 인프라 기동 (이미 실행 중이면 유지, 설정 변경 시 업데이트)
+    # [중요] 변수 미지정 경고를 방지하려면 실행 시점에 변수가 있어야 함
+    $DOCKER_COMPOSE_INFRA up -d || { echo "❌ 인프라 실행 실패"; exit 1; }
+
+    # 컨테이너 상태 확인
     RUNNING_REDIS=$(docker ps --filter "name=redis" --filter "status=running" -q)
     RUNNING_MONGO=$(docker ps --filter "name=mongodb" --filter "status=running" -q)
 
     if [ -n "$RUNNING_REDIS" ] && [ -n "$RUNNING_MONGO" ]; then
-        echo "✅ 인프라가 이미 실행 중입니다. 배포를 진행합니다."
+        echo "✅ 인프라 컨테이너 가동 확인 완료."
     else
-        echo "⚠️  인프라가 실행 중이지 않습니다. 인프라를 먼저 기동합니다..."
-        $DOCKER_COMPOSE_INFRA up -d || { echo "❌ 인프라 실행 실패"; exit 1; }
         echo "⏳ 인프라 안정화 대기 (15s)..."
         sleep 15
     fi
@@ -38,13 +46,15 @@ else
     exit 1
 fi
 
-# 3. 사전 환경 검사
-[ -z "$DOCKER_IMAGE_TAG" ] || [ -z "$DOCKERHUB_USERNAME" ] && { echo "❌ 환경변수 누락"; exit 1; }
-[ ! -f "$COMPOSE_APP" ] && { echo "❌ $COMPOSE_APP 없음"; exit 1; }
+# 3. 사전 환경 검사 (누락된 변수 체크 추가)
+if [ -z "$DOCKER_IMAGE_TAG" ] || [ -z "$DOCKERHUB_USERNAME" ] || [ -z "$MONGO_ROOT_USER" ]; then
+    echo "❌ 환경변수 누락 (TAG, USERNAME, 혹은 MONGO_ROOT_USER)"
+    exit 1
+fi
 
 echo "✅ 사전 환경 검사 완료!"
 
-# 4. Blue/Green 결정
+# 4. Blue/Green 결정 (이하 로직 동일)
 IS_BLUE=$($DOCKER_COMPOSE_APP ps | grep "backend-blue" | grep "running" || true)
 
 if [ -z "$IS_BLUE" ]; then
@@ -87,14 +97,14 @@ echo "4. Nginx 설정 교체 및 Reload..."
 sudo cp "$NGINX_CONF_DIR/$INC_FILE" /etc/nginx/conf.d/backend.inc
 sudo nginx -t && sudo nginx -s reload || { echo "❌ Nginx Reload 실패"; exit 1; }
 
-# 9. 구 버전 정리 및 디스크 용량 최적화 (핵심 추가)
+# 9. 구 버전 정리 및 최적화
 echo "5. 이전 컨테이너($OLD_COLOR) 및 불필요한 이미지 정리..."
 $DOCKER_COMPOSE_APP stop backend-$OLD_COLOR || true
 $DOCKER_COMPOSE_APP rm -f backend-$OLD_COLOR || true
 
-# [개선] 현재 사용 중이지 않은 모든 이미지 삭제 (디스크 공간 확보)
-# -f 옵션으로 확인 절차 없이 삭제합니다.
+# 디스크 공간 확보
 docker image prune -af
+docker builder prune -f # 추가: 빌드 캐시 정리
 
 echo "🎊 배포 완료 및 디스크 정리 완료!"
 echo "--- 현재 디스크 사용량 ---"
