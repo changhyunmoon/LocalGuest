@@ -1,10 +1,12 @@
 package com.team6.domain.review.service;
 
+import com.team6.domain.guide.dto.request.UpdateGuideProfileRequest;
+import com.team6.domain.guide.service.GuideProfileService;
 import com.team6.domain.member.entity.Member;
 import com.team6.domain.member.entity.Status;
 import com.team6.domain.member.repository.MemberRepository;
-import com.team6.domain.review.dto.reqeust.ReviewRequest;
-import com.team6.domain.review.dto.reqeust.ReviewUpdateRequest;
+import com.team6.domain.review.dto.request.ReviewRequest;
+import com.team6.domain.review.dto.request.ReviewUpdateRequest;
 import com.team6.domain.review.dto.response.ReviewResponse;
 import com.team6.domain.review.entity.Review;
 import com.team6.domain.review.repository.ReviewRepository;
@@ -15,9 +17,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.stream.Collectors;
 
 
 @Service
@@ -25,6 +28,7 @@ import java.util.stream.Collectors;
 public class ReviewService {
     private final ReviewRepository reviewRepository;
     private final MemberRepository memberRepository;
+    private final GuideProfileService guideProfileService;
 
     // 리뷰 저장
     @Transactional
@@ -47,8 +51,11 @@ public class ReviewService {
                 .content(request.getContent())
                 .member(member)
                 .guideId(request.getGuideId())
+                .matchRequestId(request.getMatchRequestId())
                 .build();
         reviewRepository.save(review);
+
+        syncGuideRating(request.getGuideId());
     }
 
     // 리뷰 수정 (24시간 이내만 수정 가능)
@@ -70,6 +77,7 @@ public class ReviewService {
         }
 
         review.update(request.getRating(), request.getContent());
+        syncGuideRating(review.getGuideId());
     }
 
     // 모든 리뷰 조회
@@ -100,5 +108,29 @@ public class ReviewService {
         }
 
         review.delete();
+        syncGuideRating(review.getGuideId());
+    }
+
+    private void syncGuideRating(Long guideId) {
+        List<Object[]> result = reviewRepository.getRatingAndCountByGuideId(guideId);
+
+        Object[] stats = result.isEmpty()?new Object[]{null, 0L} : result.get(0);
+
+        Double rawAvg = stats[0] != null ? (Double) stats[0] : 0.0;
+        Long rawCount = stats[1] != null ? (Long) stats[1] : 0L;
+
+        BigDecimal averageRating = BigDecimal.valueOf(rawAvg).setScale(1, RoundingMode.HALF_UP);
+        Integer reviewCount = rawCount.intValue();
+
+        UpdateGuideRatingRequest ratingRequest = createRatingRequest(averageRating, reviewCount);
+
+        guideProfileService.updateRating(guideId, ratingRequest);
+    }
+
+    private UpdateGuideRatingRequest createRatingRequest(BigDecimal averageRating, Integer reviewCount) {
+        return UpdateGuideRatingRequest.builder()
+                .averageRating(averageRating)
+                .reviewCount(reviewCount)
+                .build();
     }
 }

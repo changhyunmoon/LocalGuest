@@ -1,21 +1,17 @@
 package com.team6.domain.review.controller;
 
-import com.team6.domain.review.dto.reqeust.ReviewRequest;
-import com.team6.domain.review.dto.reqeust.ReviewUpdateRequest;
+import com.team6.domain.review.dto.request.ReviewRequest;
+import com.team6.domain.review.dto.request.ReviewUpdateRequest;
 import com.team6.domain.review.dto.response.ReviewResponse;
-import com.team6.domain.review.entity.Review;
 import com.team6.domain.review.service.ReviewService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.data.web.PageableArgumentResolver;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/reviews")
