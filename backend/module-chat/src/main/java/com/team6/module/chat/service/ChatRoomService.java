@@ -1,23 +1,19 @@
 package com.team6.module.chat.service;
 
-
-import com.team6.module.chat.dto.request.ChatRoomCreateRequest;
-import com.team6.module.chat.dto.response.ChatRoomListResponse;
-import com.team6.module.chat.dto.response.ChatRoomResponse;
-import com.team6.module.chat.dto.response.ChatRoomsResponse;
+import com.team6.module.chat.dto.chatRoom.ChatRoomCreateRequest;
+import com.team6.module.chat.dto.chatRoom.ChatRoomResponse;
+import com.team6.module.chat.dto.chatRoom.ChatRoomsResponse;
 import com.team6.module.chat.entity.mysql.ChatParticipant;
 import com.team6.module.chat.entity.mysql.ChatRoom;
-import com.team6.module.chat.exception.ChatExceptionCode;
-import com.team6.module.chat.exception.ParticipantNotFoundException;
 import com.team6.module.chat.repository.mongodb.ChatMessageRepository;
 import com.team6.module.chat.repository.mysql.ChatRoomRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
-
 
 @Service
 @RequiredArgsConstructor
@@ -28,69 +24,70 @@ public class ChatRoomService {
 
     //채팅방 생성
     @Transactional
-    public ChatRoomResponse createChatRoom(Long ownerId, ChatRoomCreateRequest request){
-
-        //채팅방 엔티티 생성
+    public ChatRoomResponse createChatRoom(String ownerEmail, ChatRoomCreateRequest request) {
+        // 1. 방 엔티티 생성
         ChatRoom chatRoom = ChatRoom.builder()
-                .title(request.getTitle())
-                .ownerId(ownerId)
+                .title(request.title())
+                .ownerEmail(ownerEmail)
                 .build();
 
-        //여기서 participant 정보들은 member 구현되면 조회해서 정보들 가져와야 된다.
-        //방장 참여자 추가
-        ChatParticipant owner = ChatParticipant.create(ownerId, "User_" + ownerId);
+        // 2. 방장 추가 (User_ 등의 접두어는 닉네임 정책에 따라 수정하세요)
+        ChatParticipant owner = ChatParticipant.create(ownerEmail, "User_" + ownerEmail.split("@")[0]);
         chatRoom.addParticipant(owner);
-        //참여자 리스트 생성
-        request.getParticipantUserIds().forEach(userId -> {
-            ChatParticipant participant = ChatParticipant.create(userId, "User_" + userId); // 임시 닉네임
-            chatRoom.getParticipants().add(participant);
+
+        // 3. 초대받은 참여자들 추가
+        request.participantEmails().forEach(email -> {
+            ChatParticipant participant = ChatParticipant.create(email, "User_" + email.split("@")[0]);
+            chatRoom.addParticipant(participant);
         });
 
-        //참여 인원수 업데이트
-        chatRoom.updateParticipantCount();
-
-        //mysql에 저장
+        // 4. 저장 (CascadeType.ALL 설정 덕분에 참여자도 함께 저장됨)
         ChatRoom savedRoom = chatRoomRepository.save(chatRoom);
 
         return ChatRoomResponse.from(savedRoom);
     }
 
-    //채팅방 목록 조회
+    //참여 중인 채팅방 목록 조회
     @Transactional(readOnly = true)
-    public ChatRoomsResponse getChatRoomList(Long userId){
+    public ChatRoomsResponse getChatRoomList(String userEmail) {
+        // 1. 내가 참여 중인 모든 방 목록 조회 (MySQL)
+        List<ChatRoom> userRooms = chatRoomRepository.findAllByUserEmail(userEmail);
 
-        //참여중인 방 목록 조회
-        List<ChatRoom> userRooms = chatRoomRepository.findAllByUserId(userId);
-
-        List<ChatRoomListResponse> roomResponses = userRooms.stream()
+        List<ChatRoomResponse> responses = userRooms.stream()
                 .map(room -> {
-                    // 해당 방에서 나의 참여 정보(lastReadAt) 가져오기
+                    // 2. 해당 방에서 '나'의 참여 정보(lastReadAt) 추출
                     ChatParticipant me = room.getParticipants().stream()
-                            .filter(p -> p.getUserId().equals(userId))
+                            .filter(p -> p.getUserEmail().equals(userEmail))
                             .findFirst()
-                            .orElseThrow(ParticipantNotFoundException::new);
+                            .orElseThrow(() -> new RuntimeException("참여자 정보를 찾을 수 없습니다."));
 
-                    // MongoDB에서 안 읽은 메시지 수 카운트
+                    // 3. 시간 기반 계산: MongoDB에서 내 lastReadAt보다 늦게 생성된 메시지 카운트
+                    // 만약 한 번도 안 읽었다면 lastReadAt이 방 생성 시간일 것이므로 정확히 계산됨
                     long unreadCount = chatMessageRepository.countByRoomIdAndCreatedAtAfter(
                             room.getRoomId(),
                             me.getLastReadAt()
                     );
 
-                    return ChatRoomListResponse.builder()
-                            .roomId(room.getRoomId())
-                            .title(room.getTitle())
-                            .participantCount(room.getParticipantCount())
-                            .lastMessage(room.getLastMessage())
-                            .lastMessageAt(room.getLastMessageAt())
-                            .unreadCount(unreadCount)
-                            .build();
+                    return ChatRoomResponse.of(room, unreadCount);
                 })
-                // 정렬 로직: 안 읽은 메시지가 있는 방 우선 -> 최신 메시지 수신순
-                .sorted(Comparator.comparing((ChatRoomListResponse res) -> res.getUnreadCount() > 0).reversed()
-                        .thenComparing(ChatRoomListResponse::getLastMessageAt, Comparator.nullsLast(Comparator.reverseOrder())))
+                // 4. 정렬: 안 읽은 메시지가 있는 방 우선 -> 최신 메시지 시간 순
+                .sorted(Comparator.comparing((ChatRoomResponse res) -> res.unreadCount() > 0).reversed()
+                        .thenComparing(ChatRoomResponse::lastMessageAt, Comparator.nullsLast(Comparator.reverseOrder())))
                 .toList();
 
-        return ChatRoomsResponse.of(roomResponses);
+        return ChatRoomsResponse.of(responses);
+    }
+
+    @Transactional
+    public void updateLastReadAt(String roomId, String userEmail) {
+        ChatRoom chatRoom = chatRoomRepository.findByRoomId(roomId)
+                .orElseThrow(() -> new RuntimeException("채팅방을 찾을 수 없습니다."));
+
+        chatRoom.getParticipants().stream()
+                .filter(p -> p.getUserEmail().equals(userEmail))
+                .findFirst()
+                .ifPresent(ChatParticipant::updateLastReadAt);
+
     }
 
 }
