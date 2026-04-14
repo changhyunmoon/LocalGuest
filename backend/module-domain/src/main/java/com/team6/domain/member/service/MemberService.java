@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.slf4j.*;
 
 @Service
 @RequiredArgsConstructor
@@ -21,27 +22,39 @@ public class MemberService {
     // 회원가입
     @Transactional
     public Long join(Member member) {
-        //[LOG] INFO : [Member-Domain] 회원가입 로직 시작
-        // 중복 회원 검증
-        validateDuplicateMember(member);
+        // log.info("[Member-Domain] 회원가입 로직 시작 - email: {}", member.getEmail());
 
         // 암호화된 비밀번호 값으로 교체
         // [LOG] DEBUG : [Member-Domain] 비밀번호 암호화 수행 중...
         String encodedPassword = passwordEncoder.encode(member.getPassword());
-        member.updatePassword(encodedPassword);
+
+        // 중복 회원 검증
+        boolean isReactivated = validateDuplicateMember(member, encodedPassword);
+
+        // 재활성솨 된 경우 새로 save 불필요
+        if(isReactivated) {
+            return memberRepository.findByEmail(member.getEmail()).get().getId();
+        }
 
         // 중복 아니면 DB저장
+        member.updatePassword(encodedPassword);
         memberRepository.save(member);
         //[LOG] INFO : [Member-Domain] 회원 저장 완료 (ID : {})
         return member.getId();
     }
 
     // 중복 회원 검증 로직
-    private void validateDuplicateMember(Member member) {
-        if(memberRepository.existsByEmail(member.getEmail())) {
-            // [LOG] WARN : [Member-Domain] 중복 회원 가입 시도 감지
-            throw new IllegalStateException("이미 존재하는 회원입니다. ");
-        }
+    private boolean validateDuplicateMember(Member member, String encodedPassword) {
+        return memberRepository.findByEmail(member.getEmail())
+                .map(existingMember -> {
+                    if(existingMember.getStatus() == Status.ACTIVE) {
+                        throw new IllegalStateException("이미 존재하는 회원입니다. ");
+                    }
+                    // 탈퇴했으면 재가입 허용
+                    existingMember.reactive(member.getPassword(), member.getName(), member.getNickname());
+                    return true;
+                })
+                .orElse(false);
     }
 
     // 회원 탈퇴 기능 - common-module에 securityUtil구현 후 구현 가능
@@ -50,9 +63,6 @@ public class MemberService {
         String email = SecurityUtil.getCurrentUserEmail();
         Member member = memberRepository.findByEmail(email)
                 .orElseThrow(()->new IllegalArgumentException("사용자를 찾을 수 없습니다. "));
-        if(member.getStatus() == Status.WITHDRAWN) {
-            throw new IllegalStateException("이미 탈퇴 처리된 회원입니다. ");
-        }
 
         member.withdraw();
     }

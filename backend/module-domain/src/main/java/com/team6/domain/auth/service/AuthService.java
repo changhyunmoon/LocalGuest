@@ -1,10 +1,12 @@
 package com.team6.domain.auth.service;
 
+import com.team6.domain.member.dto.response.TokenResponse;
 import com.team6.domain.member.entity.Member;
 import com.team6.domain.member.repository.MemberRepository;
 import com.team6.domain.auth.provider.JwtTokenProvider;
 import com.team6.module.common.global.util.SecurityUtil;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -17,6 +19,7 @@ public class AuthService {
     private final MemberRepository memberRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
+    private final RedisTemplate<String, String> redisTemplate;
 
     // 로그인 로직
     public String login(String email, String password) {
@@ -56,14 +59,29 @@ public class AuthService {
         SecurityContextHolder.clearContext();
     }
 
-    public void withdraw() {
-        String email = SecurityUtil.getCurrentUserEmail();
+    @Transactional
+    public TokenResponse reissue(String refreshToken) {
+        // refresh Token 유효성 검증
+        if (!jwtTokenProvider.validToken(refreshToken)) {
+            throw new IllegalArgumentException("유효하지 않은 Refresh Token입니다. ");
+        }
+
+        // Redis에서 저장된 Refresh Token과 비교
+        String email = jwtTokenProvider.getEmail(refreshToken);
+        String savedToken = redisTemplate.opsForValue().get("RT:" + email);
+        if(!refreshToken.equals(savedToken)) {
+            throw new IllegalArgumentException("Refresh Token이 일치하지 않습니다. ");
+        }
+
+        // 새 Access Token 발급
         Member member = memberRepository.findByEmail(email)
-                .orElseThrow(()-> new IllegalArgumentException("회원을 찾을 수 없습니다. "));
+                .orElseThrow(()-> new IllegalArgumentException("사용자를 찾을 수 없습니다. "));
+        String newAccessToken = jwtTokenProvider.createToken(email, member.getRole().getKey());
 
-        memberRepository.delete(member);
-        System.out.println("회원 탈퇴 완료 : " + email);
-
+        return TokenResponse.builder()
+                .accessToken(newAccessToken)
+                .grantType("Bearer")
+                .build();
     }
 
 

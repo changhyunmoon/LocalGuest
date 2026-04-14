@@ -8,6 +8,7 @@ import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import javax.crypto.SecretKey;
 import java.security.Key;
 import java.util.Date;
 import java.util.UUID;
@@ -18,7 +19,8 @@ public class JwtTokenProvider {
     private String secretKey;
 
     private Key key;
-    private final long tokenValidityInMilliseconds = 3600000;   // 1시간 유효
+    private final long ACCESS_TOKEN_VALIDITY = 1000L*60*60;   // 1시간 유효
+    private final long REFRESH_TOKEN_VALIDITY = 1000L*60*60*24*7;  // 7일
 
     @PostConstruct
     protected void init() {
@@ -28,27 +30,33 @@ public class JwtTokenProvider {
 
     public String createToken(String email, String role) {
         // [LOG] INFO : [Auth-Domain] JWT 토큰 생성 시작 (Target : {})
-
-        Claims claims = Jwts.claims()
-                .subject(email)
-                .add("role", role)
-                .add("jti", UUID.randomUUID().toString())
-                .build();
-
         Date now = new Date();
-        Date validity = new Date(now.getTime() + tokenValidityInMilliseconds);
-
         return Jwts.builder()
-                .setClaims(claims)
-                .setIssuedAt(now)
-                .setExpiration(validity)
-                .signWith(key, SignatureAlgorithm.HS256)
+                .subject(email)
+                .claim("role", role)
+                .claim("jti", UUID.randomUUID().toString())
+                .issuedAt(now)
+                .expiration(new Date(now.getTime() + ACCESS_TOKEN_VALIDITY))
+                .signWith(key)
+                .compact();
+    }
+
+    public String createRefreshToken(String email) {
+        Date now = new Date();
+        return Jwts.builder()
+                .subject(email)
+                .issuedAt(now)
+                .expiration(new Date(now.getTime() + REFRESH_TOKEN_VALIDITY))
+                .signWith(key)
                 .compact();
     }
 
     public boolean validToken(String token) {
         try{
-            Jwts.parser().setSigningKey(key).build().parseClaimsJws(token);
+            Jwts.parser()
+                .verifyWith((SecretKey) key)
+                .build()
+                .parseSignedClaims(token);
             return true;
         }catch (Exception e) {
             //[LOG] Warn : 유효하지 않은 토큰입니다.
@@ -57,21 +65,21 @@ public class JwtTokenProvider {
         }
     }
 
+    // 이메일 추출
     public String getEmail(String token) {
-        return Jwts.parser()
-                .setSigningKey(key)
-                .build()
-                .parseClaimsJws(token)
-                .getBody()
-                .getSubject();
+        return getClaims(token).getSubject();
     }
 
+    // 역할 추출
     public String getRole(String token) {
+        return getClaims(token).get("role", String.class);
+    }
+
+    private Claims getClaims(String token) {
         return Jwts.parser()
-                .setSigningKey(key)
+                .verifyWith((SecretKey) key)
                 .build()
-                .parseClaimsJws(token)
-                .getBody()
-                .get("role", String.class);
+                .parseSignedClaims(token)
+                .getPayload();
     }
 }
