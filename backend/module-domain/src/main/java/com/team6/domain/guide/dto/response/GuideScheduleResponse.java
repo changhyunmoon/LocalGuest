@@ -23,6 +23,7 @@ public class GuideScheduleResponse {
     private LocalTime endTime;              // 종료 시간
     private GuideScheduleStatus status;     // 스케줄 상태
     private Long matchRequestId;            // 매칭 요청 ID (예약 시 설정)
+    private Boolean isPaid;                 // 결제 완료 여부
     private LocalDateTime createdAt;        // 등록일시
     private LocalDateTime updatedAt;        // 수정일시
 
@@ -30,12 +31,13 @@ public class GuideScheduleResponse {
     public static GuideScheduleResponse from(GuideSchedule schedule) {
         return GuideScheduleResponse.builder()
                 .scheduleId(schedule.getId())
-                .guideId(schedule.getGuideProfile().getId()) // 연관 엔티티에서 ID 추출
+                .guideId(schedule.getGuideProfile().getId())
                 .availableDate(schedule.getAvailableDate())
                 .startTime(schedule.getStartTime())
                 .endTime(schedule.getEndTime())
                 .status(schedule.getStatus())
                 .matchRequestId(schedule.getMatchRequestId())
+                .isPaid(schedule.getIsPaid())
                 .createdAt(schedule.getCreatedAt())
                 .updatedAt(schedule.getUpdatedAt())
                 .build();

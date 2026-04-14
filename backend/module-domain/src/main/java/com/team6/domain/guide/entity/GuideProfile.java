@@ -64,10 +64,20 @@ public class GuideProfile extends BaseTimeEntity {
     @Column(name = "local_story", columnDefinition = "TEXT")
     private String localStory; // 로컬 스토리 소개
 
+    @Column(columnDefinition = "TEXT")
+    private String keywords; // AI 매칭용 키워드 (F06-02)
+
+    @Column(name = "default_course", columnDefinition = "TEXT")
+    private String defaultCourse; // 디폴트 코스 (F06-02)
+
+    @Column(name = "guide_style", length = 100)
+    private String guideStyle; // 가이드 스타일 (F06-02)
+
     // 수정 가능한 필드 업데이트
     public void update(String nickname, String profileImage, String bio,
                        String region, String language, BigDecimal pricePerHour,
-                       Boolean isActive, Integer residenceYears, String localStory) {
+                       Boolean isActive, Integer residenceYears, String localStory,
+                       String keywords, String defaultCourse, String guideStyle) {
         this.nickname = nickname;
         this.profileImage = profileImage;
         this.bio = bio;
@@ -77,9 +87,23 @@ public class GuideProfile extends BaseTimeEntity {
         this.isActive = isActive;
         this.residenceYears = residenceYears;
         this.localStory = localStory;
+        this.keywords = keywords;
+        this.defaultCourse = defaultCourse;
+        this.guideStyle = guideStyle;
     }
     // 활성화 상태 토글
     public void toggleActive() {
         this.isActive = !this.isActive;
+    }
+
+    // 관리자 승인
+    public void approve() {
+        this.isApproved = true;
+    }
+
+    // 평균 평점 및 리뷰 수 갱신 — review 도메인 연동 시 호출 (F06-07)
+    public void updateRating(BigDecimal averageRating, Integer reviewCount) {
+        this.averageRating = averageRating;
+        this.reviewCount = reviewCount;
     }
 }

@@ -1,6 +1,7 @@
 package com.team6.domain.guide.service;
 
 import com.team6.domain.guide.dto.request.CreateGuideScheduleRequest;
+import com.team6.domain.guide.dto.request.SubmitGuideScheduleFormRequest;
 import com.team6.domain.guide.dto.request.UpdateGuideScheduleRequest;
 import com.team6.domain.guide.dto.response.GuideScheduleFormResponse;
 import com.team6.domain.guide.dto.response.GuideScheduleResponse;
@@ -36,8 +37,9 @@ public class GuideScheduleService {
         // 시작 시간이 종료 시간보다 같거나 늦으면 예외 발생
         validateTimeRange(request.getStartTime(), request.getEndTime());
 
-        // 동일 날짜 스케줄 중복 등록 방지
-        if (guideScheduleRepository.findByGuideProfile_IdAndAvailableDate(guideId, request.getAvailableDate()).isPresent()) {
+        // 동일 날짜·시간대 스케줄 겹침 방지 (UniqueConstraint 기준: date + start_time + end_time)
+        if (guideScheduleRepository.existsOverlappingSchedule(
+                guideId, request.getAvailableDate(), request.getStartTime(), request.getEndTime())) {
             throw new GuideException(GuideErrorCode.SCHEDULE_ALREADY_BOOKED);
         }
 
@@ -172,6 +174,90 @@ public class GuideScheduleService {
         GuideSchedule schedule = getVerifiedSchedule(scheduleId, guideId);
 
         // PENDING 상태인지 확인 (거절은 대기 중 스케줄에만 가능)
+        if (schedule.getStatus() != GuideScheduleStatus.PENDING) {
+            throw new GuideException(GuideErrorCode.SCHEDULE_NOT_PENDING);
+        }
+
+        // 상태 복구: PENDING → AVAILABLE
+        schedule.changeStatus(GuideScheduleStatus.AVAILABLE);
+
+        return GuideScheduleResponse.from(schedule);
+    }
+
+    // 수락 후 여행 계획 양식 저장 — BOOKED 상태 스케줄에만 가능 (F06-04)
+    @Transactional
+    public GuideScheduleFormResponse submitForm(Long scheduleId, Long guideId, SubmitGuideScheduleFormRequest request, Long userId) {
+        getVerifiedProfile(guideId, userId);
+
+        GuideSchedule schedule = getVerifiedSchedule(scheduleId, guideId);
+
+        if (schedule.getStatus() != GuideScheduleStatus.BOOKED) {
+            throw new GuideException(GuideErrorCode.SCHEDULE_FORM_NOT_BOOKED);
+        }
+
+        schedule.submitForm(request.getMeetingPoint(), request.getGuideMessage(), request.getCourseDetail());
+
+        return GuideScheduleFormResponse.from(schedule);
+    }
+
+    // [matching 연동] AVAILABLE → PENDING 전환 — matching 도메인이 매칭 요청 시 호출
+    @Transactional
+    public GuideScheduleResponse markAsPending(Long scheduleId, Long guideId, Long matchRequestId) {
+        // 스케줄 조회
+        GuideSchedule schedule = getVerifiedSchedule(scheduleId, guideId);
+
+        // AVAILABLE 상태인지 확인 (PENDING 전환은 예약 가능 상태에서만 허용)
+        if (schedule.getStatus() != GuideScheduleStatus.AVAILABLE) {
+            throw new GuideException(GuideErrorCode.SCHEDULE_NOT_AVAILABLE);
+        }
+
+        // 상태 변경: AVAILABLE → PENDING
+        schedule.changeStatus(GuideScheduleStatus.PENDING);
+
+        // matchRequestId 연결 — matching 도메인 크로스 참조 저장
+        schedule.linkMatchRequest(matchRequestId);
+
+        return GuideScheduleResponse.from(schedule);
+    }
+
+    // [matching 연동] PENDING → BOOKED 전환 — matching 도메인이 최종 확정 시 호출
+    @Transactional
+    public GuideScheduleResponse markAsBooked(Long scheduleId, Long guideId) {
+        // 스케줄 조회
+        GuideSchedule schedule = getVerifiedSchedule(scheduleId, guideId);
+
+        // PENDING 상태인지 확인 (BOOKED 전환은 대기 중 스케줄에만 허용)
+        if (schedule.getStatus() != GuideScheduleStatus.PENDING) {
+            throw new GuideException(GuideErrorCode.SCHEDULE_NOT_PENDING);
+        }
+
+        // 상태 변경: PENDING → BOOKED
+        schedule.changeStatus(GuideScheduleStatus.BOOKED);
+
+        return GuideScheduleResponse.from(schedule);
+    }
+
+    // [matching 연동] 결제 완료 확정 — matching 도메인이 PAID 전환 시 호출
+    // PENDING → BOOKED + isPaid = true 동시 처리, courseDetail 잠금 해제
+    @Transactional
+    public GuideScheduleResponse markAsPaid(Long scheduleId, Long guideId) {
+        GuideSchedule schedule = getVerifiedSchedule(scheduleId, guideId);
+
+        if (schedule.getStatus() != GuideScheduleStatus.PENDING) {
+            throw new GuideException(GuideErrorCode.SCHEDULE_NOT_PENDING);
+        }
+
+        schedule.markAsPaid();
+        return GuideScheduleResponse.from(schedule);
+    }
+
+    // [matching 연동] PENDING → AVAILABLE 복구 — matching 도메인이 취소 시 호출
+    @Transactional
+    public GuideScheduleResponse cancelToAvailable(Long scheduleId, Long guideId) {
+        // 스케줄 조회
+        GuideSchedule schedule = getVerifiedSchedule(scheduleId, guideId);
+
+        // PENDING 상태인지 확인 (복구는 대기 중 상태에서만 허용)
         if (schedule.getStatus() != GuideScheduleStatus.PENDING) {
             throw new GuideException(GuideErrorCode.SCHEDULE_NOT_PENDING);
         }

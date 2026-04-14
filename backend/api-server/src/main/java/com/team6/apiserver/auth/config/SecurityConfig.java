@@ -38,6 +38,7 @@ public class SecurityConfig {
                         // 인증 인가 경로는 비로그인 유저도 접근 가능
                         .requestMatchers("/api/oauth2/**").permitAll()
                         .requestMatchers("/api/login/**").permitAll()
+                        .requestMatchers("/guides/**").permitAll()
                         // Swagger UI + OpenAPI (springdoc). context-path 사용 시 환경에 따라 둘 다 허용
                         .requestMatchers(
                                 "/v3/api-docs",

@@ -5,6 +5,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -17,6 +18,9 @@ public interface GuideProfileRepository extends JpaRepository<GuideProfile, Long
 
     // 프로필 중복 등록 방지 확인 (F06-01)
     boolean existsByMemberId(Long memberId);
+
+    /** 승인·활성 가이드 전체 목록 — getProfileList() 용 */
+    List<GuideProfile> findByIsApprovedTrueAndIsActiveTrue();
 
     /** 승인·활성 가이드만 (AI 후보 풀 등) */
     Page<GuideProfile> findByIsApprovedTrueAndIsActiveTrue(Pageable pageable);

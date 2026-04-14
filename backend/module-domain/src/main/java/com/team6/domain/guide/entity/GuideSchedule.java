@@ -56,6 +56,19 @@ public class GuideSchedule extends BaseTimeEntity {
     @Column(name = "match_request_id")
     private Long matchRequestId; // 매칭 요청 ID (matching 도메인 크로스 참조 — ID만 보관)
 
+    @Column(name = "meeting_point", length = 200)
+    private String meetingPoint; // 만남 장소 (수락 후 가이드 작성)
+
+    @Column(name = "guide_message", columnDefinition = "TEXT")
+    private String guideMessage; // 가이드 안내 메시지 (수락 후 가이드 작성)
+
+    @Column(name = "course_detail", columnDefinition = "TEXT")
+    private String courseDetail; // 코스 상세 정보 — 결제 전 잠금, 결제 후 공개
+
+    @Column(name = "is_paid", nullable = false)
+    @Builder.Default
+    private Boolean isPaid = false; // 결제 완료 여부 — true 시 courseDetail 잠금 해제
+
     // 스케줄 날짜·시간·상태 수정
     public void update(LocalDate availableDate, LocalTime startTime, LocalTime endTime, GuideScheduleStatus status) {
         this.availableDate = availableDate;
@@ -67,5 +80,24 @@ public class GuideSchedule extends BaseTimeEntity {
     // 스케줄 상태만 변경 (AVAILABLE ↔ BLOCKED, 매칭 연동 시 BOOKED)
     public void changeStatus(GuideScheduleStatus status) {
         this.status = status;
+    }
+
+    // 수락 후 양식 저장 (meetingPoint, guideMessage, courseDetail)
+    public void submitForm(String meetingPoint, String guideMessage, String courseDetail) {
+        this.meetingPoint = meetingPoint;
+        this.guideMessage = guideMessage;
+        this.courseDetail = courseDetail;
+    }
+
+    // matchRequestId 연결 — matching 도메인이 PENDING 전환 시 호출
+    public void linkMatchRequest(Long matchRequestId) {
+        this.matchRequestId = matchRequestId;
+    }
+
+    // 결제 완료 처리 — matching 도메인이 PAID 전환 시 호출
+    // PROPOSED → BOOKED 전환 + isPaid = true 동시 처리, courseDetail 잠금 해제
+    public void markAsPaid() {
+        this.status = GuideScheduleStatus.BOOKED;
+        this.isPaid = true;
     }
 }
