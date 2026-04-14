@@ -17,15 +17,6 @@ cd "$DOCKER_DIR"
 # 2. 인프라(Redis, MongoDB) 및 네트워크 점검
 echo "--- 📦 1. 인프라 환경 및 네트워크 점검 ---"
 
-# [수정] 네트워크가 수동으로 생성되어 라벨 에러가 날 경우를 대비해 확실히 처리
-if docker network inspect team6-backend >/dev/null 2>&1; then
-    # 네트워크는 존재하지만 compose 라벨이 없는 경우 에러 방지를 위해 그냥 진행
-    echo "✅ team6-backend 네트워크 확인 완료."
-else
-    echo "🌐 team6-backend 네트워크 생성 중..."
-    docker network create team6-backend
-fi
-
 if [ -f "$COMPOSE_INFRA" ]; then
     # 인프라 기동 (이미 실행 중이면 유지, 설정 변경 시 업데이트)
     # [중요] 변수 미지정 경고를 방지하려면 실행 시점에 변수가 있어야 함
