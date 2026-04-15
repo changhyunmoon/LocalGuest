@@ -3,7 +3,8 @@ package com.team6.module.ai.support;
 /**
  * 룰 기반 추천의 공통 튜닝(스코어 가중·피드백 수치는 {@link com.team6.module.ai.config.ScoringPolicySettings}).
  * <p>
- * Diversity rerank 가중치는 {@link com.team6.module.ai.engine.DiversityRerankConstants},
+ * Diversity rerank는 {@link com.team6.module.ai.config.DiversityRerankSnapshot}·
+ * {@code localguest.ai.diversity-rerank}(레거시 참고: {@link com.team6.module.ai.engine.DiversityRerankConstants}),
  * 정책별 점수 가중은 {@link com.team6.module.ai.config.ScoringPolicySnapshot}를 참고한다.
  */
 public final class AiRecommendationTuning {
@@ -14,7 +15,7 @@ public final class AiRecommendationTuning {
     /**
      * 룰/스코어/Reason/응답 계약이 바뀔 때마다 올린다. 로그·API에서 동일 프롬프트 비교 시 정책 변경 여부를 구분하는 데 쓴다.
      */
-    public static final String POLICY_VERSION = "2026.04.18";
+    public static final String POLICY_VERSION = "2026.04.19";
 
     public static final int DEFAULT_TOP_N = 3;
 

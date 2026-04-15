@@ -1,8 +1,10 @@
 package com.team6.module.ai.engine;
 
+import com.team6.module.ai.config.DiversityRerankSnapshot;
 import com.team6.module.ai.config.LocalGuestAiProperties;
 import com.team6.module.ai.config.ScoringPolicySnapshot;
 import com.team6.module.ai.policy.ComboMatchPolicy;
+import com.team6.module.ai.dto.response.GuideRecommendItem;
 import com.team6.module.ai.dto.response.GuideRecommendResponse;
 import com.team6.module.ai.model.GuideAiProfile;
 import com.team6.module.ai.model.TravelerPreference;
@@ -41,7 +43,12 @@ class MatchingEngineDiversityTest {
                 new ComboMatchPolicy(scoring),
                 new AiRecommendationMetrics(new SimpleMeterRegistry())
         );
-        return new MatchingEngine(scoreCalculator, new ReasonGenerator(adjacent, scoring), adjacent);
+        return new MatchingEngine(
+                scoreCalculator,
+                new ReasonGenerator(adjacent, scoring),
+                adjacent,
+                DiversityRerankSnapshot.defaults()
+        );
     }
 
     @Test
@@ -90,5 +97,49 @@ class MatchingEngineDiversityTest {
         assertThat(response.getRecommendations().get(0).getGuideId()).isEqualTo(3L);
         assertThat(response.getRecommendations().get(0).getScore())
                 .isGreaterThanOrEqualTo(response.getRecommendations().get(1).getScore());
+    }
+
+    @Test
+    void recommend_should_not_pick_same_guide_id_twice_when_pool_contains_duplicates() {
+        TravelerPreference pref = TravelerPreference.builder()
+                .region("제주")
+                .travelStyle("감성")
+                .budgetLevel("중간")
+                .activityTags(List.of("카페"))
+                .build();
+
+        GuideAiProfile g1 = GuideAiProfile.builder()
+                .guideId(1L)
+                .guideName("A")
+                .region("제주")
+                .guideStyle("감성")
+                .priceLevel("중간")
+                .specialtyTags(List.of("카페"))
+                .languages(List.of("한국어"))
+                .build();
+        GuideAiProfile g1dup = GuideAiProfile.builder()
+                .guideId(1L)
+                .guideName("A중복행")
+                .region("제주")
+                .guideStyle("감성")
+                .priceLevel("중간")
+                .specialtyTags(List.of("카페"))
+                .languages(List.of("한국어"))
+                .build();
+        GuideAiProfile g2 = GuideAiProfile.builder()
+                .guideId(2L)
+                .guideName("B")
+                .region("제주")
+                .guideStyle("로컬")
+                .priceLevel("중간")
+                .specialtyTags(List.of("맛집"))
+                .languages(List.of("한국어"))
+                .build();
+
+        GuideRecommendResponse response = engine().recommend(pref, List.of(g1, g1dup, g2), 3);
+
+        assertThat(response.getRecommendations()).hasSize(2);
+        assertThat(response.getRecommendations().stream().map(GuideRecommendItem::getGuideId).distinct().count())
+                .isEqualTo(2L);
     }
 }

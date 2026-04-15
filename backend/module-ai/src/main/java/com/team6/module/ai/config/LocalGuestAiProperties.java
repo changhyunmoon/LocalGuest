@@ -38,6 +38,11 @@ public class LocalGuestAiProperties {
      */
     private ScoringPolicySettings scoringPolicy = new ScoringPolicySettings();
 
+    /**
+     * Top-N 다양성 패널티(λ·유사도 가중, {@code localguest.ai.diversity-rerank}).
+     */
+    private DiversityRerankSettings diversityRerank = new DiversityRerankSettings();
+
     @Getter
     @Setter
     public static class ParserSettings {
