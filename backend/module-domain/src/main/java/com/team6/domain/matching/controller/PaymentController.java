@@ -23,6 +23,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/matching/payments")
@@ -31,6 +33,16 @@ public class PaymentController {
     private final PaymentService paymentService;
     private final MemberRepository memberRepository;
     private final GuideProfileRepository guideProfileRepository;
+
+    /**
+     * 게스트 본인 결제 목록 (마이페이지).
+     * {@code GET /matching/payments/me} 는 {@code /{paymentId}} 에 먼저 매칭되어 Long 변환 오류가 날 수 있어 {@code /guest/list} 로 분리한다.
+     */
+    @GetMapping("/guest/list")
+    public ResponseEntity<List<PaymentResponseDto>> listGuestPayments() {
+        Long guestId = getCurrentMemberId(Role.GUEST);
+        return ResponseEntity.ok(paymentService.listPaymentsForGuest(guestId));
+    }
 
     @PostMapping
     public ResponseEntity<PaymentResponseDto> createPayment(@RequestBody @Valid PaymentCreateRequest request) {

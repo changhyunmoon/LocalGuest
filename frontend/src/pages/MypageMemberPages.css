@@ -1,0 +1,456 @@
+/* 회원 마이페이지 — 스크랩북·일정·결제·투어/환불 공통 */
+
+.mp-member {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.mp-member h1 {
+  margin: 0 0 0.35rem;
+  font-size: clamp(1.05rem, 3.5vw, 1.25rem);
+  font-weight: 800;
+  color: #1f2328;
+}
+
+.mp-member .sub {
+  margin: 0 0 1rem;
+  font-size: 0.82rem;
+  color: #6b7280;
+  line-height: 1.45;
+}
+
+.mp-member .err {
+  color: #b91c1c;
+  font-size: 0.88rem;
+  margin: 0 0 0.75rem;
+}
+
+.mp-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.75rem;
+  border-bottom: 1px solid #e8eaed;
+  margin-bottom: 1rem;
+}
+
+.mp-tabs button {
+  padding: 0.45rem 0.15rem;
+  border: none;
+  background: none;
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.86rem;
+  color: #6b7280;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+
+.mp-tabs button.is-on {
+  color: #1f2328;
+  border-bottom-color: #1f2328;
+}
+
+.mp-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.mp-trip-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 120px);
+  gap: 1rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid #e8eaed;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 2px 12px rgba(31, 35, 40, 0.04);
+  border-left: 4px solid #fecaca;
+  align-items: start;
+}
+
+@media (max-width: 640px) {
+  .mp-trip-card {
+    grid-template-columns: 1fr;
+  }
+}
+
+.mp-trip-card--past {
+  border-left-color: #cbd5e1;
+}
+
+.mp-trip-card__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.mp-dday {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #dc2626;
+}
+
+.mp-trip-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 800;
+  color: #111827;
+  line-height: 1.35;
+}
+
+.mp-trip-detail {
+  margin: 0;
+  font-size: 0.84rem;
+  color: #4b5563;
+  line-height: 1.5;
+}
+
+.mp-trip-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.mp-btn {
+  padding: 0.45rem 0.85rem;
+  border-radius: 999px;
+  border: none;
+  background: #1f2328;
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.8rem;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: center;
+}
+
+.mp-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.mp-btn--line {
+  background: #fff;
+  color: #374151;
+  border: 1px solid #d1d5db;
+}
+
+.mp-btn--danger {
+  background: #fff;
+  color: #ef4444;
+  border: 1px solid #fca5a5;
+}
+
+.mp-thumb {
+  border-radius: 10px;
+  background: linear-gradient(145deg, #f3f4f6, #e5e7eb);
+  min-height: 5.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72rem;
+  color: #9ca3af;
+  font-weight: 600;
+}
+
+.mp-scrap-hero {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid #e8eaed;
+  border-radius: 14px;
+  background: #fafbfc;
+  margin-bottom: 1.25rem;
+}
+
+.mp-scrap-hero h2 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.mp-scrap-hero p {
+  margin: 0.25rem 0 0;
+  font-size: 0.84rem;
+  color: #6b7280;
+}
+
+.mp-gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 0.75rem;
+}
+
+.mp-polaroid {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  padding: 0.5rem 0.5rem 0.65rem;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+  transform: rotate(-1deg);
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #374151;
+}
+
+.mp-pay-wrap {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.mp-pay-table {
+  width: 100%;
+  min-width: 560px;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+
+.mp-pay-table th,
+.mp-pay-table td {
+  border: 1px solid #e8eaed;
+  padding: 0.5rem 0.55rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.mp-pay-table th {
+  background: #f9fafb;
+  font-weight: 700;
+  color: #374151;
+}
+
+.mp-pay-muted {
+  font-size: 0.76rem;
+  color: #9ca3af;
+}
+
+.mp-pay-cards {
+  display: none;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+@media (max-width: 720px) {
+  .mp-pay-wrap {
+    display: none;
+  }
+
+  .mp-pay-cards {
+    display: flex;
+  }
+}
+
+.mp-pay-card {
+  border: 1px solid #e8eaed;
+  border-radius: 12px;
+  padding: 0.75rem 0.85rem;
+  background: #fff;
+  font-size: 0.84rem;
+}
+
+.mp-tour-block {
+  margin-bottom: 1.5rem;
+}
+
+.mp-tour-block h2 {
+  margin: 0 0 0.65rem;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #1f2328;
+}
+
+.mp-tour-shell {
+  border: 1px solid #eef0f3;
+  border-left: 2px solid #fca5a5;
+  border-radius: 16px;
+  padding: 1rem 1rem 1.1rem 1.05rem;
+  background: #fff;
+}
+
+.mp-tour-block--timeline {
+  border-left: none;
+  padding-left: 0;
+}
+
+.mp-tour-card {
+  border: 1px solid #e8eaed;
+  border-radius: 12px;
+  padding: 0.8rem 0.9rem;
+  background: #fff;
+}
+
+.mp-tour-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.8rem;
+  align-items: center;
+}
+
+@media (max-width: 720px) {
+  .mp-tour-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.mp-tour-card--empty {
+  color: #6b7280;
+  font-size: 0.82rem;
+}
+
+.mp-tour-name {
+  margin: 0 0 0.3rem;
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: #1f2328;
+}
+
+.mp-tour-meta {
+  margin: 0 0 0.3rem;
+  font-size: 0.76rem;
+  color: #9ca3af;
+}
+
+.mp-tour-extension {
+  margin: 0.08rem 0 0.2rem;
+  font-size: 0.79rem;
+  color: #f97316;
+}
+
+.mp-tour-extension strong {
+  color: #2563eb;
+  font-weight: 700;
+}
+
+.mp-tour-fee {
+  margin: 0;
+  font-size: 0.78rem;
+  color: #4b5563;
+}
+
+.mp-tour-inline-link {
+  margin-top: 0.45rem;
+  border: none;
+  background: none;
+  padding: 0;
+  font-size: 0.74rem;
+  color: #9ca3af;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.mp-tour-inline-link:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.mp-tour-notice {
+  margin-top: 0.8rem;
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+  border-radius: 12px;
+  padding: 0.7rem 0.8rem;
+}
+
+.mp-tour-notice-title {
+  margin: 0 0 0.35rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #b91c1c;
+}
+
+.mp-tour-notice ul {
+  margin: 0;
+  padding-left: 1rem;
+}
+
+.mp-tour-notice li {
+  font-size: 0.75rem;
+  color: #7f1d1d;
+  line-height: 1.45;
+  margin-bottom: 0.2rem;
+}
+
+.mp-form-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.mp-form-row input,
+.mp-form-row textarea {
+  flex: 1;
+  min-width: 12rem;
+  padding: 0.45rem 0.55rem;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  font: inherit;
+}
+
+.mp-form-row textarea {
+  min-height: 3.5rem;
+  width: 100%;
+}
+
+/* 모달 (GuideInbox와 동일 패턴) */
+.mp-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(15, 18, 22, 0.45);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 1rem;
+  box-sizing: border-box;
+}
+
+@media (min-width: 540px) {
+  .mp-modal-overlay {
+    align-items: center;
+  }
+}
+
+.mp-modal {
+  width: 100%;
+  max-width: 26rem;
+  max-height: min(90vh, 32rem);
+  overflow: auto;
+  background: #fff;
+  border-radius: 14px;
+  padding: 1.1rem 1.15rem;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
+}
+
+.mp-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.45rem;
+  margin-top: 1rem;
+  flex-wrap: wrap;
+}
+
+.mp-modal-label {
+  display: block;
+  margin-top: 0.65rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #374151;
+}
+
+.mp-modal-text {
+  width: 100%;
+  margin-top: 0.25rem;
+  padding: 0.5rem 0.55rem;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  font: inherit;
+  box-sizing: border-box;
+}

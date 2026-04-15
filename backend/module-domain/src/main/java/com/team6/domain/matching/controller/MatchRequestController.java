@@ -44,7 +44,18 @@ public class MatchRequestController {
         return ResponseEntity.ok(saved);
     }
 
-    @GetMapping("/guides/me")
+    /**
+     * 게스트 본인 매칭 요청 목록 (마이페이지).
+     * {@code /guests/me} 처럼 한 세그먼트 경로는 정적 리소스·패턴 충돌이 나기 쉬워 {@code /guest/list} 로 고정한다.
+     */
+    @GetMapping("/guest/list")
+    public ResponseEntity<List<MatchRequestCreateResponse>> getGuestRequests() {
+        Long guestId = getCurrentMemberId(Role.GUEST);
+        return ResponseEntity.ok(matchRequestService.getGuestRequests(guestId));
+    }
+
+    /** 가이드 본인 매칭 요청 목록 — 경로는 {@code /guide/list} (게스트 {@code /guest/list} 와 대칭). */
+    @GetMapping("/guide/list")
     public ResponseEntity<List<MatchRequestCreateResponse>> getGuideRequests() {
         Long guideId = getCurrentGuideProfileId();
         return ResponseEntity.ok(matchRequestService.getGuideRequests(guideId));

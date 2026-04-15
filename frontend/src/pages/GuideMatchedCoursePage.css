@@ -1,0 +1,297 @@
+.gmc {
+  width: 100%;
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 0 0 2.5rem;
+  box-sizing: border-box;
+}
+
+.gmc-back {
+  border: none;
+  background: none;
+  padding: 0;
+  margin: 0 0 1rem;
+  font-size: 0.86rem;
+  color: #6b7280;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.gmc-hero {
+  display: flex;
+  gap: 0.95rem;
+  align-items: flex-start;
+  padding: 1rem 1.1rem;
+  background: #fff;
+  border: 1px solid #e8eaed;
+  border-radius: 16px;
+}
+
+.gmc-avatar {
+  width: 5rem;
+  height: 5rem;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: linear-gradient(145deg, #e5e7eb, #d1d5db);
+  background-size: cover;
+  background-position: center;
+}
+
+.gmc-hero-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.gmc-name {
+  margin: 0 0 0.35rem;
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: #111827;
+}
+
+.gmc-meta {
+  margin: 0 0 0.4rem;
+  font-size: 0.82rem;
+  color: #6b7280;
+}
+
+.gmc-quote {
+  margin: 0;
+  font-size: 0.86rem;
+  color: #374151;
+}
+
+.gmc-likes {
+  align-self: flex-start;
+  background: #fff1f2;
+  color: #ec4899;
+  border: 1px solid #f9a8d4;
+  border-radius: 999px;
+  padding: 0.25rem 0.7rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.gmc-course {
+  margin-top: 1.45rem;
+}
+
+.gmc-title {
+  margin: 0 0 0.4rem;
+  font-size: 1.65rem;
+  font-weight: 800;
+  color: #111827;
+}
+
+.gmc-hint {
+  margin: 0 0 0.7rem;
+  font-size: 0.78rem;
+  color: #6b7280;
+}
+
+.gmc-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+  gap: 0.95rem;
+}
+
+@media (max-width: 860px) {
+  .gmc-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.gmc-map-wrap {
+  background: #fff;
+  border: 1px solid #e8eaed;
+  border-radius: 14px;
+  padding: 0.45rem;
+}
+
+.gmc-map {
+  width: 100%;
+  height: 350px;
+  border-radius: 10px;
+  background: linear-gradient(160deg, #f3f4f6, #e5e7eb);
+}
+
+.gmc-pin {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.38rem;
+  transform: translateY(-8px);
+}
+
+.gmc-pin-badge {
+  width: 1.1rem;
+  height: 1.1rem;
+  border-radius: 50%;
+  background: #1f2328;
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.62rem;
+  font-weight: 800;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.24);
+}
+
+.gmc-pin-label {
+  display: inline-flex;
+  align-items: center;
+  height: 1.2rem;
+  padding: 0 0.45rem;
+  border-radius: 999px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  color: #374151;
+  font-size: 0.63rem;
+  font-weight: 700;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+}
+
+.gmc-map-err {
+  margin: 0.55rem 0 0.15rem;
+}
+
+.gmc-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.gmc-spot {
+  background: #fff;
+  border: 1px solid #e8eaed;
+  border-radius: 12px;
+  padding: 0.75rem 0.85rem;
+}
+
+.gmc-spot-label {
+  margin: 0 0 0.2rem;
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #9ca3af;
+}
+
+.gmc-spot-name {
+  margin: 0 0 0.2rem;
+  font-size: 0.86rem;
+  font-weight: 800;
+  color: #111827;
+}
+
+.gmc-spot-desc {
+  margin: 0;
+  font-size: 0.76rem;
+  color: #6b7280;
+  line-height: 1.45;
+}
+
+.gmc-chat-btn {
+  margin-top: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 0.72rem 1rem;
+  border-radius: 999px;
+  background: #1f2328;
+  color: #fff !important;
+  text-decoration: none;
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
+.gmc-chat-btn:hover {
+  background: #111418;
+}
+
+.gmc-reviews {
+  margin-top: 1.5rem;
+}
+
+.gmc-reviews h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1.02rem;
+  font-weight: 800;
+}
+
+.gmc-review-form {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.gmc-review-input {
+  flex: 1;
+  border: 1px solid #e5e7eb;
+  border-radius: 999px;
+  padding: 0.62rem 0.9rem;
+  font: inherit;
+  font-size: 0.84rem;
+  resize: vertical;
+}
+
+.gmc-review-submit {
+  border: none;
+  border-radius: 999px;
+  padding: 0 1rem;
+  background: #1f2328;
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.gmc-review-submit:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.gmc-review-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+
+.gmc-review-item {
+  flex: 1 1 260px;
+  display: flex;
+  gap: 0.6rem;
+  background: #fff;
+  border: 1px solid #e8eaed;
+  border-radius: 12px;
+  padding: 0.7rem 0.75rem;
+}
+
+.gmc-review-av {
+  width: 1.8rem;
+  height: 1.8rem;
+  border-radius: 50%;
+  background: #e5e7eb;
+  flex-shrink: 0;
+}
+
+.gmc-review-name {
+  margin: 0 0 0.2rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.gmc-review-text {
+  margin: 0;
+  font-size: 0.78rem;
+  color: #4b5563;
+}
+
+.gmc-err {
+  color: #b91c1c;
+  font-size: 0.82rem;
+}

@@ -1,0 +1,181 @@
+import { useEffect, useMemo, useState } from 'react'
+
+import { apiRequest } from '../api/client.js'
+import { fetchGuestMatchRequests, fetchGuestPayments, parseMatchingApiError } from '../lib/matchingGuest.js'
+
+import './MypageMemberPages.css'
+
+function statusLabel(s) {
+  const m = {
+    PENDING: '결제 대기',
+    COMPLETED: '결제완료',
+    REFUNDED: '환불완료',
+    FAILED: '실패',
+    CANCELLED: '취소',
+  }
+  return m[s] ?? s
+}
+
+function tabFilter(tab, p) {
+  const s = p.status
+  if (tab === 'done') return s === 'COMPLETED'
+  if (tab === 'cancel') return s === 'REFUNDED' || s === 'CANCELLED' || s === 'FAILED'
+  return true
+}
+
+export function MypagePaymentsPage() {
+  const [payments, setPayments] = useState([])
+  const [requestsById, setRequestsById] = useState({})
+  const [tab, setTab] = useState('all')
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [detail, setDetail] = useState(null)
+
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      setLoading(true)
+      setError('')
+      try {
+        const [pay, req] = await Promise.all([fetchGuestPayments(apiRequest), fetchGuestMatchRequests(apiRequest)])
+        if (cancelled) return
+        setPayments(Array.isArray(pay) ? pay : [])
+        const map = {}
+        for (const r of Array.isArray(req) ? req : []) {
+          map[r.requestId] = r
+        }
+        setRequestsById(map)
+      } catch (e) {
+        if (!cancelled) setError(e instanceof Error ? e.message : '불러오기 실패')
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const filtered = useMemo(() => payments.filter((p) => tabFilter(tab, p)), [payments, tab])
+
+  const openDetail = async (paymentId) => {
+    try {
+      const res = await apiRequest(`/matching/payments/${paymentId}`, { method: 'GET' })
+      const text = await res.text()
+      if (!res.ok) throw new Error(parseMatchingApiError(text))
+      setDetail(text ? JSON.parse(text) : null)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '상세 조회 실패')
+    }
+  }
+
+  return (
+    <div className="mp-member">
+      <h1>💳 나의 결제 내역</h1>
+      <p className="sub">
+        <code>GET /api/matching/payments/guest/list</code> · 상세 <code>GET /api/matching/payments/&#123;paymentId&#125;</code>
+      </p>
+      {error && <p className="err">{error}</p>}
+      {loading && <p>불러오는 중…</p>}
+
+      {!loading && !error && (
+        <>
+          <div className="mp-tabs" role="tablist">
+            <button type="button" className={tab === 'all' ? 'is-on' : ''} onClick={() => setTab('all')}>
+              전체
+            </button>
+            <button type="button" className={tab === 'done' ? 'is-on' : ''} onClick={() => setTab('done')}>
+              결제완료
+            </button>
+            <button type="button" className={tab === 'cancel' ? 'is-on' : ''} onClick={() => setTab('cancel')}>
+              취소/환불
+            </button>
+          </div>
+
+          {filtered.length === 0 && <p className="sub">해당하는 결제 내역이 없습니다.</p>}
+
+          <div className="mp-pay-wrap">
+            <table className="mp-pay-table">
+              <thead>
+                <tr>
+                  <th>결제 일자 / 주문번호</th>
+                  <th>투어(매칭) 정보</th>
+                  <th>금액</th>
+                  <th>상태</th>
+                  <th>관리</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((p) => {
+                  const mr = requestsById[p.requestId]
+                  const when = p.paidAt ? new Date(p.paidAt).toLocaleDateString('ko-KR') : '—'
+                  const ord = p.pgOrderNo ?? `PAY-${p.paymentId}`
+                  return (
+                    <tr key={p.paymentId}>
+                      <td>
+                        {when}
+                        <div className="mp-pay-muted">{ord}</div>
+                      </td>
+                      <td>
+                        {mr ? (
+                          <>
+                            <strong>{mr.destination}</strong>
+                            <div className="mp-pay-muted">
+                              투어일 {mr.desiredDate ?? '—'} · 요청 #{p.requestId} · {p.paymentType}
+                            </div>
+                          </>
+                        ) : (
+                          <span className="mp-pay-muted">요청 #{p.requestId}</span>
+                        )}
+                      </td>
+                      <td>₩ {p.amount != null ? Number(p.amount).toLocaleString() : '—'}</td>
+                      <td>{statusLabel(p.status)}</td>
+                      <td>
+                        <button type="button" className="mp-btn mp-btn--line" style={{ padding: '0.3rem 0.65rem' }} onClick={() => void openDetail(p.paymentId)}>
+                          영수증/상세
+                        </button>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="mp-pay-cards" aria-label="결제 카드 목록">
+            {filtered.map((p) => {
+              const mr = requestsById[p.requestId]
+              const when = p.paidAt ? new Date(p.paidAt).toLocaleString('ko-KR') : '—'
+              return (
+                <article key={`c-${p.paymentId}`} className="mp-pay-card">
+                  <strong>{mr?.destination ?? `요청 #${p.requestId}`}</strong>
+                  <p className="mp-pay-muted" style={{ margin: '0.35rem 0' }}>
+                    {when} · {p.pgOrderNo ?? `PAY-${p.paymentId}`}
+                  </p>
+                  <p style={{ margin: 0 }}>₩ {p.amount != null ? Number(p.amount).toLocaleString() : '—'} · {statusLabel(p.status)}</p>
+                  <button type="button" className="mp-btn mp-btn--line" style={{ marginTop: '0.5rem' }} onClick={() => void openDetail(p.paymentId)}>
+                    상세
+                  </button>
+                </article>
+              )
+            })}
+          </div>
+        </>
+      )}
+
+      {detail && (
+        <div className="mp-modal-overlay" role="dialog" aria-modal="true">
+          <div className="mp-modal">
+            <h2 style={{ marginTop: 0 }}>결제 상세</h2>
+            <pre style={{ fontSize: '0.78rem', overflow: 'auto', maxHeight: '14rem' }}>{JSON.stringify(detail, null, 2)}</pre>
+            <div className="mp-modal-actions">
+              <button type="button" className="mp-btn mp-btn--line" onClick={() => setDetail(null)}>
+                닫기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
