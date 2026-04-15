@@ -12,4 +12,9 @@ public class ModuleAiConfiguration {
     public ScoringPolicySnapshot scoringPolicySnapshot(LocalGuestAiProperties properties) {
         return ScoringPolicySnapshot.from(properties.getScoringPolicy());
     }
+
+    @Bean
+    public DiversityRerankSnapshot diversityRerankSnapshot(LocalGuestAiProperties properties) {
+        return DiversityRerankSnapshot.from(properties.getDiversityRerank());
+    }
 }

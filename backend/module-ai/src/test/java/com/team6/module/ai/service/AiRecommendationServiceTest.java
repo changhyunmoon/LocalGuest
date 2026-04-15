@@ -9,6 +9,7 @@ import com.team6.module.ai.policy.ActivityMatchPolicy;
 import com.team6.module.ai.policy.BudgetMatchPolicy;
 import com.team6.module.ai.policy.FeedbackMatchPolicy;
 import com.team6.module.ai.policy.LanguageMatchPolicy;
+import com.team6.module.ai.config.DiversityRerankSnapshot;
 import com.team6.module.ai.config.LocalGuestAiProperties;
 import com.team6.module.ai.config.ScoringPolicySnapshot;
 import com.team6.module.ai.policy.ComboMatchPolicy;
@@ -44,7 +45,7 @@ class AiRecommendationServiceTest {
         ReasonGenerator reasonGenerator = new ReasonGenerator(adjacent, scoring);
 
         return new AiRecommendationServiceImpl(
-                new MatchingEngine(scoreCalculator, reasonGenerator, adjacent)
+                new MatchingEngine(scoreCalculator, reasonGenerator, adjacent, DiversityRerankSnapshot.defaults())
         );
     }
 

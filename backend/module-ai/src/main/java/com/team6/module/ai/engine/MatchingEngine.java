@@ -1,5 +1,6 @@
 package com.team6.module.ai.engine;
 
+import com.team6.module.ai.config.DiversityRerankSnapshot;
 import com.team6.module.ai.dto.response.GuideRecommendItem;
 import com.team6.module.ai.dto.response.GuideRecommendResponse;
 import com.team6.module.ai.model.GuideAiProfile;
@@ -26,6 +27,7 @@ public class MatchingEngine {
     private final ScoreCalculator scoreCalculator;
     private final ReasonGenerator reasonGenerator;
     private final AdjacentRegionProvider adjacentRegionProvider;
+    private final DiversityRerankSnapshot diversity;
 
 
     public GuideRecommendResponse recommend(
@@ -68,6 +70,9 @@ public class MatchingEngine {
                 .build();
     }
 
+    /**
+     * 동일 {@code guideId}는 한 번만 선택한다(입력 풀에 중복 ID가 있어도 과다 노출되지 않음).
+     */
     private List<ScoredGuide> pickWithDiversityPenalty(
             List<ScoredGuide> candidates,
             int topN,
@@ -91,7 +96,7 @@ public class MatchingEngine {
                 }
                 double penalty = selected.isEmpty()
                         ? 0.0
-                        : maxSimilarityToSelected(c.guide, selected, preference) * DiversityRerankConstants.DIVERSITY_LAMBDA;
+                        : maxSimilarityToSelected(c.guide, selected, preference) * diversity.diversityLambda();
                 double finalScore = c.baseScore - penalty;
 
                 if (isBetterCandidate(finalScore, c, bestFinal, best)) {
@@ -157,33 +162,63 @@ public class MatchingEngine {
     private double similarity(TravelerPreference preference, GuideAiProfile a, GuideAiProfile b) {
         double sim = 0.0;
 
-        sim += DiversityRerankConstants.REGION_SIM_WEIGHT * regionSimilarityForDiversity(preference, a, b);
+        sim += diversity.regionSimWeight() * regionSimilarityForDiversity(preference, a, b);
 
         if (safeEquals(a.getGuideStyle(), b.getGuideStyle())) {
-            sim += DiversityRerankConstants.STYLE_SIM_WEIGHT;
+            sim += diversity.styleSimWeight();
         }
 
-        double tagSim = tagOverlapRatio(a.getSpecialtyTags(), b.getSpecialtyTags());
-        sim += DiversityRerankConstants.TAG_SIM_WEIGHT * tagSim;
+        double rawTagJaccard = tagOverlapRatio(a.getSpecialtyTags(), b.getSpecialtyTags());
+        double effectiveTagJaccard = boostTagJaccardForNearDuplicate(rawTagJaccard);
+        sim += diversity.tagSimWeight() * effectiveTagJaccard;
 
         double langSim = languageJaccard(a.getLanguages(), b.getLanguages());
-        sim += DiversityRerankConstants.LANGUAGE_SIM_WEIGHT * langSim;
+        sim += diversity.languageSimWeight() * langSim;
 
-        if (safeEquals(a.getPriceLevel(), b.getPriceLevel())) {
-            sim += DiversityRerankConstants.PRICE_TIER_SIM_WEIGHT;
-        }
+        sim += diversity.priceTierSimWeight() * priceTierSimilarity(a.getPriceLevel(), b.getPriceLevel());
 
-        double max = DiversityRerankConstants.REGION_SIM_WEIGHT
-                + DiversityRerankConstants.STYLE_SIM_WEIGHT
-                + DiversityRerankConstants.TAG_SIM_WEIGHT
-                + DiversityRerankConstants.LANGUAGE_SIM_WEIGHT
-                + DiversityRerankConstants.PRICE_TIER_SIM_WEIGHT;
+        double max = diversity.regionSimWeight()
+                + diversity.styleSimWeight()
+                + diversity.tagSimWeight()
+                + diversity.languageSimWeight()
+                + diversity.priceTierSimWeight();
         return max == 0.0 ? 0.0 : (sim / max);
     }
 
     /**
+     * 태그 Jaccard가 높을수록(유사 코스) 유효 유사도를 추가로 올려 Top-N에서 덜 고른다.
+     */
+    private double boostTagJaccardForNearDuplicate(double jaccard) {
+        if (jaccard < diversity.tagNearDuplicateThreshold()) {
+            return jaccard;
+        }
+        double span = 1.0 - diversity.tagNearDuplicateThreshold();
+        if (span <= 0.0) {
+            return jaccard;
+        }
+        double extra = (jaccard - diversity.tagNearDuplicateThreshold()) / span;
+        return Math.min(1.0, jaccard + diversity.tagNearDuplicateBoost() * extra);
+    }
+
+    /**
+     * 0~1. 완전 일치 1, 인접 티어는 {@link DiversityRerankSnapshot#priceAdjacentSimilarityRatio()}, 그 외 0.
+     */
+    private double priceTierSimilarity(String a, String b) {
+        if (a == null || b == null) {
+            return 0.0;
+        }
+        if (a.trim().equalsIgnoreCase(b.trim())) {
+            return 1.0;
+        }
+        if (BudgetTier.adjacentTiers(a, b)) {
+            return diversity.priceAdjacentSimilarityRatio();
+        }
+        return 0.0;
+    }
+
+    /**
      * 가이드 둘의 활동 지역이 같으면 1.0. 다르지만 둘 다 여행자 희망 지역 또는 그 인접 지역이면
-     * {@link DiversityRerankConstants#REGION_CLUSTER_SIMILARITY_RATIO}. 그 외 0.
+     * 스냅샷의 regionClusterSimilarityRatio. 그 외 0.
      */
     private double regionSimilarityForDiversity(TravelerPreference preference, GuideAiProfile a, GuideAiProfile b) {
         String ra = a.getRegion();
@@ -201,7 +236,7 @@ public class MatchingEngine {
         boolean aInTravelZone = tr.equalsIgnoreCase(ra.trim()) || adjacentRegionProvider.isAdjacentTo(tr, ra);
         boolean bInTravelZone = tr.equalsIgnoreCase(rb.trim()) || adjacentRegionProvider.isAdjacentTo(tr, rb);
         if (aInTravelZone && bInTravelZone) {
-            return DiversityRerankConstants.REGION_CLUSTER_SIMILARITY_RATIO;
+            return diversity.regionClusterSimilarityRatio();
         }
         return 0.0;
     }

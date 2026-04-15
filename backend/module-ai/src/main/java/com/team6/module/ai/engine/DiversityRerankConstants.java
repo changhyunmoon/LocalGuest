@@ -1,12 +1,12 @@
 package com.team6.module.ai.engine;
 
 /**
- * Diversity rerank(유사도 패널티)에 쓰이는 가중치. {@link MatchingEngine} 전용.
- * <p>
- * 유사도는 대략 0~1로 정규화한 뒤 {@code DIVERSITY_LAMBDA}를 곱해 점수에서 뺀다.
- * 가중치 합({@link #REGION_SIM_WEIGHT}+…+{@link #PRICE_TIER_SIM_WEIGHT})으로 나누어 스케일을 맞춘다.
- * 지역 차원은 동일 지역(1.0) 또는 희망 지역 권역 내 서로 다른 지역 쌍({@link #REGION_CLUSTER_SIMILARITY_RATIO})으로만 채운다.
+ * Diversity rerank 기본 상수(참고용). 런타임 튜닝은
+ * {@code com.team6.module.ai.config.DiversityRerankSnapshot}·{@code localguest.ai.diversity-rerank}를 사용한다.
+ *
+ * @deprecated 새 코드는 {@code DiversityRerankSnapshot#defaults()}를 참고한다.
  */
+@Deprecated
 public final class DiversityRerankConstants {
 
     private DiversityRerankConstants() {
@@ -27,4 +27,19 @@ public final class DiversityRerankConstants {
     public static final double LANGUAGE_SIM_WEIGHT = 0.55;
     /** 두 후보의 가격 티어(낮음/중간/높음)가 같을 때 가산. */
     public static final double PRICE_TIER_SIM_WEIGHT = 0.45;
+
+    /**
+     * 가격 티어가 인접(한 단계 차이)일 때 {@link #PRICE_TIER_SIM_WEIGHT}에 곱하는 유사도(0~1).
+     */
+    public static final double DEFAULT_PRICE_ADJACENT_SIMILARITY_RATIO = 0.38d;
+
+    /**
+     * 전문 태그 Jaccard가 이 값 이상이면 유사 코스로 보고 유효 Jaccard를 추가로 올린다.
+     */
+    public static final double DEFAULT_TAG_NEAR_DUP_THRESHOLD = 0.72d;
+
+    /**
+     * {@link #DEFAULT_TAG_NEAR_DUP_THRESHOLD} 이상 구간에서 Jaccard에 가산하는 부스트(상한 1.0).
+     */
+    public static final double DEFAULT_TAG_NEAR_DUP_BOOST = 0.28d;
 }

@@ -5,6 +5,7 @@ import com.team6.module.ai.dto.response.GuideRecommendResponse;
 import com.team6.module.ai.engine.MatchingEngine;
 import com.team6.module.ai.engine.ReasonGenerator;
 import com.team6.module.ai.engine.ScoreCalculator;
+import com.team6.module.ai.config.DiversityRerankSnapshot;
 import com.team6.module.ai.config.LocalGuestAiProperties;
 import com.team6.module.ai.config.ScoringPolicySnapshot;
 import com.team6.module.ai.parser.PromptParser;
@@ -45,7 +46,8 @@ class PromptRecommendationServiceTest {
         );
         ReasonGenerator reasonGenerator = new ReasonGenerator(adjacent, scoring);
         AiRecommendationService aiRecommendationService =
-                new AiRecommendationServiceImpl(new MatchingEngine(scoreCalculator, reasonGenerator, adjacent));
+                new AiRecommendationServiceImpl(
+                        new MatchingEngine(scoreCalculator, reasonGenerator, adjacent, DiversityRerankSnapshot.defaults()));
 
         return new PromptRecommendationService(
                 new PromptParser(aiProps),

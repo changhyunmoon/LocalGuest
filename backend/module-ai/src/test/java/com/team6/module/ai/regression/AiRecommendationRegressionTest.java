@@ -1,5 +1,6 @@
 package com.team6.module.ai.regression;
 
+import com.team6.module.ai.config.DiversityRerankSnapshot;
 import com.team6.module.ai.config.LocalGuestAiProperties;
 import com.team6.module.ai.config.ScoringPolicySnapshot;
 import com.team6.module.ai.policy.ComboMatchPolicy;
@@ -297,7 +298,8 @@ class AiRecommendationRegressionTest {
         );
         ReasonGenerator reasonGenerator = new ReasonGenerator(adjacent, scoring);
 
-        return new AiRecommendationServiceImpl(new MatchingEngine(scoreCalculator, reasonGenerator, adjacent));
+        return new AiRecommendationServiceImpl(
+                new MatchingEngine(scoreCalculator, reasonGenerator, adjacent, DiversityRerankSnapshot.defaults()));
     }
 
     private record Scenario(
