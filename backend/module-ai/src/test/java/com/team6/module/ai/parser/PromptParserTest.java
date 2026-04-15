@@ -221,6 +221,14 @@ class PromptParserTest {
     }
 
     @Test
+    void signals_should_detect_exclusion_intent_keywords_and_budget_duration_hints() {
+        PromptParser.ParseSignals s = promptParser.signals("제주 2박3일로 예산은 20만 안으로, 술집은 말고 추천해줘");
+        assertThat(s.matchedExclusionIntentKeywords()).contains("말고");
+        assertThat(s.hasBudgetHint()).isTrue();
+        assertThat(s.hasDurationHint()).isTrue();
+    }
+
+    @Test
     void parse_should_extract_solo_companion_and_insta_style_and_marine_activity() {
         GuideRecommendRequest r = promptParser.parse("부산 솔로 여행 인스타 핫플 카페", 3, List.of());
         assertThat(r.getCompanionType()).isEqualTo("혼자");
