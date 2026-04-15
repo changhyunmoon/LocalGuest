@@ -6,6 +6,9 @@ import lombok.Setter;
 
 /**
  * YAML 바인딩: {@code localguest.ai.diversity-rerank}.
+ * <p>
+ * 후보 풀({@link LocalGuestAiProperties#getCandidatePool()})과는 별도 축이나,
+ * 같은 배포에서 함께 조정하는 것을 권장한다. 랭킹 의미 변경 시 {@link com.team6.module.ai.support.AiRecommendationTuning#POLICY_VERSION} 상향을 검토한다.
  */
 @Getter
 @Setter
