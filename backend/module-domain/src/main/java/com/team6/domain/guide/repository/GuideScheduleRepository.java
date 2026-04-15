@@ -45,4 +45,19 @@ public interface GuideScheduleRepository extends JpaRepository<GuideSchedule, Lo
             @Param("to") LocalDate to,
             @Param("status") GuideScheduleStatus status
     );
+
+    /**
+     * 특정 가이드에 대해, 기간 중 결제까지 완료된(BOOKED + isPaid) 스케줄의 날짜 목록.
+     * 특별 제시 안내에서 기간 내 가능한 날짜를 계산할 때 사용한다.
+     */
+    @Query("SELECT DISTINCT s.availableDate FROM GuideSchedule s "
+            + "WHERE s.guideProfile.id = :guideId "
+            + "AND s.availableDate BETWEEN :from AND :to "
+            + "AND s.status = :status AND s.isPaid = true")
+    List<LocalDate> findBookedPaidDatesByGuideIdBetween(
+            @Param("guideId") Long guideId,
+            @Param("from") LocalDate from,
+            @Param("to") LocalDate to,
+            @Param("status") GuideScheduleStatus status
+    );
 }
