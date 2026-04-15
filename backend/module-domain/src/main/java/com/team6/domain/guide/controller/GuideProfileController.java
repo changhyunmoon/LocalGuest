@@ -50,6 +50,13 @@ public class GuideProfileController {
         return ResponseEntity.ok(guideProfileService.getProfile(guideId));
     }
 
+    // 내 가이드 프로필 조회 (GUIDE용, profile id 안정 조회)
+    @GetMapping("/me")
+    public ResponseEntity<GuideProfileResponse> getMyProfile() {
+        Long userId = getCurrentUserId();
+        return ResponseEntity.ok(guideProfileService.getMyProfile(userId));
+    }
+
     // 가이드 상세 통합 조회 — 프로필 + 피드 + 경력 + 이미지 한 번에 반환
     @GetMapping("/{guideId}/detail")
     public ResponseEntity<GuideDetailResponse> getDetail(
@@ -120,8 +127,11 @@ public class GuideProfileController {
     // JWT에서 현재 로그인 사용자의 memberId 추출
     private Long getCurrentUserId() {
         String email = SecurityUtil.getCurrentUserEmail();
+        if (email == null || email.isBlank() || "anonymousUser".equalsIgnoreCase(email)) {
+            throw new GuideException(GuideErrorCode.GUIDE_UNAUTHORIZED);
+        }
         return memberRepository.findByEmail(email)
                 .map(Member::getId)
-                .orElseThrow(() -> new GuideException(GuideErrorCode.MEMBER_NOT_FOUND));
+                .orElseThrow(() -> new GuideException(GuideErrorCode.GUIDE_UNAUTHORIZED));
     }
 }

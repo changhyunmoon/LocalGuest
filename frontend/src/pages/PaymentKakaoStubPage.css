@@ -1,0 +1,151 @@
+/* 카카오페이 연동 Stub — 로컬 fake PG용 결제 UI */
+
+.pks {
+  min-height: min(70vh, 560px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem 1rem 2.5rem;
+  box-sizing: border-box;
+  background: linear-gradient(180deg, #f3f4f6 0%, #e5e7eb 100%);
+}
+
+.pks-card {
+  width: 100%;
+  max-width: 400px;
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+}
+
+.pks-head {
+  background: linear-gradient(90deg, #ffeb3b 0%, #fdd835 100%);
+  padding: 1.25rem 1.35rem 1rem;
+  text-align: center;
+}
+
+.pks-brand {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  color: #191919;
+}
+
+.pks-brand span {
+  font-weight: 800;
+  color: #3c1e1e;
+}
+
+.pks-sub {
+  margin: 0.35rem 0 0;
+  font-size: 0.72rem;
+  color: #5d4037;
+  opacity: 0.9;
+}
+
+.pks-body {
+  padding: 1.35rem 1.35rem 1.25rem;
+}
+
+.pks-merchant {
+  margin: 0 0 0.25rem;
+  font-size: 0.78rem;
+  color: #6b7280;
+}
+
+.pks-item {
+  margin: 0 0 1rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.pks-amount-label {
+  margin: 0 0 0.35rem;
+  font-size: 0.78rem;
+  color: #6b7280;
+}
+
+.pks-amount {
+  margin: 0 0 1.15rem;
+  font-size: 1.75rem;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  color: #111827;
+}
+
+.pks-meta {
+  margin: 0 0 1rem;
+  padding: 0.65rem 0.75rem;
+  background: #f9fafb;
+  border-radius: 10px;
+  font-size: 0.72rem;
+  color: #4b5563;
+  line-height: 1.45;
+  word-break: break-all;
+}
+
+.pks-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.pks-btn {
+  width: 100%;
+  padding: 0.85rem 1rem;
+  border-radius: 12px;
+  border: none;
+  font-size: 0.95rem;
+  font-weight: 800;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.pks-btn--pay {
+  background: #fee500;
+  color: #191919;
+  box-shadow: 0 4px 0 #e6cf00;
+}
+
+.pks-btn--pay:hover:not(:disabled) {
+  filter: brightness(0.97);
+}
+
+.pks-btn--pay:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.pks-btn--ghost {
+  background: #fff;
+  color: #374151;
+  border: 1px solid #d1d5db;
+  font-weight: 700;
+  font-size: 0.86rem;
+}
+
+.pks-btn--ghost:hover {
+  background: #f9fafb;
+}
+
+.pks-note {
+  margin: 0.85rem 0 0;
+  font-size: 0.72rem;
+  color: #6b7280;
+  text-align: center;
+  line-height: 1.45;
+}
+
+.pks-err {
+  margin: 0 0 0.75rem;
+  padding: 0.55rem 0.65rem;
+  border-radius: 10px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  font-size: 0.8rem;
+  color: #991b1b;
+}

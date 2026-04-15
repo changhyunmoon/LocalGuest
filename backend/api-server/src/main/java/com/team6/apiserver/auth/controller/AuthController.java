@@ -5,6 +5,7 @@ import com.team6.domain.auth.service.AuthService;
 import com.team6.domain.member.dto.response.TokenResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -19,11 +20,15 @@ public class AuthController {
     private final AuthService authService;
 
     @PostMapping("/login")
-    public ResponseEntity<TokenResponse> login(@RequestBody LoginRequest request) {
+    public ResponseEntity<?> login(@RequestBody LoginRequest request) {
         // [LOG] INFO : [Auth-Controller] 로그인 요청 수신 (Email : {})
-        TokenResponse token = authService.login(request);
-
-        return ResponseEntity.ok(token);
+        try {
+            TokenResponse token = authService.login(request);
+            return ResponseEntity.ok(token);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(e.getMessage());
+        }
     }
 
     @PostMapping("/logout")
