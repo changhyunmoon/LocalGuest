@@ -22,6 +22,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -59,6 +60,8 @@ class DbBackedGuideCandidateProviderTest {
 
     @BeforeEach
     void setUp() {
+        LocalGuestAiProperties aiProps = new LocalGuestAiProperties();
+        aiProps.getCandidatePool().setPoolCacheTtlSeconds(0);
         provider = new DbBackedGuideCandidateProvider(
                 guideProfileRepository,
                 guideFeedRepository,
@@ -66,7 +69,8 @@ class DbBackedGuideCandidateProviderTest {
                 matchRequestRepository,
                 refundRepository,
                 chatRoomRepository,
-                new PromptParser(new LocalGuestAiProperties())
+                new PromptParser(aiProps),
+                aiProps
         );
     }
 
@@ -108,6 +112,10 @@ class DbBackedGuideCandidateProviderTest {
                 .isApproved(true)
                 .isActive(true)
                 .build();
+        when(guideProfileRepository.findByIsApprovedTrueAndIsActiveTrueAndRegionEqualsIgnoreCase(
+                eq("제주"),
+                any(Pageable.class)
+        )).thenReturn(new PageImpl<>(List.of()));
         when(guideProfileRepository.findByIsApprovedTrueAndIsActiveTrueAndRegionContainingIgnoreCase(
                 eq("제주"),
                 any(Pageable.class)
@@ -165,6 +173,10 @@ class DbBackedGuideCandidateProviderTest {
 
     @Test
     void fallsBackToGlobalPoolWhenRegionQueryEmpty() {
+        when(guideProfileRepository.findByIsApprovedTrueAndIsActiveTrueAndRegionEqualsIgnoreCase(
+                eq("제주"),
+                any(Pageable.class)
+        )).thenReturn(new PageImpl<>(List.of()));
         when(guideProfileRepository.findByIsApprovedTrueAndIsActiveTrueAndRegionContainingIgnoreCase(
                 eq("제주"),
                 any(Pageable.class)
@@ -179,8 +191,11 @@ class DbBackedGuideCandidateProviderTest {
                 .isApproved(true)
                 .isActive(true)
                 .build();
-        when(guideProfileRepository.findByIsApprovedTrueAndIsActiveTrue(PageRequest.of(0, DbBackedGuideCandidateProvider.MAX_SERVER_CANDIDATES)))
-                .thenReturn(new PageImpl<>(List.of(p)));
+        when(guideProfileRepository.findByIsApprovedTrueAndIsActiveTrue(PageRequest.of(
+                0,
+                DbBackedGuideCandidateProvider.DEFAULT_MAX_FETCH_SIZE,
+                Sort.by(Sort.Direction.DESC, "id")
+        ))).thenReturn(new PageImpl<>(List.of(p)));
         when(guideFeedRepository.findByGuideProfile_IdInAndIsDeletedFalse(List.of(2L)))
                 .thenReturn(List.of());
         when(guideCareerRepository.findByGuideProfile_IdIn(List.of(2L)))

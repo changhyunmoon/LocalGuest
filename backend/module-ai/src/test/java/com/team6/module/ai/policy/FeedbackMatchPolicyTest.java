@@ -50,4 +50,22 @@ class FeedbackMatchPolicyTest {
 
         assertThat(score).isEqualTo(-18);
     }
+
+    @Test
+    void score_should_add_cold_start_exploration_bonus_when_no_signals() {
+        GuideAiProfile guide = GuideAiProfile.builder()
+                .guideId(99L)
+                .guideName("신규")
+                .region("제주")
+                .reviewCount(0)
+                .approvedRefundCount(0)
+                .matchRequestCount(0)
+                .progressedMatchCount(0)
+                .chatStartCount(0)
+                .build();
+
+        int score = policy.score(null, guide);
+
+        assertThat(score).isEqualTo(6);
+    }
 }

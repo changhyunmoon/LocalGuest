@@ -14,7 +14,7 @@ public final class AiRecommendationTuning {
     /**
      * 룰/스코어/Reason/응답 계약이 바뀔 때마다 올린다. 로그·API에서 동일 프롬프트 비교 시 정책 변경 여부를 구분하는 데 쓴다.
      */
-    public static final String POLICY_VERSION = "2026.04.15";
+    public static final String POLICY_VERSION = "2026.04.16";
 
     public static final int DEFAULT_TOP_N = 3;
 
@@ -35,6 +35,12 @@ public final class AiRecommendationTuning {
      * 와 겹칠 때마다 활동 점수에서 차감하는 값(한 태그당, {@link com.team6.module.ai.policy.ScoreWeight#ACTIVITY}와 동일 스케일).
      */
     public static final int SOFT_ACTIVITY_PENALTY_PER_TAG = 6;
+
+    /**
+     * 리뷰·매칭·채팅 등 운영 신호가 거의 없는 가이드에 부여하는 탐색 보너스(콜드스타트 노출 완화).
+     * {@link com.team6.module.ai.policy.FeedbackMatchPolicy}에서만 적용.
+     */
+    public static final int COLD_START_EXPLORATION_BONUS = 6;
 
     /** 승인 환불 1건당 감점(상한 {@link #FEEDBACK_REFUND_PENALTY_MAX}). */
     public static final int FEEDBACK_REFUND_PENALTY_PER_APPROVED = 8;
