@@ -1,60 +1,62 @@
 #!/bin/bash
 
 # 1. 환경 설정
-TARGET_PORT_BLUE=3001
-TARGET_PORT_GREEN=3002
+BASE_DIR="/home/ubuntu/frontend-deploy"
+DOCKER_DIR="$BASE_DIR/docker"
+NGINX_CONF_DIR="$BASE_DIR/nginx"
 
-# 필수 환경변수 체크 (변수가 비어있으면 배포 중단)
+COMPOSE_FILE="$DOCKER_DIR/docker-compose.yml"
+DOCKER_COMPOSE="docker compose -f $COMPOSE_FILE"
+
+# 필수 환경변수 체크
 if [ -z "$DOCKERHUB_USERNAME" ] || [ -z "$FRONTEND_IMAGE_NAME" ] || [ -z "$FRONTEND_IMAGE_TAG" ]; then
     echo "❌ 에러: 필수 환경변수(DOCKERHUB_USERNAME, IMAGE_NAME, TAG)가 누락되었습니다."
     exit 1
 fi
 
-# 2. 현재 실행 중인 컬러 확인
-IS_BLUE=$(docker ps --filter "name=frontend-blue" --filter "status=running" -q)
+echo "--- 🎨 프론트엔드 Blue-Green 배포 시작 ---"
+cd "$DOCKER_DIR"
+
+# 2. Blue/Green 결정
+# 현재 실행 중인 컨테이너가 blue인지 확인
+IS_BLUE=$($DOCKER_COMPOSE ps | grep "frontend-blue" | grep "running" || true)
 
 if [ -z "$IS_BLUE" ]; then
-    TARGET_COLOR="blue"; TARGET_PORT=$TARGET_PORT_BLUE; OLD_COLOR="green"; INC_FILE="fe_blue.inc"
+    TARGET_COLOR="blue"; TARGET_PORT=3001; OLD_COLOR="green"; INC_FILE="fe_blue.inc"
 else
-    TARGET_COLOR="green"; TARGET_PORT=$TARGET_PORT_GREEN; OLD_COLOR="blue"; INC_FILE="fe_green.inc"
+    TARGET_COLOR="green"; TARGET_PORT=3002; OLD_COLOR="blue"; INC_FILE="fe_green.inc"
 fi
 
-echo "--- 🎨 프론트엔드 $TARGET_COLOR 배포 시작 (Port: $TARGET_PORT) ---"
+echo "### 🚢 배포 타겟: $TARGET_COLOR (Port: $TARGET_PORT) ###"
 
-# 3. 이미지 Pull 및 컨테이너 교체
-docker pull $DOCKERHUB_USERNAME/$FRONTEND_IMAGE_NAME:$FRONTEND_IMAGE_TAG
+# 3. 새 버전 이미지 Pull
+echo "1. $TARGET_COLOR 이미지 Pull..."
+$DOCKER_COMPOSE pull frontend-$TARGET_COLOR || exit 1
 
-# 기존에 죽어있을 수도 있는 타겟 컨테이너 정리
-docker stop frontend-$TARGET_COLOR 2>/dev/null || true
-docker rm frontend-$TARGET_COLOR 2>/dev/null || true
+# 4. 새 컨테이너 실행 (Docker Compose 사용)
+echo "2. $TARGET_COLOR 컨테이너 실행..."
+$DOCKER_COMPOSE up -d frontend-$TARGET_COLOR || exit 1
 
-# 4. 새 컨테이너 실행
-docker run -d \
-  --name frontend-$TARGET_COLOR \
-  -p $TARGET_PORT:80 \
-  --restart always \
-  $DOCKERHUB_USERNAME/$FRONTEND_IMAGE_NAME:$FRONTEND_IMAGE_TAG
-
-# 5. 헬스체크 (최대 5번 시도)
-echo "⏳ 헬스체크 시작..."
-for i in {1..5}; do
+# 5. 헬스체크
+echo "3. 헬스체크 시작..."
+for i in {1..10}; do
     sleep 5
     HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:$TARGET_PORT)
     if [ "$HTTP_STATUS" -eq 200 ]; then
         echo "✅ 프론트엔드 헬스체크 성공!"
         break
     fi
-    if [ $i -eq 5 ]; then
-        echo "❌ 헬스체크 실패! 배포를 중단하고 롤백합니다."
-        docker stop frontend-$TARGET_COLOR || true
+    if [ $i -eq 10 ]; then
+        echo "❌ 헬스체크 실패! 배포를 중단합니다."
+        $DOCKER_COMPOSE stop frontend-$TARGET_COLOR
         exit 1
     fi
-    echo "...대기 중 ($i/5)"
+    echo "...대기 중 ($i/10)"
 done
 
 # 6. Nginx 설정 전환
-echo "🔄 Nginx 설정 교체 및 Reload..."
-sudo cp /home/ubuntu/frontend-deploy/nginx/$INC_FILE /etc/nginx/conf.d/frontend.inc
+echo "4. Nginx 설정 교체 및 Reload..."
+sudo cp "$NGINX_CONF_DIR/$INC_FILE" /etc/nginx/conf.d/frontend.inc
 
 if sudo nginx -t; then
     sudo nginx -s reload
@@ -65,15 +67,13 @@ else
 fi
 
 # 7. 구 버전 정리 및 최적화
-echo "🧹 불필요한 이미지 및 캐시 정리..."
+echo "5. 이전 컨테이너($OLD_COLOR) 및 불필요한 이미지 정리..."
+$DOCKER_COMPOSE stop frontend-$OLD_COLOR || true
+$DOCKER_COMPOSE rm -f frontend-$OLD_COLOR || true
 
-# 이전 버전 컨테이너 삭제
-docker stop frontend-$OLD_COLOR 2>/dev/null || true
-docker rm frontend-$OLD_COLOR 2>/dev/null || true
-
-# 찌꺼기 이미지 및 빌드 캐시 정리
+# 디스크 공간 확보
 docker image prune -f
 docker builder prune -f
 
-echo "🎊 프론트엔드 배포 및 디스크 정리 완료!"
+echo "🎊 프론트엔드 배포 완료!"
 df -h | grep '/$'
