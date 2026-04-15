@@ -28,9 +28,6 @@ dependencies {
     // Spring Security Crypto (비밀번호 암호화 전용 라이브러리)
     implementation 'org.springframework.security:spring-security-crypto'
     implementation 'org.springframework.boot:spring-boot-starter-security'
-
-    //Redis 사용
-    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
 }
 
 bootJar { enabled = false }

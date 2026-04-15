@@ -1,6 +1,7 @@
 package com.team6.domain.member.controller;
 
 import com.team6.domain.member.dto.request.MemberJoinRequest;
+import com.team6.domain.member.entity.Role;
 import com.team6.domain.member.service.MemberService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -24,8 +25,8 @@ public class MemberController {
     }
 
     @DeleteMapping("/me")
-    public ResponseEntity<String> withdraw() {
-        memberService.withdraw();
+    public ResponseEntity<String> withdraw(@RequestParam Role role) {
+        memberService.withdraw(role);
         return ResponseEntity.ok("회원 탈퇴가 완료되었습니다. ");
     }
 }

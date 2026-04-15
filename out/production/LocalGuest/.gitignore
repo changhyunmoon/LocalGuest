@@ -31,7 +31,6 @@ Thumbs.db
 **/src/main/resources/application-local.yml
 **/src/main/resources/application-*-prod.yml
 **/src/main/resources/application-prod.yml
-**/src/main/resources/application-secret-local.yml
 
 # 기타 보안이 필요한 파일들
 *.jks

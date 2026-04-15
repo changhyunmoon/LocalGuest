@@ -1,0 +1,47 @@
+#spring:
+#  profiles:
+#    active: local
+#    group:
+#      "local": ["common", "domain-local", "ai-local", "chat-local"]
+#      "prod": ["common", "domain-prod", "ai-prod", "chat-prod"]
+#
+#  config:
+#    import:
+#      - "optional:classpath:/application-common.yml"
+#      - "optional:classpath:/application-domain-local.yml"
+#      - "optional:classpath:/application-domain-prod.yml"
+#      - "optional:classpath:/application-ai-local.yml"
+#      - "optional:classpath:/application-ai-prod.yml"
+#      - "optional:classpath:/application-chat-local.yml"
+#      - "optional:classpath:/application-chat-prod.yml"
+#
+#server:
+#  servlet:
+#    context-path: /api
+#
+#---
+#spring:
+#  config:
+#    activate:
+#      on-profile: local
+#  jpa:
+#    hibernate:
+#      ddl-auto: validate
+#
+#---
+#spring:
+#  config:
+#    activate:
+#      on-profile: prod
+#  jpa:
+#    hibernate:
+#      ddl-auto: validate
+spring:
+  profiles:
+    active: local
+
+---
+spring:
+  config:
+    activate:
+      on-profile: prod

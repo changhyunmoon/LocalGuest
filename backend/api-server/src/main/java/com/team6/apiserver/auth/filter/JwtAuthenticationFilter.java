@@ -1,4 +1,4 @@
-package com.team6.domain.auth.filter;
+package com.team6.apiserver.auth.filter;
 
 import com.team6.domain.auth.provider.JwtTokenProvider;
 import jakarta.servlet.FilterChain;
@@ -11,6 +11,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.data.redis.core.RedisTemplate;
 
 import java.io.IOException;
 import java.util.List;
@@ -18,6 +19,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtTokenProvider jwtTokenProvider;
+    private final RedisTemplate<String, String> redisTemplate;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
@@ -61,5 +63,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         return null;
+    }
+
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String path = request.getRequestURI();
+        return path.startsWith("/oauth2/") || path.startsWith("/login/");
     }
 }

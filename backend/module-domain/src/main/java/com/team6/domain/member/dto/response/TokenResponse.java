@@ -9,6 +9,7 @@ import lombok.Getter;
 @AllArgsConstructor
 public class TokenResponse {
     private String accessToken;
+    private String refreshToken;
     private String grantType;
 
     //[LOG] DEBUG : [Auth-Domain] TokenResponse 생성 완료
