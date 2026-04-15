@@ -88,5 +88,6 @@ jobs:
             mkdir -p docker
             mv docker-compose.yml docker/ 2>/dev/null || true
             
-            chmod +x deploy-fe.sh
-            ./deploy-fe.sh
+            cd /home/ubuntu/frontend-deploy
+            chmod +x deploy.sh
+            ./deploy.sh
