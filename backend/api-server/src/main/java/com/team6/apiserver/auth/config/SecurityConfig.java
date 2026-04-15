@@ -4,7 +4,7 @@ import com.team6.apiserver.auth.filter.JwtAuthenticationFilter;
 import com.team6.apiserver.auth.oauth.CustomOauth2UserService;
 import com.team6.apiserver.auth.oauth.OAuth2SuccessHandler;
 import com.team6.domain.auth.provider.JwtTokenProvider;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -20,12 +20,23 @@ import org.springframework.data.redis.core.RedisTemplate;
 
 @Configuration
 @EnableWebSecurity
-@RequiredArgsConstructor
 public class SecurityConfig {
     private final JwtTokenProvider jwtTokenProvider;
     private final CustomOauth2UserService customOauth2UserService;
     private final OAuth2SuccessHandler oAuth2SuccessHandler;
     private final RedisTemplate<String, String> redisTemplate;
+
+    public SecurityConfig(
+            JwtTokenProvider jwtTokenProvider,
+            CustomOauth2UserService customOauth2UserService,
+            OAuth2SuccessHandler oAuth2SuccessHandler,
+            @Qualifier("memberRedisTemplate") RedisTemplate<String, String> redisTemplate
+    ) {
+        this.jwtTokenProvider = jwtTokenProvider;
+        this.customOauth2UserService = customOauth2UserService;
+        this.oAuth2SuccessHandler = oAuth2SuccessHandler;
+        this.redisTemplate = redisTemplate;
+    }
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
