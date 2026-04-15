@@ -36,6 +36,7 @@ public class AiController {
     @Operation(
             summary = "프롬프트 기반 가이드 추천",
             description = "자연어 프롬프트와 가이드 후보 목록을 받아 상위 N명을 추천합니다. "
+                    + "선택 필드 desiredTourDate(yyyy-MM-dd)가 있으면 해당 날짜에 결제 완료(BOOKED+isPaid) 스케줄이 있는 가이드는 후보에서 제외합니다. "
                     + "응답의 policyVersion으로 룰 정책 버전을 구분할 수 있습니다."
     )
     @ApiResponse(
@@ -44,7 +45,7 @@ public class AiController {
             headers = @Header(
                     name = RecommendationHttpHeaders.X_RECOMMENDATION_POLICY,
                     description = "룰 정책 버전(응답 body의 policyVersion과 동일). 캐시 키·디버깅에 활용 가능.",
-                    schema = @Schema(implementation = String.class, example = "2026.04.10")
+                    schema = @Schema(implementation = String.class, example = "2026.04.15")
             ),
             content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = GuideRecommendResponse.class))
     )
@@ -70,7 +71,8 @@ public class AiController {
                 guideCandidateProvider.getCandidates(
                         request.getPrompt(),
                         request.getTopN(),
-                        request.getGuideCandidates()
+                        request.getGuideCandidates(),
+                        request.getDesiredTourDate()
                 );
 
         GuideRecommendResponse body = promptRecommendationService.recommendByPrompt(

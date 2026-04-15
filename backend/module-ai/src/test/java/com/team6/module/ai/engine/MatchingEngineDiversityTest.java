@@ -1,6 +1,10 @@
 package com.team6.module.ai.engine;
 
+import com.team6.module.ai.config.DiversityRerankSnapshot;
 import com.team6.module.ai.config.LocalGuestAiProperties;
+import com.team6.module.ai.config.ScoringPolicySnapshot;
+import com.team6.module.ai.policy.ComboMatchPolicy;
+import com.team6.module.ai.dto.response.GuideRecommendItem;
 import com.team6.module.ai.dto.response.GuideRecommendResponse;
 import com.team6.module.ai.model.GuideAiProfile;
 import com.team6.module.ai.model.TravelerPreference;
@@ -12,6 +16,7 @@ import com.team6.module.ai.policy.RegionMatchPolicy;
 import com.team6.module.ai.policy.StyleMatchPolicy;
 import com.team6.module.ai.support.AdjacentRegionProvider;
 import com.team6.module.ai.support.AiRecommendationMetrics;
+import com.team6.module.ai.support.AiRecommendationTuning;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Test;
 
@@ -25,19 +30,28 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class MatchingEngineDiversityTest {
 
-    private static MatchingEngine engine() {
+    private static MatchingEngine engine(SimpleMeterRegistry registry) {
         LocalGuestAiProperties aiProps = new LocalGuestAiProperties();
+        ScoringPolicySnapshot scoring = ScoringPolicySnapshot.defaults();
         AdjacentRegionProvider adjacent = new AdjacentRegionProvider(aiProps);
+        AiRecommendationMetrics metrics = new AiRecommendationMetrics(registry);
         ScoreCalculator scoreCalculator = new ScoreCalculator(
-                new RegionMatchPolicy(adjacent),
-                new StyleMatchPolicy(),
-                new BudgetMatchPolicy(),
-                new ActivityMatchPolicy(),
-                new LanguageMatchPolicy(),
-                new FeedbackMatchPolicy(),
-                new AiRecommendationMetrics(new SimpleMeterRegistry())
+                new RegionMatchPolicy(adjacent, scoring),
+                new StyleMatchPolicy(scoring),
+                new BudgetMatchPolicy(scoring),
+                new ActivityMatchPolicy(scoring),
+                new LanguageMatchPolicy(scoring),
+                new FeedbackMatchPolicy(scoring),
+                new ComboMatchPolicy(scoring),
+                metrics
         );
-        return new MatchingEngine(scoreCalculator, new ReasonGenerator(adjacent), adjacent);
+        return new MatchingEngine(
+                scoreCalculator,
+                new ReasonGenerator(adjacent, scoring),
+                adjacent,
+                DiversityRerankSnapshot.defaults(),
+                metrics
+        );
     }
 
     @Test
@@ -80,11 +94,59 @@ class MatchingEngineDiversityTest {
                         .build()
         );
 
-        GuideRecommendResponse response = engine().recommend(pref, guides, 2);
+        SimpleMeterRegistry registry = new SimpleMeterRegistry();
+        GuideRecommendResponse response = engine(registry).recommend(pref, guides, 2);
 
         assertThat(response.getRecommendations()).hasSize(2);
         assertThat(response.getRecommendations().get(0).getGuideId()).isEqualTo(3L);
         assertThat(response.getRecommendations().get(0).getScore())
                 .isGreaterThanOrEqualTo(response.getRecommendations().get(1).getScore());
+        assertThat(registry.summary("localguest.ai.recommend.diversity_penalty_magnitude",
+                        "policy_version", AiRecommendationTuning.POLICY_VERSION).count())
+                .isEqualTo(1);
+    }
+
+    @Test
+    void recommend_should_not_pick_same_guide_id_twice_when_pool_contains_duplicates() {
+        TravelerPreference pref = TravelerPreference.builder()
+                .region("제주")
+                .travelStyle("감성")
+                .budgetLevel("중간")
+                .activityTags(List.of("카페"))
+                .build();
+
+        GuideAiProfile g1 = GuideAiProfile.builder()
+                .guideId(1L)
+                .guideName("A")
+                .region("제주")
+                .guideStyle("감성")
+                .priceLevel("중간")
+                .specialtyTags(List.of("카페"))
+                .languages(List.of("한국어"))
+                .build();
+        GuideAiProfile g1dup = GuideAiProfile.builder()
+                .guideId(1L)
+                .guideName("A중복행")
+                .region("제주")
+                .guideStyle("감성")
+                .priceLevel("중간")
+                .specialtyTags(List.of("카페"))
+                .languages(List.of("한국어"))
+                .build();
+        GuideAiProfile g2 = GuideAiProfile.builder()
+                .guideId(2L)
+                .guideName("B")
+                .region("제주")
+                .guideStyle("로컬")
+                .priceLevel("중간")
+                .specialtyTags(List.of("맛집"))
+                .languages(List.of("한국어"))
+                .build();
+
+        GuideRecommendResponse response = engine(new SimpleMeterRegistry()).recommend(pref, List.of(g1, g1dup, g2), 3);
+
+        assertThat(response.getRecommendations()).hasSize(2);
+        assertThat(response.getRecommendations().stream().map(GuideRecommendItem::getGuideId).distinct().count())
+                .isEqualTo(2L);
     }
 }

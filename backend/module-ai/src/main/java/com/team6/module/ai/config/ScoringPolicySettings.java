@@ -1,0 +1,73 @@
+package com.team6.module.ai.config;
+
+import lombok.Getter;
+import lombok.Setter;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * 룰 기반 스코어·피드백 가중치(YAML {@code localguest.ai.scoring-policy}).
+ * 기본값은 기존 {@link com.team6.module.ai.policy.ScoreWeight}·{@link com.team6.module.ai.support.AiRecommendationTuning} 상수와 동일하다.
+ * <p>
+ * 운영 시 {@link LocalGuestAiProperties}의 후보 풀·다양성 블록과 같은 배포 단위로 맞추고,
+ * 랭킹 의미 변경 시 {@link com.team6.module.ai.support.AiRecommendationTuning#POLICY_VERSION} 상향을 검토한다.
+ */
+@Getter
+@Setter
+public class ScoringPolicySettings {
+
+    private int weightRegion = 30;
+    private int weightRegionAdjacent = 15;
+    private int weightStyle = 25;
+    private int weightBudget = 15;
+    private int weightBudgetAdjacent = 7;
+    private int weightActivity = 10;
+    private int weightLanguage = 10;
+
+    private int softActivityPenaltyPerTag = 6;
+    private int coldStartExplorationBonus = 6;
+
+    private int feedbackRefundPenaltyPerApproved = 8;
+    private int feedbackRefundPenaltyMax = 24;
+    private int feedbackLowRatingMinReviews = 3;
+    private double feedbackLowRatingThreshold = 3.5d;
+    private int feedbackLowRatingPenalty = 10;
+    private double feedbackVeryLowRatingThreshold = 2.5d;
+    private int feedbackVeryLowRatingPenalty = 16;
+
+    private int feedbackMatchRequestBonusPerCount = 1;
+    private int feedbackMatchRequestBonusMax = 5;
+    private int feedbackProgressMatchBonusPerCount = 3;
+    private int feedbackProgressMatchBonusMax = 12;
+    private int feedbackChatStartBonusPerCount = 2;
+    private int feedbackChatStartBonusMax = 8;
+
+    /**
+     * 이 값 미만이면 전략적 폴백(조건 완화)을 시도한다.
+     */
+    private int lowSignalScoreThreshold = 15;
+
+    /**
+     * 완화 후 Top1이 여전히 {@link #lowSignalScoreThreshold} 미만이어도,
+     * 베이스 대비 이만큼 이상 올랐으면 수용한다(0이면 비활성).
+     */
+    private int fallbackMinImprovementOverBase = 4;
+
+    /**
+     * 제품 룰: 예산·스타일·활동 태그 조합 보너스(예: 높음 예산 + 시장).
+     */
+    private List<ComboRuleSetting> comboRules = new ArrayList<>();
+
+    @Getter
+    @Setter
+    public static class ComboRuleSetting {
+        /** 비우면 예산 조건 없음 */
+        private String budgetLevel;
+        /** 비우면 스타일 조건 없음 */
+        private String travelStyle;
+        /** 선호 활동 태그(정규화 전 표기; 매칭 시 {@link com.team6.module.ai.parser.KeywordNormalizer} 적용) */
+        private List<String> requireActivityTagsAll = new ArrayList<>();
+        private int bonusPoints;
+    }
+}

@@ -82,6 +82,11 @@ public class Payment extends BaseTimeEntity {
         this.refundDeadline = this.paidAt.plusHours(2); // 환불 마감 = 결제 완료 + 2시간
     }
 
+    // 승인 전 단계에서 PG 거래 식별자(tid 등)만 임시 저장
+    public void storePgTransactionId(String pgTransactionId) {
+        this.pgTransactionId = pgTransactionId;
+    }
+
     // 취소 처리
     public void cancel() {
         this.status = PaymentStatus.CANCELLED;

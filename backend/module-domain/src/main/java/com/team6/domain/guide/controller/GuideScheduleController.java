@@ -101,6 +101,19 @@ public class GuideScheduleController {
         return ResponseEntity.ok(guideScheduleService.rejectSchedule(scheduleId, guideId, userId));
     }
 
+    // 스케줄 양식 조회 — isPaid=false면 courseDetail null 마스킹, true면 전체 공개 (F06-04)
+    // 가이드·게스트 모두 호출 가능
+    // TODO: 추후 보안 강화 필요
+    // 현재 인증된 사용자라면 누구나 호출 가능
+    // 개선 시 가이드 본인 또는 매칭된 게스트만 허용하도록 변경 필요
+    @GetMapping("/{scheduleId}/form")
+    public ResponseEntity<GuideScheduleFormResponse> getScheduleForm(
+            @PathVariable Long guideId,
+            @PathVariable Long scheduleId
+    ) {
+        return ResponseEntity.ok(guideScheduleService.getScheduleForm(scheduleId, guideId));
+    }
+
     // 수락 후 여행 계획 양식 저장 — BOOKED 상태에만 가능 (F06-04)
     @PutMapping("/{scheduleId}/form")
     public ResponseEntity<GuideScheduleFormResponse> submitForm(
@@ -131,7 +144,7 @@ public class GuideScheduleController {
         return ResponseEntity.ok(guideScheduleService.markAsBooked(scheduleId, guideId));
     }
 
-    // [matching 연동] 결제 완료 확정 — matching 도메인이 PAID 전환 시 호출, courseDetail 잠금 해제
+    // [matching 연동] BOOKED 스케줄 결제 확정 — isPaid=true, courseDetail 잠금 해제 (가이드 수락 후 결제 흐름)
     @PatchMapping("/{scheduleId}/paid-confirm")
     public ResponseEntity<GuideScheduleResponse> markAsPaid(
             @PathVariable Long guideId,
@@ -140,7 +153,7 @@ public class GuideScheduleController {
         return ResponseEntity.ok(guideScheduleService.markAsPaid(scheduleId, guideId));
     }
 
-    // [matching 연동] BOOKED → AVAILABLE 복구 — matching 도메인이 취소 시 호출 (F05-01/02)
+    // [matching 연동] PENDING·BOOKED → AVAILABLE — 매칭 거절/취소 시 matching 도메인이 호출 (F03/F05)
     @PatchMapping("/{scheduleId}/cancel")
     public ResponseEntity<GuideScheduleResponse> cancelToAvailable(
             @PathVariable Long guideId,

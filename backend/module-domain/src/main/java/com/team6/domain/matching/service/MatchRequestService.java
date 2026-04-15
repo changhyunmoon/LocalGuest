@@ -1,5 +1,7 @@
 package com.team6.domain.matching.service;
 
+import com.team6.domain.guide.repository.GuideProfileRepository;
+import com.team6.domain.matching.client.GuideScheduleSyncClient;
 import com.team6.domain.matching.dto.request.MatchRequestCreateRequest;
 import com.team6.domain.matching.dto.request.MatchRequestDeclineRequest;
 import com.team6.domain.matching.dto.request.MatchRequestProposeRequest;
@@ -25,6 +27,8 @@ import java.util.Locale;
 public class MatchRequestService {
 
     private final MatchRequestRepository matchRequestRepository;
+    private final GuideScheduleSyncClient guideScheduleSyncClient;
+    private final GuideProfileRepository guideProfileRepository;
 
     // 매칭 요청 생성
     public MatchRequestCreateResponse createMatchRequest(Long guestId, MatchRequestCreateRequest request) {
@@ -34,6 +38,7 @@ public class MatchRequestService {
         MatchRequest matchRequest = MatchRequest.create(
                 guestId,
                 request.getGuideId(),
+                request.getGuideScheduleId(),
                 request.getDestination(),
                 request.getConcept(),
                 conceptSummary,
@@ -41,8 +46,11 @@ public class MatchRequestService {
                 request.getDesiredBudget()
         );
 
+        MatchRequest saved = matchRequestRepository.save(matchRequest);
+        Long guideMemberId = resolveGuideMemberId(saved.getGuideId());
+        guideScheduleSyncClient.markPending(saved.getGuideId(), saved.getGuideScheduleId(), saved.getId(), guideMemberId);
         log.info("[F03-04] 매칭 요청 생성 — guestId={}, guideId={}", guestId, request.getGuideId());
-        return MatchRequestCreateResponse.from(matchRequestRepository.save(matchRequest));
+        return MatchRequestCreateResponse.from(saved);
     }
 
     // 가이드의 매칭 요청 목록 조회
@@ -63,6 +71,8 @@ public class MatchRequestService {
         }
 
         matchRequest.reject();
+        Long guideMemberId = resolveGuideMemberId(matchRequest.getGuideId());
+        guideScheduleSyncClient.cancelToAvailable(matchRequest.getGuideId(), matchRequest.getGuideScheduleId(), guideMemberId);
         log.info("[MatchRequest] 가이드 거절 — requestId={}, guideId={}", requestId, guideId);
         return MatchRequestActionResponse.from(matchRequest);
     }
@@ -104,7 +114,9 @@ public class MatchRequestService {
             throw new MatchingException(MatchingErrorCode.MATCH_REQUEST_UNAUTHORIZED);
         }
 
-        matchRequest.cancelByGuest(request.getReason());
+        matchRequest.declineProposalByGuest(request.getReason());
+        Long guideMemberId = resolveGuideMemberId(matchRequest.getGuideId());
+        guideScheduleSyncClient.cancelToAvailable(matchRequest.getGuideId(), matchRequest.getGuideScheduleId(), guideMemberId);
         log.info("[F03-06] 게스트 최종 거절 — requestId={}, guestId={}", requestId, guestId);
         return MatchRequestActionResponse.from(matchRequest);
     }
@@ -119,6 +131,8 @@ public class MatchRequestService {
         }
 
         matchRequest.cancelByGuest(reason);
+        Long guideMemberId = resolveGuideMemberId(matchRequest.getGuideId());
+        guideScheduleSyncClient.cancelToAvailable(matchRequest.getGuideId(), matchRequest.getGuideScheduleId(), guideMemberId);
         log.info("[F05-01] 게스트 취소 완료 — requestId={}, guestId={}", requestId, guestId);
         return MatchRequestActionResponse.from(matchRequest);
     }
@@ -133,6 +147,8 @@ public class MatchRequestService {
         }
 
         matchRequest.cancelByGuide(reason);
+        Long guideMemberId = resolveGuideMemberId(matchRequest.getGuideId());
+        guideScheduleSyncClient.cancelToAvailable(matchRequest.getGuideId(), matchRequest.getGuideScheduleId(), guideMemberId);
         log.info("[F05-02] 가이드 취소 완료 — requestId={}, guideId={}", requestId, guideId);
         return MatchRequestActionResponse.from(matchRequest);
     }
@@ -196,5 +212,11 @@ public class MatchRequestService {
         }
         NumberFormat nf = NumberFormat.getNumberInstance(Locale.KOREA);
         return nf.format(desiredBudget) + "원";
+    }
+
+    private Long resolveGuideMemberId(Long guideProfileId) {
+        return guideProfileRepository.findById(guideProfileId)
+                .map(guideProfile -> guideProfile.getMemberId())
+                .orElseThrow(() -> new MatchingException(MatchingErrorCode.MATCH_REQUEST_UNAUTHORIZED));
     }
 }

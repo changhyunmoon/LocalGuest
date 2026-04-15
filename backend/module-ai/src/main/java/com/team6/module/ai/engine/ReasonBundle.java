@@ -19,6 +19,8 @@ public class ReasonBundle {
     @Builder
     public static class Fact {
         private final String code;
+        /** {@link com.team6.module.ai.support.RecommendReasonEvidenceSlots} 값. */
+        private final String evidenceSlot;
         private final List<String> values;
     }
 }

@@ -94,10 +94,19 @@ public class GuideSchedule extends BaseTimeEntity {
         this.matchRequestId = matchRequestId;
     }
 
-    // 결제 완료 처리 — matching 도메인이 PAID 전환 시 호출
-    // PROPOSED → BOOKED 전환 + isPaid = true 동시 처리, courseDetail 잠금 해제
+    /**
+     * 결제 완료 처리 — 가이드 수락 등으로 이미 BOOKED인 경우 isPaid만 true로 설정해 courseDetail 잠금을 해제한다.
+     */
     public void markAsPaid() {
-        this.status = GuideScheduleStatus.BOOKED;
         this.isPaid = true;
+    }
+
+    /**
+     * 매칭 취소·거절 시 스케줄을 다시 예약 가능하게 복구한다. PENDING·BOOKED 모두 허용.
+     */
+    public void releaseMatchToAvailable() {
+        this.status = GuideScheduleStatus.AVAILABLE;
+        this.matchRequestId = null;
+        this.isPaid = false;
     }
 }

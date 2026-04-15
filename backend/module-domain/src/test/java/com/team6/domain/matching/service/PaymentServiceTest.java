@@ -1,6 +1,10 @@
 package com.team6.domain.matching.service;
 
+import com.team6.domain.guide.entity.GuideProfile;
+import com.team6.domain.guide.repository.GuideProfileRepository;
 import com.team6.domain.matching.client.FakePgClient;
+import com.team6.domain.matching.client.GuideScheduleSyncClient;
+import com.team6.domain.matching.client.KakaoPayClient;
 import com.team6.domain.matching.dto.request.PaymentConfirmRequest;
 import com.team6.domain.matching.dto.request.PaymentCreateRequest;
 import com.team6.domain.matching.dto.request.RefundRequestDto;
@@ -43,7 +47,13 @@ class PaymentServiceTest {
     @Mock
     private MatchRequestRepository matchRequestRepository;
     @Mock
+    private GuideProfileRepository guideProfileRepository;
+    @Mock
     private FakePgClient fakePgClient;
+    @Mock
+    private KakaoPayClient kakaoPayClient;
+    @Mock
+    private GuideScheduleSyncClient guideScheduleSyncClient;
     @InjectMocks
     private PaymentService paymentService;
 
@@ -132,6 +142,7 @@ class PaymentServiceTest {
 
         when(paymentRepository.findByPgOrderNo("LM-FAKE-test-order")).thenReturn(Optional.of(payment));
         when(fakePgClient.approvePayment("LM-FAKE-test-order", 25000, 400L)).thenReturn("FAKE-TXN-400");
+        when(guideProfileRepository.findById(20L)).thenReturn(Optional.of(GuideProfile.builder().id(20L).memberId(2000L).build()));
 
         PaymentResponseDto dto = paymentService.confirmPayment(guestId, confirm);
 
@@ -139,6 +150,7 @@ class PaymentServiceTest {
         assertEquals("FAKE-TXN-400", dto.getPgTransactionId());
         assertEquals(MatchRequestStatus.PAID, mr.getStatus());
         assertEquals(true, dto.getPaidAt() != null && dto.getRefundDeadline() != null);
+        verify(guideScheduleSyncClient).confirmPaid(20L, 900L, 2000L);
     }
 
     @Test
@@ -190,6 +202,7 @@ class PaymentServiceTest {
                 .id(id)
                 .guestId(guestId)
                 .guideId(guideId)
+                .guideScheduleId(900L)
                 .destination("Seoul")
                 .desiredDate(LocalDate.now())
                 .build();
@@ -222,6 +235,7 @@ class PaymentServiceTest {
                 .id(1L)
                 .guestId(payerId)
                 .guideId(2L)
+                .guideScheduleId(901L)
                 .destination("Seoul")
                 .desiredDate(LocalDate.now())
                 .build();

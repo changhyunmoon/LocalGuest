@@ -184,6 +184,17 @@ public class GuideScheduleService {
         return GuideScheduleResponse.from(schedule);
     }
 
+    // 스케줄 양식 조회 — isPaid=true면 courseDetail 공개, false면 null 마스킹 (F06-04)
+    // 가이드·게스트 모두 호출 가능 (본인 확인 없음)
+    // TODO: 추후 보안 강화 필요
+    // 현재 인증된 사용자라면 누구나 호출 가능
+    // 개선 시 가이드 본인 또는 매칭된 게스트만 허용하도록 변경 필요
+    @Transactional(readOnly = true)
+    public GuideScheduleFormResponse getScheduleForm(Long scheduleId, Long guideId) {
+        GuideSchedule schedule = getVerifiedSchedule(scheduleId, guideId);
+        return GuideScheduleFormResponse.from(schedule);
+    }
+
     // 수락 후 여행 계획 양식 저장 — BOOKED 상태 스케줄에만 가능 (F06-04)
     @Transactional
     public GuideScheduleFormResponse submitForm(Long scheduleId, Long guideId, SubmitGuideScheduleFormRequest request, Long userId) {
@@ -237,34 +248,30 @@ public class GuideScheduleService {
         return GuideScheduleResponse.from(schedule);
     }
 
-    // [matching 연동] 결제 완료 확정 — matching 도메인이 PAID 전환 시 호출
-    // PENDING → BOOKED + isPaid = true 동시 처리, courseDetail 잠금 해제
+    // [matching 연동] 결제 완료 확정 — acceptSchedule 등으로 이미 BOOKED인 경우 isPaid만 true (courseDetail 잠금 해제)
     @Transactional
     public GuideScheduleResponse markAsPaid(Long scheduleId, Long guideId) {
         GuideSchedule schedule = getVerifiedSchedule(scheduleId, guideId);
 
-        if (schedule.getStatus() != GuideScheduleStatus.PENDING) {
-            throw new GuideException(GuideErrorCode.SCHEDULE_NOT_PENDING);
+        if (schedule.getStatus() != GuideScheduleStatus.BOOKED) {
+            throw new GuideException(GuideErrorCode.SCHEDULE_NOT_BOOKED);
         }
 
         schedule.markAsPaid();
         return GuideScheduleResponse.from(schedule);
     }
 
-    // [matching 연동] PENDING → AVAILABLE 복구 — matching 도메인이 취소 시 호출
+    // [matching 연동] PENDING 또는 BOOKED → AVAILABLE — 매칭 거절·취소 시 matching 도메인이 호출 (F03/F05)
     @Transactional
     public GuideScheduleResponse cancelToAvailable(Long scheduleId, Long guideId) {
-        // 스케줄 조회
         GuideSchedule schedule = getVerifiedSchedule(scheduleId, guideId);
 
-        // PENDING 상태인지 확인 (복구는 대기 중 상태에서만 허용)
-        if (schedule.getStatus() != GuideScheduleStatus.PENDING) {
-            throw new GuideException(GuideErrorCode.SCHEDULE_NOT_PENDING);
+        if (schedule.getStatus() != GuideScheduleStatus.PENDING
+                && schedule.getStatus() != GuideScheduleStatus.BOOKED) {
+            throw new GuideException(GuideErrorCode.SCHEDULE_MATCH_RELEASE_INVALID);
         }
 
-        // 상태 복구: PENDING → AVAILABLE
-        schedule.changeStatus(GuideScheduleStatus.AVAILABLE);
-
+        schedule.releaseMatchToAvailable();
         return GuideScheduleResponse.from(schedule);
     }
 

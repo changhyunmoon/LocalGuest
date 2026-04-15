@@ -19,7 +19,7 @@ public class Member {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false)
     private String email;
 
     @Column(nullable = false)
@@ -81,7 +81,11 @@ public class Member {
     }
 
     // 재가입
+<<<<<<< HEAD
     public void reactive(String encodedNewPassword, String newName, String newNickName) {
+=======
+    public void reactivate(String encodedNewPassword, String newName, String newNickName) {
+>>>>>>> Feat/be#148
         this.status = Status.ACTIVE;
         this.password = encodedNewPassword;
         this.name = newName;

@@ -221,6 +221,14 @@ class PromptParserTest {
     }
 
     @Test
+    void signals_should_detect_exclusion_intent_keywords_and_budget_duration_hints() {
+        PromptParser.ParseSignals s = promptParser.signals("제주 2박3일로 예산은 20만 안으로, 술집은 말고 추천해줘");
+        assertThat(s.matchedExclusionIntentKeywords()).contains("말고");
+        assertThat(s.hasBudgetHint()).isTrue();
+        assertThat(s.hasDurationHint()).isTrue();
+    }
+
+    @Test
     void parse_should_extract_solo_companion_and_insta_style_and_marine_activity() {
         GuideRecommendRequest r = promptParser.parse("부산 솔로 여행 인스타 핫플 카페", 3, List.of());
         assertThat(r.getCompanionType()).isEqualTo("혼자");
@@ -229,5 +237,42 @@ class PromptParserTest {
         GuideRecommendRequest r2 = promptParser.parse("제주 스노클링 다이빙 하고 싶어", 3, List.of());
         assertThat(r2.getRegion()).isEqualTo("제주");
         assertThat(r2.getActivityTags()).contains("바다");
+    }
+
+    @Test
+    void parse_should_map_scenic_and_indoor_weather_intents_to_tags() {
+        GuideRecommendRequest scenic = promptParser.parse("강릉 경치 좋은 전망 위주로 조용히 보고 싶어", 3, List.of());
+        assertThat(scenic.getActivityTags()).contains("야경");
+        assertThat(scenic.getTravelStyle()).isEqualTo("힐링");
+
+        GuideRecommendRequest indoor = promptParser.parse("제주 우천이라 실내 위주로 박물관 갈래", 3, List.of());
+        assertThat(indoor.getActivityTags()).contains("전시");
+    }
+
+    @Test
+    void parse_should_detect_family_with_child_phrases() {
+        GuideRecommendRequest r = promptParser.parse("부산 아이랑 키즈 동반으로 바다 보러", 3, List.of());
+        assertThat(r.getCompanionType()).isEqualTo("가족");
+        assertThat(r.getActivityTags()).contains("바다");
+    }
+
+    @Test
+    void parse_should_strip_activity_when_same_tag_is_excluded_and_notice_conflict() {
+        GuideRecommendRequest r = promptParser.parse("부산 맛집 빼고 맛집 위주로 부탁", 3, List.of());
+        assertThat(r.getExcludedActivityTags()).contains("맛집");
+        assertThat(r.getActivityTags()).doesNotContain("맛집");
+        assertThat(r.getParserNoticeCodes()).contains("PROMPT_PREFERENCE_CONFLICT_RESOLVED");
+    }
+
+    @Test
+    void parse_should_relax_excluded_tag_when_later_explicit_requirement() {
+        GuideRecommendRequest r = promptParser.parse(
+                "부산에서 처음엔 카페는 빼고 싶었는데 결국 카페 꼭 가고 싶어",
+                3,
+                List.of()
+        );
+        assertThat(r.getExcludedActivityTags()).doesNotContain("카페");
+        assertThat(r.getActivityTags()).contains("카페");
+        assertThat(r.getParserNoticeCodes()).contains("PROMPT_PREFERENCE_CONFLICT_RESOLVED");
     }
 }

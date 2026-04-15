@@ -41,10 +41,11 @@ public class JwtTokenProvider {
                 .compact();
     }
 
-    public String createRefreshToken(String email) {
+    public String createRefreshToken(String email, String role) {
         Date now = new Date();
         return Jwts.builder()
                 .subject(email)
+                .claim("role", role)
                 .issuedAt(now)
                 .expiration(new Date(now.getTime() + REFRESH_TOKEN_VALIDITY))
                 .signWith(key)
@@ -81,5 +82,10 @@ public class JwtTokenProvider {
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();
+    }
+
+    public long getExpiration(String token) {
+        Date expiration = getClaims(token).getExpiration();
+        return expiration.getTime() - System.currentTimeMillis();
     }
 }

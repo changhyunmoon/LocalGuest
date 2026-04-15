@@ -2,6 +2,7 @@ package com.team6.module.ai.service;
 
 import com.team6.module.ai.dto.request.GuideRecommendRequest;
 import com.team6.module.ai.dto.response.GuideRecommendResponse;
+import com.team6.module.ai.config.ScoringPolicySnapshot;
 import com.team6.module.ai.parser.PromptParser;
 import com.team6.module.ai.support.AdjacentRegionProvider;
 import com.team6.module.ai.support.AiRecommendationMetrics;
@@ -18,7 +19,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static com.team6.module.ai.support.AiRecommendationTuning.POLICY_VERSION;
@@ -31,17 +34,20 @@ public class PromptRecommendationService {
     private final AiRecommendationService aiRecommendationService;
     private final AdjacentRegionProvider adjacentRegionProvider;
     private final AiRecommendationMetrics metrics;
+    private final ScoringPolicySnapshot scoringPolicy;
 
     public PromptRecommendationService(
             PromptParser promptParser,
             AiRecommendationService aiRecommendationService,
             AdjacentRegionProvider adjacentRegionProvider,
-            AiRecommendationMetrics metrics
+            AiRecommendationMetrics metrics,
+            ScoringPolicySnapshot scoringPolicy
     ) {
         this.promptParser = promptParser;
         this.aiRecommendationService = aiRecommendationService;
         this.adjacentRegionProvider = adjacentRegionProvider;
         this.metrics = metrics;
+        this.scoringPolicy = scoringPolicy;
     }
 
     private static final String NOTICE_REGION_REQUIRED =
@@ -51,6 +57,14 @@ public class PromptRecommendationService {
     /** API로 넘어온 후보·지역 필터 후 풀에 가이드가 한 명뿐일 때 */
     private static final String NOTICE_SPARSE_GUIDE_POOL =
             "이 조건에 맞는 가이드가 한 분뿐이라 추천 선택 폭이 좁을 수 있어요.";
+    private static final String NOTICE_PARSE_LOW =
+            "지역 외 조건 신호가 적어 해석 여지가 있어요. 예산·일정·원하는 활동을 조금만 더 적어주시면 정확해져요.";
+    private static final String NOTICE_BUDGET_VAGUE =
+            "예산과 관련된 표현이 있는데 구간을 확정하지 못했어요. 금액이나 ‘가성비/럭셔리’처럼 알려주시면 좋아요.";
+    private static final String NOTICE_DURATION_VAGUE =
+            "일정에 대한 말은 있는데 며칠인지 확정하지 못했어요. ‘2박3일’처럼 적어주시면 좋아요.";
+
+    private static final Pattern DURATION_NIGHTS_HINT = Pattern.compile("\\d{1,2}\\s*박");
 
     public GuideRecommendResponse recommendByPrompt(
             String prompt,
@@ -91,6 +105,7 @@ public class PromptRecommendationService {
                         .matchRequestDraft(matchRequestDraftFrom(parsed))
                         .notice(NOTICE_REGION_REQUIRED)
                         .noticeCodes(List.of(RecommendationNoticeCodes.REGION_REQUIRED))
+                        .promptParseConfidence("LOW")
                         .policyVersion(POLICY_VERSION)
                         .totalCount(0)
                         .recommendations(List.of())
@@ -125,6 +140,11 @@ public class PromptRecommendationService {
         FallbackOutcome fallback = resolveFallbackWithStrategicRelaxation(effective, base);
         GuideRecommendResponse finalBase = fallback.responseAfterFallback();
 
+        String parseConfidence = computePromptParseConfidence(parsed);
+        List<String> ambiguityCodes = collectAmbiguityNoticeCodes(prompt, parsed);
+        List<String> parserHints = parsed.getParserNoticeCodes() == null ? List.of() : parsed.getParserNoticeCodes();
+        logParserTuningSignals(prompt, parsed, parseConfidence, ambiguityCodes, parserHints);
+
         String notice = fallback.fallbackNotice();
         if (expansion.expansionUsed()) {
             notice = mergeNotice(NOTICE_ADJACENT_INCLUDED, notice);
@@ -135,19 +155,25 @@ public class PromptRecommendationService {
             notice = mergeNotice(NOTICE_SPARSE_GUIDE_POOL, notice);
             metrics.recordSparsePoolNotice();
         }
+        notice = enrichNoticeForParseQuality(notice, parseConfidence, ambiguityCodes);
 
         if (fallback.attemptedRelaxChain()) {
             String metricStage = fallback.winningRelaxStage() != RelaxStage.NONE
                     ? fallback.winningRelaxStage().name()
                     : "STRATEGIC_EXHAUSTED";
             metrics.recordFallback(metricStage);
+            boolean adopted = fallback.winningRelaxStage() != RelaxStage.NONE;
+            metrics.recordStrategicFallbackOutcome(adopted, POLICY_VERSION);
         }
 
             List<String> noticeCodes = buildNoticeCodes(
                     fallback,
                     expansion.expansionUsed(),
                     effectivePoolSizeForNotice,
-                    finalBase.getTotalCount()
+                    finalBase.getTotalCount(),
+                    parserHints,
+                    ambiguityCodes,
+                    parseConfidence
             );
             metrics.recordOutcome(finalBase.getTotalCount() > 0 ? "success" : "empty");
 
@@ -170,6 +196,7 @@ public class PromptRecommendationService {
                     .matchRequestDraft(matchRequestDraftFrom(parsed))
                     .notice(notice)
                     .noticeCodes(noticeCodes)
+                    .promptParseConfidence(parseConfidence)
                     .policyVersion(POLICY_VERSION)
                     .totalCount(finalBase.getTotalCount())
                     .recommendations(finalBase.getRecommendations())
@@ -179,6 +206,62 @@ public class PromptRecommendationService {
         } finally {
             metrics.recordRecommendationLatencyNanos(System.nanoTime() - startNs, POLICY_VERSION);
         }
+    }
+
+    /**
+     * 운영 로그에서 파싱 실패/모호함 패턴을 수집하기 위한 신호 로그.
+     * 프롬프트 원문은 남기지 않고, {@code promptHash}와 “언급 힌트/추출 결과”만 남긴다.
+     */
+    private void logParserTuningSignals(
+            String prompt,
+            GuideRecommendRequest parsed,
+            String parseConfidence,
+            List<String> ambiguityCodes,
+            List<String> parserHints
+    ) {
+        try {
+            boolean hasAmbiguity = ambiguityCodes != null && !ambiguityCodes.isEmpty();
+            boolean hasParserHints = parserHints != null && !parserHints.isEmpty();
+            boolean lowConfidence = "LOW".equalsIgnoreCase(parseConfidence);
+
+            var signals = promptParser.signals(prompt);
+            boolean exclusionIntentButNoExcluded =
+                    signals != null
+                            && signals.matchedExclusionIntentKeywords() != null
+                            && !signals.matchedExclusionIntentKeywords().isEmpty()
+                            && (parsed.getExcludedActivityTags() == null || parsed.getExcludedActivityTags().isEmpty());
+
+            if (!(lowConfidence || hasAmbiguity || hasParserHints || exclusionIntentButNoExcluded)) {
+                return;
+            }
+
+            log.info("[AI_PARSER_TUNE] policyVer={} promptHash={} parseConfidence={} ambiguityCodes={} parserHints={} signals={{exclusionIntents={},budgetHint={},durationHint={}}} extracted={{region={},style={},budget={},durationDays={},tags={},excluded={},langs={},headcount={}}}",
+                    POLICY_VERSION,
+                    promptHash(prompt),
+                    parseConfidence,
+                    ambiguityCodes,
+                    parserHints,
+                    signals == null ? null : signals.matchedExclusionIntentKeywords(),
+                    signals != null && signals.hasBudgetHint(),
+                    signals != null && signals.hasDurationHint(),
+                    parsed.getRegion(),
+                    parsed.getTravelStyle(),
+                    parsed.getBudgetLevel(),
+                    parsed.getDurationDays(),
+                    parsed.getActivityTags(),
+                    parsed.getExcludedActivityTags(),
+                    parsed.getPreferredLanguages(),
+                    parsed.getHeadcount()
+            );
+        } catch (Exception e) {
+            log.debug("[AI_PARSER_TUNE] logging skipped: {}", e.toString());
+        }
+    }
+
+    private static int promptHash(String prompt) {
+        return Objects.toString(prompt, "").getBytes(StandardCharsets.UTF_8).length == 0
+                ? 0
+                : Objects.toString(prompt, "").hashCode();
     }
 
     private void recordDistributionMetrics(GuideRecommendResponse response, int effectivePoolSize) {
@@ -234,7 +317,10 @@ public class PromptRecommendationService {
             FallbackOutcome fallback,
             boolean expansionUsed,
             int effectivePoolSize,
-            int resultCount
+            int resultCount,
+            List<String> parserHints,
+            List<String> ambiguityCodes,
+            String parseConfidence
     ) {
         LinkedHashSet<String> codes = new LinkedHashSet<>();
         if (fallback.coreNoticeCodes() != null) {
@@ -253,7 +339,123 @@ public class PromptRecommendationService {
         if (effectivePoolSize == 1 && resultCount > 0) {
             codes.add(RecommendationNoticeCodes.SPARSE_GUIDE_POOL);
         }
+        if (parserHints != null) {
+            for (String h : parserHints) {
+                if (h != null && !h.isBlank()) {
+                    codes.add(h);
+                }
+            }
+        }
+        if (ambiguityCodes != null) {
+            for (String a : ambiguityCodes) {
+                if (a != null && !a.isBlank()) {
+                    codes.add(a);
+                }
+            }
+        }
+        if ("LOW".equals(parseConfidence)) {
+            codes.add(RecommendationNoticeCodes.PROMPT_PARSE_CONFIDENCE_LOW);
+        }
         return new ArrayList<>(codes);
+    }
+
+    private static String enrichNoticeForParseQuality(
+            String notice,
+            String parseConfidence,
+            List<String> ambiguityCodes
+    ) {
+        String out = notice;
+        if (ambiguityCodes != null && ambiguityCodes.contains(RecommendationNoticeCodes.PROMPT_BUDGET_AMBIGUOUS)) {
+            out = mergeNotice(out, NOTICE_BUDGET_VAGUE);
+        }
+        if (ambiguityCodes != null && ambiguityCodes.contains(RecommendationNoticeCodes.PROMPT_DURATION_AMBIGUOUS)) {
+            out = mergeNotice(out, NOTICE_DURATION_VAGUE);
+        }
+        if ("LOW".equals(parseConfidence)) {
+            out = mergeNotice(out, NOTICE_PARSE_LOW);
+        }
+        return out;
+    }
+
+    private static String normalizeForAmbiguityScan(String prompt) {
+        if (prompt == null || prompt.isBlank()) {
+            return "";
+        }
+        return prompt.trim().toLowerCase(Locale.ROOT).replaceAll("\\s+", " ");
+    }
+
+    private static List<String> collectAmbiguityNoticeCodes(String prompt, GuideRecommendRequest parsed) {
+        String p = normalizeForAmbiguityScan(prompt);
+        List<String> codes = new ArrayList<>();
+        if (!notBlank(parsed.getBudgetLevel()) && budgetMentionedAmbiguous(p)) {
+            codes.add(RecommendationNoticeCodes.PROMPT_BUDGET_AMBIGUOUS);
+        }
+        if (parsed.getDurationDays() == null && durationMentionedAmbiguous(p)) {
+            codes.add(RecommendationNoticeCodes.PROMPT_DURATION_AMBIGUOUS);
+        }
+        return codes;
+    }
+
+    private static boolean budgetMentionedAmbiguous(String p) {
+        return p.contains("예산")
+                || p.contains("비용")
+                || p.contains("경비")
+                || p.contains("가격")
+                || p.contains("1인당")
+                || p.contains("총액")
+                || p.contains("얼마나 들");
+    }
+
+    private static boolean durationMentionedAmbiguous(String p) {
+        return p.contains("며칠")
+                || p.contains("기간")
+                || p.contains("일정")
+                || p.contains("체류")
+                || DURATION_NIGHTS_HINT.matcher(p).find();
+    }
+
+    /**
+     * 지역은 파싱됐을 때, 그 외 신호가 얼마나 풍부한지에 대한 룰 기반 등급.
+     */
+    private static String computePromptParseConfidence(GuideRecommendRequest p) {
+        int dims = 0;
+        if (notBlank(p.getRegion())) {
+            dims++;
+        }
+        if (notBlank(p.getTravelStyle())) {
+            dims++;
+        }
+        if (notBlank(p.getBudgetLevel())) {
+            dims++;
+        }
+        if (notBlank(p.getCompanionType())) {
+            dims++;
+        }
+        if (p.getActivityTags() != null && !p.getActivityTags().isEmpty()) {
+            dims++;
+        }
+        if (p.getPreferredLanguages() != null && !p.getPreferredLanguages().isEmpty()) {
+            dims++;
+        }
+        if (p.getHeadcount() != null) {
+            dims++;
+        }
+        if (p.getDurationDays() != null) {
+            dims++;
+        }
+        if (p.getExcludedActivityTags() != null && !p.getExcludedActivityTags().isEmpty()) {
+            dims++;
+        }
+        if (p.getSoftPenaltyActivityTags() != null && !p.getSoftPenaltyActivityTags().isEmpty()) {
+            dims++;
+        }
+        if (dims >= 5) {
+            return "HIGH";
+        }
+        if (dims >= 3) {
+            return "MEDIUM";
+        }
+        return "LOW";
     }
 
     private static String noticeCodeForWinningStage(RelaxStage stage) {
@@ -323,7 +525,7 @@ public class PromptRecommendationService {
 
         boolean noResults = base == null || base.getTotalCount() == 0;
         int score = topScore(base);
-        boolean lowScore = !noResults && score < AiRecommendationTuning.LOW_SIGNAL_SCORE_THRESHOLD;
+        boolean lowScore = !noResults && score < scoringPolicy.lowSignalScoreThreshold();
         if (!noResults && !lowScore) {
             return FallbackOutcome.noRelax(base);
         }
@@ -335,7 +537,7 @@ public class PromptRecommendationService {
                 ? "활동·스타일·지역 순으로 조건을 단계적으로 완화해 찾아봤어요."
                 : "활동·스타일·지역 순으로 조건을 단계적으로 완화해 추천을 다시 구성해 봤어요.";
 
-        StrategicChainResult chain = runStrategicRelaxationChain(effective, base);
+        StrategicChainResult chain = runStrategicRelaxationChain(effective, base, scoringPolicy);
         boolean improved = chain.winningStage() != RelaxStage.NONE;
         GuideRecommendResponse finalResp = improved ? chain.bestResponse() : base;
         boolean exhausted = !improved;
@@ -355,7 +557,8 @@ public class PromptRecommendationService {
 
     private StrategicChainResult runStrategicRelaxationChain(
             GuideRecommendRequest languageAnchor,
-            GuideRecommendResponse baseline
+            GuideRecommendResponse baseline,
+            ScoringPolicySnapshot scoring
     ) {
         GuideRecommendRequest current = languageAnchor;
         for (RelaxStage step : STRATEGIC_RELAX_ORDER) {
@@ -364,17 +567,35 @@ public class PromptRecommendationService {
             }
             current = applyStrategicRelaxStep(languageAnchor, current, step);
             GuideRecommendResponse retried = aiRecommendationService.recommend(current);
-            if (acceptsStrategicRetry(retried)) {
+            if (acceptsStrategicRetry(retried, baseline, scoring)) {
                 return new StrategicChainResult(retried, step);
             }
         }
         return new StrategicChainResult(baseline, RelaxStage.NONE);
     }
 
-    private static boolean acceptsStrategicRetry(GuideRecommendResponse resp) {
-        return resp != null
-                && resp.getTotalCount() > 0
-                && topScore(resp) >= AiRecommendationTuning.LOW_SIGNAL_SCORE_THRESHOLD;
+    private static boolean acceptsStrategicRetry(
+            GuideRecommendResponse retried,
+            GuideRecommendResponse baseline,
+            ScoringPolicySnapshot scoring
+    ) {
+        if (retried == null || retried.getTotalCount() == 0) {
+            return false;
+        }
+        int top = topScore(retried);
+        int threshold = scoring.lowSignalScoreThreshold();
+        if (top >= threshold) {
+            return true;
+        }
+        int minGain = scoring.fallbackMinImprovementOverBase();
+        if (minGain <= 0) {
+            return false;
+        }
+        int baseTop = topScore(baseline);
+        if (baseline == null || baseline.getTotalCount() == 0) {
+            return top >= threshold;
+        }
+        return top >= baseTop + minGain;
     }
 
     private static boolean isStrategicRelaxApplicable(GuideRecommendRequest req, RelaxStage step) {
@@ -457,9 +678,7 @@ public class PromptRecommendationService {
             int expansionExactCount
     ) {
         try {
-            int promptHash = Objects.toString(prompt, "").getBytes(StandardCharsets.UTF_8).length == 0
-                    ? 0
-                    : Objects.toString(prompt, "").hashCode();
+            int promptHash = promptHash(prompt);
             int candidateCount = guideCandidates == null ? 0 : guideCandidates.size();
             int baseTopScore = topScore(base);
             int finalTopScore = topScore(finalBase);

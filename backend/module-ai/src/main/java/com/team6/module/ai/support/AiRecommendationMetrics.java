@@ -15,7 +15,8 @@ import java.util.concurrent.TimeUnit;
  *   <li>{@code .no_region_short_circuit} — 지역 미입력 단축</li>
  *   <li>{@code .region_expansion} — 인접 지역 후보 확장 사용</li>
  *   <li>{@code .sparse_pool_notice} — 희소 풀 안내 부착</li>
-     *   <li>{@code .fallback(stage=...)} — 조건 완화 재시도({@code DROP_ACTIVITY_TAGS_ONLY} 등 또는 {@code STRATEGIC_EXHAUSTED})</li>
+ *   <li>{@code .fallback(stage=...)} — 조건 완화 재시도({@code DROP_ACTIVITY_TAGS_ONLY} 등 또는 {@code STRATEGIC_EXHAUSTED})</li>
+ *   <li>{@code .strategic_fallback_outcome(result=adopted|exhausted,policy_version=...)} — 전략 완화 체인 실행 시 최종 채택 여부(대시보드에서 adopted/(adopted+exhausted))</li>
  *   <li>{@code .outcome(type=no_region|empty|success)} — 최종 건수 결과</li>
  *   <li>{@code .feedback_penalty_hits(policy_version=...)} — 후보 1명 스코어링 시
  *       {@link com.team6.module.ai.policy.FeedbackMatchPolicy} 감점이 적용된 횟수(0보다 작은 기여)</li>
@@ -26,6 +27,7 @@ import java.util.concurrent.TimeUnit;
  *   <li>{@code .top1_score} — Top1 룰 점수</li>
  *   <li>{@code .effective_pool_size} — 확장 후 후보 풀 크기</li>
  *   <li>{@code .feedback_penalty_magnitude} — 후보별 피드백 감점 절댓값(룰 점수에서 깎인 양, 단위: 점)</li>
+ *   <li>{@code .diversity_penalty_magnitude} — Top-N에서 2번째 슬롯부터 선택 시 적용된 유사도×λ 패널티(점수 스케일)</li>
  * </ul>
  */
 @Component
@@ -61,6 +63,17 @@ public class AiRecommendationMetrics {
     public void recordFallback(String relaxStage) {
         String stage = relaxStage == null || relaxStage.isBlank() ? "NONE" : relaxStage;
         registry.counter(PREFIX + ".fallback", "stage", stage).increment();
+    }
+
+    /**
+     * 전략적 조건 완화 체인을 실제로 돌린 뒤, 완화된 추천을 채택했는지(adopted) 소진했는지(exhausted).
+     * Prometheus 등에서 {@code sum(rate(...{result="adopted"})) / sum(rate(...{result=~"adopted|exhausted"}))} 로 채택률 근사.
+     */
+    public void recordStrategicFallbackOutcome(boolean adopted, String policyVersion) {
+        String pv = policyVersion == null ? "unknown" : policyVersion;
+        String result = adopted ? "adopted" : "exhausted";
+        registry.counter(PREFIX + ".strategic_fallback_outcome",
+                Tags.of("policy_version", pv, "result", result)).increment();
     }
 
     /**
@@ -108,5 +121,17 @@ public class AiRecommendationMetrics {
         Tags tags = Tags.of("policy_version", pv);
         registry.counter(PREFIX + ".feedback_penalty_hits", tags).increment();
         registry.summary(PREFIX + ".feedback_penalty_magnitude", tags).record(penaltyMagnitude);
+    }
+
+    /**
+     * 다양성 랭킹에서 이미 고른 가이드와의 유사도×λ로 깎인 점수(양수). Top1(첫 슬롯)에는 적용되지 않으므로 기록하지 않는다.
+     */
+    public void recordDiversityPenaltyMagnitude(double penaltyPoints, String policyVersion) {
+        if (penaltyPoints < 0.0) {
+            return;
+        }
+        String pv = policyVersion == null ? "unknown" : policyVersion;
+        registry.summary(PREFIX + ".diversity_penalty_magnitude", Tags.of("policy_version", pv))
+                .record(penaltyPoints);
     }
 }

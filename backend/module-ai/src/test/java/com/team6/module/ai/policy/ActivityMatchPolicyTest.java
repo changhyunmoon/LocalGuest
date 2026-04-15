@@ -1,5 +1,6 @@
 package com.team6.module.ai.policy;
 
+import com.team6.module.ai.config.ScoringPolicySnapshot;
 import com.team6.module.ai.model.GuideAiProfile;
 import com.team6.module.ai.model.TravelerPreference;
 import org.junit.jupiter.api.Test;
@@ -10,7 +11,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class ActivityMatchPolicyTest {
 
-    private final ActivityMatchPolicy policy = new ActivityMatchPolicy();
+    private final ScoringPolicySnapshot scoring = ScoringPolicySnapshot.defaults();
+    private final ActivityMatchPolicy policy = new ActivityMatchPolicy(scoring);
 
     @Test
     void score_should_reduce_when_guide_matches_soft_penalty_tag() {
@@ -25,8 +27,7 @@ class ActivityMatchPolicyTest {
                 .build();
 
         int score = policy.score(pref, guide);
-        // 카페 매칭 10, 등산 soft 패널티 -6 -> 4
-        assertThat(score).isEqualTo(4);
+        assertThat(score).isEqualTo(scoring.weightActivity() - scoring.softActivityPenaltyPerTag());
     }
 
     @Test

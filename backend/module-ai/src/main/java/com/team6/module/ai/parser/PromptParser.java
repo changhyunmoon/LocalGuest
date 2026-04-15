@@ -2,6 +2,7 @@ package com.team6.module.ai.parser;
 
 import com.team6.module.ai.config.LocalGuestAiProperties;
 import com.team6.module.ai.dto.request.GuideRecommendRequest;
+import com.team6.module.ai.support.RecommendationNoticeCodes;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -68,6 +69,19 @@ public class PromptParser {
     private static final Pattern DATE_RANGE_DAY_ONLY = Pattern.compile("(\\d{1,2})\\s*일\\s*(?:~|\\-|부터)\\s*(\\d{1,2})\\s*일");
     private static final int NEGATION_AFTER_WINDOW = 12;
 
+    /**
+     * 운영 로그에서 “실패/모호 패턴”을 모아 yml/내장 키워드를 주기적으로 보강하기 위한 신호 묶음.
+     * <p>
+     * 프롬프트 원문을 그대로 남기지 않고도(민감정보 최소화) “어떤 힌트가 있었는데 결과가 비었는지”를
+     * 판별할 수 있도록, 매칭된 트리거만 요약한다.
+     */
+    public record ParseSignals(
+            List<String> matchedExclusionIntentKeywords,
+            boolean hasBudgetHint,
+            boolean hasDurationHint
+    ) {
+    }
+
     public GuideRecommendRequest parse(
             String prompt,
             Integer topN,
@@ -79,15 +93,23 @@ public class PromptParser {
         String travelStyle = extractTravelStyle(normalizedPrompt);
         String budgetLevel = extractBudgetLevel(normalizedPrompt);
         String companionType = extractCompanionType(normalizedPrompt);
-        List<String> excludedActivityTags = extractExcludedActivityTags(normalizedPrompt);
+        List<String> excludedRaw = extractExcludedActivityTags(normalizedPrompt);
+        List<String> excludedActivityTags = relaxExcludedWhenExplicitlyRequired(normalizedPrompt, excludedRaw);
         List<String> softPenaltyActivityTags = extractSoftPenaltyActivityTags(normalizedPrompt);
-        List<String> activityTags = stripActivityTagsOverlappingSoft(
+        List<String> activityBeforeExcluded = stripActivityTagsOverlappingSoft(
                 extractActivityTags(normalizedPrompt),
                 softPenaltyActivityTags
         );
+        List<String> activityTags = stripActivityTagsOverlappingExcluded(activityBeforeExcluded, excludedActivityTags);
         List<String> preferredLanguages = extractLanguages(normalizedPrompt);
         Integer headcount = extractHeadcount(normalizedPrompt);
         Integer durationDays = extractDurationDays(normalizedPrompt);
+
+        List<String> parserNotices = new ArrayList<>();
+        if (excludedActivityTags.size() < excludedRaw.size()
+                || activityTags.size() < activityBeforeExcluded.size()) {
+            parserNotices.add(RecommendationNoticeCodes.PROMPT_PREFERENCE_CONFLICT_RESOLVED);
+        }
 
         return GuideRecommendRequest.builder()
                 .region(region)
@@ -102,7 +124,44 @@ public class PromptParser {
                 .softPenaltyActivityTags(softPenaltyActivityTags)
                 .topN(topN)
                 .guideCandidates(guideCandidates)
+                .parserNoticeCodes(parserNotices.isEmpty() ? null : List.copyOf(parserNotices))
                 .build();
+    }
+
+    /**
+     * 파싱 실패/모호함 튜닝용 신호를 추출한다(로깅/관측용).
+     * <p>
+     * - 제외 의도: {@code localguest.ai.parser.exclusion-intent-keywords} + 내장 기본값을 합쳐 탐지
+     * - 예산/일정 힌트: 숫자 패턴 및 대표 키워드로 “언급은 있었다” 정도만 판별
+     */
+    public ParseSignals signals(String prompt) {
+        String normalized = normalize(prompt);
+        List<String> exclusionIntents = findAllMatchedKeywordsMerged(
+                normalized,
+                aiProperties.getParser().getExclusionIntentKeywords(),
+                DEFAULT_EXCLUSION_INTENT_KEYWORDS
+        );
+
+        boolean hasBudgetHint = containsAny(
+                normalized,
+                "예산", "원", "만원", "가성비", "저렴", "싸게", "럭셔리", "고급", "프리미엄", "비싸"
+        ) || BUDGET_WON.matcher(normalized).find()
+                || BUDGET_RANGE_WON.matcher(normalized).find()
+                || BUDGET_MANWON_ROUGH.matcher(normalized).find()
+                || BUDGET_MANWON_RANGE.matcher(normalized).find()
+                || BUDGET_MANWON_BAND.matcher(normalized).find();
+
+        boolean hasDurationHint = containsAny(normalized, "일정", "며칠", "박", "일", "주")
+                || DURATION_NIGHTS_DAYS.matcher(normalized).find()
+                || DURATION_NIGHTS_ONLY.matcher(normalized).find()
+                || DURATION_RANGE_DAYS.matcher(normalized).find()
+                || DURATION_DAYS_SUFFIX.matcher(normalized).find()
+                || DURATION_DAYS.matcher(normalized).find()
+                || DURATION_WEEKS.matcher(normalized).find()
+                || DATE_RANGE_MONTH_DAY.matcher(normalized).find()
+                || DATE_RANGE_DAY_ONLY.matcher(normalized).find();
+
+        return new ParseSignals(exclusionIntents, hasBudgetHint, hasDurationHint);
     }
 
     private String normalize(String prompt) {
@@ -257,7 +316,10 @@ public class PromptParser {
         Map<String, List<String>> styleKeywords = Map.of(
                 "감성", List.of("감성", "감성적인", "감성샷", "핫플", "인스타", "인스타그램"),
                 "액티비티", List.of("액티비티", "활동적인", "신나게", "역동적인", "익스트림", "스릴", "짜릿"),
-                "힐링", List.of("조용", "힐링", "편안", "여유", "쉬고", "한적"),
+                "힐링", List.of(
+                        "조용", "조용한", "힐링", "편안", "여유", "쉬고", "한적", "고즈넉", "한산",
+                        "사람 적", "사람적", "적은 곳", "한적하게"
+                ),
                 "로컬", List.of("로컬", "현지", "동네", "시장", "골목", "문화", "역사", "유적", "문화재", "유네스코")
         );
         Map<String, Integer> scores = new LinkedHashMap<>();
@@ -351,7 +413,10 @@ public class PromptParser {
     private String extractCompanionType(String prompt) {
         if (containsAny(prompt, "혼자", "혼행", "1인", "솔로")) return "혼자";
         if (containsAny(prompt, "친구", "친구랑", "우정", "동창")) return "친구";
-        if (containsAny(prompt, "가족", "부모님", "엄마", "아빠", "아이", "애기")) return "가족";
+        if (containsAny(prompt,
+                "가족", "부모님", "엄마", "아빠", "아이", "애기",
+                "아이랑", "애랑", "아기랑", "키즈", "유아", "육아", "아동", "토들러", "영유아"
+        )) return "가족";
         if (containsAny(prompt, "반려견", "강아지", "댕댕이", "반려동물")) return "반려견";
         if (containsAny(prompt, "연인", "커플", "데이트", "여자친구", "남자친구")) return "연인";
         if (containsAny(prompt, "단체", "워크샵", "워크숍", "회사", "동호회", "모임")) return "단체";
@@ -362,7 +427,23 @@ public class PromptParser {
         Set<String> tags = new LinkedHashSet<>();
 
         addTagIfMentioned(prompt, tags, "카페", "카페");
-        addTagIfMentioned(prompt, tags, "야경", "야경", "밤거리");
+        addTagIfMentioned(
+                prompt,
+                tags,
+                "야경",
+                "야경",
+                "밤거리",
+                "경치",
+                "전망",
+                "조망",
+                "뷰",
+                "루프탑",
+                "전망대",
+                "sky",
+                "view",
+                "scenic",
+                "viewpoint"
+        );
         addTagIfMentioned(prompt, tags, "맛집", "맛집", "먹방", "음식", "식도락");
         addTagIfMentioned(prompt, tags, "산책", "산책", "걷기", "걷고");
         addTagIfMentioned(prompt, tags, "등산", "등산", "트레킹");
@@ -370,7 +451,26 @@ public class PromptParser {
         addTagIfMentioned(prompt, tags, "쇼핑", "쇼핑");
         addTagIfMentioned(prompt, tags, "바다", "바다", "해변", "오션뷰", "해수욕장", "스노클링", "다이빙", "스쿠버");
         addTagIfMentioned(prompt, tags, "일몰", "일몰", "노을", "야경명소");
-        addTagIfMentioned(prompt, tags, "전시", "박물관", "미술관", "전시");
+        addTagIfMentioned(
+                prompt,
+                tags,
+                "전시",
+                "박물관",
+                "미술관",
+                "전시",
+                "실내",
+                "우천",
+                "뮤지엄",
+                "갤러리",
+                "indoor",
+                "rainy",
+                "비오는날",
+                "비오는",
+                "비 오는",
+                "장마철",
+                "장마",
+                "폭우"
+        );
         addTagIfMentioned(prompt, tags, "시장", "시장", "전통시장", "로컬시장", "야시장");
         addTagIfMentioned(prompt, tags, "술집", "술집", "클럽", "바");
         addTagIfMentioned(prompt, tags, "브런치", "브런치", "카페투어");
@@ -429,6 +529,7 @@ public class PromptParser {
         addExcludedIfNegated(prompt, excluded, "맛집", "맛집", "먹방", "식도락");
         addExcludedIfNegated(prompt, excluded, "카페", "카페", "브런치", "카페투어");
         addExcludedIfNegated(prompt, excluded, "바다", "바다", "해변", "오션뷰", "해수욕장");
+        addExcludedIfNegated(prompt, excluded, "전시", "전시", "박물관", "미술관", "뮤지엄", "갤러리");
         LinkedHashSet<String> normalized = excluded.stream()
                 .map(KeywordNormalizer::normalizeTag)
                 .filter(Objects::nonNull)
@@ -522,6 +623,21 @@ public class PromptParser {
             }
         }
         return new ArrayList<>(merged);
+    }
+
+    private List<String> findAllMatchedKeywordsMerged(String prompt, List<String> yaml, String[] defaults) {
+        List<String> merged = mergeKeywordList(yaml, defaults);
+        LinkedHashSet<String> matched = new LinkedHashSet<>();
+        for (String keyword : merged) {
+            if (keyword == null || keyword.isBlank()) {
+                continue;
+            }
+            String k = keyword.trim().toLowerCase(Locale.ROOT);
+            if (!k.isEmpty() && prompt.contains(k)) {
+                matched.add(keyword.trim());
+            }
+        }
+        return new ArrayList<>(matched);
     }
 
     private boolean containsAnyMerged(String prompt, List<String> yaml, String[] defaults) {
@@ -762,5 +878,94 @@ public class PromptParser {
             case "액티비티" -> 1;
             default -> 0;
         };
+    }
+
+    /**
+     * 제외 목록과 겹치는 선호 활동은 제외를 우선한다(요청 일관성).
+     */
+    private List<String> stripActivityTagsOverlappingExcluded(List<String> activityTags, List<String> excluded) {
+        if (activityTags == null || activityTags.isEmpty() || excluded == null || excluded.isEmpty()) {
+            return activityTags == null ? List.of() : activityTags;
+        }
+        Set<String> ex = excluded.stream()
+                .map(KeywordNormalizer::normalizeTag)
+                .filter(Objects::nonNull)
+                .filter(s -> !s.isBlank())
+                .collect(Collectors.toSet());
+        return activityTags.stream()
+                .filter(a -> !ex.contains(KeywordNormalizer.normalizeTag(a)))
+                .collect(Collectors.toCollection(ArrayList::new));
+    }
+
+    /**
+     * 같은 활동에 대해 ‘빼고’로 제외됐다가 뒤에서 ‘꼭/위주’로 다시 선호하는 경우, 제외를 완화한다.
+     */
+    private List<String> relaxExcludedWhenExplicitlyRequired(String prompt, List<String> excluded) {
+        if (excluded == null || excluded.isEmpty()) {
+            return excluded == null ? List.of() : excluded;
+        }
+        LinkedHashSet<String> out = new LinkedHashSet<>();
+        for (String tag : excluded) {
+            String normalizedTag = KeywordNormalizer.normalizeTag(tag);
+            if (normalizedTag == null || normalizedTag.isBlank()) {
+                continue;
+            }
+            if (exclusionOverriddenByExplicitRequirement(prompt, normalizedTag)) {
+                continue;
+            }
+            out.add(normalizedTag);
+        }
+        return new ArrayList<>(out);
+    }
+
+    private boolean exclusionOverriddenByExplicitRequirement(String prompt, String normalizedTag) {
+        String[][] groups = {
+                {"술집", "술집", "클럽"},
+                {"등산", "등산", "트레킹"},
+                {"쇼핑", "쇼핑", "쇼핑몰", "아울렛"},
+                {"맛집", "맛집", "먹방", "식도락"},
+                {"카페", "카페", "브런치", "카페투어"},
+                {"바다", "바다", "해변", "오션뷰", "해수욕장"},
+                {"전시", "전시", "박물관", "미술관", "뮤지엄", "갤러리"}
+        };
+        for (String[] g : groups) {
+            if (!normalizedTag.equals(KeywordNormalizer.normalizeTag(g[0]))) {
+                continue;
+            }
+            for (int i = 1; i < g.length; i++) {
+                if (keywordHasStrongRequirement(prompt, g[i])) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * ‘위주’만으로는 앞선 ‘빼고’와 충돌하는 경우가 많아, 제외 완화는 강한 의도 표현에만 적용한다.
+     */
+    private boolean keywordHasStrongRequirement(String prompt, String keyword) {
+        if (keyword == null || keyword.length() < 2) {
+            return false;
+        }
+        String kw = keyword.toLowerCase(Locale.ROOT);
+        int idx = prompt.indexOf(kw);
+        while (idx >= 0) {
+            if (isNegatedAround(prompt, idx, kw.length())) {
+                idx = prompt.indexOf(kw, idx + kw.length());
+                continue;
+            }
+            int start = Math.max(0, idx - 18);
+            int end = Math.min(prompt.length(), idx + kw.length() + 18);
+            String win = prompt.substring(start, end);
+            if (containsAny(win,
+                    "꼭", "반드시", "필수",
+                    "가고 싶", "가고싶", "가야", "잡아주", "가보고 싶", "가보고싶"
+            )) {
+                return true;
+            }
+            idx = prompt.indexOf(kw, idx + kw.length());
+        }
+        return false;
     }
 }

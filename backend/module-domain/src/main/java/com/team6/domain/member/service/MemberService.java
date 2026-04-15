@@ -7,6 +7,7 @@ import com.team6.domain.member.entity.Status;
 import com.team6.domain.member.repository.MemberRepository;
 import com.team6.module.common.global.util.SecurityUtil;
 import lombok.RequiredArgsConstructor;
+import org.apache.coyote.BadRequestException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,6 +28,7 @@ public class MemberService {
         // 암호화된 비밀번호 값으로 교체
         // [LOG] DEBUG : [Member-Domain] 비밀번호 암호화 수행 중...
         String encodedPassword = passwordEncoder.encode(member.getPassword());
+<<<<<<< HEAD
 
         // 중복 회원 검증
         boolean isReactivated = validateDuplicateMember(member, encodedPassword);
@@ -55,13 +57,42 @@ public class MemberService {
                     return true;
                 })
                 .orElse(false);
+=======
+
+
+        return memberRepository.findByEmailAndRole(member.getEmail(), member.getRole())
+                .map(existingMember -> {
+                    // 이메일 + role 조합으로 기존 가입 이력 확인
+                    if(existingMember.getStatus() == Status.ACTIVE) {
+                        throw new IllegalStateException("이미 해당 역할로 가입된 계정이 존재합니다. ");
+                    }
+
+                    // 탈퇴 회원 재가입 로직
+                    String finalNickname = member.getNickname();
+                    if(memberRepository.existsByNickname(finalNickname)) {
+                        finalNickname = finalNickname + "_" + (int)(Math.random() * 1000);
+                    }
+
+                    existingMember.reactivate(encodedPassword, member.getName(), finalNickname);
+                    return existingMember.getId();
+                })
+                .orElseGet(()->{
+                    // 신규 가입
+                    if (memberRepository.existsByNickname(member.getNickname())) {
+                        throw new IllegalArgumentException("이미 사용 중인 닉네임입니다.");
+                    }
+
+                    member.updatePassword(encodedPassword);
+                    return memberRepository.save(member).getId();
+                });
+>>>>>>> Feat/be#148
     }
 
     // 회원 탈퇴 기능 - common-module에 securityUtil구현 후 구현 가능
     @Transactional
-    public void withdraw() {
+    public void withdraw(Role role) {
         String email = SecurityUtil.getCurrentUserEmail();
-        Member member = memberRepository.findByEmail(email)
+        Member member = memberRepository.findByEmailAndRole(email, role)
                 .orElseThrow(()->new IllegalArgumentException("사용자를 찾을 수 없습니다. "));
 
         member.withdraw();
@@ -69,8 +100,13 @@ public class MemberService {
 
     // 소셜로그인을 통한 위한 회원 조회 및 회원가입
     @Transactional
+<<<<<<< HEAD
     public Member findOrCreateMember(String email, String name, String picture) {
         return memberRepository.findByEmail(email)
+=======
+    public Member findOrCreateMember(String email, String name, String picture, Role selectedRole) {
+        return memberRepository.findByEmailAndRole(email, selectedRole)
+>>>>>>> Feat/be#148
                 .orElseGet(() -> {
                     String tempNickname = email.split("@")[0]
                             + "_" + (int)(Math.random()*10000);
@@ -80,8 +116,14 @@ public class MemberService {
                             .name(name)
                             .password("")
                             .nickname(tempNickname)
+<<<<<<< HEAD
                             .role(Role.GUEST)
                             .socialType(SocialType.GOOGLE)
+=======
+                            .role(selectedRole)
+                            .socialType(SocialType.GOOGLE)
+                            .status(Status.ACTIVE)
+>>>>>>> Feat/be#148
                             .build();
                     return memberRepository.save(newMember);
                 });

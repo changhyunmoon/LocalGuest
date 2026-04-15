@@ -1,6 +1,7 @@
 package com.team6.module.ai.policy;
 
 import com.team6.module.ai.config.LocalGuestAiProperties;
+import com.team6.module.ai.config.ScoringPolicySnapshot;
 import com.team6.module.ai.model.GuideAiProfile;
 import com.team6.module.ai.model.TravelerPreference;
 import com.team6.module.ai.support.AdjacentRegionProvider;
@@ -14,26 +15,29 @@ class RegionMatchPolicyTest {
 
     @Test
     void score_exact_region_full_weight() {
+        ScoringPolicySnapshot scoring = ScoringPolicySnapshot.defaults();
         AdjacentRegionProvider adjacent = new AdjacentRegionProvider(new LocalGuestAiProperties());
-        RegionMatchPolicy policy = new RegionMatchPolicy(adjacent);
+        RegionMatchPolicy policy = new RegionMatchPolicy(adjacent, scoring);
         TravelerPreference pref = TravelerPreference.builder().region("부산").build();
         GuideAiProfile guide = GuideAiProfile.builder().region("부산").build();
-        assertThat(policy.score(pref, guide)).isEqualTo(ScoreWeight.REGION);
+        assertThat(policy.score(pref, guide)).isEqualTo(scoring.weightRegion());
     }
 
     @Test
     void score_adjacent_region_partial_weight() {
+        ScoringPolicySnapshot scoring = ScoringPolicySnapshot.defaults();
         AdjacentRegionProvider adjacent = new AdjacentRegionProvider(new LocalGuestAiProperties());
-        RegionMatchPolicy policy = new RegionMatchPolicy(adjacent);
+        RegionMatchPolicy policy = new RegionMatchPolicy(adjacent, scoring);
         TravelerPreference pref = TravelerPreference.builder().region("강릉").build();
         GuideAiProfile guide = GuideAiProfile.builder().region("속초").build();
-        assertThat(policy.score(pref, guide)).isEqualTo(ScoreWeight.REGION_ADJACENT);
+        assertThat(policy.score(pref, guide)).isEqualTo(scoring.weightRegionAdjacent());
     }
 
     @Test
     void score_non_adjacent_zero() {
+        ScoringPolicySnapshot scoring = ScoringPolicySnapshot.defaults();
         AdjacentRegionProvider adjacent = new AdjacentRegionProvider(new LocalGuestAiProperties());
-        RegionMatchPolicy policy = new RegionMatchPolicy(adjacent);
+        RegionMatchPolicy policy = new RegionMatchPolicy(adjacent, scoring);
         TravelerPreference pref = TravelerPreference.builder().region("제주").build();
         GuideAiProfile guide = GuideAiProfile.builder().region("부산").build();
         assertThat(policy.score(pref, guide)).isZero();
@@ -43,10 +47,11 @@ class RegionMatchPolicyTest {
     void score_yaml_adjacent_overrides_builtin() {
         LocalGuestAiProperties props = new LocalGuestAiProperties();
         props.getAdjacentRegions().put("테스트시", List.of("테스트동"));
+        ScoringPolicySnapshot scoring = ScoringPolicySnapshot.defaults();
         AdjacentRegionProvider adjacent = new AdjacentRegionProvider(props);
-        RegionMatchPolicy policy = new RegionMatchPolicy(adjacent);
+        RegionMatchPolicy policy = new RegionMatchPolicy(adjacent, scoring);
         TravelerPreference pref = TravelerPreference.builder().region("테스트시").build();
         GuideAiProfile guide = GuideAiProfile.builder().region("테스트동").build();
-        assertThat(policy.score(pref, guide)).isEqualTo(ScoreWeight.REGION_ADJACENT);
+        assertThat(policy.score(pref, guide)).isEqualTo(scoring.weightRegionAdjacent());
     }
 }

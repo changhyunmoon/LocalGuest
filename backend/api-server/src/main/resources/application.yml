@@ -1,7 +1,9 @@
 spring:
   profiles:
     active: local
-    include: secret
+    # 초기 include 코드
+    # include : secret
+    include: secret-local
 
   security:
     oauth2:

@@ -1,10 +1,10 @@
 package com.team6.module.ai.engine;
 
 import com.team6.module.ai.config.LocalGuestAiProperties;
+import com.team6.module.ai.config.ScoringPolicySnapshot;
 import com.team6.module.ai.model.GuideAiProfile;
 import com.team6.module.ai.model.TravelerPreference;
 import com.team6.module.ai.support.AdjacentRegionProvider;
-import com.team6.module.ai.support.AiRecommendationTuning;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -15,7 +15,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 class ReasonGeneratorTest {
 
     private static ReasonGenerator generator() {
-        return new ReasonGenerator(new AdjacentRegionProvider(new LocalGuestAiProperties()));
+        ScoringPolicySnapshot scoring = ScoringPolicySnapshot.defaults();
+        return new ReasonGenerator(new AdjacentRegionProvider(new LocalGuestAiProperties()), scoring);
     }
 
     @Test
@@ -41,7 +42,7 @@ class ReasonGeneratorTest {
         GuideAiProfile guide = GuideAiProfile.builder()
                 .region("제주")
                 .averageRating(BigDecimal.valueOf(2.0))
-                .reviewCount(AiRecommendationTuning.FEEDBACK_LOW_RATING_MIN_REVIEWS)
+                .reviewCount(ScoringPolicySnapshot.defaults().feedbackLowRatingMinReviews())
                 .build();
 
         ReasonBundle bundle = generator().generate(pref, guide, 0);
@@ -76,6 +77,26 @@ class ReasonGeneratorTest {
         ReasonBundle bundle = generator().generate(pref, guide, 0);
 
         assertThat(bundle.getReasonCodes()).contains(ReasonGenerator.CODE_ACTIVITY_MATCH);
-        assertThat(bundle.getText()).contains("관심 활동");
+        assertThat(bundle.getText()).contains("카페");
+        var activityFact = bundle.getReasonFacts().stream()
+                .filter(f -> ReasonGenerator.CODE_ACTIVITY_MATCH.equals(f.getCode()))
+                .findFirst();
+        assertThat(activityFact).isPresent();
+        assertThat(activityFact.get().getEvidenceSlot()).isEqualTo("ACTIVITY_TAGS");
+    }
+
+    @Test
+    void generate_should_attach_evidence_slot_parallel_to_code() {
+        TravelerPreference pref = TravelerPreference.builder()
+                .region("서울")
+                .build();
+        GuideAiProfile guide = GuideAiProfile.builder()
+                .region("서울")
+                .build();
+
+        ReasonBundle bundle = generator().generate(pref, guide, 0);
+
+        assertThat(bundle.getReasonFacts()).hasSameSizeAs(bundle.getReasonCodes());
+        assertThat(bundle.getReasonFacts().get(0).getEvidenceSlot()).isEqualTo("REGION");
     }
 }

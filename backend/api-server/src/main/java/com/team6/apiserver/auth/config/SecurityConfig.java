@@ -4,7 +4,7 @@ import com.team6.apiserver.auth.filter.JwtAuthenticationFilter;
 import com.team6.apiserver.auth.oauth.CustomOauth2UserService;
 import com.team6.apiserver.auth.oauth.OAuth2SuccessHandler;
 import com.team6.domain.auth.provider.JwtTokenProvider;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -16,14 +16,27 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.data.redis.core.RedisTemplate;
 
 @Configuration
 @EnableWebSecurity
-@RequiredArgsConstructor
 public class SecurityConfig {
     private final JwtTokenProvider jwtTokenProvider;
     private final CustomOauth2UserService customOauth2UserService;
     private final OAuth2SuccessHandler oAuth2SuccessHandler;
+    private final RedisTemplate<String, String> redisTemplate;
+
+    public SecurityConfig(
+            JwtTokenProvider jwtTokenProvider,
+            CustomOauth2UserService customOauth2UserService,
+            OAuth2SuccessHandler oAuth2SuccessHandler,
+            @Qualifier("memberRedisTemplate") RedisTemplate<String, String> redisTemplate
+    ) {
+        this.jwtTokenProvider = jwtTokenProvider;
+        this.customOauth2UserService = customOauth2UserService;
+        this.oAuth2SuccessHandler = oAuth2SuccessHandler;
+        this.redisTemplate = redisTemplate;
+    }
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -32,12 +45,16 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // 세션 안씀
                 .authorizeHttpRequests(auth -> auth
+
+                        //SSE, WebSocket  접근 허용
+                        .requestMatchers("/notifications/subscribe").permitAll()
                         .requestMatchers("/ws-stomp/**").permitAll()
+
                         // 1. 누구나 접근 가능한 경로 (화이트리스트)
                         .requestMatchers("/auth/**", "/members/join").permitAll()
                         // 인증 인가 경로는 비로그인 유저도 접근 가능
-                        .requestMatchers("/api/oauth2/**").permitAll()
-                        .requestMatchers("/api/login/**").permitAll()
+                        .requestMatchers("/oauth2/**").permitAll()
+                        .requestMatchers("/login/**").permitAll()
                         .requestMatchers("/guides/**").permitAll()
                         // Swagger UI + OpenAPI (springdoc). context-path 사용 시 환경에 따라 둘 다 허용
                         .requestMatchers(
@@ -66,7 +83,7 @@ public class SecurityConfig {
                 );
 
 
-        http.addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider), UsernamePasswordAuthenticationFilter.class);
+        http.addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider, redisTemplate), UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

@@ -9,7 +9,10 @@ import com.team6.module.ai.policy.ActivityMatchPolicy;
 import com.team6.module.ai.policy.BudgetMatchPolicy;
 import com.team6.module.ai.policy.FeedbackMatchPolicy;
 import com.team6.module.ai.policy.LanguageMatchPolicy;
+import com.team6.module.ai.config.DiversityRerankSnapshot;
 import com.team6.module.ai.config.LocalGuestAiProperties;
+import com.team6.module.ai.config.ScoringPolicySnapshot;
+import com.team6.module.ai.policy.ComboMatchPolicy;
 import com.team6.module.ai.policy.RegionMatchPolicy;
 import com.team6.module.ai.policy.StyleMatchPolicy;
 import com.team6.module.ai.support.AdjacentRegionProvider;
@@ -27,20 +30,24 @@ class AiRecommendationServiceTest {
 
     private AiRecommendationService createService() {
         LocalGuestAiProperties aiProps = new LocalGuestAiProperties();
+        ScoringPolicySnapshot scoring = ScoringPolicySnapshot.defaults();
         AdjacentRegionProvider adjacent = new AdjacentRegionProvider(aiProps);
+        SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
+        AiRecommendationMetrics metrics = new AiRecommendationMetrics(meterRegistry);
         ScoreCalculator scoreCalculator = new ScoreCalculator(
-                new RegionMatchPolicy(adjacent),
-                new StyleMatchPolicy(),
-                new BudgetMatchPolicy(),
-                new ActivityMatchPolicy(),
-                new LanguageMatchPolicy(),
-                new FeedbackMatchPolicy(),
-                new AiRecommendationMetrics(new SimpleMeterRegistry())
+                new RegionMatchPolicy(adjacent, scoring),
+                new StyleMatchPolicy(scoring),
+                new BudgetMatchPolicy(scoring),
+                new ActivityMatchPolicy(scoring),
+                new LanguageMatchPolicy(scoring),
+                new FeedbackMatchPolicy(scoring),
+                new ComboMatchPolicy(scoring),
+                metrics
         );
-        ReasonGenerator reasonGenerator = new ReasonGenerator(adjacent);
+        ReasonGenerator reasonGenerator = new ReasonGenerator(adjacent, scoring);
 
         return new AiRecommendationServiceImpl(
-                new MatchingEngine(scoreCalculator, reasonGenerator, adjacent)
+                new MatchingEngine(scoreCalculator, reasonGenerator, adjacent, DiversityRerankSnapshot.defaults(), metrics)
         );
     }
 
@@ -222,7 +229,7 @@ class AiRecommendationServiceTest {
         GuideRecommendResponse response = aiRecommendationService.recommend(request);
         assertThat(response.getRecommendations()).isNotEmpty();
         assertThat(response.getRecommendations().get(0).getScore()).isGreaterThan(0);
-        assertThat(response.getRecommendations().get(0).getReason()).contains("관심 활동");
+        assertThat(response.getRecommendations().get(0).getReason()).contains("바다");
         assertThat(response.getRecommendations().get(0).getReasonCodes()).contains(ReasonGenerator.CODE_ACTIVITY_MATCH);
         assertThat(response.getRecommendations().get(0).getMatched()).isNotNull();
         assertThat(response.getRecommendations().get(0).getMatched().getTags()).contains("바다");

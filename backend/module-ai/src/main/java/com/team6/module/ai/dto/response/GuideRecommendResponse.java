@@ -28,6 +28,11 @@ public class GuideRecommendResponse {
      */
     @Schema(description = "룰 기반 추천 정책 버전(동일 프롬프트라도 정책 변경 구분용)", example = "2026.04.10")
     private String policyVersion;
+    /**
+     * 프롬프트에서 뽑은 신호(스타일·예산·활동 등)가 얼마나 풍부한지에 대한 룰 기반 등급.
+     */
+    @Schema(description = "파싱 신호 풍부도(룰 기반). LOW면 추가 질문 권장", allowableValues = {"LOW", "MEDIUM", "HIGH"})
+    private String promptParseConfidence;
     @Schema(description = "추천 항목 개수")
     private int totalCount;
     @Schema(description = "정렬된 추천 목록")

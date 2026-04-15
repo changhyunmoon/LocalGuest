@@ -4,7 +4,9 @@ import com.team6.module.chat.service.ChatRoomService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider; // 추가
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -17,13 +19,25 @@ import org.springframework.stereotype.Component;
 import java.util.Map;
 
 @Component
-@RequiredArgsConstructor
+//@RequiredArgsConstructor
 @Slf4j
 public class PresenceInterceptor implements ChannelInterceptor {
 
+    // StringRedisTemplate 대신 Qualifier를 사용한 RedisTemplate으로 변경
     private final RedisTemplate<String, String> redisTemplate;
     private final ObjectProvider<SimpMessagingTemplate> messagingTemplateProvider;
     private final ChatRoomService chatRoomService;
+
+    // 생성자 주입 시 @Qualifier 적용
+    public PresenceInterceptor(
+            @Qualifier("memberRedisTemplate") RedisTemplate<String, String> redisTemplate,
+            ObjectProvider<SimpMessagingTemplate> messagingTemplateProvider,
+            ChatRoomService chatRoomService
+    ) {
+        this.redisTemplate = redisTemplate;
+        this.messagingTemplateProvider = messagingTemplateProvider;
+        this.chatRoomService = chatRoomService;
+    }
 
     private static final String ROOM_PARTICIPANTS = "CHAT_ROOM_PARTICIPANTS:";
     private static final String USER_SESSION = "USER_SESSION:";
