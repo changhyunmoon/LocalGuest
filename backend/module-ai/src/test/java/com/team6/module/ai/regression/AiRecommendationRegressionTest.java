@@ -2,6 +2,7 @@ package com.team6.module.ai.regression;
 
 import com.team6.module.ai.config.DiversityRerankSnapshot;
 import com.team6.module.ai.config.LocalGuestAiProperties;
+import com.team6.module.ai.config.ScoringPolicySettings;
 import com.team6.module.ai.config.ScoringPolicySnapshot;
 import com.team6.module.ai.policy.ComboMatchPolicy;
 import com.team6.module.ai.support.AdjacentRegionProvider;
@@ -19,7 +20,9 @@ import com.team6.module.ai.policy.RegionMatchPolicy;
 import com.team6.module.ai.policy.StyleMatchPolicy;
 import com.team6.module.ai.service.AiRecommendationService;
 import com.team6.module.ai.service.AiRecommendationServiceImpl;
+import com.team6.module.ai.service.PromptRecommendationService;
 import com.team6.module.ai.support.AiRecommendationMetrics;
+import com.team6.module.ai.support.RecommendationNoticeCodes;
 import com.team6.module.ai.support.AiRecommendationTuning;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Test;
@@ -34,6 +37,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * <ul>
  *   <li>프롬프트 파싱 → 추천 엔진까지 end-to-end로 검증</li>
  *   <li>과도하게 빡센 기대값 대신 Top1 안정성·근거 필드 유효성 위주</li>
+ *   <li>{@code regression_*} 보강: 다양성 Top-N, 콤보 룰 스냅샷, 프롬프트 전략 폴백 notice</li>
  * </ul>
  * <p><b>유지보수</b>: 스코어·Reason·응답 계약을 바꾼 PR에서는
  * {@link com.team6.module.ai.support.AiRecommendationTuning#POLICY_VERSION} 상향 여부를 검토하고,
@@ -42,7 +46,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class AiRecommendationRegressionTest {
 
     private final PromptParser promptParser = new PromptParser(new LocalGuestAiProperties());
-    private final AiRecommendationService aiRecommendationService = createService();
+    private final AiRecommendationService aiRecommendationService = createService(ScoringPolicySnapshot.defaults());
 
     @Test
     void regression_scenarios_should_keep_reason_and_matched_consistent() {
@@ -160,6 +164,99 @@ class AiRecommendationRegressionTest {
         GuideRecommendResponse response = aiRecommendationService.recommend(parsed);
 
         assertThat(response.getPolicyVersion()).isEqualTo(AiRecommendationTuning.POLICY_VERSION);
+    }
+
+    @Test
+    void regression_diversity_second_slot_includes_style_divergent_guide_after_top_base() {
+        List<GuideRecommendRequest.GuideCandidateDto> pool = List.of(
+                GuideRecommendRequest.GuideCandidateDto.builder()
+                        .guideId(901L)
+                        .guideName("제주감성A")
+                        .region("제주")
+                        .guideStyle("감성")
+                        .priceLevel("중간")
+                        .specialtyTags(List.of("카페", "바다"))
+                        .languages(List.of("한국어"))
+                        .build(),
+                GuideRecommendRequest.GuideCandidateDto.builder()
+                        .guideId(903L)
+                        .guideName("제주로컬C")
+                        .region("제주")
+                        .guideStyle("로컬")
+                        .priceLevel("중간")
+                        .specialtyTags(List.of("카페", "맛집"))
+                        .languages(List.of("한국어"))
+                        .build()
+        );
+        GuideRecommendRequest parsed = promptParser.parse("제주 감성 카페 바다", 2, pool);
+        GuideRecommendResponse response = createService(ScoringPolicySnapshot.defaults()).recommend(parsed);
+
+        assertThat(response.getRecommendations()).hasSize(2);
+        assertThat(response.getRecommendations().get(0).getGuideId()).isEqualTo(901L);
+        assertThat(response.getRecommendations().get(1).getGuideId()).isEqualTo(903L);
+        assertThat(response.getRecommendations().get(1).getMatched().isStyle()).isFalse();
+        assertThat(response.getRecommendations().get(1).getMatched().getTags()).contains("카페");
+    }
+
+    @Test
+    void regression_combo_rule_bonus_can_promote_local_market_guide() {
+        ScoringPolicySettings settings = new ScoringPolicySettings();
+        ScoringPolicySettings.ComboRuleSetting rule = new ScoringPolicySettings.ComboRuleSetting();
+        rule.setBudgetLevel("높음");
+        rule.setTravelStyle("로컬");
+        rule.setRequireActivityTagsAll(List.of("시장"));
+        rule.setBonusPoints(22);
+        settings.getComboRules().add(rule);
+        ScoringPolicySnapshot scoring = ScoringPolicySnapshot.from(settings);
+
+        List<GuideRecommendRequest.GuideCandidateDto> pool = List.of(
+                GuideRecommendRequest.GuideCandidateDto.builder()
+                        .guideId(201L)
+                        .guideName("제주감성럭셔리")
+                        .region("제주")
+                        .guideStyle("감성")
+                        .priceLevel("높음")
+                        .specialtyTags(List.of("카페", "바다", "사진"))
+                        .languages(List.of("한국어"))
+                        .build(),
+                GuideRecommendRequest.GuideCandidateDto.builder()
+                        .guideId(202L)
+                        .guideName("제주로컬시장")
+                        .region("제주")
+                        .guideStyle("로컬")
+                        .priceLevel("중간")
+                        .specialtyTags(List.of("시장", "맛집"))
+                        .languages(List.of("한국어"))
+                        .build()
+        );
+        GuideRecommendRequest parsed = promptParser.parse("제주 예산 높음 로컬 시장 맛집", 1, pool);
+        GuideRecommendResponse response = createService(scoring).recommend(parsed);
+
+        assertThat(response.getRecommendations()).isNotEmpty();
+        assertThat(response.getRecommendations().get(0).getGuideId()).isEqualTo(202L);
+    }
+
+    @Test
+    void regression_prompt_strategic_fallback_attaches_low_score_notice() {
+        ScoringPolicySettings settings = new ScoringPolicySettings();
+        settings.setLowSignalScoreThreshold(500);
+        PromptRecommendationService promptService =
+                createPromptRecommendationService(ScoringPolicySnapshot.from(settings));
+
+        GuideRecommendResponse response = promptService.recommendByPrompt(
+                "제주 카페 바다 감성 여행",
+                2,
+                defaultCandidates()
+        );
+
+        assertThat(response.getNoticeCodes()).isNotNull();
+        assertThat(response.getNoticeCodes()).contains(RecommendationNoticeCodes.FALLBACK_LOW_SCORE_RELAXED);
+        assertThat(response.getNoticeCodes().stream().anyMatch(
+                c -> RecommendationNoticeCodes.FALLBACK_RELAXED_ACTIVITY_TAGS.equals(c)
+                        || RecommendationNoticeCodes.FALLBACK_RELAXED_TRAVEL_STYLE.equals(c)
+                        || RecommendationNoticeCodes.FALLBACK_RELAXED_REGION.equals(c)
+                        || RecommendationNoticeCodes.FALLBACK_STRATEGIC_EXHAUSTED.equals(c)
+        )).isTrue();
     }
 
     private List<Scenario> regressionScenarios() {
@@ -282,9 +379,8 @@ class AiRecommendationRegressionTest {
         );
     }
 
-    private AiRecommendationService createService() {
+    private static AiRecommendationService createService(ScoringPolicySnapshot scoring) {
         LocalGuestAiProperties aiProps = new LocalGuestAiProperties();
-        ScoringPolicySnapshot scoring = ScoringPolicySnapshot.defaults();
         AdjacentRegionProvider adjacent = new AdjacentRegionProvider(aiProps);
         SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
         AiRecommendationMetrics metrics = new AiRecommendationMetrics(meterRegistry);
@@ -302,6 +398,39 @@ class AiRecommendationRegressionTest {
 
         return new AiRecommendationServiceImpl(
                 new MatchingEngine(scoreCalculator, reasonGenerator, adjacent, DiversityRerankSnapshot.defaults(), metrics));
+    }
+
+    private static PromptRecommendationService createPromptRecommendationService(ScoringPolicySnapshot scoring) {
+        LocalGuestAiProperties aiProps = new LocalGuestAiProperties();
+        AdjacentRegionProvider adjacent = new AdjacentRegionProvider(aiProps);
+        SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
+        AiRecommendationMetrics metrics = new AiRecommendationMetrics(meterRegistry);
+        ScoreCalculator scoreCalculator = new ScoreCalculator(
+                new RegionMatchPolicy(adjacent, scoring),
+                new StyleMatchPolicy(scoring),
+                new BudgetMatchPolicy(scoring),
+                new ActivityMatchPolicy(scoring),
+                new LanguageMatchPolicy(scoring),
+                new FeedbackMatchPolicy(scoring),
+                new ComboMatchPolicy(scoring),
+                metrics
+        );
+        ReasonGenerator reasonGenerator = new ReasonGenerator(adjacent, scoring);
+        MatchingEngine matchingEngine = new MatchingEngine(
+                scoreCalculator,
+                reasonGenerator,
+                adjacent,
+                DiversityRerankSnapshot.defaults(),
+                metrics
+        );
+        AiRecommendationService ai = new AiRecommendationServiceImpl(matchingEngine);
+        return new PromptRecommendationService(
+                new PromptParser(aiProps),
+                ai,
+                adjacent,
+                metrics,
+                scoring
+        );
     }
 
     private record Scenario(
