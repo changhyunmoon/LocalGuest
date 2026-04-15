@@ -3,9 +3,11 @@ package com.team6.integration.ai;
 import com.team6.domain.guide.entity.GuideCareer;
 import com.team6.domain.guide.entity.GuideFeed;
 import com.team6.domain.guide.entity.GuideProfile;
+import com.team6.domain.guide.entity.enums.GuideScheduleStatus;
 import com.team6.domain.guide.repository.GuideCareerRepository;
 import com.team6.domain.guide.repository.GuideFeedRepository;
 import com.team6.domain.guide.repository.GuideProfileRepository;
+import com.team6.domain.guide.repository.GuideScheduleRepository;
 import com.team6.domain.matching.entity.enums.MatchRequestStatus;
 import com.team6.domain.matching.entity.enums.RefundStatus;
 import com.team6.domain.matching.repository.MatchRequestRepository;
@@ -56,6 +58,9 @@ class DbBackedGuideCandidateProviderTest {
     @Mock
     private ChatRoomRepository chatRoomRepository;
 
+    @Mock
+    private GuideScheduleRepository guideScheduleRepository;
+
     private DbBackedGuideCandidateProvider provider;
 
     @BeforeEach
@@ -69,6 +74,7 @@ class DbBackedGuideCandidateProviderTest {
                 matchRequestRepository,
                 refundRepository,
                 chatRoomRepository,
+                guideScheduleRepository,
                 new PromptParser(aiProps),
                 aiProps
         );
@@ -88,7 +94,7 @@ class DbBackedGuideCandidateProviderTest {
                         .build()
         );
         List<GuideRecommendRequest.GuideCandidateDto> out =
-                provider.getCandidates("제주 2박", 3, client);
+                provider.getCandidates("제주 2박", 3, client, null);
         assertThat(out).isSameAs(client);
         verify(guideProfileRepository, never()).findByIsApprovedTrueAndIsActiveTrue(any(Pageable.class));
         verify(guideFeedRepository, never()).findByGuideProfile_IdInAndIsDeletedFalse(any());
@@ -97,6 +103,38 @@ class DbBackedGuideCandidateProviderTest {
         verify(matchRequestRepository, never()).countAllGroupedByGuideId(any());
         verify(matchRequestRepository, never()).countByGuideIdAndStatusInGrouped(any(), any());
         verify(chatRoomRepository, never()).countRoomsGroupedByParticipantUserId(any());
+        verify(guideScheduleRepository, never()).findGuideProfileIdsBookedAndPaidOnDate(any(), any());
+    }
+
+    @Test
+    void excludesClientCandidateWhenBookedPaidOnDesiredDate() {
+        LocalDate tourDate = LocalDate.of(2026, 4, 28);
+        when(guideScheduleRepository.findGuideProfileIdsBookedAndPaidOnDate(tourDate, GuideScheduleStatus.BOOKED))
+                .thenReturn(List.of(9L));
+        List<GuideRecommendRequest.GuideCandidateDto> client = List.of(
+                GuideRecommendRequest.GuideCandidateDto.builder()
+                        .guideId(9L)
+                        .guideName("바쁜가이드")
+                        .region("제주")
+                        .guideStyle("로컬")
+                        .priceLevel("중간")
+                        .specialtyTags(List.of("맛집"))
+                        .languages(List.of("한국어"))
+                        .build(),
+                GuideRecommendRequest.GuideCandidateDto.builder()
+                        .guideId(10L)
+                        .guideName("여유가이드")
+                        .region("제주")
+                        .guideStyle("로컬")
+                        .priceLevel("중간")
+                        .specialtyTags(List.of("맛집"))
+                        .languages(List.of("한국어"))
+                        .build()
+        );
+        List<GuideRecommendRequest.GuideCandidateDto> out =
+                provider.getCandidates("제주 맛집", 3, client, tourDate);
+        assertThat(out).hasSize(1);
+        assertThat(out.get(0).getGuideId()).isEqualTo(10L);
     }
 
     @Test
@@ -156,7 +194,7 @@ class DbBackedGuideCandidateProviderTest {
                 .thenReturn(List.<Object[]>of(new Object[]{10L, 3L}));
 
         List<GuideRecommendRequest.GuideCandidateDto> out =
-                provider.getCandidates("제주에서 힐링하고 싶어요", 3, List.of());
+                provider.getCandidates("제주에서 힐링하고 싶어요", 3, List.of(), null);
 
         assertThat(out).hasSize(1);
         assertThat(out.get(0).getGuideId()).isEqualTo(1L);
@@ -169,6 +207,39 @@ class DbBackedGuideCandidateProviderTest {
         assertThat(out.get(0).getMatchRequestCount()).isEqualTo(4);
         assertThat(out.get(0).getProgressedMatchCount()).isEqualTo(2);
         assertThat(out.get(0).getChatStartCount()).isEqualTo(3);
+    }
+
+    @Test
+    void excludesBookedPaidGuideFromDbPoolWhenDesiredDateSet() {
+        LocalDate tourDate = LocalDate.of(2026, 4, 28);
+        when(guideScheduleRepository.findGuideProfileIdsBookedAndPaidOnDate(tourDate, GuideScheduleStatus.BOOKED))
+                .thenReturn(List.of(1L));
+
+        GuideProfile p = GuideProfile.builder()
+                .id(1L)
+                .memberId(10L)
+                .nickname("가이드A")
+                .region("제주")
+                .bio("감성 사진과 카페 중심 여행을 안내합니다.")
+                .language("한국어, English")
+                .pricePerHour(new BigDecimal("40000"))
+                .isApproved(true)
+                .isActive(true)
+                .build();
+        when(guideProfileRepository.findByIsApprovedTrueAndIsActiveTrueAndRegionEqualsIgnoreCase(
+                eq("제주"),
+                any(Pageable.class)
+        )).thenReturn(new PageImpl<>(List.of()));
+        when(guideProfileRepository.findByIsApprovedTrueAndIsActiveTrueAndRegionContainingIgnoreCase(
+                eq("제주"),
+                any(Pageable.class)
+        )).thenReturn(new PageImpl<>(List.of(p)));
+
+        List<GuideRecommendRequest.GuideCandidateDto> out =
+                provider.getCandidates("제주에서 힐링하고 싶어요", 3, List.of(), tourDate);
+
+        assertThat(out).isEmpty();
+        verify(guideScheduleRepository).findGuideProfileIdsBookedAndPaidOnDate(tourDate, GuideScheduleStatus.BOOKED);
     }
 
     @Test
@@ -210,7 +281,7 @@ class DbBackedGuideCandidateProviderTest {
                 .thenReturn(List.of());
 
         List<GuideRecommendRequest.GuideCandidateDto> out =
-                provider.getCandidates("제주 가고 싶어요", 3, null);
+                provider.getCandidates("제주 가고 싶어요", 3, null, null);
 
         assertThat(out).hasSize(1);
         assertThat(out.get(0).getGuideId()).isEqualTo(2L);
@@ -245,7 +316,7 @@ class DbBackedGuideCandidateProviderTest {
                 .thenReturn(List.of());
 
         List<GuideRecommendRequest.GuideCandidateDto> out =
-                provider.getCandidates("그냥 여행 가고 싶어요", 3, List.of());
+                provider.getCandidates("그냥 여행 가고 싶어요", 3, List.of(), null);
 
         assertThat(out).hasSize(1);
         assertThat(out.get(0).getGuideId()).isEqualTo(3L);
