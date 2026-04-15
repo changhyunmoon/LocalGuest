@@ -1,7 +1,8 @@
-package com.team6.domain.auth.controller;
+package com.team6.apiserver.auth.controller;
 
 import com.team6.domain.auth.dto.LoginRequest;
 import com.team6.domain.auth.service.AuthService;
+import com.team6.domain.member.dto.response.TokenResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -18,9 +19,9 @@ public class AuthController {
     private final AuthService authService;
 
     @PostMapping("/login")
-    public ResponseEntity<String> login(@RequestBody LoginRequest request) {
+    public ResponseEntity<TokenResponse> login(@RequestBody LoginRequest request) {
         // [LOG] INFO : [Auth-Controller] 로그인 요청 수신 (Email : {})
-        String token = authService.login(request.getEmail(), request.getPassword());
+        TokenResponse token = authService.login(request);
 
         return ResponseEntity.ok(token);
     }
@@ -34,5 +35,16 @@ public class AuthController {
             authService.logout(token);
         }
         return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/reissue")
+    public ResponseEntity<TokenResponse> reissue(HttpServletRequest request) {
+        String bearerToken = request.getHeader("Authorization");
+
+        if(StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer ")) {
+            String refreshToken = bearerToken.substring(7);
+            return ResponseEntity.ok(authService.reissue(refreshToken));
+        }
+        throw new IllegalArgumentException("Refresh Token이 없습니다. ");
     }
 }

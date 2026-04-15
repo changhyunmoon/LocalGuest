@@ -1,4 +1,4 @@
-package com.team6.domain.auth.config;
+package com.team6.apiserver.auth.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

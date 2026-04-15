@@ -11,13 +11,15 @@ import java.time.LocalDateTime;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
-@Table(name = "member")
+@Table(name = "member", uniqueConstraints = {
+        @UniqueConstraint(columnNames = {"email", "role"})
+})
 public class Member {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false)
     private String email;
 
     @Column(nullable = false)
@@ -26,7 +28,7 @@ public class Member {
     @Column(nullable = false, length = 100)
     private String name;
 
-    @Column(nullable = false, unique = true, length = 100)
+    @Column(nullable = true, unique = true, length = 100)
     private String nickname;
 
     @Enumerated(EnumType.STRING)
@@ -72,7 +74,19 @@ public class Member {
 
     // 회원 탈퇴
     public void withdraw() {
+        if(this.status == Status.WITHDRAWN) {
+            throw new IllegalStateException("이미 탈퇴 처리된 회원입니다. ");
+        }
         this.status = Status.WITHDRAWN;
+    }
+
+    // 재가입
+    public void reactivate(String encodedNewPassword, String newName, String newNickName) {
+        this.status = Status.ACTIVE;
+        this.password = encodedNewPassword;
+        this.name = newName;
+        this.nickname = newNickName;
+        this.updatedAt = LocalDateTime.now();
     }
 
 }
