@@ -1,10 +1,10 @@
 package com.team6.module.ai.engine;
 
+import com.team6.module.ai.config.ScoringPolicySnapshot;
 import com.team6.module.ai.model.GuideAiProfile;
 import com.team6.module.ai.model.TravelerPreference;
 import com.team6.module.ai.parser.KeywordNormalizer;
 import com.team6.module.ai.support.AdjacentRegionProvider;
-import com.team6.module.ai.support.AiRecommendationTuning;
 import com.team6.module.ai.support.BudgetTier;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -20,6 +20,7 @@ import java.util.stream.Collectors;
 public class ReasonGenerator {
 
     private final AdjacentRegionProvider adjacentRegionProvider;
+    private final ScoringPolicySnapshot scoring;
 
     public static final String CODE_REGION_MATCH = "REGION_MATCH";
     public static final String CODE_REGION_ADJACENT = "REGION_ADJACENT";
@@ -33,7 +34,7 @@ public class ReasonGenerator {
     public static final String CODE_GENERAL_FALLBACK = "GENERAL_FALLBACK";
     public static final String CODE_FEEDBACK_REFUND_APPROVED = "FEEDBACK_REFUND_APPROVED";
     public static final String CODE_FEEDBACK_LOW_RATING = "FEEDBACK_LOW_RATING";
-    /** 평균 평점이 매우 낮을 때(정책 임계값은 {@link AiRecommendationTuning}). */
+    /** 평균 평점이 매우 낮을 때(정책 임계값은 {@link ScoringPolicySnapshot}). */
     public static final String CODE_FEEDBACK_VERY_LOW_RATING = "FEEDBACK_VERY_LOW_RATING";
 
     /** 상위 근거 노출 개수(지역·활동·부담·스타일·예산·피드백 등이 겹칠 때 잘리지 않도록 여유). */
@@ -193,15 +194,15 @@ public class ReasonGenerator {
         }
 
         if (guide.getAverageRating() != null && guide.getReviewCount() != null
-                && guide.getReviewCount() >= AiRecommendationTuning.FEEDBACK_LOW_RATING_MIN_REVIEWS) {
+                && guide.getReviewCount() >= scoring.feedbackLowRatingMinReviews()) {
             double a = guide.getAverageRating().doubleValue();
-            if (a < AiRecommendationTuning.FEEDBACK_VERY_LOW_RATING_THRESHOLD) {
+            if (a < scoring.feedbackVeryLowRatingThreshold()) {
                 segments.add(new Segment(
                         CODE_FEEDBACK_VERY_LOW_RATING,
                         "평균 리뷰가 매우 낮아 신중히 반영했습니다",
                         List.of(guide.getAverageRating().toPlainString(), String.valueOf(guide.getReviewCount()))
                 ));
-            } else if (a < AiRecommendationTuning.FEEDBACK_LOW_RATING_THRESHOLD) {
+            } else if (a < scoring.feedbackLowRatingThreshold()) {
                 segments.add(new Segment(
                         CODE_FEEDBACK_LOW_RATING,
                         "평균 리뷰가 낮은 편이라 보수적으로 반영했습니다",

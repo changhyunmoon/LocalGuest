@@ -6,8 +6,10 @@ import com.team6.module.ai.engine.MatchingEngine;
 import com.team6.module.ai.engine.ReasonGenerator;
 import com.team6.module.ai.engine.ScoreCalculator;
 import com.team6.module.ai.config.LocalGuestAiProperties;
+import com.team6.module.ai.config.ScoringPolicySnapshot;
 import com.team6.module.ai.parser.PromptParser;
 import com.team6.module.ai.policy.ActivityMatchPolicy;
+import com.team6.module.ai.policy.ComboMatchPolicy;
 import com.team6.module.ai.support.AdjacentRegionProvider;
 import com.team6.module.ai.support.RecommendationNoticeCodes;
 import com.team6.module.ai.policy.BudgetMatchPolicy;
@@ -29,17 +31,19 @@ class PromptRecommendationServiceTest {
     private PromptRecommendationService createService() {
         SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
         LocalGuestAiProperties aiProps = new LocalGuestAiProperties();
+        ScoringPolicySnapshot scoring = ScoringPolicySnapshot.defaults();
         AdjacentRegionProvider adjacent = new AdjacentRegionProvider(aiProps);
         ScoreCalculator scoreCalculator = new ScoreCalculator(
-                new RegionMatchPolicy(adjacent),
-                new StyleMatchPolicy(),
-                new BudgetMatchPolicy(),
-                new ActivityMatchPolicy(),
-                new LanguageMatchPolicy(),
-                new FeedbackMatchPolicy(),
+                new RegionMatchPolicy(adjacent, scoring),
+                new StyleMatchPolicy(scoring),
+                new BudgetMatchPolicy(scoring),
+                new ActivityMatchPolicy(scoring),
+                new LanguageMatchPolicy(scoring),
+                new FeedbackMatchPolicy(scoring),
+                new ComboMatchPolicy(scoring),
                 new AiRecommendationMetrics(meterRegistry)
         );
-        ReasonGenerator reasonGenerator = new ReasonGenerator(adjacent);
+        ReasonGenerator reasonGenerator = new ReasonGenerator(adjacent, scoring);
         AiRecommendationService aiRecommendationService =
                 new AiRecommendationServiceImpl(new MatchingEngine(scoreCalculator, reasonGenerator, adjacent));
 
@@ -47,7 +51,8 @@ class PromptRecommendationServiceTest {
                 new PromptParser(aiProps),
                 aiRecommendationService,
                 adjacent,
-                new AiRecommendationMetrics(meterRegistry)
+                new AiRecommendationMetrics(meterRegistry),
+                scoring
         );
     }
 

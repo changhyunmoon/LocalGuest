@@ -1,5 +1,10 @@
 package com.team6.module.ai.policy;
 
+/**
+ * @deprecated 런타임 가중치는 {@link com.team6.module.ai.config.ScoringPolicySnapshot}·
+ * {@code localguest.ai.scoring-policy}를 사용한다. 회귀·문서용 기본값 참고만 한다.
+ */
+@Deprecated
 public final class ScoreWeight {
 
     private ScoreWeight() {

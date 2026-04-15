@@ -1,10 +1,10 @@
 package com.team6.module.ai.engine;
 
 import com.team6.module.ai.config.LocalGuestAiProperties;
+import com.team6.module.ai.config.ScoringPolicySnapshot;
 import com.team6.module.ai.model.GuideAiProfile;
 import com.team6.module.ai.model.TravelerPreference;
 import com.team6.module.ai.support.AdjacentRegionProvider;
-import com.team6.module.ai.support.AiRecommendationTuning;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -15,7 +15,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 class ReasonGeneratorTest {
 
     private static ReasonGenerator generator() {
-        return new ReasonGenerator(new AdjacentRegionProvider(new LocalGuestAiProperties()));
+        ScoringPolicySnapshot scoring = ScoringPolicySnapshot.defaults();
+        return new ReasonGenerator(new AdjacentRegionProvider(new LocalGuestAiProperties()), scoring);
     }
 
     @Test
@@ -41,7 +42,7 @@ class ReasonGeneratorTest {
         GuideAiProfile guide = GuideAiProfile.builder()
                 .region("제주")
                 .averageRating(BigDecimal.valueOf(2.0))
-                .reviewCount(AiRecommendationTuning.FEEDBACK_LOW_RATING_MIN_REVIEWS)
+                .reviewCount(ScoringPolicySnapshot.defaults().feedbackLowRatingMinReviews())
                 .build();
 
         ReasonBundle bundle = generator().generate(pref, guide, 0);

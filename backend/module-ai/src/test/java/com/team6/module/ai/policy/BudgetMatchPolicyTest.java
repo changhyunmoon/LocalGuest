@@ -1,5 +1,6 @@
 package com.team6.module.ai.policy;
 
+import com.team6.module.ai.config.ScoringPolicySnapshot;
 import com.team6.module.ai.model.GuideAiProfile;
 import com.team6.module.ai.model.TravelerPreference;
 import org.junit.jupiter.api.Test;
@@ -8,7 +9,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class BudgetMatchPolicyTest {
 
-    private final BudgetMatchPolicy policy = new BudgetMatchPolicy();
+    private final ScoringPolicySnapshot scoring = ScoringPolicySnapshot.defaults();
+    private final BudgetMatchPolicy policy = new BudgetMatchPolicy(scoring);
 
     @Test
     void score_should_be_full_when_exact_tier_match() {
@@ -16,7 +18,7 @@ class BudgetMatchPolicyTest {
                 TravelerPreference.builder().budgetLevel("중간").build(),
                 GuideAiProfile.builder().priceLevel("중간").build()
         );
-        assertThat(s).isEqualTo(ScoreWeight.BUDGET);
+        assertThat(s).isEqualTo(scoring.weightBudget());
     }
 
     @Test
@@ -29,8 +31,8 @@ class BudgetMatchPolicyTest {
                 TravelerPreference.builder().budgetLevel("중간").build(),
                 GuideAiProfile.builder().priceLevel("높음").build()
         );
-        assertThat(lowMid).isEqualTo(ScoreWeight.BUDGET_ADJACENT);
-        assertThat(midHigh).isEqualTo(ScoreWeight.BUDGET_ADJACENT);
+        assertThat(lowMid).isEqualTo(scoring.weightBudgetAdjacent());
+        assertThat(midHigh).isEqualTo(scoring.weightBudgetAdjacent());
     }
 
     @Test
