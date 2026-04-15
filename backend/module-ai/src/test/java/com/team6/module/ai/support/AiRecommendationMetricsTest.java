@@ -62,4 +62,23 @@ class AiRecommendationMetricsTest {
         assertThat(registry.counter("localguest.ai.recommend.feedback_penalty_hits", "policy_version", "test-policy")
                 .count()).isZero();
     }
+
+    @Test
+    void strategic_fallback_outcome_should_tag_adopted_and_exhausted() {
+        metrics.recordStrategicFallbackOutcome(true, "pv");
+        metrics.recordStrategicFallbackOutcome(false, "pv");
+
+        assertThat(registry.counter("localguest.ai.recommend.strategic_fallback_outcome",
+                "policy_version", "pv", "result", "adopted").count()).isEqualTo(1);
+        assertThat(registry.counter("localguest.ai.recommend.strategic_fallback_outcome",
+                "policy_version", "pv", "result", "exhausted").count()).isEqualTo(1);
+    }
+
+    @Test
+    void diversity_penalty_magnitude_should_record() {
+        metrics.recordDiversityPenaltyMagnitude(12.5, "pv");
+
+        assertThat(registry.summary("localguest.ai.recommend.diversity_penalty_magnitude", "policy_version", "pv").count())
+                .isEqualTo(1);
+    }
 }

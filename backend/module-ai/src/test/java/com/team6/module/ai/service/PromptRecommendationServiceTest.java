@@ -34,6 +34,7 @@ class PromptRecommendationServiceTest {
         LocalGuestAiProperties aiProps = new LocalGuestAiProperties();
         ScoringPolicySnapshot scoring = ScoringPolicySnapshot.defaults();
         AdjacentRegionProvider adjacent = new AdjacentRegionProvider(aiProps);
+        AiRecommendationMetrics metrics = new AiRecommendationMetrics(meterRegistry);
         ScoreCalculator scoreCalculator = new ScoreCalculator(
                 new RegionMatchPolicy(adjacent, scoring),
                 new StyleMatchPolicy(scoring),
@@ -42,18 +43,19 @@ class PromptRecommendationServiceTest {
                 new LanguageMatchPolicy(scoring),
                 new FeedbackMatchPolicy(scoring),
                 new ComboMatchPolicy(scoring),
-                new AiRecommendationMetrics(meterRegistry)
+                metrics
         );
         ReasonGenerator reasonGenerator = new ReasonGenerator(adjacent, scoring);
         AiRecommendationService aiRecommendationService =
                 new AiRecommendationServiceImpl(
-                        new MatchingEngine(scoreCalculator, reasonGenerator, adjacent, DiversityRerankSnapshot.defaults()));
+                        new MatchingEngine(scoreCalculator, reasonGenerator, adjacent, DiversityRerankSnapshot.defaults(),
+                                metrics));
 
         return new PromptRecommendationService(
                 new PromptParser(aiProps),
                 aiRecommendationService,
                 adjacent,
-                new AiRecommendationMetrics(meterRegistry),
+                metrics,
                 scoring
         );
     }

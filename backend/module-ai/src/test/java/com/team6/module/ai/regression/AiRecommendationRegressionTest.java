@@ -286,6 +286,8 @@ class AiRecommendationRegressionTest {
         LocalGuestAiProperties aiProps = new LocalGuestAiProperties();
         ScoringPolicySnapshot scoring = ScoringPolicySnapshot.defaults();
         AdjacentRegionProvider adjacent = new AdjacentRegionProvider(aiProps);
+        SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
+        AiRecommendationMetrics metrics = new AiRecommendationMetrics(meterRegistry);
         ScoreCalculator scoreCalculator = new ScoreCalculator(
                 new RegionMatchPolicy(adjacent, scoring),
                 new StyleMatchPolicy(scoring),
@@ -294,12 +296,12 @@ class AiRecommendationRegressionTest {
                 new LanguageMatchPolicy(scoring),
                 new FeedbackMatchPolicy(scoring),
                 new ComboMatchPolicy(scoring),
-                new AiRecommendationMetrics(new SimpleMeterRegistry())
+                metrics
         );
         ReasonGenerator reasonGenerator = new ReasonGenerator(adjacent, scoring);
 
         return new AiRecommendationServiceImpl(
-                new MatchingEngine(scoreCalculator, reasonGenerator, adjacent, DiversityRerankSnapshot.defaults()));
+                new MatchingEngine(scoreCalculator, reasonGenerator, adjacent, DiversityRerankSnapshot.defaults(), metrics));
     }
 
     private record Scenario(
