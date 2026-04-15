@@ -11,6 +11,8 @@ import java.util.Map;
 
 /**
  * AI 추천 모듈 설정({@code localguest.ai.*}).
+ * <p><b>기본 동작</b>: yml에 {@code localguest.ai}를 넣지 않아도 되며, 생략 시 아래 필드들은
+ * 각각 코드에 정의된 기본값으로 초기화된다. 운영·로컬에서만 필요한 키를 선택적으로 덮어쓴다.
  * <p><b>정책 버전과의 정합</b>: API 응답·로그·Micrometer에 실리는
  * {@link com.team6.module.ai.support.AiRecommendationTuning#POLICY_VERSION}은
  * 룰 스코어·다양성·Reason 계약이 바뀔 때마다 올린다. DB에서 후보를 채울 때(api-server·integration 모듈의
