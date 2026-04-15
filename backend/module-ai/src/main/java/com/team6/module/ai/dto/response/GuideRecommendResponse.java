@@ -38,6 +38,19 @@ public class GuideRecommendResponse {
     @Schema(description = "정렬된 추천 목록")
     private List<GuideRecommendItem> recommendations;
 
+    @Schema(description = "일정 충돌로 메인 추천에서 제외됐지만, 조건 매칭이 좋아 참고로 보여주는 1개 제시(선택)")
+    private SpecialSuggestion specialSuggestion;
+
+    @Schema(name = "GuideRecommendResponseSpecialSuggestion", description = "특별 제시(메인 추천과 분리된 참고용 제시)")
+    @Getter
+    @Builder
+    public static class SpecialSuggestion {
+        @Schema(description = "참고로 보여주는 가이드 1명")
+        private GuideRecommendItem guide;
+        @Schema(description = "특별 제시 안내 문구")
+        private String notice;
+    }
+
     @Schema(name = "GuideRecommendResponseKeywords", description = "프롬프트에서 추출한 키워드")
     @Getter
     @Builder

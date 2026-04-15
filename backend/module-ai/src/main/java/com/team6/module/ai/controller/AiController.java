@@ -7,6 +7,7 @@ import com.team6.module.ai.dto.request.GuideRecommendRequest;
 import com.team6.module.ai.dto.response.GuideRecommendResponse;
 import com.team6.module.ai.http.RecommendationHttpHeaders;
 import com.team6.module.ai.service.PromptRecommendationService;
+import com.team6.module.ai.support.GuideCandidateBundle;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.headers.Header;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -21,6 +22,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Objects;
 
@@ -36,7 +38,9 @@ public class AiController {
     @Operation(
             summary = "프롬프트 기반 가이드 추천",
             description = "자연어 프롬프트와 가이드 후보 목록을 받아 상위 N명을 추천합니다. "
-                    + "선택 필드 desiredTourDate(yyyy-MM-dd)가 있으면 해당 날짜에 결제 완료(BOOKED+isPaid) 스케줄이 있는 가이드는 후보에서 제외합니다. "
+                    + "선택 필드 desiredTourDate 또는 desiredTourDateFrom~desiredTourDateTo(yyyy-MM-dd)가 있으면 "
+                    + "기간 중 하루라도 결제 완료(BOOKED+isPaid) 스케줄이 있는 가이드는 메인 추천 후보에서 제외합니다. "
+                    + "단, 일정 필터만 없었다면 Top1이었을 가이드는 specialSuggestion으로 별도 제시할 수 있습니다. "
                     + "응답의 policyVersion으로 룰 정책 버전을 구분할 수 있습니다."
     )
     @ApiResponse(
@@ -67,22 +71,100 @@ public class AiController {
                     content = @Content(schema = @Schema(implementation = PromptRecommendApiRequest.class))
             )
             @RequestBody PromptRecommendApiRequest request) {
-        List<GuideRecommendRequest.GuideCandidateDto> candidates =
+        LocalDate from = resolveDesiredFrom(request);
+        LocalDate to = resolveDesiredTo(request, from);
+
+        GuideCandidateBundle bundle =
                 guideCandidateProvider.getCandidates(
                         request.getPrompt(),
                         request.getTopN(),
                         request.getGuideCandidates(),
-                        request.getDesiredTourDate()
+                        from,
+                        to
                 );
 
-        GuideRecommendResponse body = promptRecommendationService.recommendByPrompt(
+        GuideRecommendResponse main = promptRecommendationService.recommendByPrompt(
                 request.getPrompt(),
                 request.getTopN(),
-                candidates
+                bundle.candidates()
         );
+
+        GuideRecommendResponse.SpecialSuggestion specialSuggestion =
+                buildSpecialSuggestionIfNeeded(request, main, bundle);
+
+        GuideRecommendResponse body = (specialSuggestion == null)
+                ? main
+                : GuideRecommendResponse.builder()
+                .conceptSummary(main.getConceptSummary())
+                .keywords(main.getKeywords())
+                .matchRequestDraft(main.getMatchRequestDraft())
+                .notice(main.getNotice())
+                .noticeCodes(main.getNoticeCodes())
+                .policyVersion(main.getPolicyVersion())
+                .promptParseConfidence(main.getPromptParseConfidence())
+                .totalCount(main.getTotalCount())
+                .recommendations(main.getRecommendations())
+                .specialSuggestion(specialSuggestion)
+                .build();
+
         String policy = Objects.requireNonNullElse(body.getPolicyVersion(), "");
         return ResponseEntity.ok()
                 .header(RecommendationHttpHeaders.X_RECOMMENDATION_POLICY, policy)
                 .body(body);
+    }
+
+    private static LocalDate resolveDesiredFrom(PromptRecommendApiRequest request) {
+        if (request.getDesiredTourDateFrom() != null) {
+            return request.getDesiredTourDateFrom();
+        }
+        return request.getDesiredTourDate();
+    }
+
+    private static LocalDate resolveDesiredTo(PromptRecommendApiRequest request, LocalDate from) {
+        if (request.getDesiredTourDateTo() != null) {
+            return request.getDesiredTourDateTo();
+        }
+        return from;
+    }
+
+    private GuideRecommendResponse.SpecialSuggestion buildSpecialSuggestionIfNeeded(
+            PromptRecommendApiRequest request,
+            GuideRecommendResponse main,
+            GuideCandidateBundle bundle
+    ) {
+        if (bundle == null || bundle.unfilteredCandidates() == null || bundle.unfilteredCandidates().isEmpty()) {
+            return null;
+        }
+        if (main == null || main.getRecommendations() == null || main.getRecommendations().isEmpty()) {
+            // 메인 추천이 비어도, “일정 필터만 없었다면 Top1”이 있으면 특별 제시한다.
+            return computeTop1SpecialSuggestion(request, bundle);
+        }
+
+        Long mainTop1 = main.getRecommendations().get(0).getGuideId();
+        GuideRecommendResponse.SpecialSuggestion special = computeTop1SpecialSuggestion(request, bundle);
+        if (special == null || special.getGuide() == null || special.getGuide().getGuideId() == null) {
+            return null;
+        }
+        Long unfilteredTop1 = special.getGuide().getGuideId();
+        // 정책: “Top1이 일정 때문에 빠졌을 때만” 특별 제시
+        return Objects.equals(mainTop1, unfilteredTop1) ? null : special;
+    }
+
+    private GuideRecommendResponse.SpecialSuggestion computeTop1SpecialSuggestion(
+            PromptRecommendApiRequest request,
+            GuideCandidateBundle bundle
+    ) {
+        GuideRecommendResponse top1 = promptRecommendationService.recommendByPrompt(
+                request.getPrompt(),
+                1,
+                bundle.unfilteredCandidates()
+        );
+        if (top1.getRecommendations() == null || top1.getRecommendations().isEmpty()) {
+            return null;
+        }
+        return GuideRecommendResponse.SpecialSuggestion.builder()
+                .guide(top1.getRecommendations().get(0))
+                .notice("조건에 잘 부합하지만 선택한 날짜에는 예약이 있어요")
+                .build();
     }
 }

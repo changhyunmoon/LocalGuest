@@ -15,10 +15,11 @@ import java.util.List;
  * 후보를 제외할 수 있다(구현체가 DB를 쓰는 경우).
  */
 public interface GuideCandidateProvider {
-    List<GuideRecommendRequest.GuideCandidateDto> getCandidates(
+    GuideCandidateBundle getCandidates(
             String prompt,
             Integer topN,
             List<GuideRecommendRequest.GuideCandidateDto> candidates,
-            LocalDate desiredTourDate
+            LocalDate desiredTourDateFrom,
+            LocalDate desiredTourDateTo
     );
 }

@@ -16,6 +16,7 @@ import com.team6.module.chat.repository.mysql.ChatRoomRepository;
 import com.team6.module.ai.config.LocalGuestAiProperties;
 import com.team6.module.ai.dto.request.GuideRecommendRequest;
 import com.team6.module.ai.parser.PromptParser;
+import com.team6.module.ai.support.GuideCandidateBundle;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -93,9 +94,10 @@ class DbBackedGuideCandidateProviderTest {
                         .languages(List.of("한국어"))
                         .build()
         );
-        List<GuideRecommendRequest.GuideCandidateDto> out =
-                provider.getCandidates("제주 2박", 3, client, null);
-        assertThat(out).isSameAs(client);
+        GuideCandidateBundle out =
+                provider.getCandidates("제주 2박", 3, client, null, null);
+        assertThat(out.candidates()).isSameAs(client);
+        assertThat(out.unfilteredCandidates()).isSameAs(client);
         verify(guideProfileRepository, never()).findByIsApprovedTrueAndIsActiveTrue(any(Pageable.class));
         verify(guideFeedRepository, never()).findByGuideProfile_IdInAndIsDeletedFalse(any());
         verify(guideCareerRepository, never()).findByGuideProfile_IdIn(any());
@@ -103,13 +105,13 @@ class DbBackedGuideCandidateProviderTest {
         verify(matchRequestRepository, never()).countAllGroupedByGuideId(any());
         verify(matchRequestRepository, never()).countByGuideIdAndStatusInGrouped(any(), any());
         verify(chatRoomRepository, never()).countRoomsGroupedByParticipantUserId(any());
-        verify(guideScheduleRepository, never()).findGuideProfileIdsBookedAndPaidOnDate(any(), any());
+        verify(guideScheduleRepository, never()).findGuideProfileIdsBookedAndPaidBetween(any(), any(), any());
     }
 
     @Test
     void excludesClientCandidateWhenBookedPaidOnDesiredDate() {
         LocalDate tourDate = LocalDate.of(2026, 4, 28);
-        when(guideScheduleRepository.findGuideProfileIdsBookedAndPaidOnDate(tourDate, GuideScheduleStatus.BOOKED))
+        when(guideScheduleRepository.findGuideProfileIdsBookedAndPaidBetween(tourDate, tourDate, GuideScheduleStatus.BOOKED))
                 .thenReturn(List.of(9L));
         List<GuideRecommendRequest.GuideCandidateDto> client = List.of(
                 GuideRecommendRequest.GuideCandidateDto.builder()
@@ -131,10 +133,11 @@ class DbBackedGuideCandidateProviderTest {
                         .languages(List.of("한국어"))
                         .build()
         );
-        List<GuideRecommendRequest.GuideCandidateDto> out =
-                provider.getCandidates("제주 맛집", 3, client, tourDate);
-        assertThat(out).hasSize(1);
-        assertThat(out.get(0).getGuideId()).isEqualTo(10L);
+        GuideCandidateBundle out =
+                provider.getCandidates("제주 맛집", 3, client, tourDate, tourDate);
+        assertThat(out.unfilteredCandidates()).hasSize(2);
+        assertThat(out.candidates()).hasSize(1);
+        assertThat(out.candidates().get(0).getGuideId()).isEqualTo(10L);
     }
 
     @Test
@@ -193,26 +196,27 @@ class DbBackedGuideCandidateProviderTest {
         when(chatRoomRepository.countRoomsGroupedByParticipantUserId(List.of(10L)))
                 .thenReturn(List.<Object[]>of(new Object[]{10L, 3L}));
 
-        List<GuideRecommendRequest.GuideCandidateDto> out =
-                provider.getCandidates("제주에서 힐링하고 싶어요", 3, List.of(), null);
+        GuideCandidateBundle out =
+                provider.getCandidates("제주에서 힐링하고 싶어요", 3, List.of(), null, null);
 
-        assertThat(out).hasSize(1);
-        assertThat(out.get(0).getGuideId()).isEqualTo(1L);
-        assertThat(out.get(0).getRegion()).isEqualTo("제주");
-        assertThat(out.get(0).getLanguages()).containsExactly("한국어", "English");
-        assertThat(out.get(0).getPriceLevel()).isEqualTo("낮음");
-        assertThat(out.get(0).getGuideStyle()).isEqualTo("감성");
-        assertThat(out.get(0).getSpecialtyTags()).contains("카페", "바다", "사진", "시장", "야경", "맛집");
-        assertThat(out.get(0).getApprovedRefundCount()).isZero();
-        assertThat(out.get(0).getMatchRequestCount()).isEqualTo(4);
-        assertThat(out.get(0).getProgressedMatchCount()).isEqualTo(2);
-        assertThat(out.get(0).getChatStartCount()).isEqualTo(3);
+        assertThat(out.candidates()).hasSize(1);
+        assertThat(out.unfilteredCandidates()).hasSize(1);
+        assertThat(out.candidates().get(0).getGuideId()).isEqualTo(1L);
+        assertThat(out.candidates().get(0).getRegion()).isEqualTo("제주");
+        assertThat(out.candidates().get(0).getLanguages()).containsExactly("한국어", "English");
+        assertThat(out.candidates().get(0).getPriceLevel()).isEqualTo("낮음");
+        assertThat(out.candidates().get(0).getGuideStyle()).isEqualTo("감성");
+        assertThat(out.candidates().get(0).getSpecialtyTags()).contains("카페", "바다", "사진", "시장", "야경", "맛집");
+        assertThat(out.candidates().get(0).getApprovedRefundCount()).isZero();
+        assertThat(out.candidates().get(0).getMatchRequestCount()).isEqualTo(4);
+        assertThat(out.candidates().get(0).getProgressedMatchCount()).isEqualTo(2);
+        assertThat(out.candidates().get(0).getChatStartCount()).isEqualTo(3);
     }
 
     @Test
     void excludesBookedPaidGuideFromDbPoolWhenDesiredDateSet() {
         LocalDate tourDate = LocalDate.of(2026, 4, 28);
-        when(guideScheduleRepository.findGuideProfileIdsBookedAndPaidOnDate(tourDate, GuideScheduleStatus.BOOKED))
+        when(guideScheduleRepository.findGuideProfileIdsBookedAndPaidBetween(tourDate, tourDate, GuideScheduleStatus.BOOKED))
                 .thenReturn(List.of(1L));
 
         GuideProfile p = GuideProfile.builder()
@@ -235,11 +239,12 @@ class DbBackedGuideCandidateProviderTest {
                 any(Pageable.class)
         )).thenReturn(new PageImpl<>(List.of(p)));
 
-        List<GuideRecommendRequest.GuideCandidateDto> out =
-                provider.getCandidates("제주에서 힐링하고 싶어요", 3, List.of(), tourDate);
+        GuideCandidateBundle out =
+                provider.getCandidates("제주에서 힐링하고 싶어요", 3, List.of(), tourDate, tourDate);
 
-        assertThat(out).isEmpty();
-        verify(guideScheduleRepository).findGuideProfileIdsBookedAndPaidOnDate(tourDate, GuideScheduleStatus.BOOKED);
+        assertThat(out.unfilteredCandidates()).isNotNull();
+        assertThat(out.candidates()).isEmpty();
+        verify(guideScheduleRepository).findGuideProfileIdsBookedAndPaidBetween(tourDate, tourDate, GuideScheduleStatus.BOOKED);
     }
 
     @Test
@@ -280,11 +285,11 @@ class DbBackedGuideCandidateProviderTest {
         when(chatRoomRepository.countRoomsGroupedByParticipantUserId(List.of(11L)))
                 .thenReturn(List.of());
 
-        List<GuideRecommendRequest.GuideCandidateDto> out =
-                provider.getCandidates("제주 가고 싶어요", 3, null, null);
+        GuideCandidateBundle out =
+                provider.getCandidates("제주 가고 싶어요", 3, null, null, null);
 
-        assertThat(out).hasSize(1);
-        assertThat(out.get(0).getGuideId()).isEqualTo(2L);
+        assertThat(out.candidates()).hasSize(1);
+        assertThat(out.candidates().get(0).getGuideId()).isEqualTo(2L);
         verify(guideProfileRepository).findByIsApprovedTrueAndIsActiveTrue(any(Pageable.class));
     }
 
@@ -315,11 +320,11 @@ class DbBackedGuideCandidateProviderTest {
         when(chatRoomRepository.countRoomsGroupedByParticipantUserId(List.of(12L)))
                 .thenReturn(List.of());
 
-        List<GuideRecommendRequest.GuideCandidateDto> out =
-                provider.getCandidates("그냥 여행 가고 싶어요", 3, List.of(), null);
+        GuideCandidateBundle out =
+                provider.getCandidates("그냥 여행 가고 싶어요", 3, List.of(), null, null);
 
-        assertThat(out).hasSize(1);
-        assertThat(out.get(0).getGuideId()).isEqualTo(3L);
+        assertThat(out.candidates()).hasSize(1);
+        assertThat(out.candidates().get(0).getGuideId()).isEqualTo(3L);
         verify(guideProfileRepository, never()).findByIsApprovedTrueAndIsActiveTrueAndRegionContainingIgnoreCase(
                 any(),
                 any(Pageable.class)
