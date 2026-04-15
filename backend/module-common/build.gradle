@@ -12,6 +12,9 @@ dependencies {
     // @Getter 등을 사용하기 위한 Lombok
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
+
+    //Redis 사용
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
 }
 bootJar { enabled = false }
 jar { enabled = true }
