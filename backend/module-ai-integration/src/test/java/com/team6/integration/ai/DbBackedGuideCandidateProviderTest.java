@@ -16,7 +16,9 @@ import com.team6.module.chat.repository.mysql.ChatRoomRepository;
 import com.team6.module.ai.config.LocalGuestAiProperties;
 import com.team6.module.ai.dto.request.GuideRecommendRequest;
 import com.team6.module.ai.parser.PromptParser;
+import com.team6.module.ai.support.AiRecommendationMetrics;
 import com.team6.module.ai.support.GuideCandidateBundle;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -68,6 +70,7 @@ class DbBackedGuideCandidateProviderTest {
     void setUp() {
         LocalGuestAiProperties aiProps = new LocalGuestAiProperties();
         aiProps.getCandidatePool().setPoolCacheTtlSeconds(0);
+        AiRecommendationMetrics metrics = new AiRecommendationMetrics(new SimpleMeterRegistry());
         provider = new DbBackedGuideCandidateProvider(
                 guideProfileRepository,
                 guideFeedRepository,
@@ -77,7 +80,8 @@ class DbBackedGuideCandidateProviderTest {
                 chatRoomRepository,
                 guideScheduleRepository,
                 new PromptParser(aiProps),
-                aiProps
+                aiProps,
+                metrics
         );
     }
 
