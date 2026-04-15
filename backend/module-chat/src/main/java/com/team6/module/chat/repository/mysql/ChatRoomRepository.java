@@ -23,6 +23,9 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
             "WHERE p.userId IN :userIds " +
             "GROUP BY p.userId")
     List<Object[]> countRoomsGroupedByParticipantUserId(@Param("userIds") List<Long> userIds);
+
+    @Query("select distinct cr from ChatRoom cr join fetch cr.participants where cr.roomId = :roomId")
+    Optional<ChatRoom> findByRoomIdWithParticipants(@Param("roomId") String roomId);
 }
 
 

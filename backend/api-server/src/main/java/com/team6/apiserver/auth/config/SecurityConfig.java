@@ -34,7 +34,11 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // 세션 안씀
                 .authorizeHttpRequests(auth -> auth
+
+                        //SSE, WebSocket  접근 허용
+                        .requestMatchers("/notifications/subscribe").permitAll()
                         .requestMatchers("/ws-stomp/**").permitAll()
+
                         // 1. 누구나 접근 가능한 경로 (화이트리스트)
                         .requestMatchers("/auth/**", "/members/join").permitAll()
                         // 인증 인가 경로는 비로그인 유저도 접근 가능
