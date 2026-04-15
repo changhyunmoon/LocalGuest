@@ -4,6 +4,7 @@ import com.team6.module.ai.config.LocalGuestAiProperties;
 import com.team6.module.ai.dto.request.GuideRecommendRequest;
 import org.junit.jupiter.api.Test;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -34,6 +35,27 @@ class PromptParserTest {
         assertThat(request.getRegion()).isEqualTo("제주");
         assertThat(request.getBudgetLevel()).isEqualTo("중간");
         assertThat(request.getActivityTags()).contains("카페");
+    }
+
+    @Test
+    void extractDesiredTourDateRange_should_parse_single_and_ranges() {
+        int y = LocalDate.now().getYear();
+
+        PromptParser.DesiredDateRange single = promptParser.extractDesiredTourDateRange("4월 28일에 제주 맛집 투어");
+        assertThat(single.from()).isEqualTo(LocalDate.of(y, 4, 28));
+        assertThat(single.to()).isEqualTo(LocalDate.of(y, 4, 28));
+
+        PromptParser.DesiredDateRange r1 = promptParser.extractDesiredTourDateRange("4/28~4/30 제주 맛집 투어");
+        assertThat(r1.from()).isEqualTo(LocalDate.of(y, 4, 28));
+        assertThat(r1.to()).isEqualTo(LocalDate.of(y, 4, 30));
+
+        PromptParser.DesiredDateRange r2 = promptParser.extractDesiredTourDateRange("4월 28일부터 4월 30일 제주");
+        assertThat(r2.from()).isEqualTo(LocalDate.of(y, 4, 28));
+        assertThat(r2.to()).isEqualTo(LocalDate.of(y, 4, 30));
+
+        PromptParser.DesiredDateRange r3 = promptParser.extractDesiredTourDateRange("4월 28일~30일 제주");
+        assertThat(r3.from()).isEqualTo(LocalDate.of(y, 4, 28));
+        assertThat(r3.to()).isEqualTo(LocalDate.of(y, 4, 30));
     }
 
     @Test

@@ -5,6 +5,9 @@ import com.team6.module.ai.dto.request.GuideRecommendRequest;
 import com.team6.module.ai.support.RecommendationNoticeCodes;
 import org.springframework.stereotype.Component;
 
+import java.time.DateTimeException;
+import java.time.LocalDate;
+import java.time.Year;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -67,6 +70,14 @@ public class PromptParser {
     private static final Pattern DURATION_WEEKS = Pattern.compile("(\\d+)\\s*주");
     private static final Pattern DATE_RANGE_MONTH_DAY = Pattern.compile("(\\d{1,2})\\s*/\\s*(\\d{1,2})\\s*(?:~|\\-|부터)\\s*(\\d{1,2})\\s*/\\s*(\\d{1,2})");
     private static final Pattern DATE_RANGE_DAY_ONLY = Pattern.compile("(\\d{1,2})\\s*일\\s*(?:~|\\-|부터)\\s*(\\d{1,2})\\s*일");
+    private static final Pattern DATE_SINGLE_MONTH_DAY_SLASH = Pattern.compile("(\\d{1,2})\\s*/\\s*(\\d{1,2})");
+    private static final Pattern DATE_SINGLE_MONTH_DAY_KO = Pattern.compile("(\\d{1,2})\\s*월\\s*(\\d{1,2})\\s*일");
+    private static final Pattern DATE_RANGE_MONTH_DAY_KO = Pattern.compile(
+            "(\\d{1,2})\\s*월\\s*(\\d{1,2})\\s*일\\s*(?:~|\\-|부터)\\s*(\\d{1,2})\\s*월\\s*(\\d{1,2})\\s*일"
+    );
+    private static final Pattern DATE_RANGE_SAME_MONTH_KO = Pattern.compile(
+            "(\\d{1,2})\\s*월\\s*(\\d{1,2})\\s*일\\s*(?:~|\\-|부터)\\s*(\\d{1,2})\\s*일"
+    );
     private static final int NEGATION_AFTER_WINDOW = 12;
 
     /**
@@ -80,6 +91,9 @@ public class PromptParser {
             boolean hasBudgetHint,
             boolean hasDurationHint
     ) {
+    }
+
+    public record DesiredDateRange(LocalDate from, LocalDate to) {
     }
 
     public GuideRecommendRequest parse(
@@ -162,6 +176,88 @@ public class PromptParser {
                 || DATE_RANGE_DAY_ONLY.matcher(normalized).find();
 
         return new ParseSignals(exclusionIntents, hasBudgetHint, hasDurationHint);
+    }
+
+    /**
+     * 프롬프트에서 희망 투어 날짜/기간을 추출한다.
+     * <p>
+     * 지원: {@code 4/28}, {@code 4월 28일}, {@code 4/28~4/30}, {@code 4월 28일부터 4월 30일},
+     * {@code 4월 28일~30일}. 연도 미기재 시 서버 로컬 기준 현재 연도를 사용한다.
+     */
+    public DesiredDateRange extractDesiredTourDateRange(String prompt) {
+        String normalized = normalize(prompt);
+        int year = Year.now().getValue();
+
+        DesiredDateRange kOrange = extractKoreanMonthDayRange(normalized, year);
+        if (kOrange != null) {
+            return kOrange;
+        }
+        DesiredDateRange slashRange = extractSlashMonthDayRange(normalized, year);
+        if (slashRange != null) {
+            return slashRange;
+        }
+        DesiredDateRange single = extractSingleMonthDay(normalized, year);
+        return single;
+    }
+
+    private DesiredDateRange extractKoreanMonthDayRange(String prompt, int year) {
+        Matcher m = DATE_RANGE_MONTH_DAY_KO.matcher(prompt);
+        if (m.find()) {
+            LocalDate from = safeDate(year, m.group(1), m.group(2));
+            LocalDate to = safeDate(year, m.group(3), m.group(4));
+            return normalizeRange(from, to);
+        }
+        Matcher sameMonth = DATE_RANGE_SAME_MONTH_KO.matcher(prompt);
+        if (sameMonth.find()) {
+            LocalDate from = safeDate(year, sameMonth.group(1), sameMonth.group(2));
+            LocalDate to = safeDate(year, sameMonth.group(1), sameMonth.group(3));
+            return normalizeRange(from, to);
+        }
+        return null;
+    }
+
+    private DesiredDateRange extractSlashMonthDayRange(String prompt, int year) {
+        Matcher range = DATE_RANGE_MONTH_DAY.matcher(prompt);
+        if (range.find()) {
+            LocalDate from = safeDate(year, range.group(1), range.group(2));
+            LocalDate to = safeDate(year, range.group(3), range.group(4));
+            return normalizeRange(from, to);
+        }
+        return null;
+    }
+
+    private DesiredDateRange extractSingleMonthDay(String prompt, int year) {
+        Matcher ko = DATE_SINGLE_MONTH_DAY_KO.matcher(prompt);
+        if (ko.find()) {
+            LocalDate d = safeDate(year, ko.group(1), ko.group(2));
+            return d == null ? null : new DesiredDateRange(d, d);
+        }
+        Matcher slash = DATE_SINGLE_MONTH_DAY_SLASH.matcher(prompt);
+        if (slash.find()) {
+            LocalDate d = safeDate(year, slash.group(1), slash.group(2));
+            return d == null ? null : new DesiredDateRange(d, d);
+        }
+        return null;
+    }
+
+    private static LocalDate safeDate(int year, String mm, String dd) {
+        try {
+            int m = Integer.parseInt(mm);
+            int d = Integer.parseInt(dd);
+            return LocalDate.of(year, m, d);
+        } catch (NumberFormatException | DateTimeException e) {
+            return null;
+        }
+    }
+
+    private static DesiredDateRange normalizeRange(LocalDate from, LocalDate to) {
+        if (from == null || to == null) {
+            return null;
+        }
+        if (from.isAfter(to)) {
+            return new DesiredDateRange(to, from);
+        }
+        return new DesiredDateRange(from, to);
     }
 
     private String normalize(String prompt) {

@@ -8,6 +8,7 @@ import com.team6.module.ai.dto.response.GuideRecommendResponse;
 import com.team6.module.ai.http.RecommendationHttpHeaders;
 import com.team6.module.ai.service.PromptRecommendationService;
 import com.team6.module.ai.support.GuideCandidateBundle;
+import com.team6.module.ai.parser.PromptParser;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.headers.Header;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -34,6 +35,7 @@ public class AiController {
 
     private final PromptRecommendationService promptRecommendationService;
     private final GuideCandidateProvider guideCandidateProvider;
+    private final PromptParser promptParser;
 
     @Operation(
             summary = "프롬프트 기반 가이드 추천",
@@ -71,8 +73,8 @@ public class AiController {
                     content = @Content(schema = @Schema(implementation = PromptRecommendApiRequest.class))
             )
             @RequestBody PromptRecommendApiRequest request) {
-        LocalDate from = resolveDesiredFrom(request);
-        LocalDate to = resolveDesiredTo(request, from);
+        LocalDate from = resolveDesiredFromWithPromptFallback(request);
+        LocalDate to = resolveDesiredToWithPromptFallback(request, from);
 
         GuideCandidateBundle bundle =
                 guideCandidateProvider.getCandidates(
@@ -117,7 +119,10 @@ public class AiController {
         if (request.getDesiredTourDateFrom() != null) {
             return request.getDesiredTourDateFrom();
         }
-        return request.getDesiredTourDate();
+        if (request.getDesiredTourDate() != null) {
+            return request.getDesiredTourDate();
+        }
+        return null;
     }
 
     private static LocalDate resolveDesiredTo(PromptRecommendApiRequest request, LocalDate from) {
@@ -125,6 +130,24 @@ public class AiController {
             return request.getDesiredTourDateTo();
         }
         return from;
+    }
+
+    private LocalDate resolveDesiredFromWithPromptFallback(PromptRecommendApiRequest request) {
+        LocalDate from = resolveDesiredFrom(request);
+        if (from != null) {
+            return from;
+        }
+        PromptParser.DesiredDateRange r = promptParser.extractDesiredTourDateRange(request.getPrompt());
+        return r == null ? null : r.from();
+    }
+
+    private LocalDate resolveDesiredToWithPromptFallback(PromptRecommendApiRequest request, LocalDate from) {
+        LocalDate to = resolveDesiredTo(request, from);
+        if (to != null) {
+            return to;
+        }
+        PromptParser.DesiredDateRange r = promptParser.extractDesiredTourDateRange(request.getPrompt());
+        return r == null ? null : r.to();
     }
 
     private GuideRecommendResponse.SpecialSuggestion buildSpecialSuggestionIfNeeded(
