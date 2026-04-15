@@ -62,6 +62,34 @@ public class FeedbackMatchPolicy {
             );
         }
 
+        if (isColdStartExplorationCandidate(guide)) {
+            bonus += AiRecommendationTuning.COLD_START_EXPLORATION_BONUS;
+        }
+
         return bonus - penalty;
+    }
+
+    /**
+     * 리뷰·환불·매칭·채팅 신호가 없어 상위 랭크에서 밀리기 쉬운 상태(콜드스타트)로 본다.
+     */
+    private static boolean isColdStartExplorationCandidate(GuideAiProfile guide) {
+        Integer rc = guide.getReviewCount();
+        if (rc != null && rc > 0) {
+            return false;
+        }
+        Integer refunds = guide.getApprovedRefundCount();
+        if (refunds != null && refunds > 0) {
+            return false;
+        }
+        Integer mr = guide.getMatchRequestCount();
+        if (mr != null && mr > 0) {
+            return false;
+        }
+        Integer pm = guide.getProgressedMatchCount();
+        if (pm != null && pm > 0) {
+            return false;
+        }
+        Integer cs = guide.getChatStartCount();
+        return cs == null || cs == 0;
     }
 }

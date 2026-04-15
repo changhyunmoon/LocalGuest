@@ -28,6 +28,11 @@ public class LocalGuestAiProperties {
      */
     private ParserSettings parser = new ParserSettings();
 
+    /**
+     * DB 후보 풀 조회·샘플링·캐시({@code localguest.ai.candidate-pool}).
+     */
+    private CandidatePoolSettings candidatePool = new CandidatePoolSettings();
+
     @Getter
     @Setter
     public static class ParserSettings {
@@ -49,5 +54,30 @@ public class LocalGuestAiProperties {
          * 키는 소문자로 정규화되어 매칭된다. 내장 영문·로마자 맵 이후에 병합되며 동일 키는 YAML이 덮어쓴다.
          */
         private Map<String, String> regionAliases = new LinkedHashMap<>();
+    }
+
+    @Getter
+    @Setter
+    public static class CandidatePoolSettings {
+        /**
+         * 스코어링에 넘기는 후보 최대 수(샘플링 후 상한).
+         */
+        private int maxPoolSize = 80;
+        /**
+         * DB에서 가져오는 상한(정확 일치 + 부분 일치 단계에서 사용).
+         */
+        private int maxFetchSize = 200;
+        /**
+         * 콜드스타트 후보(리뷰·행동 신호 거의 없음)를 풀에 확보하려는 최소 비율(0~1).
+         */
+        private double coldStartReserveRatio = 0.12d;
+        /**
+         * 후보 풀 캐시 TTL(초). 0 이하면 비활성.
+         */
+        private int poolCacheTtlSeconds = 45;
+        /**
+         * AI 추천 풀에서 제외할 가이드 프로필 ID(운영용).
+         */
+        private List<Long> excludedGuideIds = new ArrayList<>();
     }
 }

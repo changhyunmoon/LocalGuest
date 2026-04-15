@@ -25,6 +25,12 @@ public interface GuideProfileRepository extends JpaRepository<GuideProfile, Long
     /** 승인·활성 가이드만 (AI 후보 풀 등) */
     Page<GuideProfile> findByIsApprovedTrueAndIsActiveTrue(Pageable pageable);
 
+    /** 지역 문자열 완전 일치(대소문자 무시) — 파싱 지역과 동일 표기 우선 */
+    Page<GuideProfile> findByIsApprovedTrueAndIsActiveTrueAndRegionEqualsIgnoreCase(
+            String region,
+            Pageable pageable
+    );
+
     /** 지역 문자열 부분 일치(대소문자 무시) — 파서 산출 지역과 DB 표기 차이 완화 */
     Page<GuideProfile> findByIsApprovedTrueAndIsActiveTrueAndRegionContainingIgnoreCase(
             String regionFragment,
