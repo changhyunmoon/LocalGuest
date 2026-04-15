@@ -58,6 +58,23 @@ public class AiRecommendationMetrics {
     }
 
     /**
+     * 후보 풀/후보 필터링 단계에서 제외 사유를 집계한다.
+     * 예: 결제 완료 일정 충돌, 운영 제외 ID, 희소 풀 등.
+     *
+     * @param reason schedule_conflict / config_excluded / sparse_pool 등(소문자 권장)
+     * @param removedCount 제외된 후보 수(0이면 기록하지 않음)
+     */
+    public void recordCandidateExclusion(String reason, int removedCount, String policyVersion) {
+        if (removedCount <= 0) {
+            return;
+        }
+        String pv = policyVersion == null ? "unknown" : policyVersion;
+        String r = reason == null || reason.isBlank() ? "unknown" : reason;
+        registry.counter(PREFIX + ".candidate_exclusion",
+                Tags.of("policy_version", pv, "reason", r)).increment(removedCount);
+    }
+
+    /**
      * @param relaxStage 조건 완화 단계 이름(예: {@code DROP_ACTIVITY_TAGS_ONLY}). 체인 실패 시 {@code STRATEGIC_EXHAUSTED}.
      */
     public void recordFallback(String relaxStage) {

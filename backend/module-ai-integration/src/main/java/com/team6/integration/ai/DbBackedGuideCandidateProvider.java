@@ -16,6 +16,7 @@ import com.team6.module.chat.repository.mysql.ChatRoomRepository;
 import com.team6.module.ai.config.LocalGuestAiProperties;
 import com.team6.module.ai.dto.request.GuideRecommendRequest;
 import com.team6.module.ai.parser.PromptParser;
+import com.team6.module.ai.support.AiRecommendationMetrics;
 import com.team6.module.ai.support.AiRecommendationTuning;
 import com.team6.module.ai.support.GuideCandidateBundle;
 import com.team6.module.ai.support.GuideCandidateProvider;
@@ -83,6 +84,7 @@ public class DbBackedGuideCandidateProvider implements GuideCandidateProvider {
     private final GuideScheduleRepository guideScheduleRepository;
     private final PromptParser promptParser;
     private final LocalGuestAiProperties aiProperties;
+    private final AiRecommendationMetrics metrics;
 
     private final ConcurrentHashMap<String, PoolCacheEntry> poolCache = new ConcurrentHashMap<>();
 
@@ -99,6 +101,11 @@ public class DbBackedGuideCandidateProvider implements GuideCandidateProvider {
             Set<Long> bookedPaidGuideIds = resolveBookedPaidGuideIds(desiredTourDateFrom, desiredTourDateTo);
             List<GuideRecommendRequest.GuideCandidateDto> filtered =
                     excludeBookedPaidGuides(unfiltered, bookedPaidGuideIds, desiredTourDateFrom, desiredTourDateTo);
+            metrics.recordCandidateExclusion(
+                    "schedule_conflict",
+                    unfiltered.size() - filtered.size(),
+                    AiRecommendationTuning.POLICY_VERSION
+            );
             return new GuideCandidateBundle(filtered, unfiltered);
         }
         String safePrompt = prompt == null ? "" : prompt;
@@ -122,7 +129,13 @@ public class DbBackedGuideCandidateProvider implements GuideCandidateProvider {
         }
 
         List<GuideProfile> profiles = loadProfilesTiered(region, pool);
+        int beforeExcluded = profiles.size();
         profiles = filterExcludedProfiles(profiles, pool);
+        metrics.recordCandidateExclusion(
+                "config_excluded",
+                beforeExcluded - profiles.size(),
+                AiRecommendationTuning.POLICY_VERSION
+        );
 
         List<GuideRecommendRequest.GuideCandidateDto> mapped = mapProfilesToCandidates(profiles);
         List<GuideRecommendRequest.GuideCandidateDto> withSignals = mergeBehaviorSignals(mapped, profiles);
@@ -130,6 +143,11 @@ public class DbBackedGuideCandidateProvider implements GuideCandidateProvider {
         Set<Long> bookedPaidGuideIds = resolveBookedPaidGuideIds(desiredTourDateFrom, desiredTourDateTo);
         List<GuideRecommendRequest.GuideCandidateDto> sampledFiltered =
                 excludeBookedPaidGuides(sampledUnfiltered, bookedPaidGuideIds, desiredTourDateFrom, desiredTourDateTo);
+        metrics.recordCandidateExclusion(
+                "schedule_conflict",
+                sampledUnfiltered.size() - sampledFiltered.size(),
+                AiRecommendationTuning.POLICY_VERSION
+        );
 
         if (ttlSec > 0) {
             long ttlNanos = ttlSec * 1_000_000_000L;
