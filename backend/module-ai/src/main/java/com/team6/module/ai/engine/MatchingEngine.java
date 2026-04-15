@@ -338,6 +338,7 @@ public class MatchingEngine {
         return bundle.getReasonFacts().stream()
                 .map(f -> GuideRecommendItem.ReasonFact.builder()
                         .code(f.getCode())
+                        .evidenceSlot(f.getEvidenceSlot())
                         .values(f.getValues())
                         .build())
                 .toList();

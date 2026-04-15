@@ -67,6 +67,16 @@ class AiRecommendationRegressionTest {
             assertThat(top1.getReasonCodes().stream().filter(Objects::nonNull).noneMatch(String::isBlank))
                     .as("reasonCodes should not contain blank entries")
                     .isTrue();
+            assertThat(top1.getReasonFacts()).as("reasonFacts for prompt: %s".formatted(s.prompt()))
+                    .isNotNull()
+                    .hasSameSizeAs(top1.getReasonCodes());
+            for (int i = 0; i < top1.getReasonFacts().size(); i++) {
+                assertThat(top1.getReasonFacts().get(i).getEvidenceSlot())
+                        .as("evidenceSlot at %d for prompt: %s".formatted(i, s.prompt()))
+                        .isNotBlank();
+                assertThat(top1.getReasonFacts().get(i).getCode())
+                        .isEqualTo(top1.getReasonCodes().get(i));
+            }
             assertThat(top1.getMatched()).as("matched evidence should be present").isNotNull();
 
             if (s.expectedTag() != null) {

@@ -77,6 +77,26 @@ class ReasonGeneratorTest {
         ReasonBundle bundle = generator().generate(pref, guide, 0);
 
         assertThat(bundle.getReasonCodes()).contains(ReasonGenerator.CODE_ACTIVITY_MATCH);
-        assertThat(bundle.getText()).contains("관심 활동");
+        assertThat(bundle.getText()).contains("카페");
+        var activityFact = bundle.getReasonFacts().stream()
+                .filter(f -> ReasonGenerator.CODE_ACTIVITY_MATCH.equals(f.getCode()))
+                .findFirst();
+        assertThat(activityFact).isPresent();
+        assertThat(activityFact.get().getEvidenceSlot()).isEqualTo("ACTIVITY_TAGS");
+    }
+
+    @Test
+    void generate_should_attach_evidence_slot_parallel_to_code() {
+        TravelerPreference pref = TravelerPreference.builder()
+                .region("서울")
+                .build();
+        GuideAiProfile guide = GuideAiProfile.builder()
+                .region("서울")
+                .build();
+
+        ReasonBundle bundle = generator().generate(pref, guide, 0);
+
+        assertThat(bundle.getReasonFacts()).hasSameSizeAs(bundle.getReasonCodes());
+        assertThat(bundle.getReasonFacts().get(0).getEvidenceSlot()).isEqualTo("REGION");
     }
 }
