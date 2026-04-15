@@ -4,11 +4,13 @@ import com.team6.module.ai.dto.openapi.OpenApiStandardErrorBody;
 import com.team6.module.ai.dto.request.PromptRecommendApiRequest;
 import com.team6.module.ai.support.GuideCandidateProvider;
 import com.team6.module.ai.dto.request.GuideRecommendRequest;
+import com.team6.module.ai.dto.response.GuideRecommendItem;
 import com.team6.module.ai.dto.response.GuideRecommendResponse;
 import com.team6.module.ai.http.RecommendationHttpHeaders;
 import com.team6.module.ai.service.PromptRecommendationService;
 import com.team6.module.ai.support.GuideCandidateBundle;
 import com.team6.module.ai.parser.PromptParser;
+import com.team6.module.ai.support.GuideAvailabilityProvider;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.headers.Header;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -24,6 +26,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -36,6 +39,7 @@ public class AiController {
     private final PromptRecommendationService promptRecommendationService;
     private final GuideCandidateProvider guideCandidateProvider;
     private final PromptParser promptParser;
+    private final GuideAvailabilityProvider guideAvailabilityProvider;
 
     @Operation(
             summary = "프롬프트 기반 가이드 추천",
@@ -92,7 +96,7 @@ public class AiController {
         );
 
         GuideRecommendResponse.SpecialSuggestion specialSuggestion =
-                buildSpecialSuggestionIfNeeded(request, main, bundle);
+                buildSpecialSuggestionIfNeeded(request, main, bundle, from, to);
 
         GuideRecommendResponse body = (specialSuggestion == null)
                 ? main
@@ -153,18 +157,20 @@ public class AiController {
     private GuideRecommendResponse.SpecialSuggestion buildSpecialSuggestionIfNeeded(
             PromptRecommendApiRequest request,
             GuideRecommendResponse main,
-            GuideCandidateBundle bundle
+            GuideCandidateBundle bundle,
+            LocalDate from,
+            LocalDate to
     ) {
         if (bundle == null || bundle.unfilteredCandidates() == null || bundle.unfilteredCandidates().isEmpty()) {
             return null;
         }
         if (main == null || main.getRecommendations() == null || main.getRecommendations().isEmpty()) {
             // 메인 추천이 비어도, “일정 필터만 없었다면 Top1”이 있으면 특별 제시한다.
-            return computeTop1SpecialSuggestion(request, bundle);
+            return computeTop1SpecialSuggestion(request, bundle, from, to);
         }
 
         Long mainTop1 = main.getRecommendations().get(0).getGuideId();
-        GuideRecommendResponse.SpecialSuggestion special = computeTop1SpecialSuggestion(request, bundle);
+        GuideRecommendResponse.SpecialSuggestion special = computeTop1SpecialSuggestion(request, bundle, from, to);
         if (special == null || special.getGuide() == null || special.getGuide().getGuideId() == null) {
             return null;
         }
@@ -175,7 +181,9 @@ public class AiController {
 
     private GuideRecommendResponse.SpecialSuggestion computeTop1SpecialSuggestion(
             PromptRecommendApiRequest request,
-            GuideCandidateBundle bundle
+            GuideCandidateBundle bundle,
+            LocalDate from,
+            LocalDate to
     ) {
         GuideRecommendResponse top1 = promptRecommendationService.recommendByPrompt(
                 request.getPrompt(),
@@ -185,9 +193,29 @@ public class AiController {
         if (top1.getRecommendations() == null || top1.getRecommendations().isEmpty()) {
             return null;
         }
+        GuideRecommendItem guide = top1.getRecommendations().get(0);
+        String notice = buildAvailabilityNotice(guide.getGuideId(), from, to);
         return GuideRecommendResponse.SpecialSuggestion.builder()
-                .guide(top1.getRecommendations().get(0))
-                .notice("조건에 잘 부합하지만 선택한 날짜에는 예약이 있어요")
+                .guide(guide)
+                .notice(notice)
                 .build();
+    }
+
+    private String buildAvailabilityNotice(Long guideId, LocalDate from, LocalDate to) {
+        String base = "조건에 잘 부합하지만 선택한 날짜에는 예약이 있어요";
+        if (guideId == null || from == null) {
+            return base;
+        }
+        List<LocalDate> available = guideAvailabilityProvider.availableDates(guideId, from, to);
+        if (available == null || available.isEmpty()) {
+            return base;
+        }
+        // 안내는 과도하지 않게 7개까지만
+        List<LocalDate> clipped = new ArrayList<>();
+        for (int i = 0; i < available.size() && i < 7; i++) {
+            clipped.add(available.get(i));
+        }
+        String suffix = " (기간 내 가능: " + String.join(", ", clipped.stream().map(LocalDate::toString).toList()) + ")";
+        return base + suffix;
     }
 }
