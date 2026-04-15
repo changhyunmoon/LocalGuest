@@ -26,6 +26,12 @@ dependencies {
     // Redis 사용을 위한 필수 의존성
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
 
+<<<<<<< HEAD
+=======
+    // Redis 사용을 위한 필수 의존성
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+
+>>>>>>> Feat/be#148
     runtimeOnly 'com.mysql:mysql-connector-j'
 }
 bootJar { enabled = true }
