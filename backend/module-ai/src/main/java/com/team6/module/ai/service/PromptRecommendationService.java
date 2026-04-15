@@ -143,6 +143,7 @@ public class PromptRecommendationService {
         String parseConfidence = computePromptParseConfidence(parsed);
         List<String> ambiguityCodes = collectAmbiguityNoticeCodes(prompt, parsed);
         List<String> parserHints = parsed.getParserNoticeCodes() == null ? List.of() : parsed.getParserNoticeCodes();
+        logParserTuningSignals(prompt, parsed, parseConfidence, ambiguityCodes, parserHints);
 
         String notice = fallback.fallbackNotice();
         if (expansion.expansionUsed()) {
@@ -205,6 +206,62 @@ public class PromptRecommendationService {
         } finally {
             metrics.recordRecommendationLatencyNanos(System.nanoTime() - startNs, POLICY_VERSION);
         }
+    }
+
+    /**
+     * 운영 로그에서 파싱 실패/모호함 패턴을 수집하기 위한 신호 로그.
+     * 프롬프트 원문은 남기지 않고, {@code promptHash}와 “언급 힌트/추출 결과”만 남긴다.
+     */
+    private void logParserTuningSignals(
+            String prompt,
+            GuideRecommendRequest parsed,
+            String parseConfidence,
+            List<String> ambiguityCodes,
+            List<String> parserHints
+    ) {
+        try {
+            boolean hasAmbiguity = ambiguityCodes != null && !ambiguityCodes.isEmpty();
+            boolean hasParserHints = parserHints != null && !parserHints.isEmpty();
+            boolean lowConfidence = "LOW".equalsIgnoreCase(parseConfidence);
+
+            var signals = promptParser.signals(prompt);
+            boolean exclusionIntentButNoExcluded =
+                    signals != null
+                            && signals.matchedExclusionIntentKeywords() != null
+                            && !signals.matchedExclusionIntentKeywords().isEmpty()
+                            && (parsed.getExcludedActivityTags() == null || parsed.getExcludedActivityTags().isEmpty());
+
+            if (!(lowConfidence || hasAmbiguity || hasParserHints || exclusionIntentButNoExcluded)) {
+                return;
+            }
+
+            log.info("[AI_PARSER_TUNE] policyVer={} promptHash={} parseConfidence={} ambiguityCodes={} parserHints={} signals={{exclusionIntents={},budgetHint={},durationHint={}}} extracted={{region={},style={},budget={},durationDays={},tags={},excluded={},langs={},headcount={}}}",
+                    POLICY_VERSION,
+                    promptHash(prompt),
+                    parseConfidence,
+                    ambiguityCodes,
+                    parserHints,
+                    signals == null ? null : signals.matchedExclusionIntentKeywords(),
+                    signals != null && signals.hasBudgetHint(),
+                    signals != null && signals.hasDurationHint(),
+                    parsed.getRegion(),
+                    parsed.getTravelStyle(),
+                    parsed.getBudgetLevel(),
+                    parsed.getDurationDays(),
+                    parsed.getActivityTags(),
+                    parsed.getExcludedActivityTags(),
+                    parsed.getPreferredLanguages(),
+                    parsed.getHeadcount()
+            );
+        } catch (Exception e) {
+            log.debug("[AI_PARSER_TUNE] logging skipped: {}", e.toString());
+        }
+    }
+
+    private static int promptHash(String prompt) {
+        return Objects.toString(prompt, "").getBytes(StandardCharsets.UTF_8).length == 0
+                ? 0
+                : Objects.toString(prompt, "").hashCode();
     }
 
     private void recordDistributionMetrics(GuideRecommendResponse response, int effectivePoolSize) {
@@ -621,9 +678,7 @@ public class PromptRecommendationService {
             int expansionExactCount
     ) {
         try {
-            int promptHash = Objects.toString(prompt, "").getBytes(StandardCharsets.UTF_8).length == 0
-                    ? 0
-                    : Objects.toString(prompt, "").hashCode();
+            int promptHash = promptHash(prompt);
             int candidateCount = guideCandidates == null ? 0 : guideCandidates.size();
             int baseTopScore = topScore(base);
             int finalTopScore = topScore(finalBase);

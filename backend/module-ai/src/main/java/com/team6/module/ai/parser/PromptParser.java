@@ -69,6 +69,19 @@ public class PromptParser {
     private static final Pattern DATE_RANGE_DAY_ONLY = Pattern.compile("(\\d{1,2})\\s*일\\s*(?:~|\\-|부터)\\s*(\\d{1,2})\\s*일");
     private static final int NEGATION_AFTER_WINDOW = 12;
 
+    /**
+     * 운영 로그에서 “실패/모호 패턴”을 모아 yml/내장 키워드를 주기적으로 보강하기 위한 신호 묶음.
+     * <p>
+     * 프롬프트 원문을 그대로 남기지 않고도(민감정보 최소화) “어떤 힌트가 있었는데 결과가 비었는지”를
+     * 판별할 수 있도록, 매칭된 트리거만 요약한다.
+     */
+    public record ParseSignals(
+            List<String> matchedExclusionIntentKeywords,
+            boolean hasBudgetHint,
+            boolean hasDurationHint
+    ) {
+    }
+
     public GuideRecommendRequest parse(
             String prompt,
             Integer topN,
@@ -113,6 +126,42 @@ public class PromptParser {
                 .guideCandidates(guideCandidates)
                 .parserNoticeCodes(parserNotices.isEmpty() ? null : List.copyOf(parserNotices))
                 .build();
+    }
+
+    /**
+     * 파싱 실패/모호함 튜닝용 신호를 추출한다(로깅/관측용).
+     * <p>
+     * - 제외 의도: {@code localguest.ai.parser.exclusion-intent-keywords} + 내장 기본값을 합쳐 탐지
+     * - 예산/일정 힌트: 숫자 패턴 및 대표 키워드로 “언급은 있었다” 정도만 판별
+     */
+    public ParseSignals signals(String prompt) {
+        String normalized = normalize(prompt);
+        List<String> exclusionIntents = findAllMatchedKeywordsMerged(
+                normalized,
+                aiProperties.getParser().getExclusionIntentKeywords(),
+                DEFAULT_EXCLUSION_INTENT_KEYWORDS
+        );
+
+        boolean hasBudgetHint = containsAny(
+                normalized,
+                "예산", "원", "만원", "가성비", "저렴", "싸게", "럭셔리", "고급", "프리미엄", "비싸"
+        ) || BUDGET_WON.matcher(normalized).find()
+                || BUDGET_RANGE_WON.matcher(normalized).find()
+                || BUDGET_MANWON_ROUGH.matcher(normalized).find()
+                || BUDGET_MANWON_RANGE.matcher(normalized).find()
+                || BUDGET_MANWON_BAND.matcher(normalized).find();
+
+        boolean hasDurationHint = containsAny(normalized, "일정", "며칠", "박", "일", "주")
+                || DURATION_NIGHTS_DAYS.matcher(normalized).find()
+                || DURATION_NIGHTS_ONLY.matcher(normalized).find()
+                || DURATION_RANGE_DAYS.matcher(normalized).find()
+                || DURATION_DAYS_SUFFIX.matcher(normalized).find()
+                || DURATION_DAYS.matcher(normalized).find()
+                || DURATION_WEEKS.matcher(normalized).find()
+                || DATE_RANGE_MONTH_DAY.matcher(normalized).find()
+                || DATE_RANGE_DAY_ONLY.matcher(normalized).find();
+
+        return new ParseSignals(exclusionIntents, hasBudgetHint, hasDurationHint);
     }
 
     private String normalize(String prompt) {
@@ -574,6 +623,21 @@ public class PromptParser {
             }
         }
         return new ArrayList<>(merged);
+    }
+
+    private List<String> findAllMatchedKeywordsMerged(String prompt, List<String> yaml, String[] defaults) {
+        List<String> merged = mergeKeywordList(yaml, defaults);
+        LinkedHashSet<String> matched = new LinkedHashSet<>();
+        for (String keyword : merged) {
+            if (keyword == null || keyword.isBlank()) {
+                continue;
+            }
+            String k = keyword.trim().toLowerCase(Locale.ROOT);
+            if (!k.isEmpty() && prompt.contains(k)) {
+                matched.add(keyword.trim());
+            }
+        }
+        return new ArrayList<>(matched);
     }
 
     private boolean containsAnyMerged(String prompt, List<String> yaml, String[] defaults) {
