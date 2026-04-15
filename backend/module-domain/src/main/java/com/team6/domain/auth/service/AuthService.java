@@ -7,7 +7,7 @@ import com.team6.domain.member.entity.Role;
 import com.team6.domain.member.repository.MemberRepository;
 import com.team6.domain.auth.provider.JwtTokenProvider;
 import com.team6.module.common.global.util.SecurityUtil;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -17,13 +17,24 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.concurrent.TimeUnit;
 
 @Service
-@RequiredArgsConstructor
 @Transactional
 public class AuthService {
     private final MemberRepository memberRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
     private final RedisTemplate<String, String> redisTemplate;
+
+    public AuthService(
+            MemberRepository memberRepository,
+            PasswordEncoder passwordEncoder,
+            JwtTokenProvider jwtTokenProvider,
+            @Qualifier("memberRedisTemplate") RedisTemplate<String, String> redisTemplate
+    ) {
+        this.memberRepository = memberRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.jwtTokenProvider = jwtTokenProvider;
+        this.redisTemplate = redisTemplate;
+    }
 
     // 로그인 로직
     public TokenResponse login(LoginRequest request) {

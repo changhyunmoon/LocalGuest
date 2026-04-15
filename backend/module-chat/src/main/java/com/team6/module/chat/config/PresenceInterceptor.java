@@ -4,7 +4,7 @@ import com.team6.module.chat.service.ChatRoomService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider; // 추가
-import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -21,7 +21,7 @@ import java.util.Map;
 @Slf4j
 public class PresenceInterceptor implements ChannelInterceptor {
 
-    private final RedisTemplate<String, String> redisTemplate;
+    private final StringRedisTemplate redisTemplate;
     private final ObjectProvider<SimpMessagingTemplate> messagingTemplateProvider;
     private final ChatRoomService chatRoomService;
 
