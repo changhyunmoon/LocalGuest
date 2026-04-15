@@ -10,13 +10,15 @@ import java.util.List;
 public class RequestGuideCandidateProvider implements com.team6.module.ai.support.GuideCandidateProvider {
 
     @Override
-    public List<GuideRecommendRequest.GuideCandidateDto> getCandidates(
+    public GuideCandidateBundle getCandidates(
             String prompt,
             Integer topN,
             List<GuideRecommendRequest.GuideCandidateDto> candidates,
-            LocalDate desiredTourDate
+            LocalDate desiredTourDateFrom,
+            LocalDate desiredTourDateTo
     ) {
         // DB 없음: 결제 완료 일정 제외는 integration 구현(DbBacked)에서 처리한다.
-        return candidates == null ? List.of() : candidates;
+        List<GuideRecommendRequest.GuideCandidateDto> out = candidates == null ? List.of() : candidates;
+        return new GuideCandidateBundle(out, out);
     }
 }

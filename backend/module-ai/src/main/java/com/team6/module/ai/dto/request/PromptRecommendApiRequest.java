@@ -26,4 +26,18 @@ public class PromptRecommendApiRequest {
             example = "2026-04-28"
     )
     private LocalDate desiredTourDate;
+
+    @Schema(
+            description = "희망 투어 기간 시작일(로컬 날짜, ISO-8601 yyyy-MM-dd). "
+                    + "기간이 지정되면 기간 중 하루라도 결제 완료(BOOKED + isPaid) 스케줄이 있는 가이드는 추천 후보에서 제외",
+            example = "2026-04-28"
+    )
+    private LocalDate desiredTourDateFrom;
+
+    @Schema(
+            description = "희망 투어 기간 종료일(로컬 날짜, ISO-8601 yyyy-MM-dd). "
+                    + "미입력 시 desiredTourDateFrom(또는 desiredTourDate)와 동일 날짜로 처리",
+            example = "2026-04-30"
+    )
+    private LocalDate desiredTourDateTo;
 }
