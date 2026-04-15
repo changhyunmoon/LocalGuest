@@ -3,6 +3,7 @@ package com.team6.module.chat.service;
 import com.mongodb.client.result.UpdateResult;
 import com.team6.module.chat.dto.chatMessage.ChatMessageRequest;
 import com.team6.module.chat.dto.chatMessage.ChatMessageResponse;
+import com.team6.module.chat.dto.notification.ChatNotificationResponse;
 import com.team6.module.chat.entity.mongodb.ChatMessage;
 import com.team6.module.chat.entity.mongodb.MessageType;
 import com.team6.module.chat.entity.mysql.ChatParticipant;
@@ -37,6 +38,7 @@ public class ChatMessageService {
     private final RedisTemplate<String, String> redisTemplate;
     private final MongoTemplate mongoTemplate;
     private final ObjectProvider<SimpMessagingTemplate> messagingTemplateProvider;
+    private final NotificationService notificationService;
 
     /**
      * 메시지 전송 및 저장
@@ -69,6 +71,10 @@ public class ChatMessageService {
         if (messagingTemplate != null) {
             messagingTemplate.convertAndSend("/sub/chat/room/" + request.roomId(), ChatMessageResponse.from(chatMessage));
         }
+
+        notificationService.broadcast(ChatNotificationResponse.of(
+                "NEW_MESSAGE", request.roomId(), request.senderEmail(), null, null
+        ));
     }
 
     /**
