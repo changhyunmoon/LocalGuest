@@ -3,9 +3,11 @@ package com.team6.integration.ai;
 import com.team6.domain.guide.entity.GuideCareer;
 import com.team6.domain.guide.entity.GuideFeed;
 import com.team6.domain.guide.entity.GuideProfile;
+import com.team6.domain.guide.entity.enums.GuideScheduleStatus;
 import com.team6.domain.guide.repository.GuideCareerRepository;
 import com.team6.domain.guide.repository.GuideFeedRepository;
 import com.team6.domain.guide.repository.GuideProfileRepository;
+import com.team6.domain.guide.repository.GuideScheduleRepository;
 import com.team6.domain.matching.entity.enums.MatchRequestStatus;
 import com.team6.domain.matching.entity.enums.RefundStatus;
 import com.team6.domain.matching.repository.MatchRequestRepository;
@@ -25,6 +27,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -46,10 +49,13 @@ import java.util.stream.Collectors;
  * 정책버전 키 캐시({@link LocalGuestAiProperties#getCandidatePool()})를 적용한다.
  * <p>
  * <b>캐시 키</b>: {@link AiRecommendationTuning#POLICY_VERSION}을 접두로 하고,
- * {@code maxFetchSize}·{@code maxPoolSize}·{@code coldStartReserveRatio}·{@code excludedGuideIds}·지역 문자열을
- * 이어 붙인다. 스코어/다양성 YAML 내용 전체는 키에 넣지 않으므로, 랭킹 의미가 바뀌면
+ * {@code maxFetchSize}·{@code maxPoolSize}·{@code coldStartReserveRatio}·{@code excludedGuideIds}·지역 문자열·
+ * 선택적 {@code desiredTourDate}(투어 희망일)를 이어 붙인다. 스코어/다양성 YAML 내용 전체는 키에 넣지 않으므로, 랭킹 의미가 바뀌면
  * {@code POLICY_VERSION}을 올려 캐시를 자연스럽게 무효화하고, API {@code policyVersion}·메트릭 태그와 맞춘다.
  * 후보 풀 차원만 바꿀 때는 위 후보 풀 필드가 키에 들어가므로 별도 버전 상향 없이도 다른 엔트리가 된다.
+ * <p>
+ * <b>결제 완료 일정 제외</b>: {@code desiredTourDate}가 지정되면, 해당 로컬 날짜에
+ * {@link GuideScheduleStatus#BOOKED}이면서 {@code isPaid=true}인 스케줄이 있는 가이드는 후보에서 제외한다.
  */
 @Slf4j
 @Component
@@ -73,6 +79,7 @@ public class DbBackedGuideCandidateProvider implements GuideCandidateProvider {
     private final MatchRequestRepository matchRequestRepository;
     private final RefundRepository refundRepository;
     private final ChatRoomRepository chatRoomRepository;
+    private final GuideScheduleRepository guideScheduleRepository;
     private final PromptParser promptParser;
     private final LocalGuestAiProperties aiProperties;
 
@@ -82,10 +89,12 @@ public class DbBackedGuideCandidateProvider implements GuideCandidateProvider {
     public List<GuideRecommendRequest.GuideCandidateDto> getCandidates(
             String prompt,
             Integer topN,
-            List<GuideRecommendRequest.GuideCandidateDto> candidates
+            List<GuideRecommendRequest.GuideCandidateDto> candidates,
+            LocalDate desiredTourDate
     ) {
+        Set<Long> bookedPaidGuideIds = resolveBookedPaidGuideIds(desiredTourDate);
         if (candidates != null && !candidates.isEmpty()) {
-            return candidates;
+            return excludeBookedPaidGuides(candidates, bookedPaidGuideIds, desiredTourDate);
         }
         String safePrompt = prompt == null ? "" : prompt;
         int resolvedTopN = (topN == null || topN <= 0) ? AiRecommendationTuning.DEFAULT_TOP_N : topN;
@@ -94,7 +103,7 @@ public class DbBackedGuideCandidateProvider implements GuideCandidateProvider {
 
         LocalGuestAiProperties.CandidatePoolSettings pool = aiProperties.getCandidatePool();
         int ttlSec = pool.getPoolCacheTtlSeconds();
-        String cacheKey = buildPoolCacheKey(region, pool);
+        String cacheKey = buildPoolCacheKey(region, pool, desiredTourDate);
         if (ttlSec > 0) {
             PoolCacheEntry hit = poolCache.get(cacheKey);
             if (hit != null && !hit.isExpired()) {
@@ -105,6 +114,7 @@ public class DbBackedGuideCandidateProvider implements GuideCandidateProvider {
 
         List<GuideProfile> profiles = loadProfilesTiered(region, pool);
         profiles = filterExcludedProfiles(profiles, pool);
+        profiles = excludeBookedPaidProfiles(profiles, bookedPaidGuideIds, desiredTourDate);
 
         List<GuideRecommendRequest.GuideCandidateDto> mapped = mapProfilesToCandidates(profiles);
         List<GuideRecommendRequest.GuideCandidateDto> withSignals = mergeBehaviorSignals(mapped, profiles);
@@ -120,17 +130,76 @@ public class DbBackedGuideCandidateProvider implements GuideCandidateProvider {
         return sampled;
     }
 
+    private Set<Long> resolveBookedPaidGuideIds(LocalDate desiredTourDate) {
+        if (desiredTourDate == null) {
+            return Set.of();
+        }
+        List<Long> ids = guideScheduleRepository.findGuideProfileIdsBookedAndPaidOnDate(
+                desiredTourDate,
+                GuideScheduleStatus.BOOKED
+        );
+        if (ids == null || ids.isEmpty()) {
+            return Set.of();
+        }
+        return ids.stream().filter(Objects::nonNull).collect(Collectors.toCollection(HashSet::new));
+    }
+
+    private static List<GuideProfile> excludeBookedPaidProfiles(
+            List<GuideProfile> profiles,
+            Set<Long> bookedPaidGuideIds,
+            LocalDate desiredTourDate
+    ) {
+        if (profiles == null || profiles.isEmpty() || bookedPaidGuideIds.isEmpty()) {
+            return profiles;
+        }
+        int before = profiles.size();
+        List<GuideProfile> out = profiles.stream()
+                .filter(p -> p.getId() == null || !bookedPaidGuideIds.contains(p.getId()))
+                .collect(Collectors.toCollection(ArrayList::new));
+        if (out.size() < before) {
+            log.info("[AI_POOL] bookedPaidExclusion profiles date={} removed={}", desiredTourDate, before - out.size());
+        }
+        return out;
+    }
+
+    private static List<GuideRecommendRequest.GuideCandidateDto> excludeBookedPaidGuides(
+            List<GuideRecommendRequest.GuideCandidateDto> candidates,
+            Set<Long> bookedPaidGuideIds,
+            LocalDate desiredTourDate
+    ) {
+        if (candidates == null) {
+            return List.of();
+        }
+        if (bookedPaidGuideIds.isEmpty()) {
+            return candidates;
+        }
+        int before = candidates.size();
+        List<GuideRecommendRequest.GuideCandidateDto> out = candidates.stream()
+                .filter(c -> c.getGuideId() == null || !bookedPaidGuideIds.contains(c.getGuideId()))
+                .collect(Collectors.toCollection(ArrayList::new));
+        if (out.size() < before) {
+            log.info("[AI_POOL] bookedPaidExclusion clientCandidates date={} removed={}", desiredTourDate, before - out.size());
+        }
+        return out;
+    }
+
     /**
      * 스코어·다양성 스냅샷 필드는 포함하지 않는다(후보 집합 차원만 반영).
      */
-    private static String buildPoolCacheKey(String region, LocalGuestAiProperties.CandidatePoolSettings pool) {
+    private static String buildPoolCacheKey(
+            String region,
+            LocalGuestAiProperties.CandidatePoolSettings pool,
+            LocalDate desiredTourDate
+    ) {
         String regionKey = region == null || region.isBlank() ? "_" : region.trim().toLowerCase(Locale.ROOT);
+        String dateKey = desiredTourDate == null ? "_" : desiredTourDate.toString();
         return AiRecommendationTuning.POLICY_VERSION
                 + "|" + pool.getMaxFetchSize()
                 + "|" + pool.getMaxPoolSize()
                 + "|" + pool.getColdStartReserveRatio()
                 + "|" + pool.getExcludedGuideIds()
-                + "|" + regionKey;
+                + "|" + regionKey
+                + "|" + dateKey;
     }
 
     private List<GuideProfile> loadProfilesTiered(String region, LocalGuestAiProperties.CandidatePoolSettings pool) {
