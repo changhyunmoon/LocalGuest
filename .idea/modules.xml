@@ -3,12 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/LocalGuest.iml" filepath="$PROJECT_DIR$/.idea/LocalGuest.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/api-server/backend.api-server.main.iml" filepath="$PROJECT_DIR$/.idea/modules/api-server/backend.api-server.main.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/module-ai-integration/backend.module-ai-integration.main.iml" filepath="$PROJECT_DIR$/.idea/modules/module-ai-integration/backend.module-ai-integration.main.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/module-ai/backend.module-ai.main.iml" filepath="$PROJECT_DIR$/.idea/modules/module-ai/backend.module-ai.main.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/module-chat/backend.module-chat.main.iml" filepath="$PROJECT_DIR$/.idea/modules/module-chat/backend.module-chat.main.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/module-common/backend.module-common.main.iml" filepath="$PROJECT_DIR$/.idea/modules/module-common/backend.module-common.main.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/module-domain/backend.module-domain.main.iml" filepath="$PROJECT_DIR$/.idea/modules/module-domain/backend.module-domain.main.iml" />
     </modules>
   </component>
 </project>
