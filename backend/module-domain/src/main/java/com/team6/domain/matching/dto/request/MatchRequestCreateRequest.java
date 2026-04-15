@@ -1,7 +1,10 @@
 package com.team6.domain.matching.dto.request;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -17,6 +20,17 @@ public class MatchRequestCreateRequest {
      * member.id가 아닌 guide_profiles PK를 전달해야 한다.
      */
     private Long guideId;
+
+    /**
+     * 가이드 스케줄 식별자 (guide_schedules.id)
+     * 매칭 생성 시 해당 슬롯을 PENDING으로 잠그기 위해 전달한다.
+     * JSON: {@code scheduleId} (가이드 API와 동일). {@code guideScheduleId}도 수신 호환.
+     */
+    @NotNull
+    @Positive
+    @JsonProperty("scheduleId")
+    @JsonAlias("guideScheduleId")
+    private Long guideScheduleId;
 
     @NotBlank
     private String destination;

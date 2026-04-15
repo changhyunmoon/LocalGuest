@@ -131,7 +131,7 @@ public class GuideScheduleController {
         return ResponseEntity.ok(guideScheduleService.markAsBooked(scheduleId, guideId));
     }
 
-    // [matching 연동] 결제 완료 확정 — matching 도메인이 PAID 전환 시 호출, courseDetail 잠금 해제
+    // [matching 연동] BOOKED 스케줄 결제 확정 — isPaid=true, courseDetail 잠금 해제 (가이드 수락 후 결제 흐름)
     @PatchMapping("/{scheduleId}/paid-confirm")
     public ResponseEntity<GuideScheduleResponse> markAsPaid(
             @PathVariable Long guideId,
@@ -140,7 +140,7 @@ public class GuideScheduleController {
         return ResponseEntity.ok(guideScheduleService.markAsPaid(scheduleId, guideId));
     }
 
-    // [matching 연동] BOOKED → AVAILABLE 복구 — matching 도메인이 취소 시 호출 (F05-01/02)
+    // [matching 연동] PENDING·BOOKED → AVAILABLE — 매칭 거절/취소 시 matching 도메인이 호출 (F03/F05)
     @PatchMapping("/{scheduleId}/cancel")
     public ResponseEntity<GuideScheduleResponse> cancelToAvailable(
             @PathVariable Long guideId,

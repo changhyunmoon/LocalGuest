@@ -1,6 +1,8 @@
 package com.team6.domain.matching.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.team6.domain.matching.entity.MatchRequest;
+import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -14,6 +16,8 @@ public class MatchRequestCreateResponse {
     private Long requestId;
     private Long guestId;
     private Long guideId;
+    @Getter(AccessLevel.NONE)
+    private Long guideScheduleId;
     private String destination;
     private String concept;
     private String conceptSummary;
@@ -24,11 +28,17 @@ public class MatchRequestCreateResponse {
     private String status;
     private LocalDateTime createdAt;
 
+    @JsonProperty("scheduleId")
+    public Long getGuideScheduleId() {
+        return guideScheduleId;
+    }
+
     public static MatchRequestCreateResponse from(MatchRequest entity) {
         return MatchRequestCreateResponse.builder()
                 .requestId(entity.getId())
                 .guestId(entity.getGuestId())
                 .guideId(entity.getGuideId())
+                .guideScheduleId(entity.getGuideScheduleId())
                 .destination(entity.getDestination())
                 .concept(entity.getConcept())
                 .conceptSummary(entity.getConceptSummary())

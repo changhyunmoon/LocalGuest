@@ -19,4 +19,10 @@ public class PaymentConfirmRequest {
     @NotNull
     @Positive
     private Integer amount;
+
+    /**
+     * 카카오페이 승인용 pg_token.
+     * Stub/Fake 결제에서는 비워도 되며, 카카오 결제 모드에서만 사용한다.
+     */
+    private String pgToken;
 }

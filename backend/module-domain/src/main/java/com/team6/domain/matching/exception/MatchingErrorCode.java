@@ -21,6 +21,7 @@ public enum MatchingErrorCode {
     PAYMENT_DUPLICATE_TYPE(400, "해당 매칭 요청에 동일 유형의 결제가 이미 존재합니다"),
     PAYMENT_AMOUNT_MISMATCH(400, "결제 금액이 일치하지 않습니다"),
     PAYMENT_PG_VERIFICATION_FAILED(400, "PG 승인 검증에 실패했습니다"),
+    GUIDE_SCHEDULE_SYNC_FAILED(502, "가이드 스케줄 상태 동기화에 실패했습니다"),
 
     // Refund 관련
     REFUND_DEADLINE_EXCEEDED(400, "환불 가능 시간(2시간)이 초과되었습니다"),
