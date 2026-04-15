@@ -85,7 +85,18 @@ public final class KeywordNormalizer {
             Map.entry("슬로프", "스키"),
             Map.entry("폭포", "계곡"),
             Map.entry("바다낚시", "낚시"),
-            Map.entry("패러", "패러글라이딩")
+            Map.entry("패러", "패러글라이딩"),
+            Map.entry("경치", "야경"),
+            Map.entry("전망", "야경"),
+            Map.entry("조망", "야경"),
+            Map.entry("뷰", "야경"),
+            Map.entry("스카이", "야경"),
+            Map.entry("viewpoint", "야경"),
+            Map.entry("scenic", "야경"),
+            Map.entry("실내", "전시"),
+            Map.entry("우천", "전시"),
+            Map.entry("장마", "전시"),
+            Map.entry("비오는날", "전시")
     );
 
     public static String normalizeTag(String tag) {

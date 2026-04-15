@@ -1,5 +1,6 @@
 package com.team6.module.ai.dto.request;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.Getter;
@@ -26,6 +27,12 @@ public class GuideRecommendRequest {
     private List<String> softPenaltyActivityTags;
     private Integer topN;
     private List<GuideCandidateDto> guideCandidates;
+
+    /**
+     * 파서 전용: 선호/제외 충돌 정리 등 내부 안내 코드. 직렬화·OpenAPI에는 노출하지 않는다.
+     */
+    @JsonIgnore
+    private List<String> parserNoticeCodes;
 
     @Schema(name = "GuideCandidateDto", description = "추천 후보 가이드 프로필")
     @Getter
