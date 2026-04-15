@@ -44,6 +44,12 @@ import java.util.stream.Collectors;
  * <p>
  * 지역은 <b>정확 일치 → 부분 일치 → 전역</b> 순으로 확보하고, 운영 제외 ID·상한·콜드스타트 비율 샘플링·
  * 정책버전 키 캐시({@link LocalGuestAiProperties#getCandidatePool()})를 적용한다.
+ * <p>
+ * <b>캐시 키</b>: {@link AiRecommendationTuning#POLICY_VERSION}을 접두로 하고,
+ * {@code maxFetchSize}·{@code maxPoolSize}·{@code coldStartReserveRatio}·{@code excludedGuideIds}·지역 문자열을
+ * 이어 붙인다. 스코어/다양성 YAML 내용 전체는 키에 넣지 않으므로, 랭킹 의미가 바뀌면
+ * {@code POLICY_VERSION}을 올려 캐시를 자연스럽게 무효화하고, API {@code policyVersion}·메트릭 태그와 맞춘다.
+ * 후보 풀 차원만 바꿀 때는 위 후보 풀 필드가 키에 들어가므로 별도 버전 상향 없이도 다른 엔트리가 된다.
  */
 @Slf4j
 @Component
@@ -114,6 +120,9 @@ public class DbBackedGuideCandidateProvider implements GuideCandidateProvider {
         return sampled;
     }
 
+    /**
+     * 스코어·다양성 스냅샷 필드는 포함하지 않는다(후보 집합 차원만 반영).
+     */
     private static String buildPoolCacheKey(String region, LocalGuestAiProperties.CandidatePoolSettings pool) {
         String regionKey = region == null || region.isBlank() ? "_" : region.trim().toLowerCase(Locale.ROOT);
         return AiRecommendationTuning.POLICY_VERSION

@@ -9,6 +9,9 @@ import java.util.List;
 /**
  * 룰 기반 스코어·피드백 가중치(YAML {@code localguest.ai.scoring-policy}).
  * 기본값은 기존 {@link com.team6.module.ai.policy.ScoreWeight}·{@link com.team6.module.ai.support.AiRecommendationTuning} 상수와 동일하다.
+ * <p>
+ * 운영 시 {@link LocalGuestAiProperties}의 후보 풀·다양성 블록과 같은 배포 단위로 맞추고,
+ * 랭킹 의미 변경 시 {@link com.team6.module.ai.support.AiRecommendationTuning#POLICY_VERSION} 상향을 검토한다.
  */
 @Getter
 @Setter

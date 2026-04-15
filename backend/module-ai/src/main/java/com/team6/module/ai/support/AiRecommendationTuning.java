@@ -6,6 +6,10 @@ package com.team6.module.ai.support;
  * Diversity rerank는 {@link com.team6.module.ai.config.DiversityRerankSnapshot}·
  * {@code localguest.ai.diversity-rerank}(레거시 참고: {@link com.team6.module.ai.engine.DiversityRerankConstants}),
  * 정책별 점수 가중은 {@link com.team6.module.ai.config.ScoringPolicySnapshot}를 참고한다.
+ * <p>
+ * {@link #POLICY_VERSION}은 API 응답·Micrometer·DB 후보 풀 캐시 키 접두에 공통으로 쓰이므로,
+ * 스코어·다양성·Reason 의미를 바꾸는 배포에서는 이 상수를 함께 올려 운영 지표와 후보 샘플링 결과가 어긋나지 않게 한다
+ * ({@link com.team6.module.ai.config.LocalGuestAiProperties} 설명 참고).
  */
 public final class AiRecommendationTuning {
 
