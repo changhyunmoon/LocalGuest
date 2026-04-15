@@ -21,4 +21,7 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
 
     // 게스트 ID + 상태로 조회
     List<Payment> findByPayerIdAndStatus(Long payerId, PaymentStatus status);
+
+    // 가이드 프로필 ID 기준 완료 결제 — 정산 예정 금액 집계용
+    List<Payment> findByMatchRequest_GuideIdAndStatus(Long guideId, PaymentStatus status);
 }

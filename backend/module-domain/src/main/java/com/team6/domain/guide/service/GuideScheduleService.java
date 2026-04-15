@@ -237,34 +237,30 @@ public class GuideScheduleService {
         return GuideScheduleResponse.from(schedule);
     }
 
-    // [matching 연동] 결제 완료 확정 — matching 도메인이 PAID 전환 시 호출
-    // PENDING → BOOKED + isPaid = true 동시 처리, courseDetail 잠금 해제
+    // [matching 연동] 결제 완료 확정 — acceptSchedule 등으로 이미 BOOKED인 경우 isPaid만 true (courseDetail 잠금 해제)
     @Transactional
     public GuideScheduleResponse markAsPaid(Long scheduleId, Long guideId) {
         GuideSchedule schedule = getVerifiedSchedule(scheduleId, guideId);
 
-        if (schedule.getStatus() != GuideScheduleStatus.PENDING) {
-            throw new GuideException(GuideErrorCode.SCHEDULE_NOT_PENDING);
+        if (schedule.getStatus() != GuideScheduleStatus.BOOKED) {
+            throw new GuideException(GuideErrorCode.SCHEDULE_NOT_BOOKED);
         }
 
         schedule.markAsPaid();
         return GuideScheduleResponse.from(schedule);
     }
 
-    // [matching 연동] PENDING → AVAILABLE 복구 — matching 도메인이 취소 시 호출
+    // [matching 연동] PENDING 또는 BOOKED → AVAILABLE — 매칭 거절·취소 시 matching 도메인이 호출 (F03/F05)
     @Transactional
     public GuideScheduleResponse cancelToAvailable(Long scheduleId, Long guideId) {
-        // 스케줄 조회
         GuideSchedule schedule = getVerifiedSchedule(scheduleId, guideId);
 
-        // PENDING 상태인지 확인 (복구는 대기 중 상태에서만 허용)
-        if (schedule.getStatus() != GuideScheduleStatus.PENDING) {
-            throw new GuideException(GuideErrorCode.SCHEDULE_NOT_PENDING);
+        if (schedule.getStatus() != GuideScheduleStatus.PENDING
+                && schedule.getStatus() != GuideScheduleStatus.BOOKED) {
+            throw new GuideException(GuideErrorCode.SCHEDULE_MATCH_RELEASE_INVALID);
         }
 
-        // 상태 복구: PENDING → AVAILABLE
-        schedule.changeStatus(GuideScheduleStatus.AVAILABLE);
-
+        schedule.releaseMatchToAvailable();
         return GuideScheduleResponse.from(schedule);
     }
 

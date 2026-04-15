@@ -17,6 +17,8 @@ import com.team6.domain.guide.repository.GuideCareerRepository;
 import com.team6.domain.guide.repository.GuideFeedRepository;
 import com.team6.domain.guide.repository.GuideImageRepository;
 import com.team6.domain.guide.repository.GuideProfileRepository;
+import com.team6.domain.matching.entity.enums.PaymentStatus;
+import com.team6.domain.matching.repository.PaymentRepository;
 import com.team6.domain.member.entity.Member;
 import com.team6.domain.member.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
@@ -38,6 +40,7 @@ public class GuideProfileService {
     private final GuideFeedRepository guideFeedRepository;
     private final GuideCareerRepository guideCareerRepository;
     private final GuideImageRepository guideImageRepository;
+    private final PaymentRepository paymentRepository;
 
     // 가이드 프로필 등록 (F06-01)
     @Transactional
@@ -130,11 +133,16 @@ public class GuideProfileService {
             throw new GuideException(GuideErrorCode.GUIDE_UNAUTHORIZED);
         }
 
-        // TODO: matching 도메인 Payment 확정 후 실제 정산 로직으로 교체
+        BigDecimal expected = paymentRepository
+                .findByMatchRequest_GuideIdAndStatus(guideId, PaymentStatus.COMPLETED)
+                .stream()
+                .map(p -> BigDecimal.valueOf(p.getAmount()))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
         return GuideSettlementResponse.builder()
                 .guideId(guideId)
-                .expectedAmount(BigDecimal.ZERO)
-                .description("정산 기능 준비 중입니다")
+                .expectedAmount(expected)
+                .description("매칭 결제 완료(COMPLETED) 금액 합계(플랫폼 수수료·정산 규칙 적용 전)")
                 .build();
     }
 

@@ -43,6 +43,9 @@ public class MatchRequest extends BaseTimeEntity {
     @Column(name = "guide_id", nullable = false)
     private Long guideId;
 
+    @Column(name = "guide_schedule_id", nullable = false)
+    private Long guideScheduleId;
+
     @Column(nullable = false)
     private String destination;         // 여행 목적지
 
@@ -85,6 +88,7 @@ public class MatchRequest extends BaseTimeEntity {
     public static MatchRequest create(
             Long guestId,
             Long guideId,
+            Long guideScheduleId,
             String destination,
             String concept,
             String conceptSummary,
@@ -94,6 +98,7 @@ public class MatchRequest extends BaseTimeEntity {
         return MatchRequest.builder()
                 .guestId(guestId)
                 .guideId(guideId)
+                .guideScheduleId(guideScheduleId)
                 .destination(destination)
                 .concept(concept)
                 .conceptSummary(conceptSummary)
@@ -160,6 +165,18 @@ public class MatchRequest extends BaseTimeEntity {
             this.status = MatchRequestStatus.PAID;
             log.info("[Payment] 매칭 요청 결제 반영 — status=PAID, requestId={}", this.id);
         }
+    }
+
+    /**
+     * 게스트가 가이드 제안(수락 대기)을 거절할 때 — 취소(CANCELLED)와 구분하기 위해 REJECTED로 전이한다.
+     */
+    public void declineProposalByGuest(String reason) {
+        if (this.status != MatchRequestStatus.ACCEPTED) {
+            throw new MatchingException(MatchingErrorCode.MATCH_REQUEST_INVALID_STATUS);
+        }
+        this.status = MatchRequestStatus.REJECTED;
+        this.cancelReason = reason;
+        log.info("[F03-06] 게스트 제안 거절 — status=REJECTED, requestId={}", this.id);
     }
 
     // 게스트 취소 처리 (F05-01)

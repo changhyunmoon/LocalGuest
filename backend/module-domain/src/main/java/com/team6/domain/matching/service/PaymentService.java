@@ -1,6 +1,9 @@
 package com.team6.domain.matching.service;
 
+import com.team6.domain.guide.repository.GuideProfileRepository;
 import com.team6.domain.matching.client.FakePgClient;
+import com.team6.domain.matching.client.GuideScheduleSyncClient;
+import com.team6.domain.matching.client.KakaoPayClient;
 import com.team6.domain.matching.dto.request.PaymentConfirmRequest;
 import com.team6.domain.matching.dto.request.PaymentCreateRequest;
 import com.team6.domain.matching.dto.request.RefundRequestDto;
@@ -19,6 +22,7 @@ import com.team6.domain.matching.repository.PaymentRepository;
 import com.team6.domain.matching.repository.RefundRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,6 +39,12 @@ public class PaymentService {
     private final RefundRepository refundRepository;
     private final MatchRequestRepository matchRequestRepository;
     private final FakePgClient fakePgClient;
+    private final KakaoPayClient kakaoPayClient;
+    private final GuideScheduleSyncClient guideScheduleSyncClient;
+    private final GuideProfileRepository guideProfileRepository;
+
+    @Value("${matching.payment.provider:fake}")
+    private String paymentProvider;
 
     /**
      * 결제 요청 생성 — PENDING, Stub PG 주문번호 발급.
@@ -68,6 +78,18 @@ public class PaymentService {
                 .build();
 
         Payment saved = paymentRepository.save(payment);
+        if (isKakaoProvider()) {
+            String partnerUserId = String.valueOf(guestId);
+            String itemName = "LocalGuest " + request.getPaymentType();
+            KakaoPayClient.ReadyResult readyResult = kakaoPayClient.ready(
+                    saved.getPgOrderNo(),
+                    partnerUserId,
+                    itemName,
+                    saved.getAmount()
+            );
+            saved.storePgTransactionId(readyResult.tid());
+            return PaymentResponseDto.from(saved, readyResult.redirectUrl());
+        }
         log.info("[Payment] 결제 요청 생성 — paymentId={}, requestId={}, guestId={}, type={}, pgOrderNo={}",
                 saved.getId(), matchRequest.getId(), guestId, request.getPaymentType(), pgOrderNo);
         return PaymentResponseDto.from(saved);
@@ -95,11 +117,28 @@ public class PaymentService {
             throw new MatchingException(MatchingErrorCode.PAYMENT_NOT_PENDING);
         }
 
-        String pgTransactionId = fakePgClient.approvePayment(
-                payment.getPgOrderNo(), payment.getAmount(), payment.getId());
+        String pgTransactionId;
+        if (isKakaoProvider()) {
+            if (request.getPgToken() == null || request.getPgToken().isBlank()) {
+                throw new MatchingException(MatchingErrorCode.INVALID_REQUEST);
+            }
+            KakaoPayClient.ApproveResult approveResult = kakaoPayClient.approve(
+                    payment.getPgTransactionId(),
+                    payment.getPgOrderNo(),
+                    String.valueOf(guestId),
+                    request.getPgToken()
+            );
+            pgTransactionId = approveResult.aid();
+        } else {
+            pgTransactionId = fakePgClient.approvePayment(
+                    payment.getPgOrderNo(), payment.getAmount(), payment.getId());
+        }
 
         payment.complete(pgTransactionId);
         payment.getMatchRequest().markAsPaidIfAccepted();
+        Long guideMemberId = resolveGuideMemberId(payment.getMatchRequest().getGuideId());
+        // 가이드 acceptSchedule로 이미 BOOKED인 경우 isPaid만 반영 (book 호출 생략)
+        guideScheduleSyncClient.confirmPaid(payment.getMatchRequest().getGuideId(), payment.getMatchRequest().getGuideScheduleId(), guideMemberId);
 
         log.info("[Payment] Stub PG 승인 완료 — paymentId={}, pgTransactionId={}, paidAt={}, refundDeadline={}",
                 payment.getId(), pgTransactionId, payment.getPaidAt(), payment.getRefundDeadline());
@@ -164,5 +203,15 @@ public class PaymentService {
         log.info("[F05-04] 가이드 불만족 환불 처리 완료 — paymentId={}, guestId={}, refundId={}",
                 payment.getId(), guestId, saved.getId());
         return RefundResponseDto.from(saved);
+    }
+
+    private boolean isKakaoProvider() {
+        return "kakao".equalsIgnoreCase(paymentProvider);
+    }
+
+    private Long resolveGuideMemberId(Long guideProfileId) {
+        return guideProfileRepository.findById(guideProfileId)
+                .map(guideProfile -> guideProfile.getMemberId())
+                .orElseThrow(() -> new MatchingException(MatchingErrorCode.MATCH_REQUEST_UNAUTHORIZED));
     }
 }

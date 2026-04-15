@@ -24,6 +24,7 @@ public enum GuideErrorCode {
     SCHEDULE_NOT_AVAILABLE(409, "예약 가능 상태인 스케줄이 아닙니다"),
     SCHEDULE_NOT_PENDING(409, "대기 중인 스케줄이 아닙니다"),
     SCHEDULE_NOT_BOOKED(409, "예약 확정 상태인 스케줄이 아닙니다"),
+    SCHEDULE_MATCH_RELEASE_INVALID(409, "매칭 대기(PENDING) 또는 예약 확정(BOOKED) 상태의 스케줄만 복구할 수 있습니다"),
     SCHEDULE_INVALID_TIME(400, "시작 시간은 종료 시간보다 이전이어야 합니다"),
     SCHEDULE_STATUS_INVALID(400, "AVAILABLE 또는 BLOCKED 상태로만 변경할 수 있습니다"),
 
