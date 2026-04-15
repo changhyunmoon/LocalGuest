@@ -101,6 +101,19 @@ public class GuideScheduleController {
         return ResponseEntity.ok(guideScheduleService.rejectSchedule(scheduleId, guideId, userId));
     }
 
+    // 스케줄 양식 조회 — isPaid=false면 courseDetail null 마스킹, true면 전체 공개 (F06-04)
+    // 가이드·게스트 모두 호출 가능
+    // TODO: 추후 보안 강화 필요
+    // 현재 인증된 사용자라면 누구나 호출 가능
+    // 개선 시 가이드 본인 또는 매칭된 게스트만 허용하도록 변경 필요
+    @GetMapping("/{scheduleId}/form")
+    public ResponseEntity<GuideScheduleFormResponse> getScheduleForm(
+            @PathVariable Long guideId,
+            @PathVariable Long scheduleId
+    ) {
+        return ResponseEntity.ok(guideScheduleService.getScheduleForm(scheduleId, guideId));
+    }
+
     // 수락 후 여행 계획 양식 저장 — BOOKED 상태에만 가능 (F06-04)
     @PutMapping("/{scheduleId}/form")
     public ResponseEntity<GuideScheduleFormResponse> submitForm(
