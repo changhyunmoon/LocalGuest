@@ -16,6 +16,7 @@ import com.team6.module.ai.policy.RegionMatchPolicy;
 import com.team6.module.ai.policy.StyleMatchPolicy;
 import com.team6.module.ai.support.AdjacentRegionProvider;
 import com.team6.module.ai.support.AiRecommendationMetrics;
+import com.team6.module.ai.support.AiRecommendationTuning;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Test;
 
@@ -29,10 +30,11 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class MatchingEngineDiversityTest {
 
-    private static MatchingEngine engine() {
+    private static MatchingEngine engine(SimpleMeterRegistry registry) {
         LocalGuestAiProperties aiProps = new LocalGuestAiProperties();
         ScoringPolicySnapshot scoring = ScoringPolicySnapshot.defaults();
         AdjacentRegionProvider adjacent = new AdjacentRegionProvider(aiProps);
+        AiRecommendationMetrics metrics = new AiRecommendationMetrics(registry);
         ScoreCalculator scoreCalculator = new ScoreCalculator(
                 new RegionMatchPolicy(adjacent, scoring),
                 new StyleMatchPolicy(scoring),
@@ -41,13 +43,14 @@ class MatchingEngineDiversityTest {
                 new LanguageMatchPolicy(scoring),
                 new FeedbackMatchPolicy(scoring),
                 new ComboMatchPolicy(scoring),
-                new AiRecommendationMetrics(new SimpleMeterRegistry())
+                metrics
         );
         return new MatchingEngine(
                 scoreCalculator,
                 new ReasonGenerator(adjacent, scoring),
                 adjacent,
-                DiversityRerankSnapshot.defaults()
+                DiversityRerankSnapshot.defaults(),
+                metrics
         );
     }
 
@@ -91,12 +94,16 @@ class MatchingEngineDiversityTest {
                         .build()
         );
 
-        GuideRecommendResponse response = engine().recommend(pref, guides, 2);
+        SimpleMeterRegistry registry = new SimpleMeterRegistry();
+        GuideRecommendResponse response = engine(registry).recommend(pref, guides, 2);
 
         assertThat(response.getRecommendations()).hasSize(2);
         assertThat(response.getRecommendations().get(0).getGuideId()).isEqualTo(3L);
         assertThat(response.getRecommendations().get(0).getScore())
                 .isGreaterThanOrEqualTo(response.getRecommendations().get(1).getScore());
+        assertThat(registry.summary("localguest.ai.recommend.diversity_penalty_magnitude",
+                        "policy_version", AiRecommendationTuning.POLICY_VERSION).count())
+                .isEqualTo(1);
     }
 
     @Test
@@ -136,7 +143,7 @@ class MatchingEngineDiversityTest {
                 .languages(List.of("한국어"))
                 .build();
 
-        GuideRecommendResponse response = engine().recommend(pref, List.of(g1, g1dup, g2), 3);
+        GuideRecommendResponse response = engine(new SimpleMeterRegistry()).recommend(pref, List.of(g1, g1dup, g2), 3);
 
         assertThat(response.getRecommendations()).hasSize(2);
         assertThat(response.getRecommendations().stream().map(GuideRecommendItem::getGuideId).distinct().count())

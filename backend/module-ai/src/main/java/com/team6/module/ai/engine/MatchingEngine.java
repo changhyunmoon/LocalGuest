@@ -7,6 +7,7 @@ import com.team6.module.ai.model.GuideAiProfile;
 import com.team6.module.ai.model.TravelerPreference;
 import com.team6.module.ai.parser.KeywordNormalizer;
 import com.team6.module.ai.support.AdjacentRegionProvider;
+import com.team6.module.ai.support.AiRecommendationMetrics;
 import com.team6.module.ai.support.AiRecommendationTuning;
 import com.team6.module.ai.support.BudgetTier;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +29,7 @@ public class MatchingEngine {
     private final ReasonGenerator reasonGenerator;
     private final AdjacentRegionProvider adjacentRegionProvider;
     private final DiversityRerankSnapshot diversity;
+    private final AiRecommendationMetrics recommendationMetrics;
 
 
     public GuideRecommendResponse recommend(
@@ -89,6 +91,7 @@ public class MatchingEngine {
         while (selected.size() < limit) {
             ScoredGuide best = null;
             double bestFinal = Double.NEGATIVE_INFINITY;
+            double bestDiversityPenalty = 0.0;
 
             for (ScoredGuide c : candidates) {
                 if (c.guide.getGuideId() == null || used.contains(c.guide.getGuideId())) {
@@ -102,6 +105,7 @@ public class MatchingEngine {
                 if (isBetterCandidate(finalScore, c, bestFinal, best)) {
                     bestFinal = finalScore;
                     best = c;
+                    bestDiversityPenalty = penalty;
                 }
             }
 
@@ -109,6 +113,12 @@ public class MatchingEngine {
                 break;
             }
 
+            if (!selected.isEmpty()) {
+                recommendationMetrics.recordDiversityPenaltyMagnitude(
+                        bestDiversityPenalty,
+                        AiRecommendationTuning.POLICY_VERSION
+                );
+            }
             selected.add(best);
             used.add(best.guide.getGuideId());
         }

@@ -161,6 +161,8 @@ public class PromptRecommendationService {
                     ? fallback.winningRelaxStage().name()
                     : "STRATEGIC_EXHAUSTED";
             metrics.recordFallback(metricStage);
+            boolean adopted = fallback.winningRelaxStage() != RelaxStage.NONE;
+            metrics.recordStrategicFallbackOutcome(adopted, POLICY_VERSION);
         }
 
             List<String> noticeCodes = buildNoticeCodes(
