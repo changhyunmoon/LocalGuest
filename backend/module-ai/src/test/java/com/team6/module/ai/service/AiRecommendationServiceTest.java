@@ -226,7 +226,7 @@ class AiRecommendationServiceTest {
         GuideRecommendResponse response = aiRecommendationService.recommend(request);
         assertThat(response.getRecommendations()).isNotEmpty();
         assertThat(response.getRecommendations().get(0).getScore()).isGreaterThan(0);
-        assertThat(response.getRecommendations().get(0).getReason()).contains("관심 활동");
+        assertThat(response.getRecommendations().get(0).getReason()).contains("바다");
         assertThat(response.getRecommendations().get(0).getReasonCodes()).contains(ReasonGenerator.CODE_ACTIVITY_MATCH);
         assertThat(response.getRecommendations().get(0).getMatched()).isNotNull();
         assertThat(response.getRecommendations().get(0).getMatched().getTags()).contains("바다");
