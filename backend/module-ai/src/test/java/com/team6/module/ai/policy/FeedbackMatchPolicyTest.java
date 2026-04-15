@@ -1,5 +1,6 @@
 package com.team6.module.ai.policy;
 
+import com.team6.module.ai.config.ScoringPolicySnapshot;
 import com.team6.module.ai.model.GuideAiProfile;
 import org.junit.jupiter.api.Test;
 
@@ -10,7 +11,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class FeedbackMatchPolicyTest {
 
-    private final FeedbackMatchPolicy policy = new FeedbackMatchPolicy();
+    private final ScoringPolicySnapshot scoring = ScoringPolicySnapshot.defaults();
+    private final FeedbackMatchPolicy policy = new FeedbackMatchPolicy(scoring);
 
     @Test
     void score_should_add_bonus_for_behavior_signals() {
@@ -66,6 +68,6 @@ class FeedbackMatchPolicyTest {
 
         int score = policy.score(null, guide);
 
-        assertThat(score).isEqualTo(6);
+        assertThat(score).isEqualTo(scoring.coldStartExplorationBonus());
     }
 }

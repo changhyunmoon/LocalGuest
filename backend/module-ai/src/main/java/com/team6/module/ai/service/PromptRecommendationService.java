@@ -2,6 +2,7 @@ package com.team6.module.ai.service;
 
 import com.team6.module.ai.dto.request.GuideRecommendRequest;
 import com.team6.module.ai.dto.response.GuideRecommendResponse;
+import com.team6.module.ai.config.ScoringPolicySnapshot;
 import com.team6.module.ai.parser.PromptParser;
 import com.team6.module.ai.support.AdjacentRegionProvider;
 import com.team6.module.ai.support.AiRecommendationMetrics;
@@ -33,17 +34,20 @@ public class PromptRecommendationService {
     private final AiRecommendationService aiRecommendationService;
     private final AdjacentRegionProvider adjacentRegionProvider;
     private final AiRecommendationMetrics metrics;
+    private final ScoringPolicySnapshot scoringPolicy;
 
     public PromptRecommendationService(
             PromptParser promptParser,
             AiRecommendationService aiRecommendationService,
             AdjacentRegionProvider adjacentRegionProvider,
-            AiRecommendationMetrics metrics
+            AiRecommendationMetrics metrics,
+            ScoringPolicySnapshot scoringPolicy
     ) {
         this.promptParser = promptParser;
         this.aiRecommendationService = aiRecommendationService;
         this.adjacentRegionProvider = adjacentRegionProvider;
         this.metrics = metrics;
+        this.scoringPolicy = scoringPolicy;
     }
 
     private static final String NOTICE_REGION_REQUIRED =
@@ -462,7 +466,7 @@ public class PromptRecommendationService {
 
         boolean noResults = base == null || base.getTotalCount() == 0;
         int score = topScore(base);
-        boolean lowScore = !noResults && score < AiRecommendationTuning.LOW_SIGNAL_SCORE_THRESHOLD;
+        boolean lowScore = !noResults && score < scoringPolicy.lowSignalScoreThreshold();
         if (!noResults && !lowScore) {
             return FallbackOutcome.noRelax(base);
         }
@@ -474,7 +478,7 @@ public class PromptRecommendationService {
                 ? "활동·스타일·지역 순으로 조건을 단계적으로 완화해 찾아봤어요."
                 : "활동·스타일·지역 순으로 조건을 단계적으로 완화해 추천을 다시 구성해 봤어요.";
 
-        StrategicChainResult chain = runStrategicRelaxationChain(effective, base);
+        StrategicChainResult chain = runStrategicRelaxationChain(effective, base, scoringPolicy);
         boolean improved = chain.winningStage() != RelaxStage.NONE;
         GuideRecommendResponse finalResp = improved ? chain.bestResponse() : base;
         boolean exhausted = !improved;
@@ -494,7 +498,8 @@ public class PromptRecommendationService {
 
     private StrategicChainResult runStrategicRelaxationChain(
             GuideRecommendRequest languageAnchor,
-            GuideRecommendResponse baseline
+            GuideRecommendResponse baseline,
+            ScoringPolicySnapshot scoring
     ) {
         GuideRecommendRequest current = languageAnchor;
         for (RelaxStage step : STRATEGIC_RELAX_ORDER) {
@@ -503,17 +508,35 @@ public class PromptRecommendationService {
             }
             current = applyStrategicRelaxStep(languageAnchor, current, step);
             GuideRecommendResponse retried = aiRecommendationService.recommend(current);
-            if (acceptsStrategicRetry(retried)) {
+            if (acceptsStrategicRetry(retried, baseline, scoring)) {
                 return new StrategicChainResult(retried, step);
             }
         }
         return new StrategicChainResult(baseline, RelaxStage.NONE);
     }
 
-    private static boolean acceptsStrategicRetry(GuideRecommendResponse resp) {
-        return resp != null
-                && resp.getTotalCount() > 0
-                && topScore(resp) >= AiRecommendationTuning.LOW_SIGNAL_SCORE_THRESHOLD;
+    private static boolean acceptsStrategicRetry(
+            GuideRecommendResponse retried,
+            GuideRecommendResponse baseline,
+            ScoringPolicySnapshot scoring
+    ) {
+        if (retried == null || retried.getTotalCount() == 0) {
+            return false;
+        }
+        int top = topScore(retried);
+        int threshold = scoring.lowSignalScoreThreshold();
+        if (top >= threshold) {
+            return true;
+        }
+        int minGain = scoring.fallbackMinImprovementOverBase();
+        if (minGain <= 0) {
+            return false;
+        }
+        int baseTop = topScore(baseline);
+        if (baseline == null || baseline.getTotalCount() == 0) {
+            return top >= threshold;
+        }
+        return top >= baseTop + minGain;
     }
 
     private static boolean isStrategicRelaxApplicable(GuideRecommendRequest req, RelaxStage step) {

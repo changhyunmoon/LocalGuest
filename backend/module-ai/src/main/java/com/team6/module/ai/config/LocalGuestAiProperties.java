@@ -33,6 +33,11 @@ public class LocalGuestAiProperties {
      */
     private CandidatePoolSettings candidatePool = new CandidatePoolSettings();
 
+    /**
+     * 룰 스코어·피드백·조합 보너스({@code localguest.ai.scoring-policy}).
+     */
+    private ScoringPolicySettings scoringPolicy = new ScoringPolicySettings();
+
     @Getter
     @Setter
     public static class ParserSettings {

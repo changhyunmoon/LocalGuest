@@ -1,6 +1,8 @@
 package com.team6.module.ai.engine;
 
 import com.team6.module.ai.config.LocalGuestAiProperties;
+import com.team6.module.ai.config.ScoringPolicySnapshot;
+import com.team6.module.ai.policy.ComboMatchPolicy;
 import com.team6.module.ai.dto.response.GuideRecommendResponse;
 import com.team6.module.ai.model.GuideAiProfile;
 import com.team6.module.ai.model.TravelerPreference;
@@ -27,17 +29,19 @@ class MatchingEngineDiversityTest {
 
     private static MatchingEngine engine() {
         LocalGuestAiProperties aiProps = new LocalGuestAiProperties();
+        ScoringPolicySnapshot scoring = ScoringPolicySnapshot.defaults();
         AdjacentRegionProvider adjacent = new AdjacentRegionProvider(aiProps);
         ScoreCalculator scoreCalculator = new ScoreCalculator(
-                new RegionMatchPolicy(adjacent),
-                new StyleMatchPolicy(),
-                new BudgetMatchPolicy(),
-                new ActivityMatchPolicy(),
-                new LanguageMatchPolicy(),
-                new FeedbackMatchPolicy(),
+                new RegionMatchPolicy(adjacent, scoring),
+                new StyleMatchPolicy(scoring),
+                new BudgetMatchPolicy(scoring),
+                new ActivityMatchPolicy(scoring),
+                new LanguageMatchPolicy(scoring),
+                new FeedbackMatchPolicy(scoring),
+                new ComboMatchPolicy(scoring),
                 new AiRecommendationMetrics(new SimpleMeterRegistry())
         );
-        return new MatchingEngine(scoreCalculator, new ReasonGenerator(adjacent), adjacent);
+        return new MatchingEngine(scoreCalculator, new ReasonGenerator(adjacent, scoring), adjacent);
     }
 
     @Test

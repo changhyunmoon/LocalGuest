@@ -10,6 +10,8 @@ import com.team6.module.ai.policy.BudgetMatchPolicy;
 import com.team6.module.ai.policy.FeedbackMatchPolicy;
 import com.team6.module.ai.policy.LanguageMatchPolicy;
 import com.team6.module.ai.config.LocalGuestAiProperties;
+import com.team6.module.ai.config.ScoringPolicySnapshot;
+import com.team6.module.ai.policy.ComboMatchPolicy;
 import com.team6.module.ai.policy.RegionMatchPolicy;
 import com.team6.module.ai.policy.StyleMatchPolicy;
 import com.team6.module.ai.support.AdjacentRegionProvider;
@@ -27,17 +29,19 @@ class AiRecommendationServiceTest {
 
     private AiRecommendationService createService() {
         LocalGuestAiProperties aiProps = new LocalGuestAiProperties();
+        ScoringPolicySnapshot scoring = ScoringPolicySnapshot.defaults();
         AdjacentRegionProvider adjacent = new AdjacentRegionProvider(aiProps);
         ScoreCalculator scoreCalculator = new ScoreCalculator(
-                new RegionMatchPolicy(adjacent),
-                new StyleMatchPolicy(),
-                new BudgetMatchPolicy(),
-                new ActivityMatchPolicy(),
-                new LanguageMatchPolicy(),
-                new FeedbackMatchPolicy(),
+                new RegionMatchPolicy(adjacent, scoring),
+                new StyleMatchPolicy(scoring),
+                new BudgetMatchPolicy(scoring),
+                new ActivityMatchPolicy(scoring),
+                new LanguageMatchPolicy(scoring),
+                new FeedbackMatchPolicy(scoring),
+                new ComboMatchPolicy(scoring),
                 new AiRecommendationMetrics(new SimpleMeterRegistry())
         );
-        ReasonGenerator reasonGenerator = new ReasonGenerator(adjacent);
+        ReasonGenerator reasonGenerator = new ReasonGenerator(adjacent, scoring);
 
         return new AiRecommendationServiceImpl(
                 new MatchingEngine(scoreCalculator, reasonGenerator, adjacent)

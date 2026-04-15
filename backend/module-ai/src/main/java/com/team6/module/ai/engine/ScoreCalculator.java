@@ -4,6 +4,7 @@ import com.team6.module.ai.model.GuideAiProfile;
 import com.team6.module.ai.model.TravelerPreference;
 import com.team6.module.ai.policy.ActivityMatchPolicy;
 import com.team6.module.ai.policy.BudgetMatchPolicy;
+import com.team6.module.ai.policy.ComboMatchPolicy;
 import com.team6.module.ai.policy.FeedbackMatchPolicy;
 import com.team6.module.ai.policy.LanguageMatchPolicy;
 import com.team6.module.ai.policy.RegionMatchPolicy;
@@ -23,6 +24,7 @@ public class ScoreCalculator {
     private final ActivityMatchPolicy activityMatchPolicy;
     private final LanguageMatchPolicy languageMatchPolicy;
     private final FeedbackMatchPolicy feedbackMatchPolicy;
+    private final ComboMatchPolicy comboMatchPolicy;
     private final AiRecommendationMetrics recommendationMetrics;
 
     public int calculate(TravelerPreference pref, GuideAiProfile guide) {
@@ -34,6 +36,7 @@ public class ScoreCalculator {
         score += languageMatchPolicy.score(pref, guide);
         int feedback = feedbackMatchPolicy.score(pref, guide);
         score += feedback;
+        score += comboMatchPolicy.score(pref, guide);
         if (feedback < 0) {
             recommendationMetrics.recordFeedbackPenalty(-feedback, AiRecommendationTuning.POLICY_VERSION);
         }
