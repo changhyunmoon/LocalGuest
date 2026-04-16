@@ -86,8 +86,8 @@ export function GuideApplyPage() {
         </p>
       )}
       <p className="form-hint">
-        F01-03 · <code>POST /api/guides</code> — 성공 시 서버에서 회원 역할이 GUIDE로 변경되며, JWT는{' '}
-        <strong>재로그인</strong> 후에야 갱신됩니다.
+        F01-03 · <code>POST /api/guides</code> — 성공 시 동일 이메일의 <strong>GUIDE 로그인 유형</strong>이 준비됩니다.
+        <strong> 재로그인</strong> 후 로그인 유형에서 GUIDE를 선택해 주세요.
       </p>
 
       <form className="form-card" onSubmit={(e) => void handleSubmit(e)}>
