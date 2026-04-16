@@ -14,6 +14,54 @@ function formatScheduleDate(raw) {
   return s.length >= 10 ? s.slice(0, 10) : s
 }
 
+/**
+ * 백엔드 응답 포맷 차이를 흡수해 스케줄 배열을 추출한다.
+ * @param {unknown} raw
+ * @returns {Array<any>}
+ */
+function toScheduleList(raw) {
+  if (Array.isArray(raw)) return raw
+  if (raw && typeof raw === 'object') {
+    const obj = /** @type {{ items?: unknown, data?: unknown, list?: unknown, schedules?: unknown, content?: unknown }} */ (raw)
+    if (Array.isArray(obj.items)) return obj.items
+    if (Array.isArray(obj.data)) return obj.data
+    if (Array.isArray(obj.list)) return obj.list
+    if (Array.isArray(obj.schedules)) return obj.schedules
+    if (Array.isArray(obj.content)) return obj.content
+  }
+  return []
+}
+
+/**
+ * status 가 비어 있어도(구버전/임시 응답) 일단 예약 후보로 본다.
+ * @param {any} schedule
+ * @returns {boolean}
+ */
+function isBookableSchedule(schedule) {
+  const normalized = String(schedule?.status ?? '')
+    .trim()
+    .toUpperCase()
+  if (!normalized) return true
+  return normalized === 'AVAILABLE'
+}
+
+/**
+ * 응답 키가 달라도 화면에서 공통 형태로 사용한다.
+ * @param {any} schedule
+ */
+function normalizeSchedule(schedule) {
+  const scheduleId =
+    schedule?.scheduleId != null
+      ? Number(schedule.scheduleId)
+      : schedule?.id != null
+        ? Number(schedule.id)
+        : null
+  return {
+    ...schedule,
+    scheduleId,
+  }
+}
+
 export function GuideDetailPage() {
   const { guideId } = useParams()
   const location = useLocation()
@@ -52,10 +100,9 @@ export function GuideDetailPage() {
         const schRes = await apiRequest(`/guides/${guideId}/schedules`, { method: 'GET', skipAuth: true })
         const schText = await schRes.text()
         if (schRes.ok) {
-          const list = schText ? JSON.parse(schText) : []
-          const avail = Array.isArray(list)
-            ? list.filter((s) => String(s?.status ?? '') === 'AVAILABLE')
-            : []
+          const parsed = schText ? JSON.parse(schText) : []
+          const list = toScheduleList(parsed)
+          const avail = list.filter((s) => isBookableSchedule(s)).map((s) => normalizeSchedule(s))
           if (!cancelled) {
             setSchedules(avail)
             if (avail.length > 0 && avail[0]?.scheduleId != null) {

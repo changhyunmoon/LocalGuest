@@ -12,7 +12,6 @@
         <module name="backend.api-server.main" />
         <module name="backend.module-chat.main" />
         <module name="backend.module-domain.main" />
-        <module name="backend.module-auth.main" />
         <module name="backend.module-ai.main" />
         <module name="backend.module-common.main" />
       </profile>
