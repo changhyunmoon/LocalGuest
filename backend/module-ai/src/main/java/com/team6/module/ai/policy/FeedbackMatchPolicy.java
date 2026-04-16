@@ -74,9 +74,13 @@ public class FeedbackMatchPolicy {
     }
 
     /**
-     * 리뷰·환불·매칭·채팅 신호가 없어 상위 랭크에서 밀리기 쉬운 상태(콜드스타트)로 본다.
+     * 리뷰가 없고 운영 리스크 신호가 낮은 초기 단계(콜드스타트)로 본다.
+     * <p>
+     * 매칭 요청·채팅이 소량이어도 리뷰가 쌓이기 전에는 기존 인기 가이드 대비 밀리기 쉬워,
+     * {@link com.team6.module.ai.config.ScoringPolicySnapshot#coldStartMaxMatchRequestsWithoutReviews()} 등으로
+     * 탐색 보너스를 유지한다.
      */
-    private static boolean isColdStartExplorationCandidate(GuideAiProfile guide) {
+    private boolean isColdStartExplorationCandidate(GuideAiProfile guide) {
         Integer rc = guide.getReviewCount();
         if (rc != null && rc > 0) {
             return false;
@@ -86,7 +90,8 @@ public class FeedbackMatchPolicy {
             return false;
         }
         Integer mr = guide.getMatchRequestCount();
-        if (mr != null && mr > 0) {
+        int maxMr = scoring.coldStartMaxMatchRequestsWithoutReviews();
+        if (mr != null && mr > maxMr) {
             return false;
         }
         Integer pm = guide.getProgressedMatchCount();
@@ -94,6 +99,7 @@ public class FeedbackMatchPolicy {
             return false;
         }
         Integer cs = guide.getChatStartCount();
-        return cs == null || cs == 0;
+        int maxChat = scoring.coldStartMaxChatStartsForExploration();
+        return cs == null || cs <= maxChat;
     }
 }

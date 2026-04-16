@@ -1,5 +1,6 @@
 package com.team6.module.ai.policy;
 
+import com.team6.module.ai.config.ScoringPolicySettings;
 import com.team6.module.ai.config.ScoringPolicySnapshot;
 import com.team6.module.ai.model.GuideAiProfile;
 import org.junit.jupiter.api.Test;
@@ -69,5 +70,43 @@ class FeedbackMatchPolicyTest {
         int score = policy.score(null, guide);
 
         assertThat(score).isEqualTo(scoring.coldStartExplorationBonus());
+    }
+
+    @Test
+    void score_should_keep_cold_start_bonus_when_limited_match_requests_but_no_reviews() {
+        GuideAiProfile guide = GuideAiProfile.builder()
+                .guideId(100L)
+                .guideName("초기노출")
+                .region("제주")
+                .reviewCount(0)
+                .approvedRefundCount(0)
+                .matchRequestCount(1)
+                .progressedMatchCount(0)
+                .chatStartCount(0)
+                .build();
+
+        int score = policy.score(null, guide);
+
+        int expectedMr = scoring.feedbackMatchRequestBonusPerCount();
+        assertThat(score).isEqualTo(expectedMr + scoring.coldStartExplorationBonus());
+    }
+
+    @Test
+    void score_should_drop_cold_start_bonus_when_match_requests_exceed_threshold_without_reviews() {
+        ScoringPolicySettings settings = new ScoringPolicySettings();
+        settings.setColdStartMaxMatchRequestsWithoutReviews(0);
+        ScoringPolicySnapshot tight = ScoringPolicySnapshot.from(settings);
+        FeedbackMatchPolicy tightPolicy = new FeedbackMatchPolicy(tight);
+
+        GuideAiProfile guide = GuideAiProfile.builder()
+                .guideId(101L)
+                .reviewCount(0)
+                .matchRequestCount(1)
+                .progressedMatchCount(0)
+                .chatStartCount(0)
+                .build();
+
+        int score = tightPolicy.score(null, guide);
+        assertThat(score).isEqualTo(tight.feedbackMatchRequestBonusPerCount());
     }
 }

@@ -41,6 +41,15 @@ public class ScoringPolicySettings {
     private int availabilityBoostMax = 8;
 
     private int coldStartExplorationBonus = 6;
+    /**
+     * 리뷰가 아직 없을 때, 이 값 이하의 매칭 요청 수면 콜드스타트 탐색 후보로 본다(첫·초기 노출 완충).
+     * 기존은 매칭 요청이 한 건이라도 있으면 탐색 보너스가 꺼져 신입이 한 번 요청받으면 바로 불리해졌다.
+     */
+    private int coldStartMaxMatchRequestsWithoutReviews = 2;
+    /**
+     * 리뷰 없이 허용하는 채팅 시작 횟수 상한(이하면 탐색 후보 유지).
+     */
+    private int coldStartMaxChatStartsForExploration = 1;
 
     private int feedbackRefundPenaltyPerApproved = 8;
     private int feedbackRefundPenaltyMax = 24;
