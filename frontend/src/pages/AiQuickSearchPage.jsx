@@ -55,7 +55,7 @@ function tagsForGuide(rec, keywords) {
   return ['#로컬투어', '#맞춤동행', '#현지인']
 }
 
-function normalizeFallbackGuide(g) {
+function normalizeFallbackGuide(g, reasonText) {
   return {
     guideId: g?.guideId,
     guideName: g?.nickname ?? '가이드',
@@ -64,9 +64,58 @@ function normalizeFallbackGuide(g) {
     region: g?.region ?? '',
     averageRating: g?.averageRating ?? 0,
     reviewCount: g?.reviewCount ?? 0,
-    reason: 'AI 결과가 비어 있어 활동 중인 가이드 목록에서 추천했어요.',
+    reason:
+      reasonText ??
+      'AI 결과가 비어 있어 활동 중인 가이드 목록에서 추천했어요. (지역 키워드가 어긋나면 목록에서 가까운 가이드를 골라요.)',
     matched: { tags: [] },
   }
+}
+
+/**
+ * AI가 recommendations 를 비울 때 서버 keywords.region 과 다른 표기(경북 vs 구미 등)로 필터가 비는 것을 완화한다.
+ */
+function pickFallbackGuides(promptText, keywords, allGuides) {
+  if (!Array.isArray(allGuides) || allGuides.length === 0) return []
+  const p = String(promptText ?? '').trim()
+  const regionKw = String(keywords?.region ?? '').trim()
+
+  if (regionKw) {
+    const byKw = allGuides.filter((g) => String(g?.region ?? '').includes(regionKw))
+    if (byKw.length > 0) {
+      return byKw.map((g) =>
+        normalizeFallbackGuide(g, 'AI 추천 목록이 비어, 요청 지역에 가까운 활동 가이드를 골랐어요.'),
+      )
+    }
+  }
+
+  const tokens = p.match(/[\uAC00-\uD7A3]{2,}/g) ?? []
+  for (const tok of tokens) {
+    const hit = allGuides.filter((g) => String(g?.region ?? '').includes(tok))
+    if (hit.length > 0) {
+      return hit.map((g) =>
+        normalizeFallbackGuide(
+          g,
+          `프롬프트에 나온 「${tok}」와 가이드 활동 지역을 맞춰 추렸어요. (AI 추천은 비어 있었어요)`,
+        ),
+      )
+    }
+  }
+
+  for (const g of allGuides) {
+    const r = String(g?.region ?? '').trim()
+    if (r.length >= 2 && p.includes(r)) {
+      return [
+        normalizeFallbackGuide(
+          g,
+          '입력하신 문장과 가이드 지역이 겹쳐 후보로 보여 드려요. (AI 추천은 비어 있었어요)',
+        ),
+      ]
+    }
+  }
+
+  return allGuides
+    .slice(0, 3)
+    .map((g) => normalizeFallbackGuide(g, 'AI 추천이 비어, 활성 가이드 중에서 보여 드려요.'))
 }
 
 export function AiQuickSearchPage() {
@@ -218,14 +267,8 @@ export function AiQuickSearchPage() {
           const guideText = await guideRes.text()
           if (guideRes.ok) {
             const all = guideText ? JSON.parse(guideText) : []
-            const regionKeyword = String(data?.keywords?.region ?? '').trim()
-            const regionFiltered =
-              regionKeyword && Array.isArray(all)
-                ? all.filter((g) => String(g?.region ?? '').includes(regionKeyword))
-                : Array.isArray(all)
-                  ? all
-                  : []
-            setFallbackGuides(regionFiltered.slice(0, 2).map(normalizeFallbackGuide))
+            const picked = pickFallbackGuides(q, data?.keywords, Array.isArray(all) ? all : [])
+            setFallbackGuides(picked.slice(0, 2))
           }
         } catch {
           setFallbackGuides([])

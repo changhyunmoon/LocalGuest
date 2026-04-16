@@ -10,10 +10,7 @@ import com.team6.domain.matching.dto.request.MatchRequestProposeRequest;
 import com.team6.domain.matching.dto.response.MatchRequestActionResponse;
 import com.team6.domain.matching.dto.response.MatchRequestCreateResponse;
 import com.team6.domain.matching.service.MatchRequestService;
-import com.team6.domain.member.entity.Member;
-import com.team6.domain.member.entity.Role;
-import com.team6.domain.member.repository.MemberRepository;
-import com.team6.module.common.global.util.SecurityUtil;
+import com.team6.domain.matching.support.MatchingAuthenticationSupport;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -27,14 +24,14 @@ import java.util.List;
 public class MatchRequestController {
 
     private final MatchRequestService matchRequestService;
-    private final MemberRepository memberRepository;
     private final GuideProfileRepository guideProfileRepository;
+    private final MatchingAuthenticationSupport matchingAuthenticationSupport;
 
     @PostMapping
     public ResponseEntity<MatchRequestCreateResponse> createMatchRequest(
             @RequestBody @Valid MatchRequestCreateRequest request
     ) {
-        Long guestId = getCurrentMemberId(Role.GUEST);
+        Long guestId = matchingAuthenticationSupport.getCurrentGuestMemberId();
         if (!guideProfileRepository.existsById(request.getGuideId())) {
             throw new MatchingException(MatchingErrorCode.INVALID_REQUEST);
         }
@@ -50,14 +47,14 @@ public class MatchRequestController {
      */
     @GetMapping("/guest/list")
     public ResponseEntity<List<MatchRequestCreateResponse>> getGuestRequests() {
-        Long guestId = getCurrentMemberId(Role.GUEST);
+        Long guestId = matchingAuthenticationSupport.getCurrentGuestMemberId();
         return ResponseEntity.ok(matchRequestService.getGuestRequests(guestId));
     }
 
     /** 가이드 본인 매칭 요청 목록 — 경로는 {@code /guide/list} (게스트 {@code /guest/list} 와 대칭). */
     @GetMapping("/guide/list")
     public ResponseEntity<List<MatchRequestCreateResponse>> getGuideRequests() {
-        Long guideId = getCurrentGuideProfileId();
+        Long guideId = matchingAuthenticationSupport.getCurrentGuideProfileId();
         return ResponseEntity.ok(matchRequestService.getGuideRequests(guideId));
     }
 
@@ -65,7 +62,7 @@ public class MatchRequestController {
     public ResponseEntity<MatchRequestActionResponse> rejectMatchRequest(
             @PathVariable Long requestId
     ) {
-        Long guideId = getCurrentGuideProfileId();
+        Long guideId = matchingAuthenticationSupport.getCurrentGuideProfileId();
         MatchRequestActionResponse updated = matchRequestService.rejectMatchRequest(guideId, requestId);
         return ResponseEntity.ok(updated);
     }
@@ -75,7 +72,7 @@ public class MatchRequestController {
             @PathVariable Long requestId,
             @RequestBody @Valid MatchRequestProposeRequest request
     ) {
-        Long guideId = getCurrentGuideProfileId();
+        Long guideId = matchingAuthenticationSupport.getCurrentGuideProfileId();
         MatchRequestActionResponse updated = matchRequestService.proposeMatchRequest(guideId, requestId, request);
         return ResponseEntity.ok(updated);
     }
@@ -84,7 +81,7 @@ public class MatchRequestController {
     public ResponseEntity<MatchRequestActionResponse> acceptMatchRequest(
             @PathVariable Long requestId
     ) {
-        Long guestId = getCurrentMemberId(Role.GUEST);
+        Long guestId = matchingAuthenticationSupport.getCurrentGuestMemberId();
         MatchRequestActionResponse updated = matchRequestService.acceptMatchRequest(guestId, requestId);
         return ResponseEntity.ok(updated);
     }
@@ -97,7 +94,7 @@ public class MatchRequestController {
             @PathVariable Long requestId,
             @RequestBody @Valid MatchRequestDeclineRequest request
     ) {
-        Long guestId = getCurrentMemberId(Role.GUEST);
+        Long guestId = matchingAuthenticationSupport.getCurrentGuestMemberId();
         MatchRequestActionResponse updated = matchRequestService.declineMatchRequest(guestId, requestId, request);
         return ResponseEntity.ok(updated);
     }
@@ -107,7 +104,7 @@ public class MatchRequestController {
             @PathVariable Long requestId,
             @RequestBody @Valid CancelRequestDto request
     ) {
-        Long guestId = getCurrentMemberId(Role.GUEST);
+        Long guestId = matchingAuthenticationSupport.getCurrentGuestMemberId();
         MatchRequestActionResponse updated =
                 matchRequestService.cancelByGuest(guestId, requestId, request.getCancelReason());
         return ResponseEntity.ok(updated);
@@ -118,30 +115,9 @@ public class MatchRequestController {
             @PathVariable Long requestId,
             @RequestBody @Valid CancelRequestDto request
     ) {
-        Long guideId = getCurrentGuideProfileId();
+        Long guideId = matchingAuthenticationSupport.getCurrentGuideProfileId();
         MatchRequestActionResponse updated =
                 matchRequestService.cancelByGuide(guideId, requestId, request.getCancelReason());
         return ResponseEntity.ok(updated);
-    }
-
-    private Long getCurrentMemberId(Role requiredRole) {
-        String email = SecurityUtil.getCurrentUserEmail();
-        return memberRepository.findByEmail(email)
-                .map(member -> validateAndGetMemberId(member, requiredRole))
-                .orElseThrow(() -> new MatchingException(MatchingErrorCode.MATCH_REQUEST_UNAUTHORIZED));
-    }
-
-    private Long validateAndGetMemberId(Member member, Role requiredRole) {
-        if (requiredRole != null && member.getRole() != requiredRole) {
-            throw new MatchingException(MatchingErrorCode.MATCH_REQUEST_UNAUTHORIZED);
-        }
-        return member.getId();
-    }
-
-    private Long getCurrentGuideProfileId() {
-        Long memberId = getCurrentMemberId(Role.GUIDE);
-        return guideProfileRepository.findByMemberId(memberId)
-                .map(guideProfile -> guideProfile.getId())
-                .orElseThrow(() -> new MatchingException(MatchingErrorCode.MATCH_REQUEST_UNAUTHORIZED));
     }
 }

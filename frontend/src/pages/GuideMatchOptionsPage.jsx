@@ -25,6 +25,19 @@ function findLatestProposal(list, guideId) {
   return rows[0] ?? null
 }
 
+/** 제안문이 없어도, 이 가이드에 대한 최신 매칭 요청 id (결제·후기 UI 연결용) */
+function findLatestRequestForGuide(list, guideId) {
+  const gid = Number(guideId)
+  if (!Array.isArray(list)) return null
+  const rows = list.filter((r) => Number(r.guideId) === gid)
+  rows.sort((a, b) => {
+    const ta = a.createdAt ? new Date(a.createdAt).getTime() : 0
+    const tb = b.createdAt ? new Date(b.createdAt).getTime() : 0
+    return tb - ta
+  })
+  return rows[0] ?? null
+}
+
 function formatKrw(n) {
   return `₩ ${Number(n).toLocaleString('ko-KR')}`
 }
@@ -65,8 +78,12 @@ export function GuideMatchOptionsPage() {
         if (listRes.ok) {
           const lt = await listRes.text()
           const list = lt ? JSON.parse(lt) : []
-          const m = findLatestProposal(list, guideId)
-          rid = m?.requestId != null ? Number(m.requestId) : null
+          const proposed = findLatestProposal(list, guideId)
+          rid = proposed?.requestId != null ? Number(proposed.requestId) : null
+          if (rid == null) {
+            const anyReq = findLatestRequestForGuide(list, guideId)
+            rid = anyReq?.requestId != null ? Number(anyReq.requestId) : null
+          }
         }
       }
       setRequestId(rid != null && !Number.isNaN(rid) ? rid : null)
