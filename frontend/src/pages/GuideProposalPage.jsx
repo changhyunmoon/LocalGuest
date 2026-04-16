@@ -259,7 +259,7 @@ export function GuideProposalPage() {
           </Link>
         )}
         {(matchState === 'no_match' || matchState === 'list_error') && (
-          <Link to={`/guides/${guideId}`} className="gp-btn gp-btn--primary">
+          <Link to={`/guides/${guideId}#match-request`} className="gp-btn gp-btn--primary">
             가이드 프로필에서 요청하기
           </Link>
         )}
