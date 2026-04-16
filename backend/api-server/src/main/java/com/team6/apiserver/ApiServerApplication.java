@@ -18,6 +18,7 @@ import org.springframework.data.mongodb.repository.config.EnableMongoRepositorie
                 "com.team6.domain.member.repository",     // 멤버 도메인 JPA 레포지토리
                 "com.team6.domain.review.repository",      // 리뷰 도메인 JPA 레포지토리
                 "com.team6.domain.guide.repository",       // 가이드 도메인 JPA 레포지토리
+                "com.team6.domain.guestMyPage.repository"   // 게스트 마이페이지 도메인 JPA 레포지토리
         }
 )
 @EnableMongoRepositories(
