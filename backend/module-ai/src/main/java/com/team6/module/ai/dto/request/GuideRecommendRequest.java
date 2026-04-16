@@ -84,5 +84,8 @@ public class GuideRecommendRequest {
 
         @Schema(description = "공개 피드 이미지 URL 목록(최신순·개수 상한은 서버/클라이언트 합의)")
         private List<String> publicFeedThumbnailUrls;
+
+        @Schema(description = "추천 카드 클릭 집계(관심/탐색 신호). 미전달 시 미반영")
+        private Integer recommendClickCount;
     }
 }

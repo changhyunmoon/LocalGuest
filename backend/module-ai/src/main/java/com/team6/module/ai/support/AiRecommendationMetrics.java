@@ -153,7 +153,7 @@ public class AiRecommendationMetrics {
     }
 
     /**
-     * 추천 카드 클릭 이벤트. 저장소/파이프라인이 없더라도 1단계에서는 메트릭으로 수집한다.
+     * 추천 카드 클릭 이벤트(관심/탐색 신호).
      *
      * @param rank 추천 리스트 내 노출 순서(1부터). 미전달/비정상이면 unknown.
      */

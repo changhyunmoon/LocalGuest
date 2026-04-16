@@ -2,6 +2,7 @@ package com.team6.module.ai.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.team6.module.ai.dto.request.GuideRecommendRequest;
+import com.team6.module.ai.dto.request.AiRecommendClickRequest;
 import com.team6.module.ai.dto.request.PromptRecommendApiRequest;
 import com.team6.module.ai.dto.response.GuideRecommendItem;
 import com.team6.module.ai.dto.response.GuideRecommendResponse;
@@ -9,6 +10,7 @@ import com.team6.module.ai.http.RecommendationHttpHeaders;
 import com.team6.module.ai.parser.PromptParser;
 import com.team6.module.ai.service.PromptRecommendationService;
 import com.team6.module.ai.support.AiRecommendationMetrics;
+import com.team6.module.ai.support.AiRecommendClickStore;
 import com.team6.module.ai.support.GuideAvailabilityProvider;
 import com.team6.module.ai.support.GuideCandidateBundle;
 import com.team6.module.ai.support.GuideCandidateProvider;
@@ -35,6 +37,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import static org.mockito.Mockito.doNothing;
+
 /**
  * {@code POST /ai/recommend} HTTP·JSON·헤더 계약 회귀(Provider/단위 목과 보완).
  */
@@ -60,10 +64,13 @@ class AiRecommendEndpointMockMvcTest {
     private GuideAvailabilityProvider guideAvailabilityProvider;
     @MockitoBean
     private AiRecommendationMetrics recommendationMetrics;
+    @MockitoBean
+    private AiRecommendClickStore clickStore;
 
     @Test
     void postRecommend_returnsJson_andPolicyHeader() throws Exception {
         when(promptParser.extractDesiredTourDateRange(any())).thenReturn(null);
+        when(clickStore.recentClickCount(any())).thenReturn(0);
 
         GuideRecommendRequest.GuideCandidateDto dto = GuideRecommendRequest.GuideCandidateDto.builder()
                 .guideId(7L)
@@ -111,6 +118,7 @@ class AiRecommendEndpointMockMvcTest {
     @Test
     void postRecommend_serializesSpecialSuggestion_whenOrchestrationProducesIt() throws Exception {
         when(promptParser.extractDesiredTourDateRange(any())).thenReturn(null);
+        when(clickStore.recentClickCount(any())).thenReturn(0);
 
         LocalDate d = LocalDate.of(2026, 4, 28);
         GuideRecommendRequest.GuideCandidateDto a = GuideRecommendRequest.GuideCandidateDto.builder()
@@ -149,5 +157,20 @@ class AiRecommendEndpointMockMvcTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.specialSuggestion.guide.guideId").value(1))
                 .andExpect(jsonPath("$.specialSuggestion.notice").value("조건에 잘 부합하지만 선택한 날짜에는 예약이 있어요"));
+    }
+
+    @Test
+    void postRecommendClick_returns204() throws Exception {
+        doNothing().when(clickStore).recordClick(7L);
+        AiRecommendClickRequest body = new AiRecommendClickRequest();
+        body.setGuideId(7L);
+        body.setRank(1);
+        body.setPolicyVersion(PV);
+        body.setPrompt("제주");
+
+        mockMvc.perform(post("/ai/recommend/click")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(body)))
+                .andExpect(status().isNoContent());
     }
 }

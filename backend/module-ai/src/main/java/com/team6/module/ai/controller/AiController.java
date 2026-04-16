@@ -9,11 +9,13 @@ import com.team6.module.ai.dto.response.GuideRecommendItem;
 import com.team6.module.ai.dto.response.GuideRecommendResponse;
 import com.team6.module.ai.http.RecommendationHttpHeaders;
 import com.team6.module.ai.service.PromptRecommendationService;
+import com.team6.module.ai.support.AiRecommendationMetrics;
+import com.team6.module.ai.support.AiRecommendationTuning;
+import com.team6.module.ai.support.AiRecommendClickStore;
 import com.team6.module.ai.support.GuideCandidateBundle;
 import com.team6.module.ai.parser.PromptParser;
-import com.team6.module.ai.support.AiRecommendationMetrics;
 import com.team6.module.ai.support.GuideAvailabilityProvider;
-import com.team6.module.ai.support.AiRecommendationTuning;
+import lombok.extern.slf4j.Slf4j;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.headers.Header;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -21,6 +23,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -29,6 +32,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -36,7 +40,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import java.nio.charset.StandardCharsets;
 import java.util.zip.CRC32;
 
@@ -64,8 +67,8 @@ public class AiController {
     // 일정 필터에 걸려 메인 추천에서 빠진 가이드에 대해, 가능한 날짜를 안내하기 위한 조회용 provider다.
     private final GuideAvailabilityProvider guideAvailabilityProvider;
 
-    // 추천 클릭 같은 탐색 신호를 관측한다(1단계: 메트릭+로그).
     private final AiRecommendationMetrics recommendationMetrics;
+    private final AiRecommendClickStore clickStore;
 
     @Operation(
             summary = "프롬프트 기반 가이드 추천",
@@ -81,7 +84,7 @@ public class AiController {
             headers = @Header(
                     name = RecommendationHttpHeaders.X_RECOMMENDATION_POLICY,
                     description = "룰 정책 버전(응답 body의 policyVersion과 동일). 캐시 키·디버깅에 활용 가능.",
-                    schema = @Schema(implementation = String.class, example = "2026.04.25")
+                    schema = @Schema(implementation = String.class, example = "2026.04.26")
             ),
             content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = GuideRecommendResponse.class))
     )
@@ -115,7 +118,7 @@ public class AiController {
         // 이 단계에서 일정 충돌이 있는 가이드는 메인 후보에서 빠질 수 있고,
         // 동시에 "일정만 아니면 추천됐을 후보"를 위해 unfilteredCandidates도 함께 보관한다.
         // 그래서 반환 타입도 단순 List가 아니라 GuideCandidateBundle이다.
-        GuideCandidateBundle bundle =
+        GuideCandidateBundle rawBundle =
                 guideCandidateProvider.getCandidates(
                         request.getPrompt(),
                         request.getTopN(),
@@ -123,6 +126,7 @@ public class AiController {
                         from,
                         to
                 );
+        GuideCandidateBundle bundle = enrichCandidatesWithClickCounts(rawBundle);
 
         // 3) 실제 메인 추천을 수행한다.
         // 내부에서는 프롬프트 파싱 -> 후보 보정 -> 점수 계산 -> 이유 생성 -> 응답 생성 흐름으로 이어진다.
@@ -177,7 +181,7 @@ public class AiController {
 
     @Operation(
             summary = "추천 카드 클릭 이벤트 수집",
-            description = "추천 결과 카드 클릭 로그(관심/탐색 신호). 1단계는 서버 로그+Micrometer로 수집합니다."
+            description = "추천 결과 카드 클릭 로그(관심/탐색 신호). 2단계에서는 in-memory 집계로 추천 보정에 활용합니다."
     )
     @ApiResponse(responseCode = "204", description = "수집 성공(응답 바디 없음)")
     @PostMapping(value = "/recommend/click", consumes = MediaType.APPLICATION_JSON_VALUE)
@@ -191,14 +195,55 @@ public class AiController {
         String clientReqId = request == null ? null : request.getClientRequestId();
 
         recommendationMetrics.recordRecommendationClick(rank, pv);
-
-        // 프롬프트는 원문 저장을 피하고 해시로만 남긴다(민감정보 최소화).
+        clickStore.recordClick(guideId);
         String prompt = request == null ? null : request.getPrompt();
         Integer promptHash = (prompt == null || prompt.isBlank()) ? null : promptHash(prompt);
         log.info("[AI_RECOMMEND_CLICK] policyVer={} guideId={} rank={} promptHash={} clientReqId={}",
                 pv, guideId, rank, promptHash, clientReqId);
     }
 
+    private GuideCandidateBundle enrichCandidatesWithClickCounts(GuideCandidateBundle bundle) {
+        if (bundle == null) {
+            return new GuideCandidateBundle(List.of(), List.of());
+        }
+        return new GuideCandidateBundle(
+                enrichList(bundle.candidates()),
+                enrichList(bundle.unfilteredCandidates())
+        );
+    }
+
+    private List<GuideRecommendRequest.GuideCandidateDto> enrichList(List<GuideRecommendRequest.GuideCandidateDto> in) {
+        if (in == null || in.isEmpty()) {
+            return List.of();
+        }
+        List<GuideRecommendRequest.GuideCandidateDto> out = new ArrayList<>(in.size());
+        for (GuideRecommendRequest.GuideCandidateDto c : in) {
+            if (c == null || c.getGuideId() == null) {
+                out.add(c);
+                continue;
+            }
+            int clicks = clickStore.recentClickCount(c.getGuideId());
+            out.add(GuideRecommendRequest.GuideCandidateDto.builder()
+                    .guideId(c.getGuideId())
+                    .guideName(c.getGuideName())
+                    .region(c.getRegion())
+                    .guideStyle(c.getGuideStyle())
+                    .priceLevel(c.getPriceLevel())
+                    .specialtyTags(c.getSpecialtyTags())
+                    .languages(c.getLanguages())
+                    .averageRating(c.getAverageRating())
+                    .reviewCount(c.getReviewCount())
+                    .approvedRefundCount(c.getApprovedRefundCount())
+                    .matchRequestCount(c.getMatchRequestCount())
+                    .progressedMatchCount(c.getProgressedMatchCount())
+                    .chatStartCount(c.getChatStartCount())
+                    .representativeImageUrl(c.getRepresentativeImageUrl())
+                    .publicFeedThumbnailUrls(c.getPublicFeedThumbnailUrls())
+                    .recommendClickCount(clicks)
+                    .build());
+        }
+        return out;
+    }
     private static int promptHash(String prompt) {
         if (prompt == null || prompt.isBlank()) {
             return 0;
