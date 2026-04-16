@@ -25,10 +25,25 @@
   - `src/context/AuthProvider.jsx`
   - `src/pages/LoginPage.jsx`
   - `src/pages/SignupPage.jsx`
+  - `src/routes/authRoutes.jsx`의 **route path 변경 권한**
 
 다른 담당자가 공통 파일 수정이 필요하면:
 1) 이슈 등록
 2) owner 브랜치로 PR 요청
+
+## Parallel Work Boundary (A/B 충돌 방지)
+
+- **A 트랙 (`feature/router-*`)에서 수정 가능**
+  - `src/App.jsx`
+  - `src/routes/commonRoutes.jsx`
+  - `src/routes/guideRoutes.jsx`
+  - `src/routes/mypageRoutes.jsx`
+  - `src/routes/authRoutes.jsx`는 import/조합 확인만, **경로 정책 변경 금지**
+- **B 트랙 (`feature/auth-*`) 전용**
+  - `src/context/AuthProvider.jsx`
+  - `src/pages/LoginPage.jsx`, `src/pages/SignupPage.jsx`
+  - `src/api/client.js`
+  - 권한/에러 문구(401/403/500) 및 토큰 반영 플로우
 
 ## Routing Split
 
@@ -42,6 +57,14 @@
 새 페이지 추가 시:
 1) 해당 도메인 route 파일만 수정
 2) `App.jsx`는 가능하면 건드리지 않음
+3) auth 경로(`auth/*`) 변경은 `feature/auth-*` PR에서만 반영
+
+## Route QA Checklist (A 트랙)
+
+- [ ] path 누락/중복 없음 (`guides/*`, `guide/*`, `mypage/*`, `auth/*`)
+- [ ] wildcard(`*`) fallback 정상 동작
+- [ ] `VITE_DEV_START_PATH` 사용 시 index route만 리다이렉트
+- [ ] `VITE_DEV_START_PATH=/`일 때 홈 루프 없음
 
 ## CSS Rule
 

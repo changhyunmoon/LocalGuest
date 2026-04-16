@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 import { apiRequest } from '../api/client.js'
 import { daysUntil, fetchGuestMatchRequests, parseMatchingApiError } from '../lib/matchingGuest.js'
@@ -25,12 +26,14 @@ async function loadGuideNicknames(apiRequest, guideIds) {
 }
 
 export function MypageItineraryPage() {
+  const navigate = useNavigate()
   const [rows, setRows] = useState([])
   const [names, setNames] = useState({})
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
   const [busyId, setBusyId] = useState(null)
   const [toast, setToast] = useState('')
+  const [detail, setDetail] = useState(null)
   const [modal, setModal] = useState(null)
   const [reason, setReason] = useState('')
 
@@ -69,20 +72,18 @@ export function MypageItineraryPage() {
     }
   }, [reload])
 
-  const doAccept = async (requestId) => {
-    setBusyId(requestId)
-    setToast('')
-    try {
-      const res = await apiRequest(`/matching/requests/${requestId}/accept`, { method: 'PATCH' })
-      const text = await res.text()
-      if (!res.ok) throw new Error(parseMatchingApiError(text))
-      await reload()
-    } catch (e) {
-      setToast(e instanceof Error ? e.message : '실패')
-    } finally {
-      setBusyId(null)
-    }
-  }
+  const goPay = useCallback(
+    (row) => {
+      if (!row?.guideId || !row?.requestId) return
+      navigate(`/guides/${row.guideId}/match`, { state: { requestId: row.requestId } })
+    },
+    [navigate],
+  )
+
+  const detailGuideName = useMemo(() => {
+    if (!detail) return ''
+    return names[detail.guideId] ?? `가이드 #${detail.guideId}`
+  }, [detail, names])
 
   const openModal = (mode, requestId) => {
     setReason('')
@@ -147,9 +148,9 @@ export function MypageItineraryPage() {
               <article key={r.requestId} className="mp-trip-card">
                 <div className="mp-trip-card__meta">
                   <span className="mp-dday">{dday}</span>
-                  <h2 className="mp-trip-title">
+                  <button type="button" className="mp-trip-title-btn" onClick={() => setDetail(r)}>
                     {nick}와(과) 함께하는 {r.destination}
-                  </h2>
+                  </button>
                   <p className="mp-trip-detail">
                     {r.desiredDate ?? '—'} | 제시: {r.proposedSchedule ?? '—'}
                   </p>
@@ -162,8 +163,8 @@ export function MypageItineraryPage() {
                   </span>
                   {r.status === 'ACCEPTED' && (
                     <>
-                      <button type="button" className="mp-btn" disabled={busyId != null} onClick={() => void doAccept(r.requestId)}>
-                        제안 최종 수락
+                      <button type="button" className="mp-btn" disabled={busyId != null} onClick={() => goPay(r)}>
+                        결제하고 확정
                       </button>
                       <button type="button" className="mp-btn mp-btn--danger" disabled={busyId != null} onClick={() => openModal('decline', r.requestId)}>
                         제안 거절
@@ -198,6 +199,45 @@ export function MypageItineraryPage() {
               </button>
               <button type="button" className="mp-btn" onClick={() => void submitModal()} disabled={busyId != null}>
                 {busyId ? '처리 중…' : '확인'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {detail && (
+        <div className="mp-modal-overlay" role="dialog" aria-modal="true">
+          <div className="mp-modal" style={{ maxWidth: '28rem' }}>
+            <h2 style={{ marginTop: 0 }}>여행 일정 상세</h2>
+            <p className="sub">
+              {detailGuideName} · 요청 #{detail.requestId}
+            </p>
+            <div style={{ display: 'grid', gap: '0.35rem' }}>
+              <p className="mp-trip-detail" style={{ margin: 0 }}>
+                목적지: <strong>{detail.destination ?? '—'}</strong>
+              </p>
+              <p className="mp-trip-detail" style={{ margin: 0 }}>
+                여행일: {detail.desiredDate ?? '—'}
+              </p>
+              <p className="mp-trip-detail" style={{ margin: 0 }}>
+                제시 일정: {detail.proposedSchedule ?? '—'}
+              </p>
+              <p className="mp-trip-detail" style={{ margin: 0 }}>
+                상태: {detail.status}
+              </p>
+              <p className="mp-trip-detail" style={{ margin: 0 }}>
+                예산:{' '}
+                {detail.desiredBudget != null ? `₩${Number(detail.desiredBudget).toLocaleString()}` : '—'}
+              </p>
+            </div>
+            <div className="mp-modal-actions">
+              {detail.status === 'ACCEPTED' && (
+                <button type="button" className="mp-btn" onClick={() => goPay(detail)} disabled={busyId != null}>
+                  결제하고 확정
+                </button>
+              )}
+              <button type="button" className="mp-btn mp-btn--line" onClick={() => setDetail(null)}>
+                닫기
               </button>
             </div>
           </div>

@@ -10,7 +10,7 @@ const rawDevStartPath = String(import.meta.env.VITE_DEV_START_PATH ?? '').trim()
 const devStartPath = rawDevStartPath ? (rawDevStartPath.startsWith('/') ? rawDevStartPath : `/${rawDevStartPath}`) : ''
 const resolvedCommonRoutes = commonRoutes.map((route) => {
   if (!route.index) return route
-  if (!import.meta.env.DEV || !devStartPath) return route
+  if (!import.meta.env.DEV || !devStartPath || devStartPath === '/') return route
   return { ...route, element: <Navigate to={devStartPath} replace /> }
 })
 

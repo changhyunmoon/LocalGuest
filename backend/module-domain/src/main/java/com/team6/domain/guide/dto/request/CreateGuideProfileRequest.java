@@ -33,4 +33,10 @@ public class CreateGuideProfileRequest {
     private Integer residenceYears; // 해당 지역 거주 연수 (선택)
 
     private String localStory;      // 지역 스토리 (선택)
+
+    private String keywords;        // AI 매칭용 키워드 (선택, F06-02)
+
+    private String defaultCourse;   // 디폴트 코스 (선택, F06-02)
+
+    private String guideStyle;      // 가이드 스타일 (선택, F06-02)
 }
