@@ -37,6 +37,19 @@ public final class RegionCandidateExpansion {
             String region,
             Function<String, Set<String>> adjacentNeighbors
     ) {
+        return apply(all, region, adjacentNeighbors, false);
+    }
+
+    /**
+     * @param allowAdjacentEvenIfExactEnough 사용자가 '근처도/인접도 OK'를 명시한 경우 등,
+     *                                      정확 지역 후보가 충분해도 인접 지역을 포함해 풀을 넓힌다.
+     */
+    public static Result apply(
+            List<GuideRecommendRequest.GuideCandidateDto> all,
+            String region,
+            Function<String, Set<String>> adjacentNeighbors,
+            boolean allowAdjacentEvenIfExactEnough
+    ) {
         List<GuideRecommendRequest.GuideCandidateDto> pool =
                 all == null ? List.of() : new ArrayList<>(all);
 
@@ -50,7 +63,7 @@ public final class RegionCandidateExpansion {
                 .filter(g -> regionEquals(g.getRegion(), r))
                 .collect(Collectors.toList());
 
-        if (exact.size() >= AiRecommendationTuning.MIN_EXACT_REGION_CANDIDATES) {
+        if (!allowAdjacentEvenIfExactEnough && exact.size() >= AiRecommendationTuning.MIN_EXACT_REGION_CANDIDATES) {
             return new Result(exact, false, exact.size());
         }
 

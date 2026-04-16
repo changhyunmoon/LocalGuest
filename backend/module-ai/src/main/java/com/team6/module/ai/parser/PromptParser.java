@@ -126,6 +126,9 @@ public class PromptParser {
                 softPenaltyActivityTags
         );
         List<String> preferredLanguages = extractLanguages(normalizedPrompt);
+        LanguageStrength langStrength = classifyLanguageStrength(normalizedPrompt, preferredLanguages);
+        Boolean allowAdjacentRegion = extractAllowAdjacentRegion(normalizedPrompt);
+        Boolean strictBudget = extractStrictBudgetIntent(normalizedPrompt);
         Integer headcount = extractHeadcount(normalizedPrompt);
         Integer durationDays = extractDurationDays(normalizedPrompt);
 
@@ -139,11 +142,15 @@ public class PromptParser {
                 .region(region)
                 .travelStyle(travelStyle)
                 .budgetLevel(budgetLevel)
+                .strictBudget(strictBudget)
                 .companionType(companionType)
                 .activityTags(activityTags)
                 .requiredActivityTags(requiredActivityTags.isEmpty() ? null : List.copyOf(requiredActivityTags))
                 .niceToHaveActivityTags(niceToHaveActivityTags.isEmpty() ? null : List.copyOf(niceToHaveActivityTags))
                 .preferredLanguages(preferredLanguages)
+                .requiredLanguages(langStrength.required().isEmpty() ? null : List.copyOf(langStrength.required()))
+                .niceToHaveLanguages(langStrength.nice().isEmpty() ? null : List.copyOf(langStrength.nice()))
+                .allowAdjacentRegion(allowAdjacentRegion)
                 .headcount(headcount)
                 .durationDays(durationDays)
                 .excludedActivityTags(excludedActivityTags)
@@ -1006,6 +1013,71 @@ public class PromptParser {
     }
 
     private record ActivityTagStrength(List<String> required, List<String> nice) {
+    }
+
+    private record LanguageStrength(List<String> required, List<String> nice) {
+    }
+
+    private LanguageStrength classifyLanguageStrength(String normalizedLowerPrompt, List<String> preferredLanguages) {
+        if (preferredLanguages == null || preferredLanguages.isEmpty()) {
+            return new LanguageStrength(List.of(), List.of());
+        }
+        LinkedHashSet<String> required = new LinkedHashSet<>();
+        LinkedHashSet<String> nice = new LinkedHashSet<>();
+        String p = normalizedLowerPrompt;
+        for (String raw : preferredLanguages) {
+            String lang = KeywordNormalizer.normalizeLanguage(raw);
+            if (lang == null || lang.isBlank()) {
+                continue;
+            }
+            boolean strong = false;
+            boolean weak = false;
+            String needle = raw.toLowerCase(Locale.ROOT);
+            int idx = 0;
+            while ((idx = p.indexOf(needle, idx)) >= 0) {
+                int winStart = Math.max(0, idx - 36);
+                int winEnd = Math.min(p.length(), idx + needle.length() + 18);
+                String win = p.substring(winStart, winEnd);
+                if (containsAnyIntent(win, STRONG_ACTIVITY_INTENT_FRAGMENTS)) {
+                    strong = true;
+                }
+                if (containsAnyIntent(win, NICE_ACTIVITY_INTENT_FRAGMENTS)) {
+                    weak = true;
+                }
+                idx = idx + 1;
+            }
+            if (strong) {
+                required.add(lang);
+            } else if (weak) {
+                nice.add(lang);
+            }
+        }
+        nice.removeAll(required);
+        return new LanguageStrength(List.copyOf(required), List.copyOf(nice));
+    }
+
+    private Boolean extractAllowAdjacentRegion(String normalizedLowerPrompt) {
+        String p = normalizedLowerPrompt;
+        if (containsAny(p,
+                "근처", "주변", "인접", "가까운 곳", "가까운곳",
+                "근방", "옆동네", "근교", "근처도", "인접도", "주변도", "근방도",
+                "상관없", "괜찮", "무관"
+        )) {
+            if (containsAny(p, "인접", "근처", "주변", "가까운", "근교", "옆동네", "근방")) {
+                return true;
+            }
+        }
+        return null;
+    }
+
+    private Boolean extractStrictBudgetIntent(String normalizedLowerPrompt) {
+        if (normalizedLowerPrompt == null || normalizedLowerPrompt.isBlank()) {
+            return null;
+        }
+        if (!containsAny(normalizedLowerPrompt, "예산", "가격", "가성비", "럭셔리", "비싸", "저렴", "싸게", "비용")) {
+            return null;
+        }
+        return containsAny(normalizedLowerPrompt, "꼭", "반드시", "필수", "무조건", "최우선") ? true : null;
     }
 
     private static final String[] STRONG_ACTIVITY_INTENT_FRAGMENTS = {
