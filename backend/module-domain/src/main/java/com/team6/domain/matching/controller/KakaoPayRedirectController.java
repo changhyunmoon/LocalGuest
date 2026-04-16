@@ -35,8 +35,21 @@ public class KakaoPayRedirectController {
     @GetMapping("/success")
     public ResponseEntity<Void> success(
             @RequestParam("pg_token") String pgToken,
-            @RequestParam("pgOrderNo") String pgOrderNo
+            @RequestParam(value = "pgOrderNo", required = false) String pgOrderNo
     ) {
+        if (pgOrderNo == null || pgOrderNo.isBlank()) {
+            URI redirect = UriComponentsBuilder
+                    .fromHttpUrl(frontendBaseUrl)
+                    .path("/pay/kakao-stub")
+                    .queryParam("result", "success")
+                    .queryParam("error", "missing_pgOrderNo")
+                    .build(true)
+                    .toUri();
+            HttpHeaders headers = new HttpHeaders();
+            headers.setLocation(redirect);
+            return new ResponseEntity<>(headers, HttpStatus.FOUND);
+        }
+
         Payment payment = paymentRepository.findByPgOrderNo(pgOrderNo)
                 .orElseThrow(() -> new MatchingException(MatchingErrorCode.PAYMENT_NOT_FOUND));
 
@@ -47,7 +60,19 @@ public class KakaoPayRedirectController {
     }
 
     @GetMapping("/cancel")
-    public ResponseEntity<Void> cancel(@RequestParam("pgOrderNo") String pgOrderNo) {
+    public ResponseEntity<Void> cancel(@RequestParam(value = "pgOrderNo", required = false) String pgOrderNo) {
+        if (pgOrderNo == null || pgOrderNo.isBlank()) {
+            URI redirect = UriComponentsBuilder
+                    .fromHttpUrl(frontendBaseUrl)
+                    .path("/pay/kakao-stub")
+                    .queryParam("result", "cancel")
+                    .queryParam("error", "missing_pgOrderNo")
+                    .build(true)
+                    .toUri();
+            HttpHeaders headers = new HttpHeaders();
+            headers.setLocation(redirect);
+            return new ResponseEntity<>(headers, HttpStatus.FOUND);
+        }
         Payment payment = paymentRepository.findByPgOrderNo(pgOrderNo)
                 .orElseThrow(() -> new MatchingException(MatchingErrorCode.PAYMENT_NOT_FOUND));
         URI redirect = buildFrontendRedirect(payment, null, "cancel");
@@ -57,7 +82,19 @@ public class KakaoPayRedirectController {
     }
 
     @GetMapping("/fail")
-    public ResponseEntity<Void> fail(@RequestParam("pgOrderNo") String pgOrderNo) {
+    public ResponseEntity<Void> fail(@RequestParam(value = "pgOrderNo", required = false) String pgOrderNo) {
+        if (pgOrderNo == null || pgOrderNo.isBlank()) {
+            URI redirect = UriComponentsBuilder
+                    .fromHttpUrl(frontendBaseUrl)
+                    .path("/pay/kakao-stub")
+                    .queryParam("result", "fail")
+                    .queryParam("error", "missing_pgOrderNo")
+                    .build(true)
+                    .toUri();
+            HttpHeaders headers = new HttpHeaders();
+            headers.setLocation(redirect);
+            return new ResponseEntity<>(headers, HttpStatus.FOUND);
+        }
         Payment payment = paymentRepository.findByPgOrderNo(pgOrderNo)
                 .orElseThrow(() -> new MatchingException(MatchingErrorCode.PAYMENT_NOT_FOUND));
         URI redirect = buildFrontendRedirect(payment, null, "fail");
