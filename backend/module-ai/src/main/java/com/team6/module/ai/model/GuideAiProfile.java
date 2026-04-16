@@ -34,6 +34,9 @@ public class GuideAiProfile {
     /** 추천 카드 클릭(관심/탐색) 집계. null이면 미반영. */
     private Integer recommendClickCount;
 
+    /** 포지션(노출 순위) 편향을 보정한 클릭 신호 점수. null이면 미반영. */
+    private Integer recommendClickDebiasedScore;
+
     /** 동일 세션 내 최근 추천 노출 횟수(반복 추천 완화). null이면 미반영. */
     private Integer recommendExposureCount;
 
