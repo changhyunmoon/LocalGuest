@@ -167,6 +167,13 @@ class PromptParserTest {
     }
 
     @Test
+    void parse_should_pick_positive_region_when_previous_region_is_negated() {
+        GuideRecommendRequest request = promptParser.parse("제주 말고 부산으로 맛집 여행", 3, List.of());
+        assertThat(request.getRegion()).isEqualTo("부산");
+        assertThat(request.getExcludedRegions()).contains("제주");
+    }
+
+    @Test
     void parse_should_prefer_positive_tags_over_negated_tags_in_long_prompt() {
         GuideRecommendRequest request = promptParser.parse(
                 "부산에서 카페랑 바다는 좋고 술집이나 클럽은 말고, 붐비는 쇼핑몰도 싫어요",
