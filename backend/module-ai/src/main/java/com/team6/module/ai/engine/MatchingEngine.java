@@ -50,7 +50,7 @@ public class MatchingEngine {
             List<GuideAiProfile> guides,
             int topN
     ) {
-        return recommend(preference, guides, topN, Map.of());
+        return recommend(preference, guides, topN, Map.of(), Map.of());
     }
 
     /**
@@ -60,7 +60,8 @@ public class MatchingEngine {
             TravelerPreference preference,
             List<GuideAiProfile> guides,
             int topN,
-            Map<Long, Integer> availabilityDayCountByGuideId
+            Map<Long, Integer> availabilityDayCountByGuideId,
+            Map<Long, Integer> availabilityMaxConsecutiveDaysByGuideId
     ) {
         // MatchingEngine은 "후보 가이드 리스트"를 받아 실제 추천 카드 리스트로 바꾸는 마지막 엔진이다.
         // 순서는 대략:
@@ -70,15 +71,18 @@ public class MatchingEngine {
         // 4) 다양성 패널티로 Top-N 재선정
         // 5) GuideRecommendItem 응답 형태로 변환
         Map<Long, Integer> avail = availabilityDayCountByGuideId == null ? Map.of() : availabilityDayCountByGuideId;
-        List<ScoredGuide> scored = guides.stream()
+        Map<Long, Integer> streak = availabilityMaxConsecutiveDaysByGuideId == null ? Map.of() : availabilityMaxConsecutiveDaysByGuideId;
+        List<GuideAiProfile> filteredGuides = applyNegativeFilters(preference, guides);
+        List<ScoredGuide> scored = filteredGuides.stream()
                 .map(guide -> {
                     // 점수는 ScoreCalculator가 정책별로 합산한다.
                     int ruleScore = scoreCalculator.calculate(preference, guide);
                     int availBoost = availabilityBoost(guide.getGuideId(), avail);
-                    int rankingScore = ruleScore + availBoost;
+                    int streakBoost = availabilityConsecutiveBoost(guide.getGuideId(), streak);
+                    int rankingScore = ruleScore + availBoost + streakBoost;
                     // 같은 점수라도 "왜 추천됐는지"가 보여야 프론트/운영/사용자 모두 해석 가능하다.
                     ReasonBundle bundle = reasonGenerator.generate(preference, guide, rankingScore);
-                    return new ScoredGuide(guide, rankingScore, bundle, availBoost);
+                    return new ScoredGuide(guide, rankingScore, bundle, availBoost + streakBoost);
                 })
                 // 1차 정렬은 룰 점수 + 가용성 가산 합산 기준이다.
                 .sorted(Comparator.comparingInt(ScoredGuide::baseScore).reversed())
@@ -117,6 +121,74 @@ public class MatchingEngine {
                 .build();
     }
 
+    private static List<GuideAiProfile> applyNegativeFilters(TravelerPreference pref, List<GuideAiProfile> guides) {
+        if (guides == null || guides.isEmpty() || pref == null) {
+            return guides == null ? List.of() : guides;
+        }
+        Set<String> exRegions = normalizeLowerSet(pref.getExcludedRegions());
+        Set<String> exStyles = normalizeLowerSet(pref.getExcludedTravelStyles());
+        Set<String> exLangs = normalizeLowerSet(
+                pref.getExcludedLanguages() == null ? List.of()
+                        : pref.getExcludedLanguages().stream()
+                        .map(KeywordNormalizer::normalizeLanguage)
+                        .toList()
+        );
+
+        if (exRegions.isEmpty() && exStyles.isEmpty() && exLangs.isEmpty()) {
+            return guides;
+        }
+        return guides.stream()
+                .filter(g -> !isExcludedGuide(g, exRegions, exStyles, exLangs))
+                .toList();
+    }
+
+    private static boolean isExcludedGuide(
+            GuideAiProfile g,
+            Set<String> exRegions,
+            Set<String> exStyles,
+            Set<String> exLangs
+    ) {
+        if (g == null) {
+            return false;
+        }
+        if (!exRegions.isEmpty()) {
+            String r = g.getRegion();
+            if (r != null && exRegions.contains(r.toLowerCase())) {
+                return true;
+            }
+        }
+        if (!exStyles.isEmpty()) {
+            String s = g.getGuideStyle();
+            if (s != null && exStyles.contains(s.toLowerCase())) {
+                return true;
+            }
+        }
+        if (!exLangs.isEmpty()) {
+            List<String> langs = g.getLanguages();
+            if (langs != null && !langs.isEmpty()) {
+                List<String> normalized = langs.stream()
+                        .map(KeywordNormalizer::normalizeLanguage)
+                        .filter(x -> x != null && !x.isBlank())
+                        .toList();
+                // 보수적으로: 가이드가 "오직" 제외 언어만 가능한 경우만 제외한다.
+                if (!normalized.isEmpty() && normalized.stream().allMatch(l -> exLangs.contains(l.toLowerCase()))) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private static Set<String> normalizeLowerSet(List<String> raw) {
+        if (raw == null || raw.isEmpty()) {
+            return Set.of();
+        }
+        return raw.stream()
+                .filter(s -> s != null && !s.isBlank())
+                .map(s -> s.toLowerCase().trim())
+                .collect(Collectors.toSet());
+    }
+
     private int availabilityBoost(Long guideId, Map<Long, Integer> avail) {
         if (guideId == null || avail.isEmpty()) {
             return 0;
@@ -127,6 +199,19 @@ public class MatchingEngine {
         }
         int per = scoringPolicy.availabilityBoostPerDay();
         int max = scoringPolicy.availabilityBoostMax();
+        return Math.min(max, days * per);
+    }
+
+    private int availabilityConsecutiveBoost(Long guideId, Map<Long, Integer> streak) {
+        if (guideId == null || streak.isEmpty()) {
+            return 0;
+        }
+        int days = streak.getOrDefault(guideId, 0);
+        if (days <= 0) {
+            return 0;
+        }
+        int per = scoringPolicy.availabilityConsecutiveBoostPerDay();
+        int max = scoringPolicy.availabilityConsecutiveBoostMax();
         return Math.min(max, days * per);
     }
 
@@ -152,45 +237,45 @@ public class MatchingEngine {
 
         if (a != null && b != null) {
             if (a.isRegion() && !b.isRegion()) {
-                return "희망 지역과 정확히 일치해 2순위보다 더 잘 맞아요.";
+                return "1위는 희망 지역과 정확히 일치하고, 2위는 지역이 덜 맞아요.";
             }
             if (a.isRegionAdjacent() && !b.isRegion() && !b.isRegionAdjacent()) {
-                return "희망 지역과 가까운 인접권이라 2순위보다 조건에 더 가깝습니다.";
+                return "1위는 희망 지역 인접권까지 맞고, 2위는 지역 조건이 더 멀어요.";
             }
             int langDelta = safeSize(a.getLanguages()) - safeSize(b.getLanguages());
             if (langDelta >= 1) {
                 String langs = briefList(a.getLanguages());
                 return langs == null
-                        ? "요청하신 언어 안내가 가능해 2순위보다 더 적합해요."
-                        : "요청하신 언어(" + langs + ")가 가능해 2순위보다 더 적합해요.";
+                        ? "1위는 요청하신 언어 대응이 더 잘 되고, 2위는 언어 매칭이 약해요."
+                        : "1위는 요청하신 언어(" + langs + ")가 가능하고, 2위는 언어 매칭이 약해요.";
             }
             int tagDelta = safeSize(a.getTags()) - safeSize(b.getTags());
             if (tagDelta >= 1) {
                 String tags = briefList(a.getTags());
                 return tags == null
-                        ? "관심 활동이 더 잘 맞아 2순위보다 앞섰어요."
-                        : "관심 활동(" + tags + ")이 더 잘 맞아 2순위보다 앞섰어요.";
+                        ? "1위는 관심 활동 매칭이 더 강하고, 2위는 활동 근거가 약해요."
+                        : "1위는 관심 활동(" + tags + ")이 더 잘 맞고, 2위는 활동 근거가 약해요.";
             }
             if (a.isBudget() && !b.isBudget()) {
-                return "예산 구간이 더 정확히 맞아 2순위보다 우선 추천됐어요.";
+                return "1위는 예산 구간이 더 정확히 맞고, 2위는 예산 조건이 덜 맞아요.";
             }
             if (a.isStyle() && !b.isStyle()) {
-                return "여행 스타일이 더 잘 맞아 2순위보다 우선 추천됐어요.";
+                return "1위는 여행 스타일이 더 잘 맞고, 2위는 스타일 근거가 약해요.";
             }
             int penaltyDelta = safeSize(b.getSoftPenaltyOverlapTags()) - safeSize(a.getSoftPenaltyOverlapTags());
             if (penaltyDelta >= 1) {
-                return "부담 요소가 덜 겹쳐 2순위보다 더 적합해요.";
+                return "1위는 부담 요소가 덜 겹치고, 2위는 꺼려하는 요소가 더 겹쳐요.";
             }
         }
 
         int diff = top.getScore() - second.getScore();
         if (diff >= 10) {
-            return "2순위보다 요청 조건에 더 가깝게 점수가 높아요.";
+            return "1위가 2위보다 요청 조건에 더 가깝게 점수가 높아요.";
         }
         if (diff >= 4) {
-            return "2순위와 비슷하지만 전체 근거에서 앞섭니다.";
+            return "1위와 2위가 비슷하지만, 1위가 전체 근거에서 앞서요.";
         }
-        return "2순위와 점수는 비슷하고, 세부 근거에서 조금 더 맞아요.";
+        return "1위와 2위 점수는 비슷하지만, 1위가 세부 근거에서 조금 더 맞아요.";
     }
 
     private static int safeSize(List<?> list) {

@@ -14,6 +14,9 @@ public class GuideAiProfile {
     private String region;
     private String guideStyle;
     private String priceLevel;
+    private Integer priceMinWon;
+    private Integer priceMaxWon;
+    private String priceScope;
     private List<String> specialtyTags;
     private List<String> languages;
     /** 평균 평점(도메인). null이면 평점 감점 없음. */
@@ -30,6 +33,9 @@ public class GuideAiProfile {
 
     /** 추천 카드 클릭(관심/탐색) 집계. null이면 미반영. */
     private Integer recommendClickCount;
+
+    /** 동일 세션 내 최근 추천 노출 횟수(반복 추천 완화). null이면 미반영. */
+    private Integer recommendExposureCount;
 
     /** 프로필 대표 이미지 URL. */
     private String representativeImageUrl;

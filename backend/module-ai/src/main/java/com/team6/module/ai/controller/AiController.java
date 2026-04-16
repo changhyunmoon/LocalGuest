@@ -12,6 +12,7 @@ import com.team6.module.ai.service.PromptRecommendationService;
 import com.team6.module.ai.support.AiRecommendationMetrics;
 import com.team6.module.ai.support.AiRecommendationTuning;
 import com.team6.module.ai.support.AiRecommendClickStore;
+import com.team6.module.ai.support.AiRecommendExposureStore;
 import com.team6.module.ai.support.GuideCandidateBundle;
 import com.team6.module.ai.parser.PromptParser;
 import com.team6.module.ai.support.GuideAvailabilityProvider;
@@ -69,6 +70,7 @@ public class AiController {
 
     private final AiRecommendationMetrics recommendationMetrics;
     private final AiRecommendClickStore clickStore;
+    private final AiRecommendExposureStore exposureStore;
 
     @Operation(
             summary = "프롬프트 기반 가이드 추천",
@@ -84,7 +86,7 @@ public class AiController {
             headers = @Header(
                     name = RecommendationHttpHeaders.X_RECOMMENDATION_POLICY,
                     description = "룰 정책 버전(응답 body의 policyVersion과 동일). 캐시 키·디버깅에 활용 가능.",
-                    schema = @Schema(implementation = String.class, example = "2026.04.26")
+                    schema = @Schema(implementation = String.class, example = "2026.04.27")
             ),
             content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = GuideRecommendResponse.class))
     )
@@ -126,25 +128,30 @@ public class AiController {
                         from,
                         to
                 );
-        GuideCandidateBundle bundle = enrichCandidatesWithClickCounts(rawBundle);
+        String sessionId = request == null ? null : request.getClientSessionId();
+        GuideCandidateBundle bundle = enrichCandidatesWithSignals(rawBundle, sessionId);
 
         // 3) 실제 메인 추천을 수행한다.
         // 내부에서는 프롬프트 파싱 -> 후보 보정 -> 점수 계산 -> 이유 생성 -> 응답 생성 흐름으로 이어진다.
         // 여기서 만들어지는 main은 "일정 필터를 통과한 후보들만" 대상으로 계산된 기본 추천 결과다.
         Map<Long, Integer> availabilityDays = buildAvailabilityDayCounts(bundle, from, to);
+        Map<Long, Integer> maxConsecutive = buildAvailabilityMaxConsecutiveDays(bundle, from, to);
 
         GuideRecommendResponse main = promptRecommendationService.recommendByPrompt(
                 request.getPrompt(),
                 request.getTopN(),
                 bundle.candidates(),
-                availabilityDays.isEmpty() ? null : availabilityDays
+                availabilityDays.isEmpty() ? null : availabilityDays,
+                maxConsecutive.isEmpty() ? null : maxConsecutive
         );
+
+        recordSessionExposures(sessionId, main);
 
         // 4) 일정 때문에 메인 추천에서 빠졌지만, 원래는 Top1이었을 가이드를 특별 제안(specialSuggestion)으로 만들지 판단한다.
         // 사용자가 원하는 조건에는 잘 맞지만 선택 날짜에 예약이 있어 빠진 경우를
         // "아예 숨기지 말고 별도 카드로 보여주자"는 UX 목적의 보조 흐름이다.
         GuideRecommendResponse.SpecialSuggestion specialSuggestion =
-                buildSpecialSuggestionIfNeeded(request, main, bundle, from, to, availabilityDays);
+                buildSpecialSuggestionIfNeeded(request, main, bundle, from, to, availabilityDays, maxConsecutive);
 
         // 5) 최종 응답을 구성한다.
         // specialSuggestion이 없으면 메인 추천 응답을 그대로 쓰고,
@@ -202,17 +209,20 @@ public class AiController {
                 pv, guideId, rank, promptHash, clientReqId);
     }
 
-    private GuideCandidateBundle enrichCandidatesWithClickCounts(GuideCandidateBundle bundle) {
+    private GuideCandidateBundle enrichCandidatesWithSignals(GuideCandidateBundle bundle, String sessionId) {
         if (bundle == null) {
             return new GuideCandidateBundle(List.of(), List.of());
         }
         return new GuideCandidateBundle(
-                enrichList(bundle.candidates()),
-                enrichList(bundle.unfilteredCandidates())
+                enrichList(bundle.candidates(), sessionId),
+                enrichList(bundle.unfilteredCandidates(), sessionId)
         );
     }
 
-    private List<GuideRecommendRequest.GuideCandidateDto> enrichList(List<GuideRecommendRequest.GuideCandidateDto> in) {
+    private List<GuideRecommendRequest.GuideCandidateDto> enrichList(
+            List<GuideRecommendRequest.GuideCandidateDto> in,
+            String sessionId
+    ) {
         if (in == null || in.isEmpty()) {
             return List.of();
         }
@@ -223,6 +233,7 @@ public class AiController {
                 continue;
             }
             int clicks = clickStore.recentClickCount(c.getGuideId());
+            int exposures = exposureStore.recentExposureCount(sessionId, c.getGuideId());
             out.add(GuideRecommendRequest.GuideCandidateDto.builder()
                     .guideId(c.getGuideId())
                     .guideName(c.getGuideName())
@@ -240,9 +251,22 @@ public class AiController {
                     .representativeImageUrl(c.getRepresentativeImageUrl())
                     .publicFeedThumbnailUrls(c.getPublicFeedThumbnailUrls())
                     .recommendClickCount(clicks)
+                    .recommendExposureCount(exposures)
                     .build());
         }
         return out;
+    }
+
+    private void recordSessionExposures(String sessionId, GuideRecommendResponse main) {
+        if (sessionId == null || sessionId.isBlank() || main == null || main.getRecommendations() == null) {
+            return;
+        }
+        for (GuideRecommendItem item : main.getRecommendations()) {
+            if (item == null) {
+                continue;
+            }
+            exposureStore.recordExposure(sessionId, item.getGuideId());
+        }
     }
     private static int promptHash(String prompt) {
         if (prompt == null || prompt.isBlank()) {
@@ -347,7 +371,8 @@ public class AiController {
             GuideCandidateBundle bundle,
             LocalDate from,
             LocalDate to,
-            Map<Long, Integer> availabilityDays
+            Map<Long, Integer> availabilityDays,
+            Map<Long, Integer> maxConsecutiveDays
     ) {
         if (bundle == null || bundle.unfilteredCandidates() == null || bundle.unfilteredCandidates().isEmpty()) {
             return null;
@@ -356,11 +381,12 @@ public class AiController {
         // 메인 추천이 아예 비었더라도, 일정 필터만 없었다면 추천될 가이드가 있는지 한 번 더 확인한다.
         // 즉 "추천 불가"와 "일정만 안 맞아서 빠짐"을 구분해서 보여주려는 의도다.
         if (main == null || main.getRecommendations() == null || main.getRecommendations().isEmpty()) {
-            return computeTop1SpecialSuggestion(request, bundle, from, to, availabilityDays);
+            return computeTop1SpecialSuggestion(request, bundle, from, to, availabilityDays, maxConsecutiveDays);
         }
 
         Long mainTop1 = main.getRecommendations().get(0).getGuideId();
-        GuideRecommendResponse.SpecialSuggestion special = computeTop1SpecialSuggestion(request, bundle, from, to, availabilityDays);
+        GuideRecommendResponse.SpecialSuggestion special =
+                computeTop1SpecialSuggestion(request, bundle, from, to, availabilityDays, maxConsecutiveDays);
         if (special == null || special.getGuide() == null || special.getGuide().getGuideId() == null) {
             return null;
         }
@@ -375,7 +401,8 @@ public class AiController {
             GuideCandidateBundle bundle,
             LocalDate from,
             LocalDate to,
-            Map<Long, Integer> availabilityDays
+            Map<Long, Integer> availabilityDays,
+            Map<Long, Integer> maxConsecutiveDays
     ) {
         // 메인 후보 필터를 적용하지 않은 원본 후보군으로 "진짜 Top1"을 다시 계산한다.
         // 이때 topN을 1로 고정해서 "일정 필터만 없었다면 가장 먼저 추천됐을 가이드"를 찾는다.
@@ -383,7 +410,8 @@ public class AiController {
                 request.getPrompt(),
                 1,
                 bundle.unfilteredCandidates(),
-                availabilityDays == null || availabilityDays.isEmpty() ? null : availabilityDays
+                availabilityDays == null || availabilityDays.isEmpty() ? null : availabilityDays,
+                maxConsecutiveDays == null || maxConsecutiveDays.isEmpty() ? null : maxConsecutiveDays
         );
         if (top1.getRecommendations() == null || top1.getRecommendations().isEmpty()) {
             return null;
@@ -437,5 +465,51 @@ public class AiController {
             out.put(c.getGuideId(), av == null ? 0 : av.size());
         }
         return out;
+    }
+
+    private Map<Long, Integer> buildAvailabilityMaxConsecutiveDays(
+            GuideCandidateBundle bundle,
+            LocalDate from,
+            LocalDate to
+    ) {
+        Map<Long, Integer> out = new HashMap<>();
+        if (from == null || to == null || bundle == null || bundle.candidates() == null) {
+            return out;
+        }
+        for (GuideRecommendRequest.GuideCandidateDto c : bundle.candidates()) {
+            if (c == null || c.getGuideId() == null) {
+                continue;
+            }
+            List<LocalDate> av = guideAvailabilityProvider.availableDates(c.getGuideId(), from, to);
+            out.put(c.getGuideId(), maxConsecutiveDays(av));
+        }
+        return out;
+    }
+
+    private static int maxConsecutiveDays(List<LocalDate> availableDates) {
+        if (availableDates == null || availableDates.isEmpty()) {
+            return 0;
+        }
+        List<LocalDate> sorted = availableDates.stream()
+                .filter(Objects::nonNull)
+                .distinct()
+                .sorted()
+                .toList();
+        if (sorted.isEmpty()) {
+            return 0;
+        }
+        int best = 1;
+        int run = 1;
+        for (int i = 1; i < sorted.size(); i++) {
+            LocalDate prev = sorted.get(i - 1);
+            LocalDate cur = sorted.get(i);
+            if (prev.plusDays(1).equals(cur)) {
+                run++;
+                best = Math.max(best, run);
+            } else {
+                run = 1;
+            }
+        }
+        return best;
     }
 }

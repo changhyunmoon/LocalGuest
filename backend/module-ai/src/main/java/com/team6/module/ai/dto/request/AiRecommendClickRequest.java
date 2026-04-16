@@ -9,7 +9,7 @@ import lombok.Setter;
 @Setter
 public class AiRecommendClickRequest {
 
-    @Schema(description = "추천에 사용된 policyVersion(응답 헤더/바디와 동일)", example = "2026.04.26")
+    @Schema(description = "추천에 사용된 policyVersion(응답 헤더/바디와 동일)", example = "2026.04.27")
     private String policyVersion;
 
     @Schema(description = "클릭된 가이드 ID", example = "12")

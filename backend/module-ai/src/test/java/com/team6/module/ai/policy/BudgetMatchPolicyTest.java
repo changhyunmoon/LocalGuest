@@ -55,4 +55,19 @@ class BudgetMatchPolicyTest {
                 GuideAiProfile.builder().priceLevel("중간").build()
         )).isEqualTo(0);
     }
+
+    @Test
+    void score_should_use_budget_range_when_available() {
+        int ok = policy.score(
+                TravelerPreference.builder().budgetMinWon(100_000).budgetMaxWon(200_000).strictBudget(true).build(),
+                GuideAiProfile.builder().priceMinWon(150_000).priceMaxWon(250_000).build()
+        );
+        assertThat(ok).isEqualTo(scoring.weightBudget());
+
+        int missStrict = policy.score(
+                TravelerPreference.builder().budgetMinWon(100_000).budgetMaxWon(200_000).strictBudget(true).build(),
+                GuideAiProfile.builder().priceMinWon(210_000).priceMaxWon(300_000).build()
+        );
+        assertThat(missStrict).isEqualTo(-scoring.strictBudgetMissPenalty());
+    }
 }

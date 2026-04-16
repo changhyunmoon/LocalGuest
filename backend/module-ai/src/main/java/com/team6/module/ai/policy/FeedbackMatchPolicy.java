@@ -74,6 +74,14 @@ public class FeedbackMatchPolicy {
             );
         }
 
+        Integer exposures = guide.getRecommendExposureCount();
+        if (exposures != null && exposures > 0) {
+            penalty += Math.min(
+                    exposures * scoring.recommendExposurePenaltyPerCount(),
+                    scoring.recommendExposurePenaltyMax()
+            );
+        }
+
         if (isColdStartExplorationCandidate(guide)) {
             bonus += scoring.coldStartExplorationBonus();
         }
