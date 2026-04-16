@@ -20,6 +20,10 @@ import java.util.concurrent.TimeUnit;
  *   <li>{@code .outcome(type=no_region|empty|success)} — 최종 건수 결과</li>
  *   <li>{@code .feedback_penalty_hits(policy_version=...)} — 후보 1명 스코어링 시
  *       {@link com.team6.module.ai.policy.FeedbackMatchPolicy} 감점이 적용된 횟수(0보다 작은 기여)</li>
+ *   <li>{@code .exposure(policy_version=...,rank=...)} — 추천 카드 노출(랭크별)</li>
+ *   <li>{@code .debiased_click_used(policy_version=...,used=true|false)} — 디바이어스 클릭 신호 사용 여부(가이드별)</li>
+ *   <li>{@code .negative_filter(reason=region|style|language,policy_version=...)} — 부정 의도로 제외된 후보 수</li>
+ *   <li>{@code .budget_range_match(result=match|miss,policy_version=...)} — 범위 예산 매칭 분기(비교 가능 후보에 한함)</li>
  * </ul>
  * <b>Timer / Summary</b> (태그 {@code policy_version} 권장)
  * <ul>
@@ -161,5 +165,46 @@ public class AiRecommendationMetrics {
         String pv = policyVersion == null ? "unknown" : policyVersion;
         String r = (rank == null || rank <= 0) ? "unknown" : String.valueOf(rank);
         registry.counter(PREFIX + ".click", Tags.of("policy_version", pv, "rank", r)).increment();
+    }
+
+    /**
+     * 추천 카드 노출(랭크별).
+     */
+    public void recordRecommendationExposure(Integer rank, String policyVersion) {
+        String pv = policyVersion == null ? "unknown" : policyVersion;
+        String r = (rank == null || rank <= 0) ? "unknown" : String.valueOf(rank);
+        registry.counter(PREFIX + ".exposure", Tags.of("policy_version", pv, "rank", r)).increment();
+    }
+
+    /**
+     * 디바이어스 클릭 신호(포지션 바이어스 보정)가 사용됐는지.
+     */
+    public void recordDebiasedClickUsed(boolean used, String policyVersion) {
+        String pv = policyVersion == null ? "unknown" : policyVersion;
+        registry.counter(PREFIX + ".debiased_click_used", Tags.of("policy_version", pv, "used", String.valueOf(used)))
+                .increment();
+    }
+
+    /**
+     * 부정 의도로 필터링된 후보 수(상세 원인 태그).
+     */
+    public void recordNegativeFilter(String reason, int removedCount, String policyVersion) {
+        if (removedCount <= 0) {
+            return;
+        }
+        String pv = policyVersion == null ? "unknown" : policyVersion;
+        String r = reason == null || reason.isBlank() ? "unknown" : reason;
+        registry.counter(PREFIX + ".negative_filter", Tags.of("policy_version", pv, "reason", r))
+                .increment(removedCount);
+    }
+
+    /**
+     * 범위 예산 매칭 분기(후보/선호 모두 범위를 가진 경우).
+     */
+    public void recordBudgetRangeMatch(boolean matched, String policyVersion) {
+        String pv = policyVersion == null ? "unknown" : policyVersion;
+        String result = matched ? "match" : "miss";
+        registry.counter(PREFIX + ".budget_range_match", Tags.of("policy_version", pv, "result", result))
+                .increment();
     }
 }

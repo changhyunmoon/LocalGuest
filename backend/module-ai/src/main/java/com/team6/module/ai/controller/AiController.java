@@ -235,6 +235,7 @@ public class AiController {
             int clicks = clickStore.recentClickCount(c.getGuideId());
             int debiasedClicks = clickStore.debiasedClickScore(c.getGuideId());
             int exposures = exposureStore.recentExposureCount(sessionId, c.getGuideId());
+            recommendationMetrics.recordDebiasedClickUsed(debiasedClicks > 0, AiRecommendationTuning.POLICY_VERSION);
             out.add(GuideRecommendRequest.GuideCandidateDto.builder()
                     .guideId(c.getGuideId())
                     .guideName(c.getGuideName())
@@ -270,6 +271,7 @@ public class AiController {
             }
             exposureStore.recordExposure(sessionId, item.getGuideId());
             clickStore.recordExposure(item.getGuideId(), rank);
+            recommendationMetrics.recordRecommendationExposure(rank, AiRecommendationTuning.POLICY_VERSION);
             rank++;
         }
     }
