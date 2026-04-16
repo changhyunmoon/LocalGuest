@@ -1,15 +1,9 @@
 package com.team6.domain.matching.controller;
 
-import com.team6.domain.guide.repository.GuideProfileRepository;
 import com.team6.domain.matching.dto.request.TourExtensionSelectRequest;
 import com.team6.domain.matching.dto.response.TourExtensionResponseDto;
-import com.team6.domain.matching.exception.MatchingErrorCode;
-import com.team6.domain.matching.exception.MatchingException;
 import com.team6.domain.matching.service.TourExtensionService;
-import com.team6.domain.member.entity.Member;
-import com.team6.domain.member.entity.Role;
-import com.team6.domain.member.repository.MemberRepository;
-import com.team6.module.common.global.util.SecurityUtil;
+import com.team6.domain.matching.support.MatchingAuthenticationSupport;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -26,15 +20,13 @@ import org.springframework.web.bind.annotation.RestController;
 public class TourExtensionController {
 
     private final TourExtensionService tourExtensionService;
-    private final MemberRepository memberRepository;
-    private final GuideProfileRepository guideProfileRepository;
+    private final MatchingAuthenticationSupport matchingAuthenticationSupport;
 
     @GetMapping("/{requestId}")
     public ResponseEntity<TourExtensionResponseDto> getExtension(
             @PathVariable Long requestId
     ) {
-        Member member = getCurrentMember();
-        Long actorId = resolveActorIdForExtensionRead(member);
+        Long actorId = matchingAuthenticationSupport.resolveTourExtensionActorId();
         return ResponseEntity.ok(tourExtensionService.getByRequestId(requestId, actorId));
     }
 
@@ -44,34 +36,7 @@ public class TourExtensionController {
             @PathVariable Long requestId,
             @RequestBody @Valid TourExtensionSelectRequest request
     ) {
-        Long guestId = getCurrentMemberId(Role.GUEST);
+        Long guestId = matchingAuthenticationSupport.getCurrentGuestMemberId();
         return ResponseEntity.ok(tourExtensionService.selectByGuest(guestId, requestId, request));
-    }
-
-    private Long getCurrentMemberId(Role requiredRole) {
-        return validateAndGetMemberId(getCurrentMember(), requiredRole);
-    }
-
-    private Member getCurrentMember() {
-        String email = SecurityUtil.getCurrentUserEmail();
-        return memberRepository.findByEmail(email)
-                .map(member -> member)
-                .orElseThrow(() -> new MatchingException(MatchingErrorCode.MATCH_REQUEST_UNAUTHORIZED));
-    }
-
-    private Long validateAndGetMemberId(Member member, Role requiredRole) {
-        if (requiredRole != null && member.getRole() != requiredRole) {
-            throw new MatchingException(MatchingErrorCode.MATCH_REQUEST_UNAUTHORIZED);
-        }
-        return member.getId();
-    }
-
-    private Long resolveActorIdForExtensionRead(Member member) {
-        if (member.getRole() == Role.GUIDE) {
-            return guideProfileRepository.findByMemberId(member.getId())
-                    .map(guideProfile -> guideProfile.getId())
-                    .orElseThrow(() -> new MatchingException(MatchingErrorCode.MATCH_REQUEST_UNAUTHORIZED));
-        }
-        return member.getId();
     }
 }
