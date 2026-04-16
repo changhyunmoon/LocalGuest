@@ -1,4 +1,16 @@
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? '/api'
+const API_BASE = normalizeApiBase(import.meta.env.VITE_API_BASE_URL ?? '/api')
+
+function normalizeApiBase(rawBase) {
+  if (!rawBase) return '/api'
+  const trimmed = rawBase.trim()
+  if (!trimmed) return '/api'
+  return trimmed.replace(/\/+$/, '')
+}
+
+function joinApiUrl(path) {
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`
+  return `${API_BASE}${normalizedPath}`
+}
 
 function getStoredToken() {
   return localStorage.getItem('localguest_access_token')
@@ -23,7 +35,7 @@ export async function apiRequest(path, options = {}) {
     }
   }
 
-  const res = await fetch(`${API_BASE}${path}`, {
+  const res = await fetch(joinApiUrl(path), {
     ...rest,
     headers,
     body: json !== undefined ? JSON.stringify(json) : rest.body,
