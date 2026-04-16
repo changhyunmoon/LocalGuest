@@ -51,6 +51,18 @@ public class ScoringPolicySettings {
      */
     private int coldStartMaxChatStartsForExploration = 1;
 
+    /** requiredLanguages를 만족하지 못한 경우 감점(가이드 언어 미충족). */
+    private int requiredLanguageMissPenalty = 30;
+    /** nice-to-have 언어 매칭 시 weightLanguage에 곱할 퍼센트(50이면 절반). */
+    private int niceToHaveLanguageWeightPercent = 50;
+
+    /** strictBudget=true이고 예산이 맞지 않을 때 감점(미스). */
+    private int strictBudgetMissPenalty = 20;
+
+    /** 클릭 1회당 보정 점수(상한은 {@link #recommendClickBonusMax}). */
+    private int recommendClickBonusPerCount = 1;
+    private int recommendClickBonusMax = 8;
+
     private int feedbackRefundPenaltyPerApproved = 8;
     private int feedbackRefundPenaltyMax = 24;
     private int feedbackLowRatingMinReviews = 3;

@@ -13,6 +13,7 @@ import com.team6.domain.guide.exception.GuideException;
 import com.team6.domain.guide.repository.GuideProfileRepository;
 import com.team6.domain.guide.repository.GuideScheduleRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,6 +23,7 @@ import java.util.List;
  * 가이드 스케줄 서비스 (F06-04)
  */
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class GuideScheduleService {
 
@@ -213,7 +215,7 @@ public class GuideScheduleService {
 
     // [matching 연동] AVAILABLE → PENDING 전환 — matching 도메인이 매칭 요청 시 호출
     @Transactional
-    public GuideScheduleResponse markAsPending(Long scheduleId, Long guideId, Long matchRequestId) {
+    public GuideScheduleResponse markAsPending(Long scheduleId, Long guideId, Long matchRequestId, Long actorMemberId) {
         // 스케줄 조회
         GuideSchedule schedule = getVerifiedSchedule(scheduleId, guideId);
 
@@ -227,13 +229,15 @@ public class GuideScheduleService {
 
         // matchRequestId 연결 — matching 도메인 크로스 참조 저장
         schedule.linkMatchRequest(matchRequestId);
+        log.info("[F03-04] 스케줄 PENDING 동기화 — guideId={}, scheduleId={}, matchRequestId={}, actorId={}",
+                guideId, scheduleId, matchRequestId, actorMemberId);
 
         return GuideScheduleResponse.from(schedule);
     }
 
     // [matching 연동] PENDING → BOOKED 전환 — matching 도메인이 최종 확정 시 호출
     @Transactional
-    public GuideScheduleResponse markAsBooked(Long scheduleId, Long guideId) {
+    public GuideScheduleResponse markAsBooked(Long scheduleId, Long guideId, Long actorMemberId) {
         // 스케줄 조회
         GuideSchedule schedule = getVerifiedSchedule(scheduleId, guideId);
 
@@ -244,26 +248,32 @@ public class GuideScheduleService {
 
         // 상태 변경: PENDING → BOOKED
         schedule.changeStatus(GuideScheduleStatus.BOOKED);
+        log.info("[F03-05] 스케줄 BOOKED 동기화 — guideId={}, scheduleId={}, actorId={}",
+                guideId, scheduleId, actorMemberId);
 
         return GuideScheduleResponse.from(schedule);
     }
 
-    // [matching 연동] 결제 완료 확정 — acceptSchedule 등으로 이미 BOOKED인 경우 isPaid만 true (courseDetail 잠금 해제)
+    // [matching 연동] 결제 완료 확정 — PENDING이면 BOOKED로 자동 전환 후 isPaid=true 처리
     @Transactional
-    public GuideScheduleResponse markAsPaid(Long scheduleId, Long guideId) {
+    public GuideScheduleResponse markAsPaid(Long scheduleId, Long guideId, Long actorMemberId) {
         GuideSchedule schedule = getVerifiedSchedule(scheduleId, guideId);
 
-        if (schedule.getStatus() != GuideScheduleStatus.BOOKED) {
+        if (schedule.getStatus() == GuideScheduleStatus.PENDING) {
+            schedule.changeStatus(GuideScheduleStatus.BOOKED);
+        } else if (schedule.getStatus() != GuideScheduleStatus.BOOKED) {
             throw new GuideException(GuideErrorCode.SCHEDULE_NOT_BOOKED);
         }
 
         schedule.markAsPaid();
+        log.info("[F03-06] 스케줄 결제확정 동기화 — guideId={}, scheduleId={}, actorId={}",
+                guideId, scheduleId, actorMemberId);
         return GuideScheduleResponse.from(schedule);
     }
 
     // [matching 연동] PENDING 또는 BOOKED → AVAILABLE — 매칭 거절·취소 시 matching 도메인이 호출 (F03/F05)
     @Transactional
-    public GuideScheduleResponse cancelToAvailable(Long scheduleId, Long guideId) {
+    public GuideScheduleResponse cancelToAvailable(Long scheduleId, Long guideId, Long actorMemberId) {
         GuideSchedule schedule = getVerifiedSchedule(scheduleId, guideId);
 
         if (schedule.getStatus() != GuideScheduleStatus.PENDING
@@ -272,6 +282,8 @@ public class GuideScheduleService {
         }
 
         schedule.releaseMatchToAvailable();
+        log.info("[F05-01][F05-02] 스케줄 AVAILABLE 복구 동기화 — guideId={}, scheduleId={}, actorId={}",
+                guideId, scheduleId, actorMemberId);
         return GuideScheduleResponse.from(schedule);
     }
 

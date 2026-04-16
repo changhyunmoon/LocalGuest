@@ -7,6 +7,8 @@ import com.team6.module.ai.dto.response.GuideRecommendItem;
 import com.team6.module.ai.dto.response.GuideRecommendResponse;
 import com.team6.module.ai.parser.PromptParser;
 import com.team6.module.ai.service.PromptRecommendationService;
+import com.team6.module.ai.support.AiRecommendClickStore;
+import com.team6.module.ai.support.AiRecommendationMetrics;
 import com.team6.module.ai.support.GuideAvailabilityProvider;
 import com.team6.module.ai.support.GuideCandidateBundle;
 import com.team6.module.ai.support.GuideCandidateProvider;
@@ -17,6 +19,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.ResponseEntity;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -50,11 +53,15 @@ class AiRecommendOrchestrationRegressionTest {
 
     @BeforeEach
     void setUp() {
+        AiRecommendationMetrics metrics = new AiRecommendationMetrics(new SimpleMeterRegistry());
+        AiRecommendClickStore clickStore = new AiRecommendClickStore();
         aiController = new AiController(
                 promptRecommendationService,
                 guideCandidateProvider,
                 promptParser,
-                guideAvailabilityProvider
+                guideAvailabilityProvider,
+                metrics,
+                clickStore
         );
     }
 

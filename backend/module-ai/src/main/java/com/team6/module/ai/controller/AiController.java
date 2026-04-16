@@ -1,6 +1,7 @@
 package com.team6.module.ai.controller;
 
 import com.team6.module.ai.dto.openapi.OpenApiStandardErrorBody;
+import com.team6.module.ai.dto.request.AiRecommendClickRequest;
 import com.team6.module.ai.dto.request.PromptRecommendApiRequest;
 import com.team6.module.ai.support.GuideCandidateProvider;
 import com.team6.module.ai.dto.request.GuideRecommendRequest;
@@ -8,9 +9,13 @@ import com.team6.module.ai.dto.response.GuideRecommendItem;
 import com.team6.module.ai.dto.response.GuideRecommendResponse;
 import com.team6.module.ai.http.RecommendationHttpHeaders;
 import com.team6.module.ai.service.PromptRecommendationService;
+import com.team6.module.ai.support.AiRecommendationMetrics;
+import com.team6.module.ai.support.AiRecommendationTuning;
+import com.team6.module.ai.support.AiRecommendClickStore;
 import com.team6.module.ai.support.GuideCandidateBundle;
 import com.team6.module.ai.parser.PromptParser;
 import com.team6.module.ai.support.GuideAvailabilityProvider;
+import lombok.extern.slf4j.Slf4j;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.headers.Header;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -18,24 +23,31 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import lombok.extern.slf4j.Slf4j;
+import java.nio.charset.StandardCharsets;
+import java.util.zip.CRC32;
 
 @Tag(name = "AI", description = "룰 기반 가이드 추천(프롬프트 파싱 + 스코어링)")
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/ai")
+@Slf4j
 public class AiController {
 
     // F03 추천 파이프라인의 메인 조립자.
@@ -55,6 +67,9 @@ public class AiController {
     // 일정 필터에 걸려 메인 추천에서 빠진 가이드에 대해, 가능한 날짜를 안내하기 위한 조회용 provider다.
     private final GuideAvailabilityProvider guideAvailabilityProvider;
 
+    private final AiRecommendationMetrics recommendationMetrics;
+    private final AiRecommendClickStore clickStore;
+
     @Operation(
             summary = "프롬프트 기반 가이드 추천",
             description = "자연어 프롬프트와 가이드 후보 목록을 받아 상위 N명을 추천합니다. "
@@ -69,7 +84,7 @@ public class AiController {
             headers = @Header(
                     name = RecommendationHttpHeaders.X_RECOMMENDATION_POLICY,
                     description = "룰 정책 버전(응답 body의 policyVersion과 동일). 캐시 키·디버깅에 활용 가능.",
-                    schema = @Schema(implementation = String.class, example = "2026.04.24")
+                    schema = @Schema(implementation = String.class, example = "2026.04.26")
             ),
             content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = GuideRecommendResponse.class))
     )
@@ -103,7 +118,7 @@ public class AiController {
         // 이 단계에서 일정 충돌이 있는 가이드는 메인 후보에서 빠질 수 있고,
         // 동시에 "일정만 아니면 추천됐을 후보"를 위해 unfilteredCandidates도 함께 보관한다.
         // 그래서 반환 타입도 단순 List가 아니라 GuideCandidateBundle이다.
-        GuideCandidateBundle bundle =
+        GuideCandidateBundle rawBundle =
                 guideCandidateProvider.getCandidates(
                         request.getPrompt(),
                         request.getTopN(),
@@ -111,6 +126,7 @@ public class AiController {
                         from,
                         to
                 );
+        GuideCandidateBundle bundle = enrichCandidatesWithClickCounts(rawBundle);
 
         // 3) 실제 메인 추천을 수행한다.
         // 내부에서는 프롬프트 파싱 -> 후보 보정 -> 점수 계산 -> 이유 생성 -> 응답 생성 흐름으로 이어진다.
@@ -150,6 +166,9 @@ public class AiController {
                 .specialSuggestion(specialSuggestion)
                 .build();
 
+        // 날짜 필터로 후보가 모두 빠진 경우(원본 후보는 있었음)를 notice로 더 분명히 안내한다.
+        body = enrichNoticeForDateFilteredEmpty(request, bundle, from, to, body);
+
         // 6) 정책 버전을 헤더와 body에 함께 실어 응답한다.
         // 프론트는 recommendations로 추천 카드 UI를 그리고,
         // matchRequestDraft는 이후 매칭 요청 생성 단계의 기본값으로 재사용할 수 있다.
@@ -158,6 +177,128 @@ public class AiController {
         return ResponseEntity.ok()
                 .header(RecommendationHttpHeaders.X_RECOMMENDATION_POLICY, policy)
                 .body(body);
+    }
+
+    @Operation(
+            summary = "추천 카드 클릭 이벤트 수집",
+            description = "추천 결과 카드 클릭 로그(관심/탐색 신호). 2단계에서는 in-memory 집계로 추천 보정에 활용합니다."
+    )
+    @ApiResponse(responseCode = "204", description = "수집 성공(응답 바디 없음)")
+    @PostMapping(value = "/recommend/click", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void recordRecommendClick(@RequestBody AiRecommendClickRequest request) {
+        String pv = (request == null || request.getPolicyVersion() == null || request.getPolicyVersion().isBlank())
+                ? AiRecommendationTuning.POLICY_VERSION
+                : request.getPolicyVersion();
+        Integer rank = request == null ? null : request.getRank();
+        Long guideId = request == null ? null : request.getGuideId();
+        String clientReqId = request == null ? null : request.getClientRequestId();
+
+        recommendationMetrics.recordRecommendationClick(rank, pv);
+        clickStore.recordClick(guideId);
+        String prompt = request == null ? null : request.getPrompt();
+        Integer promptHash = (prompt == null || prompt.isBlank()) ? null : promptHash(prompt);
+        log.info("[AI_RECOMMEND_CLICK] policyVer={} guideId={} rank={} promptHash={} clientReqId={}",
+                pv, guideId, rank, promptHash, clientReqId);
+    }
+
+    private GuideCandidateBundle enrichCandidatesWithClickCounts(GuideCandidateBundle bundle) {
+        if (bundle == null) {
+            return new GuideCandidateBundle(List.of(), List.of());
+        }
+        return new GuideCandidateBundle(
+                enrichList(bundle.candidates()),
+                enrichList(bundle.unfilteredCandidates())
+        );
+    }
+
+    private List<GuideRecommendRequest.GuideCandidateDto> enrichList(List<GuideRecommendRequest.GuideCandidateDto> in) {
+        if (in == null || in.isEmpty()) {
+            return List.of();
+        }
+        List<GuideRecommendRequest.GuideCandidateDto> out = new ArrayList<>(in.size());
+        for (GuideRecommendRequest.GuideCandidateDto c : in) {
+            if (c == null || c.getGuideId() == null) {
+                out.add(c);
+                continue;
+            }
+            int clicks = clickStore.recentClickCount(c.getGuideId());
+            out.add(GuideRecommendRequest.GuideCandidateDto.builder()
+                    .guideId(c.getGuideId())
+                    .guideName(c.getGuideName())
+                    .region(c.getRegion())
+                    .guideStyle(c.getGuideStyle())
+                    .priceLevel(c.getPriceLevel())
+                    .specialtyTags(c.getSpecialtyTags())
+                    .languages(c.getLanguages())
+                    .averageRating(c.getAverageRating())
+                    .reviewCount(c.getReviewCount())
+                    .approvedRefundCount(c.getApprovedRefundCount())
+                    .matchRequestCount(c.getMatchRequestCount())
+                    .progressedMatchCount(c.getProgressedMatchCount())
+                    .chatStartCount(c.getChatStartCount())
+                    .representativeImageUrl(c.getRepresentativeImageUrl())
+                    .publicFeedThumbnailUrls(c.getPublicFeedThumbnailUrls())
+                    .recommendClickCount(clicks)
+                    .build());
+        }
+        return out;
+    }
+    private static int promptHash(String prompt) {
+        if (prompt == null || prompt.isBlank()) {
+            return 0;
+        }
+        CRC32 crc32 = new CRC32();
+        crc32.update(prompt.getBytes(StandardCharsets.UTF_8));
+        long v = crc32.getValue();
+        return (int) (v ^ (v >>> 32));
+    }
+
+    private static GuideRecommendResponse enrichNoticeForDateFilteredEmpty(
+            PromptRecommendApiRequest request,
+            GuideCandidateBundle bundle,
+            LocalDate from,
+            LocalDate to,
+            GuideRecommendResponse body
+    ) {
+        if (body == null || body.getTotalCount() > 0) {
+            return body;
+        }
+        if (from == null || to == null) {
+            return body;
+        }
+        if (bundle == null || bundle.candidates() == null || bundle.unfilteredCandidates() == null) {
+            return body;
+        }
+        if (!bundle.candidates().isEmpty()) {
+            return body;
+        }
+        if (bundle.unfilteredCandidates().isEmpty()) {
+            return body;
+        }
+        String extra = "선택한 날짜에 가능한 가이드가 적어 추천이 비었어요. 날짜를 바꾸거나 기간을 넓혀보세요.";
+        String notice = (body.getNotice() == null || body.getNotice().isBlank())
+                ? extra
+                : extra + " " + body.getNotice();
+
+        List<String> mergedCodes = new ArrayList<>();
+        mergedCodes.add(com.team6.module.ai.support.RecommendationNoticeCodes.DATE_FILTERED_NO_AVAILABLE);
+        if (body.getNoticeCodes() != null) {
+            mergedCodes.addAll(body.getNoticeCodes());
+        }
+
+        return GuideRecommendResponse.builder()
+                .conceptSummary(body.getConceptSummary())
+                .keywords(body.getKeywords())
+                .matchRequestDraft(body.getMatchRequestDraft())
+                .notice(notice)
+                .noticeCodes(mergedCodes)
+                .policyVersion(body.getPolicyVersion())
+                .promptParseConfidence(body.getPromptParseConfidence())
+                .totalCount(body.getTotalCount())
+                .recommendations(body.getRecommendations())
+                .specialSuggestion(body.getSpecialSuggestion())
+                .build();
     }
 
     private static LocalDate resolveDesiredFrom(PromptRecommendApiRequest request) {

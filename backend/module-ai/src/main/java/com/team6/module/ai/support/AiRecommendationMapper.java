@@ -33,6 +33,8 @@ public class AiRecommendationMapper {
 
         List<String> required = filterTagList(request.getRequiredActivityTags(), excludedSet, softPenaltySet);
         List<String> nice = filterTagList(request.getNiceToHaveActivityTags(), excludedSet, softPenaltySet);
+        List<String> requiredLangs = filterLangList(request.getRequiredLanguages());
+        List<String> niceLangs = filterLangList(request.getNiceToHaveLanguages());
 
         return TravelerPreference.builder()
                 .region(request.getRegion())
@@ -42,11 +44,14 @@ public class AiRecommendationMapper {
                 .activityTags(filteredTags)
                 .requiredActivityTags(required)
                 .niceToHaveActivityTags(nice)
+                .requiredLanguages(requiredLangs)
+                .niceToHaveLanguages(niceLangs)
                 .preferredLanguages(request.getPreferredLanguages())
                 .headcount(request.getHeadcount())
                 .durationDays(request.getDurationDays())
                 .excludedActivityTags(excluded)
                 .softPenaltyActivityTags(request.getSoftPenaltyActivityTags() == null ? List.of() : request.getSoftPenaltyActivityTags())
+                .strictBudget(request.getStrictBudget())
                 .build();
     }
 
@@ -68,6 +73,7 @@ public class AiRecommendationMapper {
                         .matchRequestCount(candidate.getMatchRequestCount())
                         .progressedMatchCount(candidate.getProgressedMatchCount())
                         .chatStartCount(candidate.getChatStartCount())
+                        .recommendClickCount(candidate.getRecommendClickCount())
                         .representativeImageUrl(candidate.getRepresentativeImageUrl())
                         .publicFeedThumbnailUrls(copyUrlList(candidate.getPublicFeedThumbnailUrls()))
                         .build())
@@ -96,5 +102,16 @@ public class AiRecommendationMapper {
             return List.of();
         }
         return List.copyOf(urls);
+    }
+
+    private static List<String> filterLangList(List<String> raw) {
+        if (raw == null || raw.isEmpty()) {
+            return List.of();
+        }
+        return raw.stream()
+                .map(KeywordNormalizer::normalizeLanguage)
+                .filter(s -> s != null && !s.isBlank())
+                .distinct()
+                .toList();
     }
 }

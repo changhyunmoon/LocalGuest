@@ -150,7 +150,8 @@ public class PromptRecommendationService {
                 RegionCandidateExpansion.apply(
                         parsed.getGuideCandidates(),
                         parsed.getRegion(),
-                        adjacentRegionProvider::neighbors
+                        adjacentRegionProvider::neighbors,
+                        Boolean.TRUE.equals(parsed.getAllowAdjacentRegion())
                 );
 
         // 4) 실제 점수 계산에 넣을 최종 요청 객체를 다시 만든다.
@@ -390,6 +391,9 @@ public class PromptRecommendationService {
                 codes.add(noticeCodeForWinningStage(fallback.winningRelaxStage()));
             } else if (fallback.chainExhausted()) {
                 codes.add(RecommendationNoticeCodes.FALLBACK_STRATEGIC_EXHAUSTED);
+                if (resultCount == 0) {
+                    codes.add(RecommendationNoticeCodes.CONDITIONS_TOO_STRICT);
+                }
             }
         }
         if (expansionUsed) {

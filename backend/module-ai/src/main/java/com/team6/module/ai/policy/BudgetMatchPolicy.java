@@ -22,6 +22,11 @@ public class BudgetMatchPolicy {
         if (BudgetTier.exactMatch(p, g)) {
             return scoring.weightBudget();
         }
-        return BudgetTier.adjacentTiers(p, g) ? scoring.weightBudgetAdjacent() : 0;
+        boolean adjacent = BudgetTier.adjacentTiers(p, g);
+        if (adjacent) {
+            return scoring.weightBudgetAdjacent();
+        }
+        boolean strict = Boolean.TRUE.equals(pref.getStrictBudget());
+        return strict ? -scoring.strictBudgetMissPenalty() : 0;
     }
 }

@@ -109,4 +109,18 @@ class FeedbackMatchPolicyTest {
         int score = tightPolicy.score(null, guide);
         assertThat(score).isEqualTo(tight.feedbackMatchRequestBonusPerCount());
     }
+
+    @Test
+    void score_should_add_bonus_for_click_signals() {
+        GuideAiProfile guide = GuideAiProfile.builder()
+                .guideId(3L)
+                .guideName("클릭 가이드")
+                .reviewCount(1)
+                .recommendClickCount(12)
+                .build();
+
+        int score = policy.score(null, guide);
+
+        assertThat(score).isEqualTo(scoring.recommendClickBonusMax());
+    }
 }

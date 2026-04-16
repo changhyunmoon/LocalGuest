@@ -1,7 +1,5 @@
 package com.team6.domain.matching.service;
 
-import com.team6.domain.guide.entity.GuideProfile;
-import com.team6.domain.guide.repository.GuideProfileRepository;
 import com.team6.domain.matching.client.FakePgClient;
 import com.team6.domain.matching.client.GuideScheduleSyncClient;
 import com.team6.domain.matching.client.KakaoPayClient;
@@ -34,6 +32,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -46,8 +45,6 @@ class PaymentServiceTest {
     private RefundRepository refundRepository;
     @Mock
     private MatchRequestRepository matchRequestRepository;
-    @Mock
-    private GuideProfileRepository guideProfileRepository;
     @Mock
     private FakePgClient fakePgClient;
     @Mock
@@ -142,7 +139,6 @@ class PaymentServiceTest {
 
         when(paymentRepository.findByPgOrderNo("LM-FAKE-test-order")).thenReturn(Optional.of(payment));
         when(fakePgClient.approvePayment("LM-FAKE-test-order", 25000, 400L)).thenReturn("FAKE-TXN-400");
-        when(guideProfileRepository.findById(20L)).thenReturn(Optional.of(GuideProfile.builder().id(20L).memberId(2000L).build()));
 
         PaymentResponseDto dto = paymentService.confirmPayment(guestId, confirm);
 
@@ -150,7 +146,31 @@ class PaymentServiceTest {
         assertEquals("FAKE-TXN-400", dto.getPgTransactionId());
         assertEquals(MatchRequestStatus.PAID, mr.getStatus());
         assertEquals(true, dto.getPaidAt() != null && dto.getRefundDeadline() != null);
-        verify(guideScheduleSyncClient).confirmPaid(20L, 900L, 2000L);
+        verify(guideScheduleSyncClient).confirmPaid(20L, 900L, null);
+    }
+
+    @Test
+    void 결제승인_가이드동기화실패여도_결제완료유지() {
+        Long guestId = 5L;
+        Long requestId = 50L;
+        MatchRequest mr = acceptedMatchRequest(requestId, guestId, 20L);
+        Payment payment = pendingPayment(410L, guestId, mr, "LM-FAKE-sync-fail", 28000);
+
+        PaymentConfirmRequest confirm = new PaymentConfirmRequest();
+        setField(confirm, "pgOrderNo", "LM-FAKE-sync-fail");
+        setField(confirm, "amount", 28000);
+
+        when(paymentRepository.findByPgOrderNo("LM-FAKE-sync-fail")).thenReturn(Optional.of(payment));
+        when(fakePgClient.approvePayment("LM-FAKE-sync-fail", 28000, 410L)).thenReturn("FAKE-TXN-410");
+        doThrow(new MatchingException(MatchingErrorCode.GUIDE_SCHEDULE_SYNC_FAILED))
+                .when(guideScheduleSyncClient).confirmPaid(20L, 900L, null);
+
+        PaymentResponseDto dto = paymentService.confirmPayment(guestId, confirm);
+
+        assertEquals(PaymentStatus.COMPLETED, dto.getStatus());
+        assertEquals("FAKE-TXN-410", dto.getPgTransactionId());
+        assertEquals(MatchRequestStatus.PAID, mr.getStatus());
+        verify(guideScheduleSyncClient).confirmPaid(20L, 900L, null);
     }
 
     @Test
