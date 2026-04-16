@@ -50,7 +50,8 @@ class MatchingEngineDiversityTest {
                 new ReasonGenerator(adjacent, scoring),
                 adjacent,
                 DiversityRerankSnapshot.defaults(),
-                metrics
+                metrics,
+                scoring
         );
     }
 

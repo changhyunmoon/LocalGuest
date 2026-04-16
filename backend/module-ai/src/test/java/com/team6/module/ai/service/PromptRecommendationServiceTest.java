@@ -49,7 +49,7 @@ class PromptRecommendationServiceTest {
         AiRecommendationService aiRecommendationService =
                 new AiRecommendationServiceImpl(
                         new MatchingEngine(scoreCalculator, reasonGenerator, adjacent, DiversityRerankSnapshot.defaults(),
-                                metrics));
+                                metrics, scoring));
 
         return new PromptRecommendationService(
                 new PromptParser(aiProps),

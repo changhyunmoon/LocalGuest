@@ -9,7 +9,7 @@ import java.util.List;
 
 @Schema(name = "GuideRecommendItem", description = "단일 가이드 추천 결과")
 @Getter
-@Builder
+@Builder(toBuilder = true)
 public class GuideRecommendItem {
     private Long guideId;
     private String guideName;
@@ -34,6 +34,11 @@ public class GuideRecommendItem {
 
     @Schema(description = "룰 기반 합산 점수")
     private int score;
+    /**
+     * 2순위 대비 왜 1순위인지 짧게(Top-N≥2일 때 1위 카드에만).
+     */
+    @Schema(description = "2순위 대비 한 줄 비교(1위에만 채워질 수 있음)")
+    private String comparisonHint;
     @Schema(description = "사람이 읽는 추천 이유(상위 근거 문구 연결)")
     private String reason;
     /**

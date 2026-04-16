@@ -398,7 +398,8 @@ class AiRecommendationRegressionTest {
         ReasonGenerator reasonGenerator = new ReasonGenerator(adjacent, scoring);
 
         return new AiRecommendationServiceImpl(
-                new MatchingEngine(scoreCalculator, reasonGenerator, adjacent, DiversityRerankSnapshot.defaults(), metrics));
+                new MatchingEngine(scoreCalculator, reasonGenerator, adjacent, DiversityRerankSnapshot.defaults(), metrics,
+                        scoring));
     }
 
     private static PromptRecommendationService createPromptRecommendationService(ScoringPolicySnapshot scoring) {
@@ -422,7 +423,8 @@ class AiRecommendationRegressionTest {
                 reasonGenerator,
                 adjacent,
                 DiversityRerankSnapshot.defaults(),
-                metrics
+                metrics,
+                scoring
         );
         AiRecommendationService ai = new AiRecommendationServiceImpl(matchingEngine);
         return new PromptRecommendationService(

@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -32,6 +33,10 @@ public class AiRecommendationServiceImpl implements AiRecommendationService {
         List<GuideAiProfile> guides = AiRecommendationMapper.toGuideProfiles(request.getGuideCandidates());
         int topN = request.getTopN() == null || request.getTopN() <= 0 ? 3 : request.getTopN();
 
-        return matchingEngine.recommend(preference, guides, topN);
+        Map<Long, Integer> avail = request.getAvailabilityDayCountByGuideId();
+        if (avail == null) {
+            avail = Map.of();
+        }
+        return matchingEngine.recommend(preference, guides, topN, avail);
     }
 }

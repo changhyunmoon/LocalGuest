@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -80,6 +81,18 @@ public class PromptRecommendationService {
             String prompt,
             Integer topN,
             List<GuideRecommendRequest.GuideCandidateDto> guideCandidates
+    ) {
+        return recommendByPrompt(prompt, topN, guideCandidates, null);
+    }
+
+    /**
+     * @param availabilityDayCountByGuideId 희망 기간 내 가용 일수(가이드별). null이면 가용성 랭킹 가산 없음.
+     */
+    public GuideRecommendResponse recommendByPrompt(
+            String prompt,
+            Integer topN,
+            List<GuideRecommendRequest.GuideCandidateDto> guideCandidates,
+            Map<Long, Integer> availabilityDayCountByGuideId
     ) {
         // PromptRecommendationService는 F03 추천의 "흐름 조정자" 역할을 한다.
         // 여기서는 프롬프트를 파싱하고, 후보군을 보정하고, 추천을 실행하고,
@@ -148,6 +161,8 @@ public class PromptRecommendationService {
                 .budgetLevel(parsed.getBudgetLevel())
                 .companionType(parsed.getCompanionType())
                 .activityTags(parsed.getActivityTags())
+                .requiredActivityTags(parsed.getRequiredActivityTags())
+                .niceToHaveActivityTags(parsed.getNiceToHaveActivityTags())
                 .preferredLanguages(parsed.getPreferredLanguages())
                 .headcount(parsed.getHeadcount())
                 .durationDays(parsed.getDurationDays())
@@ -155,6 +170,7 @@ public class PromptRecommendationService {
                 .softPenaltyActivityTags(parsed.getSoftPenaltyActivityTags())
                 .topN(parsed.getTopN())
                 .guideCandidates(expansion.candidates())
+                .availabilityDayCountByGuideId(availabilityDayCountByGuideId)
                 .build();
 
             // 5) 1차 추천을 수행한다.
@@ -683,12 +699,21 @@ public class PromptRecommendationService {
                 ? List.of()
                 : languageAnchor.getPreferredLanguages();
 
+        List<String> req = step == RelaxStage.DROP_ACTIVITY_TAGS_ONLY
+                ? List.of()
+                : (current.getRequiredActivityTags() == null ? List.of() : current.getRequiredActivityTags());
+        List<String> nice = step == RelaxStage.DROP_ACTIVITY_TAGS_ONLY
+                ? List.of()
+                : (current.getNiceToHaveActivityTags() == null ? List.of() : current.getNiceToHaveActivityTags());
+
         return GuideRecommendRequest.builder()
                 .region(region)
                 .travelStyle(style)
                 .budgetLevel(current.getBudgetLevel())
                 .companionType(current.getCompanionType())
                 .activityTags(tags)
+                .requiredActivityTags(req.isEmpty() ? null : req)
+                .niceToHaveActivityTags(nice.isEmpty() ? null : nice)
                 .preferredLanguages(pinnedLangs)
                 .headcount(current.getHeadcount())
                 .durationDays(current.getDurationDays())
@@ -696,6 +721,7 @@ public class PromptRecommendationService {
                 .softPenaltyActivityTags(current.getSoftPenaltyActivityTags())
                 .topN(current.getTopN())
                 .guideCandidates(current.getGuideCandidates())
+                .availabilityDayCountByGuideId(current.getAvailabilityDayCountByGuideId())
                 .build();
     }
 
@@ -713,7 +739,9 @@ public class PromptRecommendationService {
                 || req.getHeadcount() != null
                 || req.getDurationDays() != null
                 || (req.getExcludedActivityTags() != null && !req.getExcludedActivityTags().isEmpty())
-                || (req.getSoftPenaltyActivityTags() != null && !req.getSoftPenaltyActivityTags().isEmpty());
+                || (req.getSoftPenaltyActivityTags() != null && !req.getSoftPenaltyActivityTags().isEmpty())
+                || (req.getRequiredActivityTags() != null && !req.getRequiredActivityTags().isEmpty())
+                || (req.getNiceToHaveActivityTags() != null && !req.getNiceToHaveActivityTags().isEmpty());
     }
 
     private void logRecommendation(

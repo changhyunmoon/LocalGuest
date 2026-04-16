@@ -22,6 +22,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.verify;
@@ -78,11 +79,13 @@ class AiRecommendOrchestrationRegressionTest {
         GuideRecommendItem topMain = item(2L, "가이드B");
         GuideRecommendItem topUnfiltered = item(1L, "가이드A");
 
-        when(promptRecommendationService.recommendByPrompt("제주 힐링", 3, bundle.candidates()))
+        when(promptRecommendationService.recommendByPrompt(eq("제주 힐링"), eq(3), any(), any()))
                 .thenReturn(responseWithRecommendations(List.of(topMain)));
-        when(promptRecommendationService.recommendByPrompt("제주 힐링", 1, bundle.unfilteredCandidates()))
+        when(promptRecommendationService.recommendByPrompt(eq("제주 힐링"), eq(1), any(), any()))
                 .thenReturn(responseWithRecommendations(List.of(topUnfiltered)));
 
+        when(guideAvailabilityProvider.availableDates(eq(2L), eq(from), eq(to)))
+                .thenReturn(List.of());
         when(guideAvailabilityProvider.availableDates(1L, from, to))
                 .thenReturn(List.of(LocalDate.of(2026, 4, 29)));
 
@@ -111,10 +114,12 @@ class AiRecommendOrchestrationRegressionTest {
                 .thenReturn(bundle);
 
         GuideRecommendItem topB = item(2L, "가이드B");
-        when(promptRecommendationService.recommendByPrompt("부산 맛집", 3, bundle.candidates()))
+        when(promptRecommendationService.recommendByPrompt(eq("부산 맛집"), eq(3), any(), any()))
                 .thenReturn(responseWithRecommendations(List.of(topB)));
-        when(promptRecommendationService.recommendByPrompt("부산 맛집", 1, bundle.unfilteredCandidates()))
+        when(promptRecommendationService.recommendByPrompt(eq("부산 맛집"), eq(1), any(), any()))
                 .thenReturn(responseWithRecommendations(List.of(topB)));
+
+        when(guideAvailabilityProvider.availableDates(eq(2L), eq(from), eq(to))).thenReturn(List.of());
 
         ResponseEntity<GuideRecommendResponse> res = aiController.recommend(request);
 
@@ -135,9 +140,9 @@ class AiRecommendOrchestrationRegressionTest {
         when(guideCandidateProvider.getCandidates(eq("서울 야경"), eq(3), isNull(), eq(from), eq(to)))
                 .thenReturn(bundle);
 
-        when(promptRecommendationService.recommendByPrompt("서울 야경", 3, bundle.candidates()))
+        when(promptRecommendationService.recommendByPrompt(eq("서울 야경"), eq(3), any(), any()))
                 .thenReturn(emptyResponse());
-        when(promptRecommendationService.recommendByPrompt("서울 야경", 1, bundle.unfilteredCandidates()))
+        when(promptRecommendationService.recommendByPrompt(eq("서울 야경"), eq(1), any(), any()))
                 .thenReturn(responseWithRecommendations(List.of(item(10L, "가이드10"))));
 
         when(guideAvailabilityProvider.availableDates(10L, from, to)).thenReturn(List.of());
@@ -175,7 +180,7 @@ class AiRecommendOrchestrationRegressionTest {
                 eq(expectedToSameAsFrom)
         )).thenReturn(bundle);
 
-        when(promptRecommendationService.recommendByPrompt("4/28~4/30 제주도 카페", 2, bundle.candidates()))
+        when(promptRecommendationService.recommendByPrompt(eq("4/28~4/30 제주도 카페"), eq(2), any(), any()))
                 .thenReturn(emptyResponse());
         // unfiltered 후보가 비어 있으면 특별 제시 경로는 타지 않는다(AiController 초기 가드).
 

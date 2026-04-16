@@ -87,8 +87,8 @@ class AiRecommendEndpointMockMvcTest {
                 .totalCount(1)
                 .recommendations(List.of(item))
                 .build();
-        when(promptRecommendationService.recommendByPrompt(eq("제주"), eq(2), anyList())).thenReturn(main);
-        when(promptRecommendationService.recommendByPrompt(eq("제주"), eq(1), anyList())).thenReturn(main);
+        when(promptRecommendationService.recommendByPrompt(eq("제주"), eq(2), anyList(), isNull())).thenReturn(main);
+        when(promptRecommendationService.recommendByPrompt(eq("제주"), eq(1), anyList(), isNull())).thenReturn(main);
 
         PromptRecommendApiRequest body = new PromptRecommendApiRequest();
         body.setPrompt("제주");
@@ -129,9 +129,10 @@ class AiRecommendEndpointMockMvcTest {
         GuideRecommendResponse unfilteredTop1 = GuideRecommendResponse.builder()
                 .policyVersion(PV).totalCount(1).recommendations(List.of(topUnfiltered)).build();
 
-        when(promptRecommendationService.recommendByPrompt(eq("제주 힐링"), eq(3), anyList())).thenReturn(main);
-        when(promptRecommendationService.recommendByPrompt(eq("제주 힐링"), eq(1), anyList())).thenReturn(unfilteredTop1);
-        when(guideAvailabilityProvider.availableDates(1L, d, d)).thenReturn(List.of());
+        when(promptRecommendationService.recommendByPrompt(eq("제주 힐링"), eq(3), anyList(), any())).thenReturn(main);
+        when(promptRecommendationService.recommendByPrompt(eq("제주 힐링"), eq(1), anyList(), any())).thenReturn(unfilteredTop1);
+        when(guideAvailabilityProvider.availableDates(eq(2L), eq(d), eq(d))).thenReturn(List.of());
+        when(guideAvailabilityProvider.availableDates(eq(1L), eq(d), eq(d))).thenReturn(List.of());
 
         PromptRecommendApiRequest req = new PromptRecommendApiRequest();
         req.setPrompt("제주 힐링");
