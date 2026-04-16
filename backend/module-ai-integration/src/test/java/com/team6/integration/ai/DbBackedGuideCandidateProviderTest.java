@@ -31,10 +31,13 @@ import org.springframework.data.domain.Sort;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -333,5 +336,154 @@ class DbBackedGuideCandidateProviderTest {
                 any(),
                 any(Pageable.class)
         );
+    }
+
+    /**
+     * 회귀: 기간(from~to)에 대해 스케줄 쿼리가 동일 경계로 호출되고, 클라이언트 후보는 필터만 제거·비필터는 유지(특별 제시 조립용).
+     */
+    @Test
+    void regression_dateRange_clientPath_queriesScheduleAndKeepsUnfiltered() {
+        LocalDate from = LocalDate.of(2026, 4, 28);
+        LocalDate to = LocalDate.of(2026, 4, 30);
+        when(guideScheduleRepository.findGuideProfileIdsBookedAndPaidBetween(from, to, GuideScheduleStatus.BOOKED))
+                .thenReturn(List.of(9L));
+        List<GuideRecommendRequest.GuideCandidateDto> client = List.of(
+                GuideRecommendRequest.GuideCandidateDto.builder()
+                        .guideId(9L)
+                        .guideName("바쁜가이드")
+                        .region("제주")
+                        .guideStyle("로컬")
+                        .priceLevel("중간")
+                        .specialtyTags(List.of("맛집"))
+                        .languages(List.of("한국어"))
+                        .build(),
+                GuideRecommendRequest.GuideCandidateDto.builder()
+                        .guideId(10L)
+                        .guideName("여유가이드")
+                        .region("제주")
+                        .guideStyle("로컬")
+                        .priceLevel("중간")
+                        .specialtyTags(List.of("맛집"))
+                        .languages(List.of("한국어"))
+                        .build()
+        );
+        GuideCandidateBundle out =
+                provider.getCandidates("제주 맛집", 3, client, from, to);
+        assertThat(out.unfilteredCandidates()).hasSize(2);
+        assertThat(out.candidates()).hasSize(1);
+        assertThat(out.candidates().get(0).getGuideId()).isEqualTo(10L);
+        verify(guideScheduleRepository).findGuideProfileIdsBookedAndPaidBetween(from, to, GuideScheduleStatus.BOOKED);
+    }
+
+    /**
+     * 회귀: API에서 desiredTourDateFrom &gt; desiredTourDateTo 인 경우,
+     * {@link DbBackedGuideCandidateProvider}는 resolveBookedPaidGuideIds에서 from을 to 이하로 맞춰 단일 일자 구간으로 조회한다(현재 계약).
+     */
+    @Test
+    void regression_reversedDateBounds_normalizeScheduleQueryRange() {
+        LocalDate later = LocalDate.of(2026, 4, 30);
+        LocalDate earlier = LocalDate.of(2026, 4, 28);
+        when(guideScheduleRepository.findGuideProfileIdsBookedAndPaidBetween(earlier, earlier, GuideScheduleStatus.BOOKED))
+                .thenReturn(List.of(9L));
+        List<GuideRecommendRequest.GuideCandidateDto> client = List.of(
+                GuideRecommendRequest.GuideCandidateDto.builder()
+                        .guideId(9L)
+                        .guideName("A")
+                        .region("제주")
+                        .guideStyle("로컬")
+                        .priceLevel("중간")
+                        .specialtyTags(List.of("맛집"))
+                        .languages(List.of("한국어"))
+                        .build(),
+                GuideRecommendRequest.GuideCandidateDto.builder()
+                        .guideId(10L)
+                        .guideName("B")
+                        .region("제주")
+                        .guideStyle("로컬")
+                        .priceLevel("중간")
+                        .specialtyTags(List.of("맛집"))
+                        .languages(List.of("한국어"))
+                        .build()
+        );
+        provider.getCandidates("제주", 3, client, later, earlier);
+        verify(guideScheduleRepository).findGuideProfileIdsBookedAndPaidBetween(earlier, earlier, GuideScheduleStatus.BOOKED);
+    }
+
+    /**
+     * 회귀: DB 풀에서 기간 중 BOOKED+PAID인 가이드만 필터에서 빠지고, 비필터 풀에는 남아 특별 제시 비교에 쓸 수 있다.
+     */
+    @Test
+    void regression_dbPool_multiDayRange_excludesBookedFromFiltered_unfilteredRetainsBoth() {
+        LocalDate from = LocalDate.of(2026, 4, 28);
+        LocalDate to = LocalDate.of(2026, 4, 30);
+        when(guideScheduleRepository.findGuideProfileIdsBookedAndPaidBetween(from, to, GuideScheduleStatus.BOOKED))
+                .thenReturn(List.of(1L));
+
+        GuideProfile p1 = GuideProfile.builder()
+                .id(1L)
+                .memberId(10L)
+                .nickname("예약많음")
+                .region("제주")
+                .bio("카페 투어")
+                .language("한국어")
+                .pricePerHour(new BigDecimal("40000"))
+                .isApproved(true)
+                .isActive(true)
+                .build();
+        GuideProfile p2 = GuideProfile.builder()
+                .id(2L)
+                .memberId(11L)
+                .nickname("여유")
+                .region("제주")
+                .bio("해변 산책")
+                .language("한국어")
+                .pricePerHour(new BigDecimal("50000"))
+                .isApproved(true)
+                .isActive(true)
+                .build();
+        when(guideProfileRepository.findByIsApprovedTrueAndIsActiveTrueAndRegionEqualsIgnoreCase(
+                eq("제주"),
+                any(Pageable.class)
+        )).thenReturn(new PageImpl<>(List.of()));
+        when(guideProfileRepository.findByIsApprovedTrueAndIsActiveTrueAndRegionContainingIgnoreCase(
+                eq("제주"),
+                any(Pageable.class)
+        )).thenReturn(new PageImpl<>(List.of(p1, p2)));
+        when(guideFeedRepository.findByGuideProfile_IdInAndIsDeletedFalse(argThat(ids -> idSetEquals(ids, 1L, 2L))))
+                .thenReturn(List.of());
+        when(guideCareerRepository.findByGuideProfile_IdIn(argThat(ids -> idSetEquals(ids, 1L, 2L))))
+                .thenReturn(List.of());
+        when(refundRepository.countApprovedRefundsGroupedByGuideId(any(), eq(RefundStatus.APPROVED)))
+                .thenReturn(List.of());
+        when(matchRequestRepository.countAllGroupedByGuideId(argThat(ids -> idSetEquals(ids, 1L, 2L))))
+                .thenReturn(List.of());
+        when(matchRequestRepository.countByGuideIdAndStatusInGrouped(
+                argThat(ids -> idSetEquals(ids, 1L, 2L)),
+                eq(List.of(
+                        MatchRequestStatus.ACCEPTED,
+                        MatchRequestStatus.PAID,
+                        MatchRequestStatus.IN_PROGRESS,
+                        MatchRequestStatus.COMPLETED
+                ))
+        )).thenReturn(List.of());
+        when(chatRoomRepository.countRoomsGroupedByParticipantUserId(argThat(ids -> idSetEquals(ids, 10L, 11L))))
+                .thenReturn(List.of());
+
+        GuideCandidateBundle out =
+                provider.getCandidates("제주에서 힐링", 3, List.of(), from, to);
+
+        assertThat(out.unfilteredCandidates()).hasSize(2);
+        assertThat(out.unfilteredCandidates()).extracting(GuideRecommendRequest.GuideCandidateDto::getGuideId)
+                .containsExactlyInAnyOrder(1L, 2L);
+        assertThat(out.candidates()).hasSize(1);
+        assertThat(out.candidates().get(0).getGuideId()).isEqualTo(2L);
+        verify(guideScheduleRepository).findGuideProfileIdsBookedAndPaidBetween(from, to, GuideScheduleStatus.BOOKED);
+    }
+
+    private static boolean idSetEquals(List<Long> ids, Long a, Long b) {
+        if (ids == null) {
+            return false;
+        }
+        return new HashSet<>(ids).equals(Set.of(a, b));
     }
 }
