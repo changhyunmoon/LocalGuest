@@ -81,6 +81,7 @@ public class Member {
     }
 
     // 재가입
+
     public void reactivate(String encodedNewPassword, String newName, String newNickName) {
         this.status = Status.ACTIVE;
         this.password = encodedNewPassword;

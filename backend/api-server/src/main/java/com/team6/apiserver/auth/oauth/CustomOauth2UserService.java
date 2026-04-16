@@ -29,7 +29,6 @@ public class CustomOauth2UserService implements OAuth2UserService<OAuth2UserRequ
         OAuth2UserService<OAuth2UserRequest, OAuth2User> delegate = new DefaultOAuth2UserService();
         OAuth2User oAuth2User = delegate.loadUser(userRequest);
 
-
 //        String roleParam = request.getParameter("role");
 //        Role selectedRole = (roleParam != null && roleParam.equalsIgnoreCase("GUEST"))
 //                            ? Role.GUEST : Role.GUIDE;

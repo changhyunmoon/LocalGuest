@@ -11,6 +11,7 @@ import org.apache.coyote.BadRequestException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.slf4j.*;
 
 @Service
 @RequiredArgsConstructor
@@ -27,7 +28,6 @@ public class MemberService {
         // 암호화된 비밀번호 값으로 교체
         // [LOG] DEBUG : [Member-Domain] 비밀번호 암호화 수행 중...
         String encodedPassword = passwordEncoder.encode(member.getPassword());
-
 
         return memberRepository.findByEmailAndRole(member.getEmail(), member.getRole())
                 .map(existingMember -> {

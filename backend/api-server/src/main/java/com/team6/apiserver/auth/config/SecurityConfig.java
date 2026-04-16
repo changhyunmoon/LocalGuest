@@ -8,11 +8,13 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
@@ -56,7 +58,6 @@ public class SecurityConfig {
                         .requestMatchers("/oauth2/**").permitAll()
                         .requestMatchers("/login/**").permitAll()
                         .requestMatchers("/guides/**").permitAll()
-
                         // Swagger UI + OpenAPI (springdoc). context-path 사용 시 환경에 따라 둘 다 허용
                         .requestMatchers(
                                 "/v3/api-docs",
@@ -71,10 +72,27 @@ public class SecurityConfig {
 
                         // 2. 리뷰 조회는 비로그인 유저도 가능
                         .requestMatchers(HttpMethod.GET, "/reviews/**").permitAll()
+                        // 리뷰 등록, 수정, 삭제는 인증 필요
+                        .requestMatchers(HttpMethod.POST, "/reviews/**").authenticated()
+                        .requestMatchers(HttpMethod.PUT, "/reviews/**").authenticated()
+                        .requestMatchers(HttpMethod.DELETE, "/reviews/**").authenticated()
+                        .requestMatchers("/guides/**").permitAll()
 
                         // 3. 그 외 (리뷰 등록, 채팅, 마이페이지 등)는 무조건 로그인 필요
                         .anyRequest().authenticated()
                 )
+
+                // 인증 실패 시 리다이렉트 방지
+                .exceptionHandling(handler -> handler
+                        .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED))
+                )
+
+                // 일반 로그인 설정(로그인 폼 경로 지정)
+                .formLogin(form -> form
+                        .loginPage("/login")
+                        .permitAll()
+                )
+
                 // OAuth2 로그인 설정 추가
                 .oauth2Login(oauth2 -> oauth2
                         .userInfoEndpoint(userInfo ->

@@ -1,9 +1,8 @@
-package com.team6.domain.review.dto.reqeust;
+package com.team6.domain.review.dto.request;
 
 import jakarta.validation.constraints.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.aspectj.bridge.IMessage;
 
 @Getter
 @NoArgsConstructor

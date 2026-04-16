@@ -11,4 +11,12 @@ public class SecurityUtil {
         }
         return authentication.getName();
     }
+
+    public static String getCurrentUserRoleString() {
+        final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if(authentication == null || authentication.getAuthorities().isEmpty()) {
+            throw new RuntimeException("권한 정보가 없습니다.");
+        }
+        return authentication.getAuthorities().iterator().next().getAuthority();
+    }
 }
