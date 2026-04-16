@@ -69,7 +69,7 @@ public class AiController {
             headers = @Header(
                     name = RecommendationHttpHeaders.X_RECOMMENDATION_POLICY,
                     description = "룰 정책 버전(응답 body의 policyVersion과 동일). 캐시 키·디버깅에 활용 가능.",
-                    schema = @Schema(implementation = String.class, example = "2026.04.24")
+                    schema = @Schema(implementation = String.class, example = "2026.04.25")
             ),
             content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = GuideRecommendResponse.class))
     )
@@ -150,6 +150,9 @@ public class AiController {
                 .specialSuggestion(specialSuggestion)
                 .build();
 
+        // 날짜 필터로 후보가 모두 빠진 경우(원본 후보는 있었음)를 notice로 더 분명히 안내한다.
+        body = enrichNoticeForDateFilteredEmpty(request, bundle, from, to, body);
+
         // 6) 정책 버전을 헤더와 body에 함께 실어 응답한다.
         // 프론트는 recommendations로 추천 카드 UI를 그리고,
         // matchRequestDraft는 이후 매칭 요청 생성 단계의 기본값으로 재사용할 수 있다.
@@ -158,6 +161,53 @@ public class AiController {
         return ResponseEntity.ok()
                 .header(RecommendationHttpHeaders.X_RECOMMENDATION_POLICY, policy)
                 .body(body);
+    }
+
+    private static GuideRecommendResponse enrichNoticeForDateFilteredEmpty(
+            PromptRecommendApiRequest request,
+            GuideCandidateBundle bundle,
+            LocalDate from,
+            LocalDate to,
+            GuideRecommendResponse body
+    ) {
+        if (body == null || body.getTotalCount() > 0) {
+            return body;
+        }
+        if (from == null || to == null) {
+            return body;
+        }
+        if (bundle == null || bundle.candidates() == null || bundle.unfilteredCandidates() == null) {
+            return body;
+        }
+        if (!bundle.candidates().isEmpty()) {
+            return body;
+        }
+        if (bundle.unfilteredCandidates().isEmpty()) {
+            return body;
+        }
+        String extra = "선택한 날짜에 가능한 가이드가 적어 추천이 비었어요. 날짜를 바꾸거나 기간을 넓혀보세요.";
+        String notice = (body.getNotice() == null || body.getNotice().isBlank())
+                ? extra
+                : extra + " " + body.getNotice();
+
+        List<String> mergedCodes = new ArrayList<>();
+        mergedCodes.add(com.team6.module.ai.support.RecommendationNoticeCodes.DATE_FILTERED_NO_AVAILABLE);
+        if (body.getNoticeCodes() != null) {
+            mergedCodes.addAll(body.getNoticeCodes());
+        }
+
+        return GuideRecommendResponse.builder()
+                .conceptSummary(body.getConceptSummary())
+                .keywords(body.getKeywords())
+                .matchRequestDraft(body.getMatchRequestDraft())
+                .notice(notice)
+                .noticeCodes(mergedCodes)
+                .policyVersion(body.getPolicyVersion())
+                .promptParseConfidence(body.getPromptParseConfidence())
+                .totalCount(body.getTotalCount())
+                .recommendations(body.getRecommendations())
+                .specialSuggestion(body.getSpecialSuggestion())
+                .build();
     }
 
     private static LocalDate resolveDesiredFrom(PromptRecommendApiRequest request) {

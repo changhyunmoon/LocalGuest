@@ -22,7 +22,15 @@ public class GuideRecommendRequest {
     private List<String> requiredActivityTags;
     /** 파서가 약한 선호로 분류한 활동 태그(부분집합). */
     private List<String> niceToHaveActivityTags;
+    /** 파서가 강한 의도로 분류한 언어(부분집합). */
+    private List<String> requiredLanguages;
+    /** 파서가 약한 선호로 분류한 언어(부분집합). */
+    private List<String> niceToHaveLanguages;
     private List<String> preferredLanguages;
+    /** 사용자가 '근처/인접도 OK'를 명시했는지(정확 지역 후보가 충분해도 인접을 포함). */
+    private Boolean allowAdjacentRegion;
+    /** 예산 힌트가 강한 의도(꼭/필수)인지. */
+    private Boolean strictBudget;
     private Integer headcount;
     private Integer durationDays;
     private List<String> excludedActivityTags;

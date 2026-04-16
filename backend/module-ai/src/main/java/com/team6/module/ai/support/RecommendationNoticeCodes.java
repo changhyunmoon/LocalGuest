@@ -33,4 +33,9 @@ public final class RecommendationNoticeCodes {
     public static final String FALLBACK_RELAXED_REGION = "FALLBACK_RELAXED_REGION";
     /** 전략적 완화 체인을 모두 시도했으나 임계 이상으로 개선되지 않음 */
     public static final String FALLBACK_STRATEGIC_EXHAUSTED = "FALLBACK_STRATEGIC_EXHAUSTED";
+
+    /** 희망 기간으로 필터링한 후보가 비어 추천을 만들기 어려운 경우 */
+    public static final String DATE_FILTERED_NO_AVAILABLE = "DATE_FILTERED_NO_AVAILABLE";
+    /** 후보는 있으나 결과가 비어 전략적 완화까지 소진된 경우(조건이 과도하게 빡센 편) */
+    public static final String CONDITIONS_TOO_STRICT = "CONDITIONS_TOO_STRICT";
 }
