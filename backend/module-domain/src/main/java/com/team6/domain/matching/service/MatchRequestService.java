@@ -32,7 +32,8 @@ public class MatchRequestService {
 
     // 매칭 요청 생성
     public MatchRequestCreateResponse createMatchRequest(Long guestId, MatchRequestCreateRequest request) {
-        validateCreateRequest(guestId, request);
+        Long guideMemberId = resolveGuideMemberId(request.getGuideId());
+        validateCreateRequest(guestId, guideMemberId);
 
         String conceptSummary = resolveConceptSummary(request);
         MatchRequest matchRequest = MatchRequest.create(
@@ -47,7 +48,6 @@ public class MatchRequestService {
         );
 
         MatchRequest saved = matchRequestRepository.save(matchRequest);
-        Long guideMemberId = resolveGuideMemberId(saved.getGuideId());
         guideScheduleSyncClient.markPending(saved.getGuideId(), saved.getGuideScheduleId(), saved.getId(), guideMemberId);
         log.info("[F03-04] 매칭 요청 생성 — guestId={}, guideId={}", guestId, request.getGuideId());
         return MatchRequestCreateResponse.from(saved);
@@ -164,8 +164,8 @@ public class MatchRequestService {
     //.from()이라는 정적 팩토리 메서드를 호출하여 D
     // DTO로 변환한 뒤 반환
 
-    private void validateCreateRequest(Long guestId, MatchRequestCreateRequest request) {
-        if (guestId.equals(request.getGuideId())) {
+    private void validateCreateRequest(Long guestId, Long guideMemberId) {
+        if (guestId.equals(guideMemberId)) {
             throw new MatchingException(MatchingErrorCode.GUEST_GUIDE_SAME);
         }
     }

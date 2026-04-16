@@ -254,12 +254,14 @@ public class GuideScheduleService {
         return GuideScheduleResponse.from(schedule);
     }
 
-    // [matching 연동] 결제 완료 확정 — acceptSchedule 등으로 이미 BOOKED인 경우 isPaid만 true (courseDetail 잠금 해제)
+    // [matching 연동] 결제 완료 확정 — PENDING이면 BOOKED로 자동 전환 후 isPaid=true 처리
     @Transactional
     public GuideScheduleResponse markAsPaid(Long scheduleId, Long guideId, Long actorMemberId) {
         GuideSchedule schedule = getVerifiedSchedule(scheduleId, guideId);
 
-        if (schedule.getStatus() != GuideScheduleStatus.BOOKED) {
+        if (schedule.getStatus() == GuideScheduleStatus.PENDING) {
+            schedule.changeStatus(GuideScheduleStatus.BOOKED);
+        } else if (schedule.getStatus() != GuideScheduleStatus.BOOKED) {
             throw new GuideException(GuideErrorCode.SCHEDULE_NOT_BOOKED);
         }
 
