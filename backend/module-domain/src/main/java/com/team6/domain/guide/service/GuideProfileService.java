@@ -69,6 +69,9 @@ public class GuideProfileService {
                 .isApproved(true)
                 .residenceYears(request.getResidenceYears())
                 .localStory(request.getLocalStory())
+                .keywords(request.getKeywords())
+                .defaultCourse(request.getDefaultCourse())
+                .guideStyle(request.getGuideStyle())
                 .build();
 
         GuideProfile saved = guideProfileRepository.save(profile);
