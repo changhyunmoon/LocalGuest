@@ -59,6 +59,8 @@ public class GuideProfileService {
                 .region(request.getRegion())
                 .language(request.getLanguage())
                 .pricePerHour(request.getPricePerHour())
+                // 관리자 승인 단계는 현재 Stub 처리: 신청 즉시 승인 상태로 저장
+                .isApproved(true)
                 .residenceYears(request.getResidenceYears())
                 .localStory(request.getLocalStory())
                 .build();
@@ -110,6 +112,14 @@ public class GuideProfileService {
         GuideProfile profile = guideProfileRepository.findById(guideId)
                 .orElseThrow(() -> new GuideException(GuideErrorCode.GUIDE_NOT_FOUND));
 
+        return GuideProfileResponse.from(profile);
+    }
+
+    // 로그인 사용자의 가이드 프로필 조회 (guideId 추론 안정화용)
+    @Transactional(readOnly = true)
+    public GuideProfileResponse getMyProfile(Long memberId) {
+        GuideProfile profile = guideProfileRepository.findByMemberId(memberId)
+                .orElseThrow(() -> new GuideException(GuideErrorCode.GUIDE_NOT_FOUND));
         return GuideProfileResponse.from(profile);
     }
 

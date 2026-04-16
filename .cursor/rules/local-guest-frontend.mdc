@@ -1,0 +1,18 @@
+---
+alwaysApply: true
+---
+
+## LocalGuest 프론트엔드 (Vite + React)
+### 목표
+- 와이어프레임(F01 등) 기준: 상단 헤더, 좌측 사이드바(대시보드/검색 필터), 카드 그리드, 폼, 다크 푸터 패턴을 재사용 가능한 레이아웃으로 구현한다.
+- 백엔드 API와만 연동한다. 목 데이터는 스펙 확정 전 임시로만 사용하고, Swagger DTO와 필드명을 맞춘다.
+### API 기준
+- Base URL: `http://localhost:8080/api` (로컬). `vite.config.js`에 `server.proxy`로 `/api` → 백엔드 프록시 권장(CORS·쿠키 이슈 완화).
+- 주요 경로: `/auth/login`, `/members/join`, `/guides`, `/guides/{id}`, `/matching/requests`, `/matching/payments`, `/matching/extensions`, `/reviews`, AI 모듈 엔드포인트는 springdoc 확인.
+- 스키마 단일 진실: `http://localhost:8080/api` 기준 Swagger UI + `v3/api-docs`.
+### 구현 원칙
+- 라우팅 도입 시 URL은 기획/요구사항 화면 ID와 매핑 표를 PR/커밋 메시지에 남긴다.
+- API 모듈은 `src/api/` 등 한 곳에 모으고, fetch 래퍼에서 공통 에러·401 처리.
+- 민감 정보는 레포에 커밋하지 않는다. `.env.local`에 `VITE_API_BASE_URL`만 두고 기본값은 로컬 프록시 경로.
+### 되돌리기
+- 화면별 브랜치 또는 작은 단위 커밋. 레이아웃/테마 토큰을 먼저 고정한 뒤 페이지를 채운다.

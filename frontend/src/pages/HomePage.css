@@ -1,0 +1,346 @@
+/* F02 메인 — 서비스 소개, 추천 여행지, 로컬 전문가 */
+
+.f02 {
+  width: 100%;
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 0 0 2.5rem;
+  box-sizing: border-box;
+}
+
+.f02-hero {
+  background: linear-gradient(165deg, #3a3d44 0%, #2c2f35 100%);
+  border-radius: 20px;
+  padding: clamp(1.25rem, 4vw, 2rem);
+  margin-bottom: clamp(1.75rem, 4vw, 2.5rem);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.12);
+}
+
+.f02-hero-inner {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+  gap: clamp(1.25rem, 3vw, 2rem);
+  align-items: center;
+}
+
+@media (max-width: 768px) {
+  .f02-hero-inner {
+    grid-template-columns: 1fr;
+  }
+
+  .f02-hero-visual {
+    order: -1;
+    min-height: 200px;
+  }
+}
+
+.f02-notepad {
+  background: #fffef8;
+  border-radius: 12px;
+  padding: clamp(1.1rem, 3vw, 1.65rem) clamp(1.15rem, 3vw, 1.75rem);
+  box-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.06),
+    inset 0 0 0 1px rgba(0, 0, 0, 0.04);
+  background-image: linear-gradient(#f0f0f0 1px, transparent 1px);
+  background-size: 100% 1.5rem;
+  background-position: 0 0.85rem;
+}
+
+.f02-headline {
+  margin: 0 0 0.65rem;
+  font-size: clamp(1.15rem, 3.2vw, 1.45rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.35;
+  color: #1a1d21;
+  padding-top: 0.15rem;
+}
+
+.f02-desc {
+  margin: 0 0 1.15rem;
+  font-size: 0.88rem;
+  line-height: 1.55;
+  color: #4b5563;
+}
+
+.f02-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.65rem 1.2rem;
+  border-radius: 999px;
+  background: #1f2328;
+  color: #fff !important;
+  font-size: 0.88rem;
+  font-weight: 700;
+  text-decoration: none;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+}
+
+.f02-cta:hover {
+  background: #111418;
+}
+
+.f02-hero-visual {
+  position: relative;
+  min-height: 220px;
+}
+
+.f02-polaroid {
+  position: absolute;
+  width: min(52%, 200px);
+  background: #fff;
+  padding: 0.5rem 0.5rem 0.65rem;
+  border-radius: 3px;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+}
+
+.f02-polaroid--a {
+  right: 8%;
+  top: 6%;
+  transform: rotate(6deg);
+  z-index: 2;
+}
+
+.f02-polaroid--b {
+  left: 4%;
+  bottom: 4%;
+  transform: rotate(-8deg);
+  z-index: 1;
+}
+
+.f02-polaroid-tape {
+  position: absolute;
+  top: -5px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 48px;
+  height: 14px;
+  background: rgba(255, 255, 255, 0.55);
+  border-radius: 2px;
+}
+
+.f02-polaroid-tape--b {
+  left: 30%;
+  transform: rotate(-12deg);
+}
+
+.f02-polaroid-img {
+  aspect-ratio: 1;
+  border-radius: 2px;
+  background: linear-gradient(145deg, #d1d5db, #9ca3af);
+}
+
+.f02-polaroid-img--b {
+  background: linear-gradient(145deg, #e9d5ff, #c4b5fd);
+}
+
+.f02-polaroid-cap {
+  display: block;
+  margin-top: 0.4rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #374151;
+  text-align: center;
+}
+
+.f02-section {
+  margin-bottom: clamp(1.75rem, 4vw, 2.5rem);
+}
+
+.f02-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.f02-section-title {
+  margin: 0;
+  font-size: clamp(1.05rem, 2.5vw, 1.2rem);
+  font-weight: 800;
+  color: #1f2328;
+  letter-spacing: -0.02em;
+}
+
+.f02-section-title--solo {
+  margin-bottom: 1rem;
+}
+
+.f02-view-all {
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: #374151;
+  text-decoration: none;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  border: 1px solid #e5e7eb;
+}
+
+.f02-view-all:hover {
+  background: #f9fafb;
+}
+
+.f02-dest-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: clamp(0.65rem, 2vw, 1rem);
+}
+
+@media (max-width: 720px) {
+  .f02-dest-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.f02-dest-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.65rem 0.65rem 0.85rem;
+  background: #fff;
+  border-radius: 4px;
+  text-decoration: none;
+  color: inherit;
+  box-shadow: 0 8px 24px rgba(31, 35, 40, 0.08);
+  border: 1px solid #e8eaed;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.f02-dest-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 32px rgba(31, 35, 40, 0.12);
+}
+
+.f02-dest-tape {
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40px;
+  height: 14px;
+  background: linear-gradient(90deg, #fde68a, #fcd34d);
+  border-radius: 2px;
+  opacity: 0.95;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+.f02-dest-photo {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  border-radius: 2px;
+  margin-top: 0.35rem;
+  background: linear-gradient(160deg, #e5e7eb, #cbd5e1);
+}
+
+.f02-dest-name {
+  margin-top: 0.55rem;
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: #1f2328;
+}
+
+.f02-expert-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(0.75rem, 2vw, 1.25rem);
+}
+
+@media (max-width: 840px) {
+  .f02-expert-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.f02-expert-card {
+  background: #fff;
+  border: 1px solid #e8eaed;
+  border-radius: 14px;
+  padding: 1rem 1.05rem;
+  box-shadow: 0 4px 18px rgba(31, 35, 40, 0.05);
+}
+
+.f02-expert-link {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+
+.f02-expert-link:hover .f02-expert-name {
+  text-decoration: underline;
+}
+
+.f02-expert-top {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+}
+
+.f02-expert-avatar {
+  width: 3.25rem;
+  height: 3.25rem;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: linear-gradient(145deg, #e5e7eb, #d1d5db);
+  background-size: cover;
+  background-position: center;
+}
+
+.f02-expert-meta {
+  min-width: 0;
+}
+
+.f02-expert-rating {
+  margin: 0 0 0.15rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #b45309;
+}
+
+.f02-expert-name {
+  display: block;
+  font-size: 1rem;
+  font-weight: 800;
+  color: #1f2328;
+}
+
+.f02-expert-region {
+  font-size: 0.78rem;
+  color: #6b7280;
+}
+
+.f02-expert-bio {
+  margin: 0.75rem 0 0.65rem;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: #4b5563;
+}
+
+.f02-expert-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.f02-tag {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.2rem 0.45rem;
+  border-radius: 999px;
+  background: #f3f4f6;
+  color: #4b5563;
+  border: 1px solid #e5e7eb;
+}
+
+.f02-muted {
+  color: #6b7280;
+  font-size: 0.88rem;
+}
+
+.f02-err {
+  color: #b91c1c;
+  font-size: 0.88rem;
+}

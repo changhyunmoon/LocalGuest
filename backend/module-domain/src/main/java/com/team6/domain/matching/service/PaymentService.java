@@ -27,6 +27,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Comparator;
+import java.util.List;
 import java.util.UUID;
 
 @Slf4j
@@ -143,6 +145,16 @@ public class PaymentService {
         log.info("[Payment] Stub PG 승인 완료 — paymentId={}, pgTransactionId={}, paidAt={}, refundDeadline={}",
                 payment.getId(), pgTransactionId, payment.getPaidAt(), payment.getRefundDeadline());
         return PaymentResponseDto.from(payment);
+    }
+
+    @Transactional(readOnly = true)
+    public List<PaymentResponseDto> listPaymentsForGuest(Long guestId) {
+        return paymentRepository.findByPayerId(guestId).stream()
+                .sorted(Comparator
+                        .comparing(Payment::getPaidAt, Comparator.nullsLast(Comparator.reverseOrder()))
+                        .thenComparing(Comparator.comparing(Payment::getId).reversed()))
+                .map(PaymentResponseDto::from)
+                .toList();
     }
 
     @Transactional(readOnly = true)

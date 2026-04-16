@@ -34,14 +34,30 @@ public interface GuideScheduleRepository extends JpaRepository<GuideSchedule, Lo
                                       @Param("endTime") LocalTime endTime);
 
     /**
-     * 해당 날짜에 결제까지 완료된(BOOKED + isPaid) 스케줄이 있는 가이드 프로필 ID.
-     * AI 추천 등에서 동일 날짜 후보를 제외할 때 사용한다.
+     * 기간 중 결제까지 완료된(BOOKED + isPaid) 스케줄이 있는 가이드 프로필 ID.
+     * AI 추천 등에서 기간 내 하루라도 예약 불가한 가이드를 제외할 때 사용한다.
      */
     @Query("SELECT DISTINCT s.guideProfile.id FROM GuideSchedule s "
-            + "WHERE s.availableDate = :date AND s.status = :status AND s.isPaid = true "
+            + "WHERE s.availableDate BETWEEN :from AND :to AND s.status = :status AND s.isPaid = true "
             + "AND s.guideProfile.id IS NOT NULL")
-    List<Long> findGuideProfileIdsBookedAndPaidOnDate(
-            @Param("date") LocalDate date,
+    List<Long> findGuideProfileIdsBookedAndPaidBetween(
+            @Param("from") LocalDate from,
+            @Param("to") LocalDate to,
+            @Param("status") GuideScheduleStatus status
+    );
+
+    /**
+     * 특정 가이드에 대해, 기간 중 결제까지 완료된(BOOKED + isPaid) 스케줄의 날짜 목록.
+     * 특별 제시 안내에서 기간 내 가능한 날짜를 계산할 때 사용한다.
+     */
+    @Query("SELECT DISTINCT s.availableDate FROM GuideSchedule s "
+            + "WHERE s.guideProfile.id = :guideId "
+            + "AND s.availableDate BETWEEN :from AND :to "
+            + "AND s.status = :status AND s.isPaid = true")
+    List<LocalDate> findBookedPaidDatesByGuideIdBetween(
+            @Param("guideId") Long guideId,
+            @Param("from") LocalDate from,
+            @Param("to") LocalDate to,
             @Param("status") GuideScheduleStatus status
     );
 }

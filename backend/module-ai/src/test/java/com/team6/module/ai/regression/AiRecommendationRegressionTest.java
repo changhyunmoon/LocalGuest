@@ -34,6 +34,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * 룰 기반 AI 추천의 회귀(품질 퇴보)를 빠르게 감지하기 위한 테스트.
+ * <p>기간·후보 번들·특별 제시 등 HTTP 조립 계약은 {@link AiRecommendOrchestrationRegressionTest}를 참고한다.
  * <ul>
  *   <li>프롬프트 파싱 → 추천 엔진까지 end-to-end로 검증</li>
  *   <li>과도하게 빡센 기대값 대신 Top1 안정성·근거 필드 유효성 위주</li>

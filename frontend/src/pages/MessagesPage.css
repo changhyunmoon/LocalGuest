@@ -1,0 +1,258 @@
+.msg {
+  width: 100%;
+  max-width: 1120px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  gap: 0.9rem;
+}
+
+@media (max-width: 920px) {
+  .msg {
+    grid-template-columns: 1fr;
+  }
+}
+
+.msg-rooms {
+  background: #fff;
+  border: 1px solid #e8eaed;
+  border-radius: 16px;
+  padding: 0.85rem;
+  max-height: min(74vh, 720px);
+  overflow: auto;
+}
+
+.msg-rooms h2 {
+  margin: 0 0 0.6rem;
+  font-size: 0.95rem;
+  font-weight: 800;
+}
+
+.msg-rooms ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.msg-room-btn {
+  width: 100%;
+  text-align: left;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #fff;
+  padding: 0.55rem 0.65rem;
+  cursor: pointer;
+}
+
+.msg-room-btn.is-on {
+  border-color: #1f2328;
+  background: #f9fafb;
+}
+
+.msg-room-btn strong {
+  display: block;
+  font-size: 0.82rem;
+  margin-bottom: 0.2rem;
+}
+
+.msg-room-btn span {
+  display: block;
+  font-size: 0.75rem;
+  color: #6b7280;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.msg-panel {
+  background: #fff;
+  border: 1px solid #e8eaed;
+  border-radius: 16px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: min(74vh, 720px);
+}
+
+.msg-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.8rem 0.95rem;
+  border-bottom: 1px solid #eef0f3;
+}
+
+.msg-avatar {
+  width: 2.3rem;
+  height: 2.3rem;
+  border-radius: 50%;
+  background: #e5e7eb;
+}
+
+.msg-header-meta strong {
+  display: block;
+  font-size: 0.92rem;
+}
+
+.msg-header-meta span {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.msg-dot {
+  margin-left: auto;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: #9ca3af;
+  box-shadow: 0 6px 0 #9ca3af, 0 12px 0 #9ca3af;
+}
+
+.msg-body {
+  flex: 1;
+  overflow: auto;
+  padding: 1rem;
+  background: #f9fafb;
+}
+
+.msg-day {
+  margin: 0 auto 1rem;
+  width: fit-content;
+  background: #e5e7eb;
+  color: #6b7280;
+  border-radius: 999px;
+  padding: 0.18rem 0.65rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.msg-bubble-wrap {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.7rem;
+}
+
+.msg-bubble-wrap.mine {
+  justify-content: flex-end;
+}
+
+.msg-mini-avatar {
+  width: 1.7rem;
+  height: 1.7rem;
+  border-radius: 50%;
+  background: #e5e7eb;
+  margin-top: 0.2rem;
+}
+
+.msg-bubble-box {
+  max-width: min(86%, 380px);
+}
+
+.msg-bubble {
+  padding: 0.58rem 0.75rem;
+  border-radius: 13px;
+  font-size: 0.84rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.msg-bubble.other {
+  background: #fff;
+  border-top-left-radius: 4px;
+  border: 1px solid #e5e7eb;
+}
+
+.msg-bubble.mine {
+  background: #1f2328;
+  color: #fff;
+  border-top-right-radius: 4px;
+}
+
+.msg-bubble-box time {
+  display: block;
+  margin-top: 0.2rem;
+  font-size: 0.66rem;
+  color: #9ca3af;
+}
+
+.msg-bubble-wrap.mine .msg-bubble-box time {
+  text-align: right;
+}
+
+.msg-input-bar {
+  border-top: 1px solid #eef0f3;
+  padding: 0.7rem 0.8rem;
+  display: flex;
+  gap: 0.45rem;
+  align-items: center;
+  background: #fff;
+}
+
+.msg-plus {
+  width: 1.9rem;
+  height: 1.9rem;
+  border-radius: 50%;
+  border: 1px solid #e5e7eb;
+  background: #f9fafb;
+  color: #6b7280;
+  cursor: pointer;
+}
+
+.msg-input-bar input {
+  flex: 1;
+  border: 1px solid #e5e7eb;
+  border-radius: 999px;
+  padding: 0.5rem 0.75rem;
+  font: inherit;
+  font-size: 0.84rem;
+}
+
+.msg-send {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  border: none;
+  background: #1f2328;
+  color: #fff;
+  cursor: pointer;
+}
+
+.msg-send:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.msg-muted {
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+
+.msg-error {
+  margin: 0 0 0.75rem;
+  font-size: 0.8rem;
+  color: #b91c1c;
+}
+
+.msg-empty {
+  text-align: center;
+  padding: 2.8rem 1rem;
+}
+
+.msg-empty h1 {
+  margin: 0 0 0.5rem;
+  font-size: 1.25rem;
+}
+
+.msg-empty p {
+  margin: 0 0 1rem;
+  color: #6b7280;
+}
+
+.msg-empty a {
+  font-weight: 700;
+  color: #1f2328;
+}

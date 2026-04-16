@@ -1,0 +1,22 @@
+.soon {
+  text-align: center;
+  padding: 3rem 1rem;
+  max-width: 28rem;
+  margin: 0 auto;
+}
+
+.soon h1 {
+  margin: 0 0 0.75rem;
+  font-size: 1.35rem;
+}
+
+.soon p {
+  margin: 0 0 1.25rem;
+  color: #5c6370;
+  line-height: 1.55;
+}
+
+.soon a {
+  color: #1f2328;
+  font-weight: 600;
+}

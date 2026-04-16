@@ -21,10 +21,6 @@
           </set>
         </option>
       </GradleProjectSettings>
-      <GradleProjectSettings>
-        <option name="externalProjectPath" value="$PROJECT_DIR$/backend/api-server" />
-        <option name="gradleJvm" value="jbr-21" />
-      </GradleProjectSettings>
     </option>
   </component>
 </project>

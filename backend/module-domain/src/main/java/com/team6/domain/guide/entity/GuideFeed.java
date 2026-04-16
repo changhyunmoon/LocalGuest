@@ -27,7 +27,8 @@ public class GuideFeed extends BaseTimeEntity {
     @Column(columnDefinition = "TEXT", nullable = false)
     private String content; // 피드 본문 내용
 
-    @Column(name = "image_url", length = 500)
+    // 로컬 이미지 업로드(data URL) Stub 저장을 위해 길이 제한을 완화한다.
+    @Column(name = "image_url", columnDefinition = "LONGTEXT")
     private String imageUrl; // 피드 이미지 URL (선택)
 
     @Column(name = "is_deleted", nullable = false)

@@ -53,6 +53,14 @@ public class MatchRequestService {
         return MatchRequestCreateResponse.from(saved);
     }
 
+    /** 게스트 본인 매칭 요청 전체 (마이페이지 일정·스크랩북 등) */
+    @Transactional(readOnly = true)
+    public List<MatchRequestCreateResponse> getGuestRequests(Long guestId) {
+        return matchRequestRepository.findByGuestId(guestId).stream()
+                .map(MatchRequestCreateResponse::from)
+                .toList();
+    }
+
     // 가이드의 매칭 요청 목록 조회
     @Transactional(readOnly = true)
     public List<MatchRequestCreateResponse> getGuideRequests(Long guideId) {
