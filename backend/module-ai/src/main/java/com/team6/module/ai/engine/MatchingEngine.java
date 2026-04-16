@@ -147,6 +147,42 @@ public class MatchingEngine {
     }
 
     private static String buildComparisonHint(GuideRecommendItem top, GuideRecommendItem second) {
+        GuideRecommendItem.MatchedEvidence a = top.getMatched();
+        GuideRecommendItem.MatchedEvidence b = second.getMatched();
+
+        if (a != null && b != null) {
+            if (a.isRegion() && !b.isRegion()) {
+                return "희망 지역과 정확히 일치해 2순위보다 더 잘 맞아요.";
+            }
+            if (a.isRegionAdjacent() && !b.isRegion() && !b.isRegionAdjacent()) {
+                return "희망 지역과 가까운 인접권이라 2순위보다 조건에 더 가깝습니다.";
+            }
+            int langDelta = safeSize(a.getLanguages()) - safeSize(b.getLanguages());
+            if (langDelta >= 1) {
+                String langs = briefList(a.getLanguages());
+                return langs == null
+                        ? "요청하신 언어 안내가 가능해 2순위보다 더 적합해요."
+                        : "요청하신 언어(" + langs + ")가 가능해 2순위보다 더 적합해요.";
+            }
+            int tagDelta = safeSize(a.getTags()) - safeSize(b.getTags());
+            if (tagDelta >= 1) {
+                String tags = briefList(a.getTags());
+                return tags == null
+                        ? "관심 활동이 더 잘 맞아 2순위보다 앞섰어요."
+                        : "관심 활동(" + tags + ")이 더 잘 맞아 2순위보다 앞섰어요.";
+            }
+            if (a.isBudget() && !b.isBudget()) {
+                return "예산 구간이 더 정확히 맞아 2순위보다 우선 추천됐어요.";
+            }
+            if (a.isStyle() && !b.isStyle()) {
+                return "여행 스타일이 더 잘 맞아 2순위보다 우선 추천됐어요.";
+            }
+            int penaltyDelta = safeSize(b.getSoftPenaltyOverlapTags()) - safeSize(a.getSoftPenaltyOverlapTags());
+            if (penaltyDelta >= 1) {
+                return "부담 요소가 덜 겹쳐 2순위보다 더 적합해요.";
+            }
+        }
+
         int diff = top.getScore() - second.getScore();
         if (diff >= 10) {
             return "2순위보다 요청 조건에 더 가깝게 점수가 높아요.";
@@ -154,7 +190,31 @@ public class MatchingEngine {
         if (diff >= 4) {
             return "2순위와 비슷하지만 전체 근거에서 앞섭니다.";
         }
-        return "2순위와 점수는 비슷하고, 세부 활동·예산 근거에서 조금 더 맞아요.";
+        return "2순위와 점수는 비슷하고, 세부 근거에서 조금 더 맞아요.";
+    }
+
+    private static int safeSize(List<?> list) {
+        return list == null ? 0 : list.size();
+    }
+
+    /**
+     * UI용 짧은 목록(최대 2개) 문자열. 비어 있으면 null.
+     */
+    private static String briefList(List<String> values) {
+        if (values == null || values.isEmpty()) {
+            return null;
+        }
+        List<String> cleaned = values.stream()
+                .filter(v -> v != null && !v.isBlank())
+                .distinct()
+                .toList();
+        if (cleaned.isEmpty()) {
+            return null;
+        }
+        if (cleaned.size() == 1) {
+            return cleaned.get(0);
+        }
+        return cleaned.get(0) + ", " + cleaned.get(1);
     }
 
     /**
