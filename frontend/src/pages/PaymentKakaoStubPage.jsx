@@ -20,6 +20,7 @@ export function PaymentKakaoStubPage() {
   const paymentId = searchParams.get('paymentId') ?? ''
   const amount = searchParams.get('amount') ?? ''
   const pgOrderNo = searchParams.get('pgOrderNo') ?? ''
+  const pgToken = searchParams.get('pgToken') ?? ''
   const paymentType = searchParams.get('paymentType') ?? ''
   const requestId = searchParams.get('requestId') ?? ''
   const guideId = searchParams.get('guideId') ?? ''
@@ -55,6 +56,7 @@ export function PaymentKakaoStubPage() {
         json: {
           pgOrderNo,
           amount: Number(amount),
+          ...(pgToken ? { pgToken } : {}),
         },
       })
       const t = await res.text()

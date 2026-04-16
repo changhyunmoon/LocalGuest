@@ -78,6 +78,10 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT, "/reviews/**").authenticated()
                         .requestMatchers(HttpMethod.DELETE, "/reviews/**").authenticated()
 
+                        // 2.5 카카오페이 리다이렉트 콜백 (브라우저 리다이렉트로 Authorization 헤더가 없음)
+                        // context-path가 /api 인 환경도 있어 둘 다 허용한다.
+                        .requestMatchers("/matching/payments/kakao/**", "/api/matching/payments/kakao/**").permitAll()
+
                         // 3. 그 외 (리뷰 등록, 채팅, 마이페이지 등)는 무조건 로그인 필요
                         .anyRequest().authenticated()
                 )

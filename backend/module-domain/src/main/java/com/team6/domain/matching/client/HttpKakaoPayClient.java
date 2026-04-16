@@ -39,6 +39,11 @@ public class HttpKakaoPayClient implements KakaoPayClient {
     public ReadyResult ready(String partnerOrderId, String partnerUserId, String itemName, int totalAmount) {
         validateSecretKey();
 
+        // KakaoPay redirect includes pg_token only; we must embed our order identifier so the callback can resolve Payment.
+        String okUrl = approvalUrl + "?pgOrderNo=" + partnerOrderId;
+        String noUrl = cancelUrl + "?pgOrderNo=" + partnerOrderId;
+        String fail = failUrl + "?pgOrderNo=" + partnerOrderId;
+
         Map<String, Object> body = Map.of(
                 "cid", cid,
                 "partner_order_id", partnerOrderId,
@@ -47,9 +52,9 @@ public class HttpKakaoPayClient implements KakaoPayClient {
                 "quantity", 1,
                 "total_amount", totalAmount,
                 "tax_free_amount", 0,
-                "approval_url", approvalUrl,
-                "cancel_url", cancelUrl,
-                "fail_url", failUrl
+                "approval_url", okUrl,
+                "cancel_url", noUrl,
+                "fail_url", fail
         );
 
         try {
