@@ -31,6 +31,17 @@ public class ScoreCalculator {
         int score = 0;
         score += regionMatchPolicy.score(pref, guide);
         score += styleMatchPolicy.score(pref, guide);
+
+        // 범위 예산 매칭 분기는 운영 관측에 남긴다(정책 점수 의미는 BudgetMatchPolicy에 위임).
+        boolean rangeComparable =
+                pref.getBudgetMinWon() != null && pref.getBudgetMaxWon() != null
+                        && guide.getPriceMinWon() != null && guide.getPriceMaxWon() != null;
+        if (rangeComparable) {
+            boolean overlap = Math.max(pref.getBudgetMinWon(), guide.getPriceMinWon())
+                    <= Math.min(pref.getBudgetMaxWon(), guide.getPriceMaxWon());
+            recommendationMetrics.recordBudgetRangeMatch(overlap, AiRecommendationTuning.POLICY_VERSION);
+        }
+
         score += budgetMatchPolicy.score(pref, guide);
         score += activityMatchPolicy.score(pref, guide);
         score += languageMatchPolicy.score(pref, guide);

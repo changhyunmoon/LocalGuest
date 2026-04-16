@@ -450,51 +450,61 @@ public class PromptParser {
     }
 
     private String extractRegion(String prompt) {
-        if (containsAny(prompt, "부산")) return "부산";
-        if (containsAny(prompt, "서울")) return "서울";
-        if (containsAny(prompt, "제주", "제주도")) return "제주";
-        if (containsAny(prompt, "강릉")) return "강릉";
-        if (containsAny(prompt, "경주")) return "경주";
-        if (containsAny(prompt, "대구")) return "대구";
-        if (containsAny(prompt, "전주")) return "전주";
-        if (containsAny(prompt, "여수")) return "여수";
-        if (containsAny(prompt, "순천")) return "순천";
-        if (containsAny(prompt, "군산")) return "군산";
-        if (containsAny(prompt, "춘천")) return "춘천";
-        if (containsAny(prompt, "통영")) return "통영";
-        if (containsAny(prompt, "거제")) return "거제";
-        if (containsAny(prompt, "목포")) return "목포";
-        if (containsAny(prompt, "태안")) return "태안";
-        if (containsAny(prompt, "인천")) return "인천";
-        if (containsAny(prompt, "수원")) return "수원";
-        if (containsAny(prompt, "속초")) return "속초";
-        if (containsAny(prompt, "동해")) return "동해";
-        if (containsAny(prompt, "삼척")) return "삼척";
-        if (containsAny(prompt, "양양")) return "양양";
-        if (containsAny(prompt, "평창")) return "평창";
-        if (containsAny(prompt, "홍천")) return "홍천";
-        if (containsAny(prompt, "태백")) return "태백";
-        if (containsAny(prompt, "울산")) return "울산";
-        if (containsAny(prompt, "창원")) return "창원";
-        if (containsAny(prompt, "포항")) return "포항";
-        if (containsAny(prompt, "안동")) return "안동";
-        if (containsAny(prompt, "광주")) return "광주";
-        if (containsAny(prompt, "대전")) return "대전";
-        if (containsAny(prompt, "남해")) return "남해";
-        if (containsAny(prompt, "밀양")) return "밀양";
-        if (containsAny(prompt, "김해")) return "김해";
-        if (containsAny(prompt, "가평")) return "가평";
-        if (containsAny(prompt, "양평")) return "양평";
-        if (containsAny(prompt, "파주")) return "파주";
-        if (containsAny(prompt, "여주")) return "여주";
-        if (containsAny(prompt, "제천")) return "제천";
-        if (containsAny(prompt, "단양")) return "단양";
-        if (containsAny(prompt, "정선")) return "정선";
-        if (containsAny(prompt, "인제")) return "인제";
-        if (containsAny(prompt, "하동")) return "하동";
-        if (containsAny(prompt, "구례")) return "구례";
-        if (containsAny(prompt, "보성")) return "보성";
-        if (containsAny(prompt, "익산")) return "익산";
+        // 부정(말고/빼고/싫어 등) 주변에 있는 지역은 우선 제외하고, 가장 먼저 등장한 "긍정" 지역을 고른다.
+        List<RegionHit> hits = new ArrayList<>();
+        addRegionHitIfPresent(prompt, hits, "부산", "부산");
+        addRegionHitIfPresent(prompt, hits, "서울", "서울");
+        addRegionHitIfPresent(prompt, hits, "제주", "제주", "제주도");
+        addRegionHitIfPresent(prompt, hits, "강릉", "강릉");
+        addRegionHitIfPresent(prompt, hits, "경주", "경주");
+        addRegionHitIfPresent(prompt, hits, "대구", "대구");
+        addRegionHitIfPresent(prompt, hits, "전주", "전주");
+        addRegionHitIfPresent(prompt, hits, "여수", "여수");
+        addRegionHitIfPresent(prompt, hits, "순천", "순천");
+        addRegionHitIfPresent(prompt, hits, "군산", "군산");
+        addRegionHitIfPresent(prompt, hits, "춘천", "춘천");
+        addRegionHitIfPresent(prompt, hits, "통영", "통영");
+        addRegionHitIfPresent(prompt, hits, "거제", "거제");
+        addRegionHitIfPresent(prompt, hits, "목포", "목포");
+        addRegionHitIfPresent(prompt, hits, "태안", "태안");
+        addRegionHitIfPresent(prompt, hits, "인천", "인천");
+        addRegionHitIfPresent(prompt, hits, "수원", "수원");
+        addRegionHitIfPresent(prompt, hits, "속초", "속초");
+        addRegionHitIfPresent(prompt, hits, "동해", "동해");
+        addRegionHitIfPresent(prompt, hits, "삼척", "삼척");
+        addRegionHitIfPresent(prompt, hits, "양양", "양양");
+        addRegionHitIfPresent(prompt, hits, "평창", "평창");
+        addRegionHitIfPresent(prompt, hits, "홍천", "홍천");
+        addRegionHitIfPresent(prompt, hits, "태백", "태백");
+        addRegionHitIfPresent(prompt, hits, "울산", "울산");
+        addRegionHitIfPresent(prompt, hits, "창원", "창원");
+        addRegionHitIfPresent(prompt, hits, "포항", "포항");
+        addRegionHitIfPresent(prompt, hits, "안동", "안동");
+        addRegionHitIfPresent(prompt, hits, "광주", "광주");
+        addRegionHitIfPresent(prompt, hits, "대전", "대전");
+        addRegionHitIfPresent(prompt, hits, "남해", "남해");
+        addRegionHitIfPresent(prompt, hits, "밀양", "밀양");
+        addRegionHitIfPresent(prompt, hits, "김해", "김해");
+        addRegionHitIfPresent(prompt, hits, "가평", "가평");
+        addRegionHitIfPresent(prompt, hits, "양평", "양평");
+        addRegionHitIfPresent(prompt, hits, "파주", "파주");
+        addRegionHitIfPresent(prompt, hits, "여주", "여주");
+        addRegionHitIfPresent(prompt, hits, "제천", "제천");
+        addRegionHitIfPresent(prompt, hits, "단양", "단양");
+        addRegionHitIfPresent(prompt, hits, "정선", "정선");
+        addRegionHitIfPresent(prompt, hits, "인제", "인제");
+        addRegionHitIfPresent(prompt, hits, "하동", "하동");
+        addRegionHitIfPresent(prompt, hits, "구례", "구례");
+        addRegionHitIfPresent(prompt, hits, "보성", "보성");
+        addRegionHitIfPresent(prompt, hits, "익산", "익산");
+
+        RegionHit best = hits.stream()
+                .filter(h -> !h.negated())
+                .min(Comparator.comparingInt(RegionHit::index))
+                .orElse(null);
+        if (best != null) {
+            return best.canonical();
+        }
         return resolveRegionFromAliases(prompt);
     }
 
@@ -503,11 +513,30 @@ public class PromptParser {
      */
     private String resolveRegionFromAliases(String prompt) {
         for (Map.Entry<String, String> e : regionAliasEntries) {
-            if (prompt.contains(e.getKey())) {
+            String alias = e.getKey();
+            if (alias == null || alias.isBlank()) continue;
+            int idx = prompt.indexOf(alias);
+            if (idx >= 0 && !isNegatedAround(prompt, idx, alias.length())) {
                 return e.getValue();
             }
         }
         return null;
+    }
+
+    private record RegionHit(int index, String canonical, boolean negated) {
+    }
+
+    private void addRegionHitIfPresent(String prompt, List<RegionHit> hits, String canonical, String... keywords) {
+        for (String keyword : keywords) {
+            if (keyword == null || keyword.isBlank()) continue;
+            String k = keyword.toLowerCase(Locale.ROOT);
+            int idx = prompt.indexOf(k);
+            while (idx >= 0) {
+                boolean neg = isNegatedAround(prompt, idx, k.length());
+                hits.add(new RegionHit(idx, canonical, neg));
+                idx = prompt.indexOf(k, idx + k.length());
+            }
+        }
     }
 
     private static List<Map.Entry<String, String>> buildRegionAliasEntries(LocalGuestAiProperties props) {

@@ -71,6 +71,7 @@ class AiRecommendEndpointMockMvcTest {
     void postRecommend_returnsJson_andPolicyHeader() throws Exception {
         when(promptParser.extractDesiredTourDateRange(any())).thenReturn(null);
         when(clickStore.recentClickCount(any())).thenReturn(0);
+        when(clickStore.debiasedClickScore(any())).thenReturn(0);
 
         GuideRecommendRequest.GuideCandidateDto dto = GuideRecommendRequest.GuideCandidateDto.builder()
                 .guideId(7L)
@@ -119,6 +120,7 @@ class AiRecommendEndpointMockMvcTest {
     void postRecommend_serializesSpecialSuggestion_whenOrchestrationProducesIt() throws Exception {
         when(promptParser.extractDesiredTourDateRange(any())).thenReturn(null);
         when(clickStore.recentClickCount(any())).thenReturn(0);
+        when(clickStore.debiasedClickScore(any())).thenReturn(0);
 
         LocalDate d = LocalDate.of(2026, 4, 28);
         GuideRecommendRequest.GuideCandidateDto a = GuideRecommendRequest.GuideCandidateDto.builder()
@@ -161,7 +163,7 @@ class AiRecommendEndpointMockMvcTest {
 
     @Test
     void postRecommendClick_returns204() throws Exception {
-        doNothing().when(clickStore).recordClick(7L);
+        doNothing().when(clickStore).recordClick(7L, 1);
         AiRecommendClickRequest body = new AiRecommendClickRequest();
         body.setGuideId(7L);
         body.setRank(1);

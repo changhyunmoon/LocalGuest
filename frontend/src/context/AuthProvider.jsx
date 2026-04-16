@@ -1,12 +1,13 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 
-import { apiLogin, apiRequest } from '../api/client'
+import { apiLogin, apiRequest, setUnauthorizedHandler, toUserErrorMessage } from '../api/client'
 import { clearStoredGuideId } from '../lib/guideId.js'
 import { getEmailFromToken, getRoleFromToken, parseJwtPayload } from '../lib/jwt'
 
 import { AuthContext } from './auth-context.js'
 
 const TOKEN_KEY = 'localguest_access_token'
+const LOGIN_FLASH_KEY = 'login_flash'
 
 export function AuthProvider({ children }) {
   const [token, setTokenState] = useState(() => {
@@ -27,6 +28,15 @@ export function AuthProvider({ children }) {
     }
     setTokenState(next)
   }, [])
+
+  useEffect(() => {
+    setUnauthorizedHandler(() => {
+      sessionStorage.setItem(LOGIN_FLASH_KEY, toUserErrorMessage(401))
+      clearStoredGuideId()
+      setToken(null)
+    })
+    return () => setUnauthorizedHandler(null)
+  }, [setToken])
 
   const claims = useMemo(() => parseJwtPayload(token ?? ''), [token])
   const email = token ? getEmailFromToken(token) : null
@@ -53,18 +63,15 @@ export function AuthProvider({ children }) {
       }
 
       if (!attempt.res.ok) {
-        let message = '로그인에 실패했습니다.'
-        try {
-          const body = JSON.parse(attempt.text)
-          if (body?.message) {
-            message = body.message
-          }
-        } catch {
-          if (attempt.text) {
-            message = attempt.text
+        let payload = attempt.text
+        if (attempt.text?.startsWith('{') || attempt.text?.startsWith('[')) {
+          try {
+            payload = JSON.parse(attempt.text)
+          } catch {
+            payload = attempt.text
           }
         }
-        throw new Error(message)
+        throw new Error(toUserErrorMessage(attempt.res.status, payload))
       }
 
       // 최신 백엔드: TokenResponse(JSON), 레거시: plain JWT 문자열

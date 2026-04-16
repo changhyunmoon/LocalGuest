@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 
-import { apiRequest } from '../api/client'
+import { apiRequest, toUserErrorMessage } from '../api/client'
 
 import './SignupPage.css'
 
@@ -196,12 +196,15 @@ export function SignupPage() {
       })
       const text = await res.text()
       if (!res.ok) {
-        try {
-          const j = JSON.parse(text)
-          setError(j.message ?? '가입에 실패했습니다.')
-        } catch {
-          setError(text || '가입에 실패했습니다.')
+        let payload = text
+        if (text?.trim().startsWith('{') || text?.trim().startsWith('[')) {
+          try {
+            payload = JSON.parse(text)
+          } catch {
+            payload = text
+          }
         }
+        setError(toUserErrorMessage(res.status, payload))
         return
       }
       let memberId = null
