@@ -86,7 +86,7 @@ public class AiController {
             headers = @Header(
                     name = RecommendationHttpHeaders.X_RECOMMENDATION_POLICY,
                     description = "룰 정책 버전(응답 body의 policyVersion과 동일). 캐시 키·디버깅에 활용 가능.",
-                    schema = @Schema(implementation = String.class, example = "2026.04.27")
+                    schema = @Schema(implementation = String.class, example = "2026.04.28")
             ),
             content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = GuideRecommendResponse.class))
     )
@@ -202,7 +202,7 @@ public class AiController {
         String clientReqId = request == null ? null : request.getClientRequestId();
 
         recommendationMetrics.recordRecommendationClick(rank, pv);
-        clickStore.recordClick(guideId);
+        clickStore.recordClick(guideId, rank);
         String prompt = request == null ? null : request.getPrompt();
         Integer promptHash = (prompt == null || prompt.isBlank()) ? null : promptHash(prompt);
         log.info("[AI_RECOMMEND_CLICK] policyVer={} guideId={} rank={} promptHash={} clientReqId={}",
@@ -233,6 +233,7 @@ public class AiController {
                 continue;
             }
             int clicks = clickStore.recentClickCount(c.getGuideId());
+            int debiasedClicks = clickStore.debiasedClickScore(c.getGuideId());
             int exposures = exposureStore.recentExposureCount(sessionId, c.getGuideId());
             out.add(GuideRecommendRequest.GuideCandidateDto.builder()
                     .guideId(c.getGuideId())
@@ -251,6 +252,7 @@ public class AiController {
                     .representativeImageUrl(c.getRepresentativeImageUrl())
                     .publicFeedThumbnailUrls(c.getPublicFeedThumbnailUrls())
                     .recommendClickCount(clicks)
+                    .recommendClickDebiasedScore(debiasedClicks)
                     .recommendExposureCount(exposures)
                     .build());
         }
@@ -261,11 +263,14 @@ public class AiController {
         if (sessionId == null || sessionId.isBlank() || main == null || main.getRecommendations() == null) {
             return;
         }
+        int rank = 1;
         for (GuideRecommendItem item : main.getRecommendations()) {
             if (item == null) {
                 continue;
             }
             exposureStore.recordExposure(sessionId, item.getGuideId());
+            clickStore.recordExposure(item.getGuideId(), rank);
+            rank++;
         }
     }
     private static int promptHash(String prompt) {

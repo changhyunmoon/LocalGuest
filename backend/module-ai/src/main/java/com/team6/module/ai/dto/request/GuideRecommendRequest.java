@@ -112,6 +112,9 @@ public class GuideRecommendRequest {
         @Schema(description = "추천 카드 클릭 집계(관심/탐색 신호). 미전달 시 미반영")
         private Integer recommendClickCount;
 
+        @Schema(description = "포지션(노출 순위) 편향을 보정한 클릭 신호 점수. 미전달 시 미반영")
+        private Integer recommendClickDebiasedScore;
+
         @Schema(description = "동일 세션 내 최근 추천 노출 횟수(반복 추천 완화용). 미전달 시 미반영")
         private Integer recommendExposureCount;
     }

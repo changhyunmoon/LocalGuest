@@ -67,9 +67,11 @@ public class FeedbackMatchPolicy {
         }
 
         Integer clicks = guide.getRecommendClickCount();
-        if (clicks != null && clicks > 0) {
+        Integer debiased = guide.getRecommendClickDebiasedScore();
+        int clickSignal = (debiased != null && debiased > 0) ? debiased : (clicks == null ? 0 : clicks);
+        if (clickSignal > 0) {
             bonus += Math.min(
-                    clicks * scoring.recommendClickBonusPerCount(),
+                    clickSignal * scoring.recommendClickBonusPerCount(),
                     scoring.recommendClickBonusMax()
             );
         }
