@@ -30,10 +30,20 @@ import static com.team6.module.ai.support.AiRecommendationTuning.POLICY_VERSION;
 @Slf4j
 public class PromptRecommendationService {
 
+    // 자연어 프롬프트를 구조화된 추천 요청(region/style/tags/langs...)으로 바꾸는 파서.
     private final PromptParser promptParser;
+
+    // 실제 추천 엔진 진입점.
+    // 현재 구현은 AiRecommendationServiceImpl -> MatchingEngine 흐름으로 이어진다.
     private final AiRecommendationService aiRecommendationService;
+
+    // 요청 지역 후보가 너무 적을 때 인접 지역 확장 판단에 사용한다.
     private final AdjacentRegionProvider adjacentRegionProvider;
+
+    // 호출 수, fallback 발생, 지연 시간 같은 운영 관측 지표를 기록한다.
     private final AiRecommendationMetrics metrics;
+
+    // 운영 중 조정 가능한 추천 임계값(low-signal 점수, fallback 개선폭 등) 스냅샷.
     private final ScoringPolicySnapshot scoringPolicy;
 
     public PromptRecommendationService(
@@ -71,15 +81,22 @@ public class PromptRecommendationService {
             Integer topN,
             List<GuideRecommendRequest.GuideCandidateDto> guideCandidates
     ) {
+        // PromptRecommendationService는 F03 추천의 "흐름 조정자" 역할을 한다.
+        // 여기서는 프롬프트를 파싱하고, 후보군을 보정하고, 추천을 실행하고,
+        // 부족한 결과면 fallback을 시도한 뒤 최종 응답(conceptSummary/keywords/notice)을 만든다.
         long startNs = System.nanoTime();
         metrics.recordPromptRecommendCall();
 
         try {
+            // 1) topN 기본값을 보정하고, 자연어 프롬프트를 추천용 구조로 변환한다.
             Integer resolvedTopN = (topN == null || topN <= 0)
                     ? AiRecommendationTuning.DEFAULT_TOP_N
                     : topN;
             GuideRecommendRequest parsed = promptParser.parse(prompt, resolvedTopN, guideCandidates);
 
+            // 2) 지역이 없으면 추천 품질이 크게 떨어지기 때문에 여기서 바로 short-circuit 한다.
+            // 대신 빈 응답만 보내지 않고 conceptSummary / keywords / matchRequestDraft는 같이 만들어
+            // 프론트가 "무엇을 더 입력해야 하는지" 안내할 수 있게 한다.
             if (!notBlank(parsed.getRegion())) {
                 GuideRecommendResponse empty = GuideRecommendResponse.builder()
                         .totalCount(0)
@@ -114,6 +131,8 @@ public class PromptRecommendationService {
                 return out;
             }
 
+            // 3) 정확히 같은 지역의 후보가 부족하면, 인접 지역까지 후보 풀을 넓혀본다.
+            // 이 단계는 추천 점수 계산 전 "후보군 보정"에 해당한다.
             RegionCandidateExpansion.Result expansion =
                 RegionCandidateExpansion.apply(
                         parsed.getGuideCandidates(),
@@ -121,7 +140,9 @@ public class PromptRecommendationService {
                         adjacentRegionProvider::neighbors
                 );
 
-        GuideRecommendRequest effective = GuideRecommendRequest.builder()
+        // 4) 실제 점수 계산에 넣을 최종 요청 객체를 다시 만든다.
+        // parsed는 파서 원본 결과, effective는 인접 지역 확장까지 반영된 계산용 최종본이라고 보면 된다.
+            GuideRecommendRequest effective = GuideRecommendRequest.builder()
                 .region(parsed.getRegion())
                 .travelStyle(parsed.getTravelStyle())
                 .budgetLevel(parsed.getBudgetLevel())
@@ -136,36 +157,46 @@ public class PromptRecommendationService {
                 .guideCandidates(expansion.candidates())
                 .build();
 
-        GuideRecommendResponse base = aiRecommendationService.recommend(effective);
-        FallbackOutcome fallback = resolveFallbackWithStrategicRelaxation(effective, base);
-        GuideRecommendResponse finalBase = fallback.responseAfterFallback();
+            // 5) 1차 추천을 수행한다.
+            // 이 시점의 base는 조건을 그대로 적용했을 때의 첫 추천 결과다.
+            GuideRecommendResponse base = aiRecommendationService.recommend(effective);
 
-        String parseConfidence = computePromptParseConfidence(parsed);
-        List<String> ambiguityCodes = collectAmbiguityNoticeCodes(prompt, parsed);
-        List<String> parserHints = parsed.getParserNoticeCodes() == null ? List.of() : parsed.getParserNoticeCodes();
-        logParserTuningSignals(prompt, parsed, parseConfidence, ambiguityCodes, parserHints);
+            // 6) 결과가 없거나 점수가 너무 약하면 활동 태그 -> 스타일 -> 지역 순으로
+            // 한 단계씩만 완화하는 전략적 fallback을 시도한다.
+            FallbackOutcome fallback = resolveFallbackWithStrategicRelaxation(effective, base);
+            GuideRecommendResponse finalBase = fallback.responseAfterFallback();
 
-        String notice = fallback.fallbackNotice();
-        if (expansion.expansionUsed()) {
-            notice = mergeNotice(NOTICE_ADJACENT_INCLUDED, notice);
-            metrics.recordRegionExpansion();
-        }
-        int effectivePoolSizeForNotice = poolSize(expansion.candidates());
-        if (effectivePoolSizeForNotice == 1 && finalBase.getTotalCount() > 0) {
-            notice = mergeNotice(NOTICE_SPARSE_GUIDE_POOL, notice);
-            metrics.recordSparsePoolNotice();
-        }
-        notice = enrichNoticeForParseQuality(notice, parseConfidence, ambiguityCodes);
+            // 7) 파싱 결과가 얼마나 풍부한지(HIGH/MEDIUM/LOW), 어떤 모호함이 있었는지 계산한다.
+            // 이 값들은 추천 점수 자체보다 notice/로그/운영 튜닝에 더 가깝게 쓰인다.
+            String parseConfidence = computePromptParseConfidence(parsed);
+            List<String> ambiguityCodes = collectAmbiguityNoticeCodes(prompt, parsed);
+            List<String> parserHints = parsed.getParserNoticeCodes() == null ? List.of() : parsed.getParserNoticeCodes();
+            logParserTuningSignals(prompt, parsed, parseConfidence, ambiguityCodes, parserHints);
 
-        if (fallback.attemptedRelaxChain()) {
-            String metricStage = fallback.winningRelaxStage() != RelaxStage.NONE
-                    ? fallback.winningRelaxStage().name()
-                    : "STRATEGIC_EXHAUSTED";
-            metrics.recordFallback(metricStage);
-            boolean adopted = fallback.winningRelaxStage() != RelaxStage.NONE;
-            metrics.recordStrategicFallbackOutcome(adopted, POLICY_VERSION);
-        }
+            // 8) 사용자에게 보여줄 notice 문구를 조립한다.
+            // 인접 지역 확장, 후보 수 부족, 파싱 애매함, fallback 재시도 여부를 합쳐 한 문장으로 만든다.
+            String notice = fallback.fallbackNotice();
+            if (expansion.expansionUsed()) {
+                notice = mergeNotice(NOTICE_ADJACENT_INCLUDED, notice);
+                metrics.recordRegionExpansion();
+            }
+            int effectivePoolSizeForNotice = poolSize(expansion.candidates());
+            if (effectivePoolSizeForNotice == 1 && finalBase.getTotalCount() > 0) {
+                notice = mergeNotice(NOTICE_SPARSE_GUIDE_POOL, notice);
+                metrics.recordSparsePoolNotice();
+            }
+            notice = enrichNoticeForParseQuality(notice, parseConfidence, ambiguityCodes);
 
+            if (fallback.attemptedRelaxChain()) {
+                String metricStage = fallback.winningRelaxStage() != RelaxStage.NONE
+                        ? fallback.winningRelaxStage().name()
+                        : "STRATEGIC_EXHAUSTED";
+                metrics.recordFallback(metricStage);
+                boolean adopted = fallback.winningRelaxStage() != RelaxStage.NONE;
+                metrics.recordStrategicFallbackOutcome(adopted, POLICY_VERSION);
+            }
+
+            // 9) 프론트가 기계적으로 처리할 수 있도록 notice를 코드 목록으로도 만든다.
             List<String> noticeCodes = buildNoticeCodes(
                     fallback,
                     expansion.expansionUsed(),
@@ -177,6 +208,7 @@ public class PromptRecommendationService {
             );
             metrics.recordOutcome(finalBase.getTotalCount() > 0 ? "success" : "empty");
 
+            // 10) 운영 디버깅용 구조화 로그를 남긴다.
             logRecommendation(
                     prompt,
                     parsed,
@@ -190,6 +222,9 @@ public class PromptRecommendationService {
                     expansion.exactCount()
             );
 
+            // 11) 최종 응답을 만든다.
+            // conceptSummary/keywords는 설명용, matchRequestDraft는 이후 매칭 요청 생성 단계 재사용용,
+            // recommendations는 실제 카드 UI에 쓰이는 추천 결과 목록이다.
             GuideRecommendResponse out = GuideRecommendResponse.builder()
                     .conceptSummary(ConceptSummaryGenerator.generate(parsed))
                     .keywords(keywordsFrom(parsed))
@@ -204,6 +239,7 @@ public class PromptRecommendationService {
             recordDistributionMetrics(out, poolSize(expansion.candidates()));
             return out;
         } finally {
+            // 성공/실패와 상관없이 전체 추천 파이프라인 소요 시간을 남긴다.
             metrics.recordRecommendationLatencyNanos(System.nanoTime() - startNs, POLICY_VERSION);
         }
     }
@@ -265,6 +301,8 @@ public class PromptRecommendationService {
     }
 
     private void recordDistributionMetrics(GuideRecommendResponse response, int effectivePoolSize) {
+        // 추천 품질을 운영에서 관찰하기 위한 보조 지표.
+        // Top1 점수와 실제 계산에 쓴 후보 풀 크기를 함께 기록한다.
         metrics.recordEffectivePoolSize(effectivePoolSize, POLICY_VERSION);
         if (response.getRecommendations() != null && !response.getRecommendations().isEmpty()) {
             metrics.recordTop1Score(response.getRecommendations().get(0).getScore(), POLICY_VERSION);
@@ -272,6 +310,8 @@ public class PromptRecommendationService {
     }
 
     private static GuideRecommendResponse.Keywords keywordsFrom(GuideRecommendRequest request) {
+        // 파서가 읽어낸 조건을 프론트에 구조화 형태로 다시 노출한다.
+        // 디버깅, UI 표시, 이후 매칭 요청 폼 기본값 구성에 함께 쓸 수 있다.
         return GuideRecommendResponse.Keywords.builder()
                 .region(request.getRegion())
                 .travelStyle(request.getTravelStyle())
@@ -287,6 +327,8 @@ public class PromptRecommendationService {
     }
 
     private static GuideRecommendResponse.MatchRequestDraft matchRequestDraftFrom(GuideRecommendRequest request) {
+        // AI 추천 응답을 바로 매칭 요청 생성 화면으로 연결하기 위한 초안 데이터다.
+        // matching 모듈을 직접 호출하는 건 아니고, 프론트가 이 draft를 읽어 요청 폼 기본값으로 쓴다.
         return GuideRecommendResponse.MatchRequestDraft.builder()
                 .destination(request.getRegion())
                 .concept(ConceptSummaryGenerator.generateMatchRequestConcept(request))
@@ -322,6 +364,7 @@ public class PromptRecommendationService {
             List<String> ambiguityCodes,
             String parseConfidence
     ) {
+        // 사람이 읽는 notice와 별개로, 프론트가 로직 분기/배지 처리에 쓸 수 있도록 코드 형태도 함께 만든다.
         LinkedHashSet<String> codes = new LinkedHashSet<>();
         if (fallback.coreNoticeCodes() != null) {
             codes.addAll(fallback.coreNoticeCodes());
@@ -364,6 +407,7 @@ public class PromptRecommendationService {
             String parseConfidence,
             List<String> ambiguityCodes
     ) {
+        // 파싱이 애매했던 경우에는 사용자에게 "예산/기간을 더 구체적으로 적어달라"는 힌트를 notice에 덧붙인다.
         String out = notice;
         if (ambiguityCodes != null && ambiguityCodes.contains(RecommendationNoticeCodes.PROMPT_BUDGET_AMBIGUOUS)) {
             out = mergeNotice(out, NOTICE_BUDGET_VAGUE);
@@ -418,6 +462,8 @@ public class PromptRecommendationService {
      * 지역은 파싱됐을 때, 그 외 신호가 얼마나 풍부한지에 대한 룰 기반 등급.
      */
     private static String computePromptParseConfidence(GuideRecommendRequest p) {
+        // region만 있는 프롬프트와, region/style/budget/tags/langs/...가 풍부한 프롬프트를 구분해
+        // 추천 결과 해석 난이도를 HIGH/MEDIUM/LOW로 표시하는 간단 룰이다.
         int dims = 0;
         if (notBlank(p.getRegion())) {
             dims++;
@@ -506,6 +552,8 @@ public class PromptRecommendationService {
             GuideRecommendRequest effective,
             GuideRecommendResponse base
     ) {
+        // fallback은 "아무 기준 없이 다 풀어버리는" 방식이 아니라,
+        // 정보 손실이 상대적으로 적은 조건부터 차례대로 완화하는 전략을 쓴다.
         int candidateCount = effective.getGuideCandidates() == null ? 0 : effective.getGuideCandidates().size();
         if (candidateCount == 0) {
             return FallbackOutcome.errorNotice(
@@ -527,6 +575,7 @@ public class PromptRecommendationService {
         int score = topScore(base);
         boolean lowScore = !noResults && score < scoringPolicy.lowSignalScoreThreshold();
         if (!noResults && !lowScore) {
+            // 결과가 충분하면 fallback 없이 그대로 채택한다.
             return FallbackOutcome.noRelax(base);
         }
 
@@ -560,6 +609,8 @@ public class PromptRecommendationService {
             GuideRecommendResponse baseline,
             ScoringPolicySnapshot scoring
     ) {
+        // 언어는 사용자가 강하게 원하는 경우가 많아서 끝까지 고정하고,
+        // activity -> style -> region 순으로만 하나씩 완화한다.
         GuideRecommendRequest current = languageAnchor;
         for (RelaxStage step : STRATEGIC_RELAX_ORDER) {
             if (!isStrategicRelaxApplicable(current, step)) {
@@ -678,6 +729,8 @@ public class PromptRecommendationService {
             int expansionExactCount
     ) {
         try {
+            // 추천 품질 이슈가 생겼을 때 promptHash, 후보 수, fallback 단계, Top1 reason code 등으로
+            // 운영 로그에서 빠르게 역추적할 수 있게 남기는 구조화 로그다.
             int promptHash = promptHash(prompt);
             int candidateCount = guideCandidates == null ? 0 : guideCandidates.size();
             int baseTopScore = topScore(base);
