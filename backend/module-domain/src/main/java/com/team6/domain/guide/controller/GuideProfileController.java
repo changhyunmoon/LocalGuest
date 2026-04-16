@@ -7,12 +7,8 @@ import com.team6.domain.guide.dto.response.GuideDetailResponse;
 import com.team6.domain.guide.dto.response.GuideProfileResponse;
 import com.team6.domain.guide.dto.response.GuideReviewSummaryResponse;
 import com.team6.domain.guide.dto.response.GuideSettlementResponse;
-import com.team6.domain.guide.exception.GuideErrorCode;
-import com.team6.domain.guide.exception.GuideException;
 import com.team6.domain.guide.service.GuideProfileService;
-import com.team6.domain.member.entity.Member;
-import com.team6.domain.member.repository.MemberRepository;
-import com.team6.module.common.global.util.SecurityUtil;
+import com.team6.domain.guide.support.GuideAuthenticationSupport;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -30,14 +26,14 @@ import java.util.List;
 public class GuideProfileController {
 
     private final GuideProfileService guideProfileService;
-    private final MemberRepository memberRepository;
+    private final GuideAuthenticationSupport guideAuthenticationSupport;
 
     // 가이드 프로필 등록 (F06-01)
     @PostMapping
     public ResponseEntity<GuideProfileResponse> createProfile(
             @RequestBody @Valid CreateGuideProfileRequest request
     ) {
-        Long userId = getCurrentUserId();
+        Long userId = guideAuthenticationSupport.getCurrentMemberId();
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(guideProfileService.createProfile(request, userId));
     }
@@ -53,7 +49,7 @@ public class GuideProfileController {
     // 내 가이드 프로필 조회 (GUIDE용, profile id 안정 조회)
     @GetMapping("/me")
     public ResponseEntity<GuideProfileResponse> getMyProfile() {
-        Long userId = getCurrentUserId();
+        Long userId = guideAuthenticationSupport.getCurrentGuideMemberId();
         return ResponseEntity.ok(guideProfileService.getMyProfile(userId));
     }
 
@@ -77,7 +73,7 @@ public class GuideProfileController {
             @PathVariable Long guideId,
             @RequestBody @Valid UpdateGuideProfileRequest request
     ) {
-        Long userId = getCurrentUserId();
+        Long userId = guideAuthenticationSupport.getCurrentGuideMemberId();
         return ResponseEntity.ok(guideProfileService.updateProfile(guideId, request, userId));
     }
 
@@ -94,7 +90,7 @@ public class GuideProfileController {
     public ResponseEntity<GuideSettlementResponse> getExpectedSettlement(
             @PathVariable Long guideId
     ) {
-        Long userId = getCurrentUserId();
+        Long userId = guideAuthenticationSupport.getCurrentGuideMemberId();
         return ResponseEntity.ok(guideProfileService.getExpectedSettlement(guideId, userId));
     }
 
@@ -120,18 +116,7 @@ public class GuideProfileController {
     public ResponseEntity<GuideProfileResponse> toggleActive(
             @PathVariable Long guideId
     ) {
-        Long userId = getCurrentUserId();
+        Long userId = guideAuthenticationSupport.getCurrentGuideMemberId();
         return ResponseEntity.ok(guideProfileService.toggleActive(guideId, userId));
-    }
-
-    // JWT에서 현재 로그인 사용자의 memberId 추출
-    private Long getCurrentUserId() {
-        String email = SecurityUtil.getCurrentUserEmail();
-        if (email == null || email.isBlank() || "anonymousUser".equalsIgnoreCase(email)) {
-            throw new GuideException(GuideErrorCode.GUIDE_UNAUTHORIZED);
-        }
-        return memberRepository.findByEmail(email)
-                .map(Member::getId)
-                .orElseThrow(() -> new GuideException(GuideErrorCode.GUIDE_UNAUTHORIZED));
     }
 }

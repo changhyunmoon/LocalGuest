@@ -3,12 +3,8 @@ package com.team6.domain.guide.controller;
 import com.team6.domain.guide.dto.request.CreateGuideFeedRequest;
 import com.team6.domain.guide.dto.request.UpdateGuideFeedRequest;
 import com.team6.domain.guide.dto.response.GuideFeedResponse;
-import com.team6.domain.guide.exception.GuideErrorCode;
-import com.team6.domain.guide.exception.GuideException;
 import com.team6.domain.guide.service.GuideFeedService;
-import com.team6.domain.member.entity.Member;
-import com.team6.domain.member.repository.MemberRepository;
-import com.team6.module.common.global.util.SecurityUtil;
+import com.team6.domain.guide.support.GuideAuthenticationSupport;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -26,7 +22,7 @@ import java.util.List;
 public class GuideFeedController {
 
     private final GuideFeedService guideFeedService;
-    private final MemberRepository memberRepository;
+    private final GuideAuthenticationSupport guideAuthenticationSupport;
 
     // 피드 등록
     @PostMapping
@@ -34,7 +30,7 @@ public class GuideFeedController {
             @PathVariable Long guideId,
             @RequestBody @Valid CreateGuideFeedRequest request
     ) {
-        Long userId = getCurrentUserId();
+        Long userId = guideAuthenticationSupport.getCurrentGuideMemberId();
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(guideFeedService.createFeed(guideId, request, userId));
     }
@@ -54,7 +50,7 @@ public class GuideFeedController {
             @PathVariable Long feedId,
             @RequestBody @Valid UpdateGuideFeedRequest request
     ) {
-        Long userId = getCurrentUserId();
+        Long userId = guideAuthenticationSupport.getCurrentGuideMemberId();
         return ResponseEntity.ok(guideFeedService.updateFeed(guideId, feedId, request, userId));
     }
 
@@ -64,16 +60,8 @@ public class GuideFeedController {
             @PathVariable Long guideId,
             @PathVariable Long feedId
     ) {
-        Long userId = getCurrentUserId();
+        Long userId = guideAuthenticationSupport.getCurrentGuideMemberId();
         guideFeedService.deleteFeed(guideId, feedId, userId);
         return ResponseEntity.noContent().build();
-    }
-
-    // JWT에서 현재 로그인 사용자의 memberId 추출
-    private Long getCurrentUserId() {
-        String email = SecurityUtil.getCurrentUserEmail();
-        return memberRepository.findByEmail(email)
-                .map(Member::getId)
-                .orElseThrow(() -> new GuideException(GuideErrorCode.MEMBER_NOT_FOUND));
     }
 }

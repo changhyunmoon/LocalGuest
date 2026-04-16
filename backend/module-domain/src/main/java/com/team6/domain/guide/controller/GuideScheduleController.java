@@ -6,12 +6,8 @@ import com.team6.domain.guide.dto.request.UpdateGuideScheduleRequest;
 import com.team6.domain.guide.dto.response.GuideScheduleFormResponse;
 import com.team6.domain.guide.dto.response.GuideScheduleResponse;
 import com.team6.domain.guide.entity.enums.GuideScheduleStatus;
-import com.team6.domain.guide.exception.GuideErrorCode;
-import com.team6.domain.guide.exception.GuideException;
 import com.team6.domain.guide.service.GuideScheduleService;
-import com.team6.domain.member.entity.Member;
-import com.team6.domain.member.repository.MemberRepository;
-import com.team6.module.common.global.util.SecurityUtil;
+import com.team6.domain.guide.support.GuideAuthenticationSupport;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -29,7 +25,7 @@ import java.util.List;
 public class GuideScheduleController {
 
     private final GuideScheduleService guideScheduleService;
-    private final MemberRepository memberRepository;
+    private final GuideAuthenticationSupport guideAuthenticationSupport;
 
     // 스케줄 등록 (F06-04)
     @PostMapping
@@ -37,7 +33,7 @@ public class GuideScheduleController {
             @PathVariable Long guideId,
             @RequestBody @Valid CreateGuideScheduleRequest request
     ) {
-        Long userId = getCurrentUserId();
+        Long userId = guideAuthenticationSupport.getCurrentGuideMemberId();
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(guideScheduleService.addSchedule(guideId, request, userId));
     }
@@ -57,7 +53,7 @@ public class GuideScheduleController {
             @PathVariable Long scheduleId,
             @RequestBody @Valid UpdateGuideScheduleRequest request
     ) {
-        Long userId = getCurrentUserId();
+        Long userId = guideAuthenticationSupport.getCurrentGuideMemberId();
         return ResponseEntity.ok(guideScheduleService.updateSchedule(scheduleId, guideId, request, userId));
     }
 
@@ -67,7 +63,7 @@ public class GuideScheduleController {
             @PathVariable Long guideId,
             @PathVariable Long scheduleId
     ) {
-        Long userId = getCurrentUserId();
+        Long userId = guideAuthenticationSupport.getCurrentGuideMemberId();
         guideScheduleService.deleteSchedule(scheduleId, guideId, userId);
         return ResponseEntity.noContent().build();
     }
@@ -77,7 +73,7 @@ public class GuideScheduleController {
     public ResponseEntity<List<GuideScheduleResponse>> getPendingSchedules(
             @PathVariable Long guideId
     ) {
-        Long userId = getCurrentUserId();
+        Long userId = guideAuthenticationSupport.getCurrentGuideMemberId();
         return ResponseEntity.ok(guideScheduleService.getPendingSchedules(guideId, userId));
     }
 
@@ -87,7 +83,7 @@ public class GuideScheduleController {
             @PathVariable Long guideId,
             @PathVariable Long scheduleId
     ) {
-        Long userId = getCurrentUserId();
+        Long userId = guideAuthenticationSupport.getCurrentGuideMemberId();
         return ResponseEntity.ok(guideScheduleService.acceptSchedule(scheduleId, guideId, userId));
     }
 
@@ -97,7 +93,7 @@ public class GuideScheduleController {
             @PathVariable Long guideId,
             @PathVariable Long scheduleId
     ) {
-        Long userId = getCurrentUserId();
+        Long userId = guideAuthenticationSupport.getCurrentGuideMemberId();
         return ResponseEntity.ok(guideScheduleService.rejectSchedule(scheduleId, guideId, userId));
     }
 
@@ -121,7 +117,7 @@ public class GuideScheduleController {
             @PathVariable Long scheduleId,
             @RequestBody @Valid SubmitGuideScheduleFormRequest request
     ) {
-        Long userId = getCurrentUserId();
+        Long userId = guideAuthenticationSupport.getCurrentGuideMemberId();
         return ResponseEntity.ok(guideScheduleService.submitForm(scheduleId, guideId, request, userId));
     }
 
@@ -169,15 +165,7 @@ public class GuideScheduleController {
             @PathVariable Long scheduleId,
             @RequestParam GuideScheduleStatus status
     ) {
-        Long userId = getCurrentUserId();
+        Long userId = guideAuthenticationSupport.getCurrentGuideMemberId();
         return ResponseEntity.ok(guideScheduleService.changeStatus(scheduleId, guideId, status, userId));
-    }
-
-    // JWT에서 현재 로그인 사용자의 memberId 추출
-    private Long getCurrentUserId() {
-        String email = SecurityUtil.getCurrentUserEmail();
-        return memberRepository.findByEmail(email)
-                .map(Member::getId)
-                .orElseThrow(() -> new GuideException(GuideErrorCode.MEMBER_NOT_FOUND));
     }
 }

@@ -11,8 +11,8 @@ export function MyPageOverview() {
       <p style={{ color: '#555', lineHeight: 1.5 }}>
         로그인 계정: <strong>{email}</strong>
         <br />
-        JWT 역할: <strong>{isGuide ? 'GUIDE' : 'GUEST'}</strong> — F01-03 승격 후에는 반드시{' '}
-        <strong>재로그인</strong>해야 토큰에 GUIDE가 반영됩니다.
+        JWT 역할: <strong>{isGuide ? 'GUIDE' : 'GUEST'}</strong> — 가이드 신청 후에는 <strong>재로그인</strong>해서
+        로그인 유형을 GUIDE로 선택하면 가이드 토큰이 발급됩니다.
       </p>
       <ul style={{ paddingLeft: '1.2rem', color: '#444', lineHeight: 1.6 }}>
         <li>
