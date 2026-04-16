@@ -28,37 +28,6 @@ public class MemberService {
         // 암호화된 비밀번호 값으로 교체
         // [LOG] DEBUG : [Member-Domain] 비밀번호 암호화 수행 중...
         String encodedPassword = passwordEncoder.encode(member.getPassword());
-<<<<<<< HEAD
-
-        // 중복 회원 검증
-        boolean isReactivated = validateDuplicateMember(member, encodedPassword);
-
-        // 재활성솨 된 경우 새로 save 불필요
-        if(isReactivated) {
-            return memberRepository.findByEmail(member.getEmail()).get().getId();
-        }
-
-        // 중복 아니면 DB저장
-        member.updatePassword(encodedPassword);
-        memberRepository.save(member);
-        //[LOG] INFO : [Member-Domain] 회원 저장 완료 (ID : {})
-        return member.getId();
-    }
-
-    // 중복 회원 검증 로직
-    private boolean validateDuplicateMember(Member member, String encodedPassword) {
-        return memberRepository.findByEmail(member.getEmail())
-                .map(existingMember -> {
-                    if(existingMember.getStatus() == Status.ACTIVE) {
-                        throw new IllegalStateException("이미 존재하는 회원입니다. ");
-                    }
-                    // 탈퇴했으면 재가입 허용
-                    existingMember.reactive(member.getPassword(), member.getName(), member.getNickname());
-                    return true;
-                })
-                .orElse(false);
-=======
-
 
         return memberRepository.findByEmailAndRole(member.getEmail(), member.getRole())
                 .map(existingMember -> {
@@ -85,7 +54,6 @@ public class MemberService {
                     member.updatePassword(encodedPassword);
                     return memberRepository.save(member).getId();
                 });
->>>>>>> Feat/be#148
     }
 
     // 회원 탈퇴 기능 - common-module에 securityUtil구현 후 구현 가능
@@ -100,13 +68,8 @@ public class MemberService {
 
     // 소셜로그인을 통한 위한 회원 조회 및 회원가입
     @Transactional
-<<<<<<< HEAD
-    public Member findOrCreateMember(String email, String name, String picture) {
-        return memberRepository.findByEmail(email)
-=======
     public Member findOrCreateMember(String email, String name, String picture, Role selectedRole) {
         return memberRepository.findByEmailAndRole(email, selectedRole)
->>>>>>> Feat/be#148
                 .orElseGet(() -> {
                     String tempNickname = email.split("@")[0]
                             + "_" + (int)(Math.random()*10000);
@@ -116,14 +79,9 @@ public class MemberService {
                             .name(name)
                             .password("")
                             .nickname(tempNickname)
-<<<<<<< HEAD
-                            .role(Role.GUEST)
-                            .socialType(SocialType.GOOGLE)
-=======
                             .role(selectedRole)
                             .socialType(SocialType.GOOGLE)
                             .status(Status.ACTIVE)
->>>>>>> Feat/be#148
                             .build();
                     return memberRepository.save(newMember);
                 });

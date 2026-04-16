@@ -1,21 +1,15 @@
 package com.team6.apiserver.auth.oauth;
 
 import com.team6.domain.auth.provider.JwtTokenProvider;
-<<<<<<< HEAD
-=======
 import com.team6.domain.member.entity.Role;
->>>>>>> Feat/be#148
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
-<<<<<<< HEAD
-=======
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserService;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
->>>>>>> Feat/be#148
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
@@ -45,11 +39,6 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         getRedirectStrategy().sendRedirect(request,response, redirectUrl);
 
         // 프론트 없을 때 임시 테스트용 → 토큰을 바로 응답으로 반환
-<<<<<<< HEAD
-        response.setContentType("application/json");
-        response.setCharacterEncoding("UTF-8");
-        response.getWriter().write("{\"token\": \"" + token + "\"}");
-=======
 //        response.setContentType("application/json");
 //        response.setCharacterEncoding("UTF-8");
 //        response.getWriter().write("{\"token\": \"" + token + "\"}");
@@ -57,6 +46,5 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         // 프론트 있을 때
         // String redirectUrl = "http://localhost:5173/oauth2/callback?token=" + token;
         // getRedirectStrategy().sendRedirect(request, response, redirectUrl);
->>>>>>> Feat/be#148
     }
 }

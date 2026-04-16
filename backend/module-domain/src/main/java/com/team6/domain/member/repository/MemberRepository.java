@@ -9,11 +9,6 @@ import java.util.Optional;
 
 @Repository
 public interface MemberRepository extends JpaRepository <Member, Long>{
-<<<<<<< HEAD
-    Optional<Member> findByEmail(String email);
-    Optional<Member> findByEmailAndRole(String email, Role role);
-    boolean existsByEmailAndRole(String email, Role role);
-=======
     // 이메일로만 찾기
     Optional<Member> findByEmail(String email);
 
@@ -24,6 +19,7 @@ public interface MemberRepository extends JpaRepository <Member, Long>{
     //닉네임 중복 체크용
     boolean existsByNickname(String nickname);
 
+
+
     Role role(Role role);
->>>>>>> Feat/be#148
 }

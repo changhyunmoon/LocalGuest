@@ -1,8 +1,10 @@
 package com.team6.domain.review.service;
 
 import com.team6.domain.guide.dto.request.UpdateGuideProfileRequest;
+import com.team6.domain.guide.dto.request.UpdateGuideRatingRequest;
 import com.team6.domain.guide.service.GuideProfileService;
 import com.team6.domain.member.entity.Member;
+import com.team6.domain.member.entity.Role;
 import com.team6.domain.member.entity.Status;
 import com.team6.domain.member.repository.MemberRepository;
 import com.team6.domain.review.dto.request.ReviewRequest;
@@ -11,6 +13,7 @@ import com.team6.domain.review.dto.response.ReviewResponse;
 import com.team6.domain.review.entity.Review;
 import com.team6.domain.review.repository.ReviewRepository;
 import com.team6.module.common.global.util.SecurityUtil;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -25,6 +28,7 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class ReviewService {
     private final ReviewRepository reviewRepository;
     private final MemberRepository memberRepository;
@@ -33,10 +37,7 @@ public class ReviewService {
     // 리뷰 저장
     @Transactional
     public void saveReview(ReviewRequest request) {
-        String email = SecurityUtil.getCurrentUserEmail();
-
-        Member member = memberRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+        Member member = getCurrentMember();
 
         if(reviewRepository.existsByMatchRequestId(request.getMatchRequestId())) {
             throw new IllegalStateException("이미 이 가이드에 대한 리뷰를 작성하셨습니다. ");
@@ -61,15 +62,10 @@ public class ReviewService {
     // 리뷰 수정 (24시간 이내만 수정 가능)
     @Transactional
     public void updateReview(Long reviewId, ReviewUpdateRequest request) {
-        String email = SecurityUtil.getCurrentUserEmail();
+        Member member = getCurrentMember();
 
-        Review review = reviewRepository.findById(reviewId)
-                .orElseThrow(()-> new IllegalArgumentException("리뷰를 찾을 수 없습니다."));
-
-        // 본인 확인
-        if(!review.getMember().getEmail().equals(email)) {
-            throw new IllegalStateException("본인이 작성한 리뷰만 수정할 수 있습니다.");
-        }
+        Review review = reviewRepository.findByIdAndMember(reviewId, member)
+                .orElseThrow(()-> new IllegalArgumentException("해당 리뷰를 찾을 수 없습니다."));
 
         // 수정 기간 확인
         if(review.getCreatedAt().isBefore(LocalDateTime.now().minusDays(1))) {
@@ -97,15 +93,10 @@ public class ReviewService {
     // 리뷰 삭제
     @Transactional
     public void deleteReview(Long reviewId) {
-        String email = SecurityUtil.getCurrentUserEmail();
+        Member member = getCurrentMember();
 
-        Review review = reviewRepository.findById(reviewId)
+        Review review = reviewRepository.findByIdAndMember(reviewId, member)
                 .orElseThrow(() -> new IllegalArgumentException(("리뷰를 찾을 수 없습니다. ")));
-
-        // 본인 확인
-        if(!review.getMember().getEmail().equals(email)) {
-            throw new IllegalStateException("본인이 작성한 리뷰만 삭제할 수 있습니다.");
-        }
 
         review.delete();
         syncGuideRating(review.getGuideId());
@@ -132,5 +123,19 @@ public class ReviewService {
                 .averageRating(averageRating)
                 .reviewCount(reviewCount)
                 .build();
+    }
+
+    /**
+     * 현재 로그인한 사용자의 Email과 Role을 이용해 Member 엔티티를 조회하는 공통 메소드
+     */
+    private Member getCurrentMember() {
+        String email = SecurityUtil.getCurrentUserEmail();
+        String roleString = SecurityUtil.getCurrentUserRoleString();
+
+        // "ROLE_" 접두사 제거 후 Enum 변환
+        Role role = Role.valueOf(roleString.replace("ROLE_", ""));
+
+        return memberRepository.findByEmailAndRole(email, role)
+                .orElseThrow(() -> new EntityNotFoundException("사용자를 찾을 수 없습니다."));
     }
 }
