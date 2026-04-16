@@ -57,7 +57,8 @@ public class SecurityConfig {
                         // 인증 인가 경로는 비로그인 유저도 접근 가능
                         .requestMatchers("/oauth2/**").permitAll()
                         .requestMatchers("/login/**").permitAll()
-                        .requestMatchers("/guides/**").permitAll()
+                        // 가이드 조회 API만 공개, 변경 API는 인증 필요
+                        .requestMatchers(HttpMethod.GET, "/guides/**").permitAll()
                         // Swagger UI + OpenAPI (springdoc). context-path 사용 시 환경에 따라 둘 다 허용
                         .requestMatchers(
                                 "/v3/api-docs",
@@ -76,7 +77,6 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/reviews/**").authenticated()
                         .requestMatchers(HttpMethod.PUT, "/reviews/**").authenticated()
                         .requestMatchers(HttpMethod.DELETE, "/reviews/**").authenticated()
-                        .requestMatchers("/guides/**").permitAll()
 
                         // 3. 그 외 (리뷰 등록, 채팅, 마이페이지 등)는 무조건 로그인 필요
                         .anyRequest().authenticated()

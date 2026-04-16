@@ -1,6 +1,5 @@
 package com.team6.domain.matching.service;
 
-import com.team6.domain.guide.repository.GuideProfileRepository;
 import com.team6.domain.matching.client.FakePgClient;
 import com.team6.domain.matching.client.GuideScheduleSyncClient;
 import com.team6.domain.matching.client.KakaoPayClient;
@@ -43,7 +42,6 @@ public class PaymentService {
     private final FakePgClient fakePgClient;
     private final KakaoPayClient kakaoPayClient;
     private final GuideScheduleSyncClient guideScheduleSyncClient;
-    private final GuideProfileRepository guideProfileRepository;
 
     @Value("${matching.payment.provider:fake}")
     private String paymentProvider;
@@ -138,9 +136,7 @@ public class PaymentService {
 
         payment.complete(pgTransactionId);
         payment.getMatchRequest().markAsPaidIfAccepted();
-        Long guideMemberId = resolveGuideMemberId(payment.getMatchRequest().getGuideId());
-        // 가이드 acceptSchedule로 이미 BOOKED인 경우 isPaid만 반영 (book 호출 생략)
-        guideScheduleSyncClient.confirmPaid(payment.getMatchRequest().getGuideId(), payment.getMatchRequest().getGuideScheduleId(), guideMemberId);
+        syncGuideSchedulePaidSafely(payment);
 
         log.info("[Payment] Stub PG 승인 완료 — paymentId={}, pgTransactionId={}, paidAt={}, refundDeadline={}",
                 payment.getId(), pgTransactionId, payment.getPaidAt(), payment.getRefundDeadline());
@@ -221,9 +217,30 @@ public class PaymentService {
         return "kakao".equalsIgnoreCase(paymentProvider);
     }
 
-    private Long resolveGuideMemberId(Long guideProfileId) {
-        return guideProfileRepository.findById(guideProfileId)
-                .map(guideProfile -> guideProfile.getMemberId())
-                .orElseThrow(() -> new MatchingException(MatchingErrorCode.MATCH_REQUEST_UNAUTHORIZED));
+    /**
+     * 가이드 스케줄 paid-confirm 연동 실패는 결제 자체를 롤백시키지 않는다.
+     * PG 승인 성공 후 결제 기록 유실(금전-DB 불일치)을 막기 위한 방어 처리다.
+     */
+    private void syncGuideSchedulePaidSafely(Payment payment) {
+        Long guideId = payment.getMatchRequest().getGuideId();
+        Long scheduleId = payment.getMatchRequest().getGuideScheduleId();
+        try {
+            guideScheduleSyncClient.confirmPaid(guideId, scheduleId, null);
+        } catch (MatchingException e) {
+            log.error("[F03-06] 결제 완료 후 가이드 스케줄 paid-confirm 동기화 실패 — paymentId={}, requestId={}, guideId={}, scheduleId={}, errorCode={}",
+                    payment.getId(),
+                    payment.getMatchRequest().getId(),
+                    guideId,
+                    scheduleId,
+                    e.getErrorCode(),
+                    e);
+        } catch (Exception e) {
+            log.error("[F03-06] 결제 완료 후 가이드 스케줄 paid-confirm 동기화 실패(예상치못한예외) — paymentId={}, requestId={}, guideId={}, scheduleId={}",
+                    payment.getId(),
+                    payment.getMatchRequest().getId(),
+                    guideId,
+                    scheduleId,
+                    e);
+        }
     }
 }
