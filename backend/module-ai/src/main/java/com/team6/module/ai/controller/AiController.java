@@ -39,6 +39,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import lombok.extern.slf4j.Slf4j;
+import java.nio.charset.StandardCharsets;
 import java.util.zip.CRC32;
 
 @Tag(name = "AI", description = "룰 기반 가이드 추천(프롬프트 파싱 + 스코어링)")
@@ -194,7 +196,6 @@ public class AiController {
 
         recommendationMetrics.recordRecommendationClick(rank, pv);
         clickStore.recordClick(guideId);
-
         String prompt = request == null ? null : request.getPrompt();
         Integer promptHash = (prompt == null || prompt.isBlank()) ? null : promptHash(prompt);
         log.info("[AI_RECOMMEND_CLICK] policyVer={} guideId={} rank={} promptHash={} clientReqId={}",
@@ -243,7 +244,6 @@ public class AiController {
         }
         return out;
     }
-
     private static int promptHash(String prompt) {
         if (prompt == null || prompt.isBlank()) {
             return 0;
