@@ -94,6 +94,20 @@ public class PromptRecommendationService {
             List<GuideRecommendRequest.GuideCandidateDto> guideCandidates,
             Map<Long, Integer> availabilityDayCountByGuideId
     ) {
+        return recommendByPrompt(prompt, topN, guideCandidates, availabilityDayCountByGuideId, null);
+    }
+
+    /**
+     * @param availabilityDayCountByGuideId 희망 기간 내 가용 일수(가이드별). null이면 가용성 랭킹 가산 없음.
+     * @param availabilityMaxConsecutiveDaysByGuideId 희망 기간 내 최대 연속 가능일(가이드별). null이면 연속 가산 없음.
+     */
+    public GuideRecommendResponse recommendByPrompt(
+            String prompt,
+            Integer topN,
+            List<GuideRecommendRequest.GuideCandidateDto> guideCandidates,
+            Map<Long, Integer> availabilityDayCountByGuideId,
+            Map<Long, Integer> availabilityMaxConsecutiveDaysByGuideId
+    ) {
         // PromptRecommendationService는 F03 추천의 "흐름 조정자" 역할을 한다.
         // 여기서는 프롬프트를 파싱하고, 후보군을 보정하고, 추천을 실행하고,
         // 부족한 결과면 fallback을 시도한 뒤 최종 응답(conceptSummary/keywords/notice)을 만든다.
@@ -160,6 +174,9 @@ public class PromptRecommendationService {
                 .region(parsed.getRegion())
                 .travelStyle(parsed.getTravelStyle())
                 .budgetLevel(parsed.getBudgetLevel())
+                .budgetMinWon(parsed.getBudgetMinWon())
+                .budgetMaxWon(parsed.getBudgetMaxWon())
+                .budgetScope(parsed.getBudgetScope())
                 .companionType(parsed.getCompanionType())
                 .activityTags(parsed.getActivityTags())
                 .requiredActivityTags(parsed.getRequiredActivityTags())
@@ -168,10 +185,14 @@ public class PromptRecommendationService {
                 .headcount(parsed.getHeadcount())
                 .durationDays(parsed.getDurationDays())
                 .excludedActivityTags(parsed.getExcludedActivityTags())
+                .excludedRegions(parsed.getExcludedRegions())
+                .excludedTravelStyles(parsed.getExcludedTravelStyles())
+                .excludedLanguages(parsed.getExcludedLanguages())
                 .softPenaltyActivityTags(parsed.getSoftPenaltyActivityTags())
                 .topN(parsed.getTopN())
                 .guideCandidates(expansion.candidates())
                 .availabilityDayCountByGuideId(availabilityDayCountByGuideId)
+                .availabilityMaxConsecutiveDaysByGuideId(availabilityMaxConsecutiveDaysByGuideId)
                 .build();
 
             // 5) 1차 추천을 수행한다.

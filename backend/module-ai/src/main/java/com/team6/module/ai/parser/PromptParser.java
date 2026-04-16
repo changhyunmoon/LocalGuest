@@ -107,9 +107,14 @@ public class PromptParser {
         String region = extractRegion(normalizedPrompt);
         String travelStyle = extractTravelStyle(normalizedPrompt);
         String budgetLevel = extractBudgetLevel(normalizedPrompt);
+        BudgetRange budgetRange = extractBudgetRangeWon(normalizedPrompt);
+        String budgetScope = extractBudgetScope(normalizedPrompt);
         String companionType = extractCompanionType(normalizedPrompt);
         List<String> excludedRaw = extractExcludedActivityTags(normalizedPrompt);
         List<String> excludedActivityTags = relaxExcludedWhenExplicitlyRequired(normalizedPrompt, excludedRaw);
+        List<String> excludedRegions = extractExcludedRegions(normalizedPrompt);
+        List<String> excludedTravelStyles = extractExcludedTravelStyles(normalizedPrompt);
+        List<String> excludedLanguages = extractExcludedLanguages(normalizedPrompt);
         List<String> softPenaltyActivityTags = extractSoftPenaltyActivityTags(normalizedPrompt);
         List<String> activityBeforeExcluded = stripActivityTagsOverlappingSoft(
                 extractActivityTags(normalizedPrompt),
@@ -142,6 +147,9 @@ public class PromptParser {
                 .region(region)
                 .travelStyle(travelStyle)
                 .budgetLevel(budgetLevel)
+                .budgetMinWon(budgetRange == null ? null : budgetRange.minWon())
+                .budgetMaxWon(budgetRange == null ? null : budgetRange.maxWon())
+                .budgetScope(budgetScope)
                 .strictBudget(strictBudget)
                 .companionType(companionType)
                 .activityTags(activityTags)
@@ -154,11 +162,164 @@ public class PromptParser {
                 .headcount(headcount)
                 .durationDays(durationDays)
                 .excludedActivityTags(excludedActivityTags)
+                .excludedRegions(excludedRegions)
+                .excludedTravelStyles(excludedTravelStyles)
+                .excludedLanguages(excludedLanguages)
                 .softPenaltyActivityTags(softPenaltyActivityTags)
                 .topN(topN)
                 .guideCandidates(guideCandidates)
                 .parserNoticeCodes(parserNotices.isEmpty() ? null : List.copyOf(parserNotices))
                 .build();
+    }
+
+    private record BudgetRange(Integer minWon, Integer maxWon) {
+    }
+
+    private BudgetRange extractBudgetRangeWon(String prompt) {
+        Matcher rangeWon = BUDGET_RANGE_WON.matcher(prompt);
+        if (rangeWon.find()) {
+            Integer start = convertWon(rangeWon.group(1), rangeWon.group(2));
+            String endUnit = rangeWon.group(4) == null ? rangeWon.group(2) : rangeWon.group(4);
+            Integer end = convertWon(rangeWon.group(3), endUnit);
+            if (start != null && end != null) {
+                int min = Math.min(start, end);
+                int max = Math.max(start, end);
+                return new BudgetRange(min, max);
+            }
+        }
+
+        Matcher rangeMan = BUDGET_MANWON_RANGE.matcher(prompt);
+        if (rangeMan.find()) {
+            try {
+                int a = Integer.parseInt(rangeMan.group(1));
+                int b = Integer.parseInt(rangeMan.group(2));
+                int min = Math.min(a, b) * 10_000;
+                int max = Math.max(a, b) * 10_000;
+                return new BudgetRange(min, max);
+            } catch (NumberFormatException ignored) {
+                return null;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * 예산 단위/범위 해석 힌트(정확한 계산은 후보 가격 계약이 갖춰진 후 확장).
+     */
+    private String extractBudgetScope(String prompt) {
+        if (prompt == null || prompt.isBlank()) {
+            return null;
+        }
+        if (containsAny(prompt, "인당", "1인", "1인당", "사람당", "per person")) {
+            return "per_person";
+        }
+        if (containsAny(prompt, "하루", "일당", "per day")) {
+            return "per_day";
+        }
+        if (containsAny(prompt, "총", "전체", "total")) {
+            return "total";
+        }
+        return null;
+    }
+
+    private List<String> extractExcludedRegions(String prompt) {
+        Set<String> excluded = new LinkedHashSet<>();
+
+        // 한글 고정 목록(대표 도시)
+        addExcludedRegionIfNegated(prompt, excluded, "부산", "부산");
+        addExcludedRegionIfNegated(prompt, excluded, "서울", "서울");
+        addExcludedRegionIfNegated(prompt, excluded, "제주", "제주", "제주도");
+        addExcludedRegionIfNegated(prompt, excluded, "강릉", "강릉");
+        addExcludedRegionIfNegated(prompt, excluded, "경주", "경주");
+        addExcludedRegionIfNegated(prompt, excluded, "여수", "여수");
+
+        // YAML/영문 alias도 포함(예: "jeju 말고")
+        for (Map.Entry<String, String> e : regionAliasEntries) {
+            String alias = e.getKey();
+            String canonical = e.getValue();
+            if (alias == null || alias.isBlank() || canonical == null || canonical.isBlank()) {
+                continue;
+            }
+            int idx = prompt.indexOf(alias);
+            while (idx >= 0) {
+                if (isNegatedAround(prompt, idx, alias.length())) {
+                    excluded.add(canonical);
+                }
+                idx = prompt.indexOf(alias, idx + alias.length());
+            }
+        }
+        return new ArrayList<>(excluded);
+    }
+
+    private void addExcludedRegionIfNegated(String prompt, Set<String> excluded, String canonical, String... keywords) {
+        for (String keyword : keywords) {
+            int idx = prompt.indexOf(keyword.toLowerCase(Locale.ROOT));
+            while (idx >= 0) {
+                if (isNegatedAround(prompt, idx, keyword.length())) {
+                    excluded.add(canonical);
+                    return;
+                }
+                idx = prompt.indexOf(keyword.toLowerCase(Locale.ROOT), idx + keyword.length());
+            }
+        }
+    }
+
+    private List<String> extractExcludedTravelStyles(String prompt) {
+        Set<String> excluded = new LinkedHashSet<>();
+        Map<String, List<String>> styleKeywords = Map.of(
+                "감성", List.of("감성", "감성적인", "감성샷", "핫플", "인스타", "인스타그램"),
+                "액티비티", List.of("액티비티", "활동적인", "신나게", "역동적인", "익스트림", "스릴", "짜릿"),
+                "힐링", List.of(
+                        "조용", "조용한", "힐링", "편안", "여유", "쉬고", "한적", "고즈넉", "한산",
+                        "사람 적", "사람적", "적은 곳", "한적하게"
+                ),
+                "로컬", List.of("로컬", "현지", "동네", "시장", "골목", "문화", "역사", "유적", "문화재", "유네스코")
+        );
+        for (Map.Entry<String, List<String>> entry : styleKeywords.entrySet()) {
+            String style = entry.getKey();
+            for (String keyword : entry.getValue()) {
+                int idx = prompt.indexOf(keyword.toLowerCase(Locale.ROOT));
+                while (idx >= 0) {
+                    if (isNegatedAround(prompt, idx, keyword.length())) {
+                        excluded.add(style);
+                        break;
+                    }
+                    idx = prompt.indexOf(keyword.toLowerCase(Locale.ROOT), idx + keyword.length());
+                }
+                if (excluded.contains(style)) {
+                    break;
+                }
+            }
+        }
+        return new ArrayList<>(excluded);
+    }
+
+    private List<String> extractExcludedLanguages(String prompt) {
+        Set<String> excluded = new LinkedHashSet<>();
+        addExcludedLanguageIfNegated(prompt, excluded, "한국어", "한국어");
+        addExcludedLanguageIfNegated(prompt, excluded, "영어", "영어", "english", "eng");
+        addExcludedLanguageIfNegated(prompt, excluded, "일본어", "일본어", "japanese", "jp");
+        addExcludedLanguageIfNegated(prompt, excluded, "중국어", "중국어", "chinese", "cn");
+        addExcludedLanguageIfNegated(prompt, excluded, "프랑스어", "프랑스어", "프랑스", "french", "français");
+        addExcludedLanguageIfNegated(prompt, excluded, "스페인어", "스페인어", "스페인", "spanish", "español");
+        addExcludedLanguageIfNegated(prompt, excluded, "독일어", "독일어", "독일", "german", "deutsch");
+        addExcludedLanguageIfNegated(prompt, excluded, "베트남어", "베트남어", "베트남", "vietnamese", "vn");
+        addExcludedLanguageIfNegated(prompt, excluded, "태국어", "태국어", "태국", "thai", "ภาษาไทย");
+        addExcludedLanguageIfNegated(prompt, excluded, "이탈리아어", "이탈리아어", "이탈리아", "italian", "italiano");
+        return new ArrayList<>(excluded);
+    }
+
+    private void addExcludedLanguageIfNegated(String prompt, Set<String> excluded, String language, String... keywords) {
+        for (String keyword : keywords) {
+            int idx = prompt.indexOf(keyword.toLowerCase(Locale.ROOT));
+            while (idx >= 0) {
+                if (isNegatedAround(prompt, idx, keyword.length())) {
+                    excluded.add(language);
+                    return;
+                }
+                idx = prompt.indexOf(keyword.toLowerCase(Locale.ROOT), idx + keyword.length());
+            }
+        }
     }
 
     /**

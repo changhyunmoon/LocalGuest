@@ -21,6 +21,12 @@ public class PromptRecommendApiRequest {
     private List<GuideRecommendRequest.GuideCandidateDto> guideCandidates;
 
     @Schema(
+            description = "클라이언트 세션 식별자(선택). 동일 세션의 연속 요청에서 반복 추천을 완화(쿨다운/페널티)하는 데 사용",
+            example = "web-session-1a2b3c"
+    )
+    private String clientSessionId;
+
+    @Schema(
             description = "희망 투어일(로컬 날짜, ISO-8601 yyyy-MM-dd). "
                     + "지정 시 해당 날짜에 결제 완료(BOOKED + isPaid) 스케줄이 있는 가이드는 추천 후보에서 제외",
             example = "2026-04-28"

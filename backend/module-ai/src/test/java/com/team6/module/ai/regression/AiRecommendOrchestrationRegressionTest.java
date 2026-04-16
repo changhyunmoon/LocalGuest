@@ -8,6 +8,7 @@ import com.team6.module.ai.dto.response.GuideRecommendResponse;
 import com.team6.module.ai.parser.PromptParser;
 import com.team6.module.ai.service.PromptRecommendationService;
 import com.team6.module.ai.support.AiRecommendClickStore;
+import com.team6.module.ai.support.AiRecommendExposureStore;
 import com.team6.module.ai.support.AiRecommendationMetrics;
 import com.team6.module.ai.support.GuideAvailabilityProvider;
 import com.team6.module.ai.support.GuideCandidateBundle;
@@ -55,13 +56,15 @@ class AiRecommendOrchestrationRegressionTest {
     void setUp() {
         AiRecommendationMetrics metrics = new AiRecommendationMetrics(new SimpleMeterRegistry());
         AiRecommendClickStore clickStore = new AiRecommendClickStore();
+        AiRecommendExposureStore exposureStore = new AiRecommendExposureStore();
         aiController = new AiController(
                 promptRecommendationService,
                 guideCandidateProvider,
                 promptParser,
                 guideAvailabilityProvider,
                 metrics,
-                clickStore
+                clickStore,
+                exposureStore
         );
     }
 
@@ -86,9 +89,9 @@ class AiRecommendOrchestrationRegressionTest {
         GuideRecommendItem topMain = item(2L, "가이드B");
         GuideRecommendItem topUnfiltered = item(1L, "가이드A");
 
-        when(promptRecommendationService.recommendByPrompt(eq("제주 힐링"), eq(3), any(), any()))
+        when(promptRecommendationService.recommendByPrompt(eq("제주 힐링"), eq(3), any(), any(), any()))
                 .thenReturn(responseWithRecommendations(List.of(topMain)));
-        when(promptRecommendationService.recommendByPrompt(eq("제주 힐링"), eq(1), any(), any()))
+        when(promptRecommendationService.recommendByPrompt(eq("제주 힐링"), eq(1), any(), any(), any()))
                 .thenReturn(responseWithRecommendations(List.of(topUnfiltered)));
 
         when(guideAvailabilityProvider.availableDates(eq(2L), eq(from), eq(to)))
@@ -121,9 +124,9 @@ class AiRecommendOrchestrationRegressionTest {
                 .thenReturn(bundle);
 
         GuideRecommendItem topB = item(2L, "가이드B");
-        when(promptRecommendationService.recommendByPrompt(eq("부산 맛집"), eq(3), any(), any()))
+        when(promptRecommendationService.recommendByPrompt(eq("부산 맛집"), eq(3), any(), any(), any()))
                 .thenReturn(responseWithRecommendations(List.of(topB)));
-        when(promptRecommendationService.recommendByPrompt(eq("부산 맛집"), eq(1), any(), any()))
+        when(promptRecommendationService.recommendByPrompt(eq("부산 맛집"), eq(1), any(), any(), any()))
                 .thenReturn(responseWithRecommendations(List.of(topB)));
 
         when(guideAvailabilityProvider.availableDates(eq(2L), eq(from), eq(to))).thenReturn(List.of());
@@ -147,9 +150,9 @@ class AiRecommendOrchestrationRegressionTest {
         when(guideCandidateProvider.getCandidates(eq("서울 야경"), eq(3), isNull(), eq(from), eq(to)))
                 .thenReturn(bundle);
 
-        when(promptRecommendationService.recommendByPrompt(eq("서울 야경"), eq(3), any(), any()))
+        when(promptRecommendationService.recommendByPrompt(eq("서울 야경"), eq(3), any(), any(), any()))
                 .thenReturn(emptyResponse());
-        when(promptRecommendationService.recommendByPrompt(eq("서울 야경"), eq(1), any(), any()))
+        when(promptRecommendationService.recommendByPrompt(eq("서울 야경"), eq(1), any(), any(), any()))
                 .thenReturn(responseWithRecommendations(List.of(item(10L, "가이드10"))));
 
         when(guideAvailabilityProvider.availableDates(10L, from, to)).thenReturn(List.of());
@@ -187,7 +190,7 @@ class AiRecommendOrchestrationRegressionTest {
                 eq(expectedToSameAsFrom)
         )).thenReturn(bundle);
 
-        when(promptRecommendationService.recommendByPrompt(eq("4/28~4/30 제주도 카페"), eq(2), any(), any()))
+        when(promptRecommendationService.recommendByPrompt(eq("4/28~4/30 제주도 카페"), eq(2), any(), any(), any()))
                 .thenReturn(emptyResponse());
         // unfiltered 후보가 비어 있으면 특별 제시 경로는 타지 않는다(AiController 초기 가드).
 
