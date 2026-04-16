@@ -8,6 +8,7 @@ import com.team6.module.ai.dto.response.GuideRecommendResponse;
 import com.team6.module.ai.http.RecommendationHttpHeaders;
 import com.team6.module.ai.parser.PromptParser;
 import com.team6.module.ai.service.PromptRecommendationService;
+import com.team6.module.ai.support.AiRecommendationMetrics;
 import com.team6.module.ai.support.GuideAvailabilityProvider;
 import com.team6.module.ai.support.GuideCandidateBundle;
 import com.team6.module.ai.support.GuideCandidateProvider;
@@ -57,6 +58,8 @@ class AiRecommendEndpointMockMvcTest {
     private PromptParser promptParser;
     @MockitoBean
     private GuideAvailabilityProvider guideAvailabilityProvider;
+    @MockitoBean
+    private AiRecommendationMetrics recommendationMetrics;
 
     @Test
     void postRecommend_returnsJson_andPolicyHeader() throws Exception {

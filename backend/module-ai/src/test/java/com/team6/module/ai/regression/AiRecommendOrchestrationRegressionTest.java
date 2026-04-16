@@ -10,6 +10,7 @@ import com.team6.module.ai.service.PromptRecommendationService;
 import com.team6.module.ai.support.GuideAvailabilityProvider;
 import com.team6.module.ai.support.GuideCandidateBundle;
 import com.team6.module.ai.support.GuideCandidateProvider;
+import com.team6.module.ai.support.AiRecommendationMetrics;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -20,6 +21,7 @@ import org.springframework.http.ResponseEntity;
 
 import java.time.LocalDate;
 import java.util.List;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -50,11 +52,13 @@ class AiRecommendOrchestrationRegressionTest {
 
     @BeforeEach
     void setUp() {
+        AiRecommendationMetrics metrics = new AiRecommendationMetrics(new SimpleMeterRegistry());
         aiController = new AiController(
                 promptRecommendationService,
                 guideCandidateProvider,
                 promptParser,
-                guideAvailabilityProvider
+                guideAvailabilityProvider,
+                metrics
         );
     }
 

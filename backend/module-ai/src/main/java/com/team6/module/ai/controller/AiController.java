@@ -1,6 +1,7 @@
 package com.team6.module.ai.controller;
 
 import com.team6.module.ai.dto.openapi.OpenApiStandardErrorBody;
+import com.team6.module.ai.dto.request.AiRecommendClickRequest;
 import com.team6.module.ai.dto.request.PromptRecommendApiRequest;
 import com.team6.module.ai.support.GuideCandidateProvider;
 import com.team6.module.ai.dto.request.GuideRecommendRequest;
@@ -10,7 +11,9 @@ import com.team6.module.ai.http.RecommendationHttpHeaders;
 import com.team6.module.ai.service.PromptRecommendationService;
 import com.team6.module.ai.support.GuideCandidateBundle;
 import com.team6.module.ai.parser.PromptParser;
+import com.team6.module.ai.support.AiRecommendationMetrics;
 import com.team6.module.ai.support.GuideAvailabilityProvider;
+import com.team6.module.ai.support.AiRecommendationTuning;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.headers.Header;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -20,6 +23,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -31,11 +35,16 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
+import java.nio.charset.StandardCharsets;
+import java.util.zip.CRC32;
 
 @Tag(name = "AI", description = "룰 기반 가이드 추천(프롬프트 파싱 + 스코어링)")
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/ai")
+@Slf4j
 public class AiController {
 
     // F03 추천 파이프라인의 메인 조립자.
@@ -54,6 +63,9 @@ public class AiController {
 
     // 일정 필터에 걸려 메인 추천에서 빠진 가이드에 대해, 가능한 날짜를 안내하기 위한 조회용 provider다.
     private final GuideAvailabilityProvider guideAvailabilityProvider;
+
+    // 추천 클릭 같은 탐색 신호를 관측한다(1단계: 메트릭+로그).
+    private final AiRecommendationMetrics recommendationMetrics;
 
     @Operation(
             summary = "프롬프트 기반 가이드 추천",
@@ -161,6 +173,40 @@ public class AiController {
         return ResponseEntity.ok()
                 .header(RecommendationHttpHeaders.X_RECOMMENDATION_POLICY, policy)
                 .body(body);
+    }
+
+    @Operation(
+            summary = "추천 카드 클릭 이벤트 수집",
+            description = "추천 결과 카드 클릭 로그(관심/탐색 신호). 1단계는 서버 로그+Micrometer로 수집합니다."
+    )
+    @ApiResponse(responseCode = "204", description = "수집 성공(응답 바디 없음)")
+    @PostMapping(value = "/recommend/click", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void recordRecommendClick(@RequestBody AiRecommendClickRequest request) {
+        String pv = (request == null || request.getPolicyVersion() == null || request.getPolicyVersion().isBlank())
+                ? AiRecommendationTuning.POLICY_VERSION
+                : request.getPolicyVersion();
+        Integer rank = request == null ? null : request.getRank();
+        Long guideId = request == null ? null : request.getGuideId();
+        String clientReqId = request == null ? null : request.getClientRequestId();
+
+        recommendationMetrics.recordRecommendationClick(rank, pv);
+
+        // 프롬프트는 원문 저장을 피하고 해시로만 남긴다(민감정보 최소화).
+        String prompt = request == null ? null : request.getPrompt();
+        Integer promptHash = (prompt == null || prompt.isBlank()) ? null : promptHash(prompt);
+        log.info("[AI_RECOMMEND_CLICK] policyVer={} guideId={} rank={} promptHash={} clientReqId={}",
+                pv, guideId, rank, promptHash, clientReqId);
+    }
+
+    private static int promptHash(String prompt) {
+        if (prompt == null || prompt.isBlank()) {
+            return 0;
+        }
+        CRC32 crc32 = new CRC32();
+        crc32.update(prompt.getBytes(StandardCharsets.UTF_8));
+        long v = crc32.getValue();
+        return (int) (v ^ (v >>> 32));
     }
 
     private static GuideRecommendResponse enrichNoticeForDateFilteredEmpty(
