@@ -39,6 +39,11 @@ public class ScoringPolicySettings {
      */
     private int availabilityBoostPerDay = 1;
     private int availabilityBoostMax = 8;
+    /**
+     * 희망 기간 내 최대 연속 가능일 1일당 추가 가산(상한은 {@link #availabilityConsecutiveBoostMax}).
+     */
+    private int availabilityConsecutiveBoostPerDay = 2;
+    private int availabilityConsecutiveBoostMax = 10;
 
     private int coldStartExplorationBonus = 6;
     /**
@@ -62,6 +67,10 @@ public class ScoringPolicySettings {
     /** 클릭 1회당 보정 점수(상한은 {@link #recommendClickBonusMax}). */
     private int recommendClickBonusPerCount = 1;
     private int recommendClickBonusMax = 8;
+
+    /** 동일 세션 내 최근 추천 노출 1회당 감점(반복 추천 완화). */
+    private int recommendExposurePenaltyPerCount = 3;
+    private int recommendExposurePenaltyMax = 18;
 
     private int feedbackRefundPenaltyPerApproved = 8;
     private int feedbackRefundPenaltyMax = 24;

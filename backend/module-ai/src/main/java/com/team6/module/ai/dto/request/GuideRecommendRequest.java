@@ -16,6 +16,12 @@ public class GuideRecommendRequest {
     private String region;
     private String travelStyle;
     private String budgetLevel;
+    /** 예산 하한(원). */
+    private Integer budgetMinWon;
+    /** 예산 상한(원). */
+    private Integer budgetMaxWon;
+    /** 예산 단위/범위 해석 힌트(per_person/total/per_day). */
+    private String budgetScope;
     private String companionType;
     private List<String> activityTags;
     /** 파서가 강한 의도로 분류한 활동 태그(부분집합). */
@@ -34,6 +40,12 @@ public class GuideRecommendRequest {
     private Integer headcount;
     private Integer durationDays;
     private List<String> excludedActivityTags;
+    /** 지역 제외(예: "서울 말고"). */
+    private List<String> excludedRegions;
+    /** 여행 스타일 제외(예: "힐링은 싫고"). */
+    private List<String> excludedTravelStyles;
+    /** 언어 제외(예: "영어는 원치 않아"). */
+    private List<String> excludedLanguages;
     /**
      * 하드 제외가 아니라, 가이드가 해당 활동을 강하게 전문으로 내세울 때 점수를 깎는(soft) 태그.
      */
@@ -53,6 +65,12 @@ public class GuideRecommendRequest {
     @JsonIgnore
     private Map<Long, Integer> availabilityDayCountByGuideId;
 
+    /**
+     * 희망 투어 기간 내 "최대 연속 가능일"(가이드별). 랭킹 가산에만 쓰이며 JSON API에는 실리지 않는다.
+     */
+    @JsonIgnore
+    private Map<Long, Integer> availabilityMaxConsecutiveDaysByGuideId;
+
     @Schema(name = "GuideCandidateDto", description = "추천 후보 가이드 프로필")
     @Getter
     @Builder
@@ -62,6 +80,12 @@ public class GuideRecommendRequest {
         private String region;
         private String guideStyle;
         private String priceLevel;
+        @Schema(description = "가격 하한(원). 범위 기반 예산 매칭에 사용(선택)")
+        private Integer priceMinWon;
+        @Schema(description = "가격 상한(원). 범위 기반 예산 매칭에 사용(선택)")
+        private Integer priceMaxWon;
+        @Schema(description = "가격 단위/범위 해석(per_person/total/per_day). 범위 기반 예산 매칭에 사용(선택)")
+        private String priceScope;
         private List<String> specialtyTags;
         private List<String> languages;
         /** 도메인 집계: 평균 평점(없으면 null — 감점 미적용). */
@@ -87,5 +111,8 @@ public class GuideRecommendRequest {
 
         @Schema(description = "추천 카드 클릭 집계(관심/탐색 신호). 미전달 시 미반영")
         private Integer recommendClickCount;
+
+        @Schema(description = "동일 세션 내 최근 추천 노출 횟수(반복 추천 완화용). 미전달 시 미반영")
+        private Integer recommendExposureCount;
     }
 }

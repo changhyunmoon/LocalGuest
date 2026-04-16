@@ -37,6 +37,10 @@ public class AiRecommendationServiceImpl implements AiRecommendationService {
         if (avail == null) {
             avail = Map.of();
         }
-        return matchingEngine.recommend(preference, guides, topN, avail);
+        Map<Long, Integer> streak = request.getAvailabilityMaxConsecutiveDaysByGuideId();
+        if (streak == null) {
+            streak = Map.of();
+        }
+        return matchingEngine.recommend(preference, guides, topN, avail, streak);
     }
 }

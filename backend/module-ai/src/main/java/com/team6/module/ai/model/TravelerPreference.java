@@ -11,6 +11,9 @@ public class TravelerPreference {
     private String region;
     private String travelStyle;
     private String budgetLevel;
+    private Integer budgetMinWon;
+    private Integer budgetMaxWon;
+    private String budgetScope;
     private String companionType;
     private List<String> activityTags;
     /**
@@ -29,6 +32,9 @@ public class TravelerPreference {
     private Integer headcount;
     private Integer durationDays;
     private List<String> excludedActivityTags;
+    private List<String> excludedRegions;
+    private List<String> excludedTravelStyles;
+    private List<String> excludedLanguages;
     /** 활동 매칭 시 가이드 태그와 겹치면 점수 패널티(soft 부정 제약). */
     private List<String> softPenaltyActivityTags;
 
