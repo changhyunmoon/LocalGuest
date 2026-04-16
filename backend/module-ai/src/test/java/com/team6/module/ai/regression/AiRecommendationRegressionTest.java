@@ -232,6 +232,64 @@ class AiRecommendationRegressionTest {
     }
 
     @Test
+    void regression_negative_region_should_choose_positive_region_over_negated_one() {
+        List<GuideRecommendRequest.GuideCandidateDto> pool = List.of(
+                GuideRecommendRequest.GuideCandidateDto.builder()
+                        .guideId(2001L).guideName("제주가이드").region("제주").guideStyle("힐링").priceLevel("중간")
+                        .specialtyTags(List.of("맛집")).languages(List.of("한국어"))
+                        .build(),
+                GuideRecommendRequest.GuideCandidateDto.builder()
+                        .guideId(2002L).guideName("부산가이드").region("부산").guideStyle("힐링").priceLevel("중간")
+                        .specialtyTags(List.of("맛집")).languages(List.of("한국어"))
+                        .build()
+        );
+        GuideRecommendRequest parsed = promptParser.parse("제주 말고 부산 맛집", 1, pool);
+        GuideRecommendResponse response = aiRecommendationService.recommend(parsed);
+        assertThat(response.getRecommendations()).isNotEmpty();
+        assertThat(response.getRecommendations().get(0).getGuideId()).isEqualTo(2002L);
+    }
+
+    @Test
+    void regression_budget_range_overlap_should_outweigh_tier_only_when_available() {
+        List<GuideRecommendRequest.GuideCandidateDto> pool = List.of(
+                GuideRecommendRequest.GuideCandidateDto.builder()
+                        .guideId(2101L).guideName("A").region("제주").guideStyle("힐링").priceLevel("중간")
+                        .priceMinWon(350_000).priceMaxWon(450_000).priceScope("per_day")
+                        .specialtyTags(List.of("카페")).languages(List.of("한국어"))
+                        .build(),
+                GuideRecommendRequest.GuideCandidateDto.builder()
+                        .guideId(2102L).guideName("B").region("제주").guideStyle("힐링").priceLevel("중간")
+                        .priceMinWon(180_000).priceMaxWon(260_000).priceScope("per_day")
+                        .specialtyTags(List.of("카페")).languages(List.of("한국어"))
+                        .build()
+        );
+        GuideRecommendRequest parsed = promptParser.parse("제주 총 20만원~30만원 예산 카페", 1, pool);
+        GuideRecommendResponse response = aiRecommendationService.recommend(parsed);
+        assertThat(response.getRecommendations()).isNotEmpty();
+        assertThat(response.getRecommendations().get(0).getGuideId()).isEqualTo(2102L);
+    }
+
+    @Test
+    void regression_comparison_hint_should_be_present_on_top1_when_two_or_more_recommendations() {
+        List<GuideRecommendRequest.GuideCandidateDto> pool = List.of(
+                GuideRecommendRequest.GuideCandidateDto.builder()
+                        .guideId(2201L).guideName("A").region("제주").guideStyle("힐링").priceLevel("중간")
+                        .specialtyTags(List.of("카페", "바다")).languages(List.of("한국어"))
+                        .build(),
+                GuideRecommendRequest.GuideCandidateDto.builder()
+                        .guideId(2202L).guideName("B").region("제주").guideStyle("로컬").priceLevel("중간")
+                        .specialtyTags(List.of("카페")).languages(List.of("한국어"))
+                        .build()
+        );
+        GuideRecommendRequest parsed = promptParser.parse("제주 힐링 카페 바다", 2, pool);
+        GuideRecommendResponse response = createService(ScoringPolicySnapshot.defaults()).recommend(parsed);
+        assertThat(response.getRecommendations()).hasSize(2);
+        assertThat(response.getRecommendations().get(0).getComparisonHint())
+                .isNotBlank()
+                .contains("1위");
+    }
+
+    @Test
     void regression_combo_rule_bonus_can_promote_local_market_guide() {
         ScoringPolicySettings settings = new ScoringPolicySettings();
         ScoringPolicySettings.ComboRuleSetting rule = new ScoringPolicySettings.ComboRuleSetting();

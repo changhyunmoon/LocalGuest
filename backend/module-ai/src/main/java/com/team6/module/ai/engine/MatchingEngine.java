@@ -121,7 +121,7 @@ public class MatchingEngine {
                 .build();
     }
 
-    private static List<GuideAiProfile> applyNegativeFilters(TravelerPreference pref, List<GuideAiProfile> guides) {
+    private List<GuideAiProfile> applyNegativeFilters(TravelerPreference pref, List<GuideAiProfile> guides) {
         if (guides == null || guides.isEmpty() || pref == null) {
             return guides == null ? List.of() : guides;
         }
@@ -137,9 +137,63 @@ public class MatchingEngine {
         if (exRegions.isEmpty() && exStyles.isEmpty() && exLangs.isEmpty()) {
             return guides;
         }
-        return guides.stream()
-                .filter(g -> !isExcludedGuide(g, exRegions, exStyles, exLangs))
+        int before = guides.size();
+        int removedRegion = 0;
+        int removedStyle = 0;
+        int removedLang = 0;
+
+        List<GuideAiProfile> out = new ArrayList<>(guides.size());
+        for (GuideAiProfile g : guides) {
+            if (g == null) {
+                out.add(null);
+                continue;
+            }
+            boolean r = isExcludedByRegion(g, exRegions);
+            boolean s = isExcludedByStyle(g, exStyles);
+            boolean l = isExcludedByLanguageOnly(g, exLangs);
+            if (r || s || l) {
+                if (r) removedRegion++;
+                if (s) removedStyle++;
+                if (l) removedLang++;
+                continue;
+            }
+            out.add(g);
+        }
+        recommendationMetrics.recordNegativeFilter("region", removedRegion, AiRecommendationTuning.POLICY_VERSION);
+        recommendationMetrics.recordNegativeFilter("style", removedStyle, AiRecommendationTuning.POLICY_VERSION);
+        recommendationMetrics.recordNegativeFilter("language", removedLang, AiRecommendationTuning.POLICY_VERSION);
+        return out;
+    }
+
+    private static boolean isExcludedByRegion(GuideAiProfile g, Set<String> exRegions) {
+        if (exRegions.isEmpty()) {
+            return false;
+        }
+        String r = g.getRegion();
+        return r != null && exRegions.contains(r.toLowerCase());
+    }
+
+    private static boolean isExcludedByStyle(GuideAiProfile g, Set<String> exStyles) {
+        if (exStyles.isEmpty()) {
+            return false;
+        }
+        String s = g.getGuideStyle();
+        return s != null && exStyles.contains(s.toLowerCase());
+    }
+
+    private static boolean isExcludedByLanguageOnly(GuideAiProfile g, Set<String> exLangs) {
+        if (exLangs.isEmpty()) {
+            return false;
+        }
+        List<String> langs = g.getLanguages();
+        if (langs == null || langs.isEmpty()) {
+            return false;
+        }
+        List<String> normalized = langs.stream()
+                .map(KeywordNormalizer::normalizeLanguage)
+                .filter(x -> x != null && !x.isBlank())
                 .toList();
+        return !normalized.isEmpty() && normalized.stream().allMatch(l -> exLangs.contains(l.toLowerCase()));
     }
 
     private static boolean isExcludedGuide(
@@ -151,32 +205,9 @@ public class MatchingEngine {
         if (g == null) {
             return false;
         }
-        if (!exRegions.isEmpty()) {
-            String r = g.getRegion();
-            if (r != null && exRegions.contains(r.toLowerCase())) {
-                return true;
-            }
-        }
-        if (!exStyles.isEmpty()) {
-            String s = g.getGuideStyle();
-            if (s != null && exStyles.contains(s.toLowerCase())) {
-                return true;
-            }
-        }
-        if (!exLangs.isEmpty()) {
-            List<String> langs = g.getLanguages();
-            if (langs != null && !langs.isEmpty()) {
-                List<String> normalized = langs.stream()
-                        .map(KeywordNormalizer::normalizeLanguage)
-                        .filter(x -> x != null && !x.isBlank())
-                        .toList();
-                // 보수적으로: 가이드가 "오직" 제외 언어만 가능한 경우만 제외한다.
-                if (!normalized.isEmpty() && normalized.stream().allMatch(l -> exLangs.contains(l.toLowerCase()))) {
-                    return true;
-                }
-            }
-        }
-        return false;
+        return isExcludedByRegion(g, exRegions)
+                || isExcludedByStyle(g, exStyles)
+                || isExcludedByLanguageOnly(g, exLangs);
     }
 
     private static Set<String> normalizeLowerSet(List<String> raw) {
