@@ -1,6 +1,7 @@
 package com.team6.module.ai.engine;
 
 import com.team6.module.ai.config.DiversityRerankSnapshot;
+import com.team6.module.ai.config.ScoringPolicySnapshot;
 import com.team6.module.ai.dto.response.GuideRecommendItem;
 import com.team6.module.ai.dto.response.GuideRecommendResponse;
 import com.team6.module.ai.model.GuideAiProfile;
@@ -19,6 +20,7 @@ import java.util.LinkedHashSet;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Component
@@ -40,11 +42,25 @@ public class MatchingEngine {
     // 다양성 패널티 크기 같은 운영 지표를 남긴다.
     private final AiRecommendationMetrics recommendationMetrics;
 
+    /** 가용 일수 랭킹 가산 상한·단가. */
+    private final ScoringPolicySnapshot scoringPolicy;
 
     public GuideRecommendResponse recommend(
             TravelerPreference preference,
             List<GuideAiProfile> guides,
             int topN
+    ) {
+        return recommend(preference, guides, topN, Map.of());
+    }
+
+    /**
+     * @param availabilityDayCountByGuideId 희망 기간 내 예약 가능한 날짜 수(가이드별). 비어 있으면 가산 없음.
+     */
+    public GuideRecommendResponse recommend(
+            TravelerPreference preference,
+            List<GuideAiProfile> guides,
+            int topN,
+            Map<Long, Integer> availabilityDayCountByGuideId
     ) {
         // MatchingEngine은 "후보 가이드 리스트"를 받아 실제 추천 카드 리스트로 바꾸는 마지막 엔진이다.
         // 순서는 대략:
@@ -53,15 +69,18 @@ public class MatchingEngine {
         // 3) 점수순 정렬
         // 4) 다양성 패널티로 Top-N 재선정
         // 5) GuideRecommendItem 응답 형태로 변환
+        Map<Long, Integer> avail = availabilityDayCountByGuideId == null ? Map.of() : availabilityDayCountByGuideId;
         List<ScoredGuide> scored = guides.stream()
                 .map(guide -> {
                     // 점수는 ScoreCalculator가 정책별로 합산한다.
-                    int score = scoreCalculator.calculate(preference, guide);
+                    int ruleScore = scoreCalculator.calculate(preference, guide);
+                    int availBoost = availabilityBoost(guide.getGuideId(), avail);
+                    int rankingScore = ruleScore + availBoost;
                     // 같은 점수라도 "왜 추천됐는지"가 보여야 프론트/운영/사용자 모두 해석 가능하다.
-                    ReasonBundle bundle = reasonGenerator.generate(preference, guide, score);
-                    return new ScoredGuide(guide, score, bundle);
+                    ReasonBundle bundle = reasonGenerator.generate(preference, guide, rankingScore);
+                    return new ScoredGuide(guide, rankingScore, bundle, availBoost);
                 })
-                // 1차 정렬은 순수 baseScore 기준이다.
+                // 1차 정렬은 룰 점수 + 가용성 가산 합산 기준이다.
                 .sorted(Comparator.comparingInt(ScoredGuide::baseScore).reversed())
                 .toList();
 
@@ -87,6 +106,8 @@ public class MatchingEngine {
                         .build())
                 .toList();
 
+        items = applyComparisonHints(items);
+
         // MatchingEngine이 만드는 응답은 "추천 카드 본체"다.
         // conceptSummary / notice / matchRequestDraft 같은 부가 정보는 상위 서비스(PromptRecommendationService)에서 붙인다.
         return GuideRecommendResponse.builder()
@@ -94,6 +115,46 @@ public class MatchingEngine {
                 .totalCount(items.size())
                 .recommendations(items)
                 .build();
+    }
+
+    private int availabilityBoost(Long guideId, Map<Long, Integer> avail) {
+        if (guideId == null || avail.isEmpty()) {
+            return 0;
+        }
+        int days = avail.getOrDefault(guideId, 0);
+        if (days <= 0) {
+            return 0;
+        }
+        int per = scoringPolicy.availabilityBoostPerDay();
+        int max = scoringPolicy.availabilityBoostMax();
+        return Math.min(max, days * per);
+    }
+
+    private static List<GuideRecommendItem> applyComparisonHints(List<GuideRecommendItem> items) {
+        if (items == null || items.size() < 2) {
+            return items;
+        }
+        GuideRecommendItem top = items.get(0);
+        GuideRecommendItem second = items.get(1);
+        String hint = buildComparisonHint(top, second);
+        GuideRecommendItem topWithHint = top.toBuilder().comparisonHint(hint).build();
+        List<GuideRecommendItem> out = new ArrayList<>(items.size());
+        out.add(topWithHint);
+        for (int i = 1; i < items.size(); i++) {
+            out.add(items.get(i));
+        }
+        return out;
+    }
+
+    private static String buildComparisonHint(GuideRecommendItem top, GuideRecommendItem second) {
+        int diff = top.getScore() - second.getScore();
+        if (diff >= 10) {
+            return "2순위보다 요청 조건에 더 가깝게 점수가 높아요.";
+        }
+        if (diff >= 4) {
+            return "2순위와 비슷하지만 전체 근거에서 앞섭니다.";
+        }
+        return "2순위와 점수는 비슷하고, 세부 활동·예산 근거에서 조금 더 맞아요.";
     }
 
     /**
@@ -431,7 +492,7 @@ public class MatchingEngine {
     }
 
     // 추천 과정 중 계산 편의를 위한 임시 묶음 객체.
-    // 아직 API 응답으로 변환되기 전 단계의 "가이드 + 점수 + 추천 이유" 세트를 보관한다.
-    private record ScoredGuide(GuideAiProfile guide, int baseScore, ReasonBundle bundle) {
+    // baseScore는 룰 합산 + 가용성 가산까지 반영한 최종 랭킹 점수다.
+    private record ScoredGuide(GuideAiProfile guide, int baseScore, ReasonBundle bundle, int availabilityBoost) {
     }
 }

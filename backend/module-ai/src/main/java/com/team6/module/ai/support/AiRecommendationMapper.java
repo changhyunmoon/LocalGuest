@@ -31,12 +31,17 @@ public class AiRecommendationMapper {
                 .distinct()
                 .toList();
 
+        List<String> required = filterTagList(request.getRequiredActivityTags(), excludedSet, softPenaltySet);
+        List<String> nice = filterTagList(request.getNiceToHaveActivityTags(), excludedSet, softPenaltySet);
+
         return TravelerPreference.builder()
                 .region(request.getRegion())
                 .travelStyle(request.getTravelStyle())
                 .budgetLevel(request.getBudgetLevel())
                 .companionType(request.getCompanionType())
                 .activityTags(filteredTags)
+                .requiredActivityTags(required)
+                .niceToHaveActivityTags(nice)
                 .preferredLanguages(request.getPreferredLanguages())
                 .headcount(request.getHeadcount())
                 .durationDays(request.getDurationDays())
@@ -66,6 +71,23 @@ public class AiRecommendationMapper {
                         .representativeImageUrl(candidate.getRepresentativeImageUrl())
                         .publicFeedThumbnailUrls(copyUrlList(candidate.getPublicFeedThumbnailUrls()))
                         .build())
+                .toList();
+    }
+
+    private static List<String> filterTagList(
+            List<String> raw,
+            Set<String> excludedSet,
+            Set<String> softPenaltySet
+    ) {
+        if (raw == null || raw.isEmpty()) {
+            return List.of();
+        }
+        return raw.stream()
+                .map(KeywordNormalizer::normalizeTag)
+                .filter(t -> t != null && !t.isBlank())
+                .filter(t -> !excludedSet.contains(t))
+                .filter(t -> !softPenaltySet.contains(t))
+                .distinct()
                 .toList();
     }
 
