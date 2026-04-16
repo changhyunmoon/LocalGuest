@@ -16,6 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.text.NumberFormat;
 import java.util.List;
 import java.util.Locale;
@@ -54,17 +55,19 @@ public class MatchRequestService {
     }
 
     /** 게스트 본인 매칭 요청 전체 (마이페이지 일정·스크랩북 등) */
-    @Transactional(readOnly = true)
     public List<MatchRequestCreateResponse> getGuestRequests(Long guestId) {
+        LocalDate today = LocalDate.now();
         return matchRequestRepository.findByGuestId(guestId).stream()
+                .peek(request -> syncTourProgress(request, today))
                 .map(MatchRequestCreateResponse::from)
                 .toList();
     }
 
     // 가이드의 매칭 요청 목록 조회
-    @Transactional(readOnly = true)
     public List<MatchRequestCreateResponse> getGuideRequests(Long guideId) {
+        LocalDate today = LocalDate.now();
         return matchRequestRepository.findByGuideId(guideId).stream()
+                .peek(request -> syncTourProgress(request, today))
                 .map(MatchRequestCreateResponse::from)
                 .toList();
     }
@@ -226,5 +229,10 @@ public class MatchRequestService {
         return guideProfileRepository.findById(guideProfileId)
                 .map(guideProfile -> guideProfile.getMemberId())
                 .orElseThrow(() -> new MatchingException(MatchingErrorCode.MATCH_REQUEST_UNAUTHORIZED));
+    }
+
+    private void syncTourProgress(MatchRequest request, LocalDate today) {
+        request.markInProgressIfTourDay(today);
+        request.markCompletedIfTourEnded(today);
     }
 }

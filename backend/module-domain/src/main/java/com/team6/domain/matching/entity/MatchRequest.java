@@ -168,6 +168,35 @@ public class MatchRequest extends BaseTimeEntity {
     }
 
     /**
+     * 투어 날짜가 오늘이면 진행 상태로 전이한다.
+     * 결제 완료(PAID) 상태에서만 전이한다.
+     */
+    public void markInProgressIfTourDay(LocalDate today) {
+        if (today == null || this.desiredDate == null) {
+            return;
+        }
+        if (this.status == MatchRequestStatus.PAID && this.desiredDate.isEqual(today)) {
+            this.status = MatchRequestStatus.IN_PROGRESS;
+            log.info("[Matching] 투어 진행 시작 — status=IN_PROGRESS, requestId={}", this.id);
+        }
+    }
+
+    /**
+     * 투어 날짜가 지났으면 완료 상태로 전이한다.
+     * PAID/IN_PROGRESS 상태에서만 전이한다.
+     */
+    public void markCompletedIfTourEnded(LocalDate today) {
+        if (today == null || this.desiredDate == null) {
+            return;
+        }
+        if ((this.status == MatchRequestStatus.PAID || this.status == MatchRequestStatus.IN_PROGRESS)
+                && this.desiredDate.isBefore(today)) {
+            this.status = MatchRequestStatus.COMPLETED;
+            log.info("[Matching] 투어 완료 반영 — status=COMPLETED, requestId={}", this.id);
+        }
+    }
+
+    /**
      * 게스트가 가이드 제안(수락 대기)을 거절할 때 — 취소(CANCELLED)와 구분하기 위해 REJECTED로 전이한다.
      */
     public void declineProposalByGuest(String reason) {
