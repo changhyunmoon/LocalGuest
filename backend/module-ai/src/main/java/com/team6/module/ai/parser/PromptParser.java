@@ -11,6 +11,7 @@ import java.time.Year;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -115,6 +116,15 @@ public class PromptParser {
                 softPenaltyActivityTags
         );
         List<String> activityTags = stripActivityTagsOverlappingExcluded(activityBeforeExcluded, excludedActivityTags);
+        ActivityTagStrength tagStrength = classifyActivityTagStrength(normalizedPrompt, activityTags);
+        List<String> requiredActivityTags = stripActivityTagsOverlappingSoft(
+                stripActivityTagsOverlappingExcluded(new ArrayList<>(tagStrength.required()), excludedActivityTags),
+                softPenaltyActivityTags
+        );
+        List<String> niceToHaveActivityTags = stripActivityTagsOverlappingSoft(
+                stripActivityTagsOverlappingExcluded(new ArrayList<>(tagStrength.nice()), excludedActivityTags),
+                softPenaltyActivityTags
+        );
         List<String> preferredLanguages = extractLanguages(normalizedPrompt);
         Integer headcount = extractHeadcount(normalizedPrompt);
         Integer durationDays = extractDurationDays(normalizedPrompt);
@@ -131,6 +141,8 @@ public class PromptParser {
                 .budgetLevel(budgetLevel)
                 .companionType(companionType)
                 .activityTags(activityTags)
+                .requiredActivityTags(requiredActivityTags.isEmpty() ? null : List.copyOf(requiredActivityTags))
+                .niceToHaveActivityTags(niceToHaveActivityTags.isEmpty() ? null : List.copyOf(niceToHaveActivityTags))
                 .preferredLanguages(preferredLanguages)
                 .headcount(headcount)
                 .durationDays(durationDays)
@@ -991,6 +1003,94 @@ public class PromptParser {
         return activityTags.stream()
                 .filter(a -> !ex.contains(KeywordNormalizer.normalizeTag(a)))
                 .collect(Collectors.toCollection(ArrayList::new));
+    }
+
+    private record ActivityTagStrength(List<String> required, List<String> nice) {
+    }
+
+    private static final String[] STRONG_ACTIVITY_INTENT_FRAGMENTS = {
+            "꼭", "반드시", "필수", "무조건", "최우선"
+    };
+    private static final String[] NICE_ACTIVITY_INTENT_FRAGMENTS = {
+            "있으면 좋", "되면 좋", "가능하면", "괜찮으면", "부담없으면"
+    };
+
+    private static final Map<String, List<String>> ACTIVITY_KEYWORD_ALIASES = new HashMap<>();
+
+    static {
+        ACTIVITY_KEYWORD_ALIASES.put("바다", List.of("바다", "해변", "오션뷰", "해수욕장"));
+        ACTIVITY_KEYWORD_ALIASES.put("카페", List.of("카페", "브런치", "카페투어"));
+        ACTIVITY_KEYWORD_ALIASES.put("등산", List.of("등산", "트레킹"));
+        ACTIVITY_KEYWORD_ALIASES.put("맛집", List.of("맛집", "먹방", "식도락"));
+        ACTIVITY_KEYWORD_ALIASES.put("쇼핑", List.of("쇼핑", "쇼핑몰", "아울렛"));
+        ACTIVITY_KEYWORD_ALIASES.put("전시", List.of("전시", "박물관", "미술관", "뮤지엄", "갤러리"));
+        ACTIVITY_KEYWORD_ALIASES.put("야경", List.of("야경", "밤거리", "전망", "루프탑"));
+        ACTIVITY_KEYWORD_ALIASES.put("산책", List.of("산책", "걷기"));
+        ACTIVITY_KEYWORD_ALIASES.put("사진", List.of("사진", "포토", "인생샷"));
+        ACTIVITY_KEYWORD_ALIASES.put("술집", List.of("술집", "클럽", "바"));
+        ACTIVITY_KEYWORD_ALIASES.put("시장", List.of("시장", "전통시장", "야시장"));
+        ACTIVITY_KEYWORD_ALIASES.put("온천", List.of("온천", "노천탕", "스파"));
+        ACTIVITY_KEYWORD_ALIASES.put("캠핑", List.of("캠핑", "글램핑"));
+    }
+
+    /**
+     * 활동 태그별로 문맥 창에서 강한 의도(꼭/반드시) vs 약한 선호(되면 좋고)를 나눈다.
+     */
+    private ActivityTagStrength classifyActivityTagStrength(String normalizedLowerPrompt, List<String> normalizedActivityTags) {
+        if (normalizedActivityTags == null || normalizedActivityTags.isEmpty()) {
+            return new ActivityTagStrength(List.of(), List.of());
+        }
+        LinkedHashSet<String> required = new LinkedHashSet<>();
+        LinkedHashSet<String> nice = new LinkedHashSet<>();
+        String p = normalizedLowerPrompt;
+        for (String rawTag : normalizedActivityTags) {
+            String tag = KeywordNormalizer.normalizeTag(rawTag);
+            if (tag == null || tag.isBlank()) {
+                continue;
+            }
+            boolean strong = false;
+            boolean weak = false;
+            for (String kw : activityKeywordsForCanonicalTag(tag)) {
+                String needle = kw.toLowerCase(Locale.ROOT);
+                int idx = 0;
+                while ((idx = p.indexOf(needle, idx)) >= 0) {
+                    int winStart = Math.max(0, idx - 48);
+                    int winEnd = Math.min(p.length(), idx + needle.length() + 14);
+                    String win = p.substring(winStart, winEnd);
+                    if (containsAnyIntent(win, STRONG_ACTIVITY_INTENT_FRAGMENTS)) {
+                        strong = true;
+                    }
+                    if (containsAnyIntent(win, NICE_ACTIVITY_INTENT_FRAGMENTS)) {
+                        weak = true;
+                    }
+                    idx = idx + 1;
+                }
+            }
+            if (strong) {
+                required.add(tag);
+            } else if (weak) {
+                nice.add(tag);
+            }
+        }
+        nice.removeAll(required);
+        return new ActivityTagStrength(List.copyOf(required), List.copyOf(nice));
+    }
+
+    private static List<String> activityKeywordsForCanonicalTag(String canonicalTag) {
+        List<String> extra = ACTIVITY_KEYWORD_ALIASES.get(canonicalTag);
+        if (extra != null) {
+            return extra;
+        }
+        return List.of(canonicalTag);
+    }
+
+    private static boolean containsAnyIntent(String haystack, String[] fragments) {
+        for (String f : fragments) {
+            if (haystack.contains(f)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**

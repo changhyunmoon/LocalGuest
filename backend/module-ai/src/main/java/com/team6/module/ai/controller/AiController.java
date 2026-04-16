@@ -27,7 +27,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 @Tag(name = "AI", description = "룰 기반 가이드 추천(프롬프트 파싱 + 스코어링)")
@@ -36,9 +38,21 @@ import java.util.Objects;
 @RequestMapping("/ai")
 public class AiController {
 
+    // F03 추천 파이프라인의 메인 조립자.
+    // 실제로는 PromptRecommendationService -> AiRecommendationServiceImpl -> MatchingEngine 순으로 이어지며,
+    // 프롬프트 파싱, 후보 보정, fallback 재시도, conceptSummary/matchRequestDraft 생성까지 담당한다.
     private final PromptRecommendationService promptRecommendationService;
+
+    // 추천 비교 대상이 될 가이드 후보군을 준비한다.
+    // 현재 기본 구현은 @Primary가 붙은 DbBackedGuideCandidateProvider로 연결되며,
+    // 프론트가 후보를 직접 보내지 않으면 DB에서 승인/활성 가이드, 공개 피드, 경력,
+    // 일부 운영 신호(환불/행동 데이터 등)를 합쳐 AI 후보 DTO로 채워 넣는다.
     private final GuideCandidateProvider guideCandidateProvider;
+
+    // 사용자가 날짜를 별도 필드로 주지 않은 경우, 프롬프트 문장에서 희망 투어 날짜 범위를 추출하는 fallback 용도다.
     private final PromptParser promptParser;
+
+    // 일정 필터에 걸려 메인 추천에서 빠진 가이드에 대해, 가능한 날짜를 안내하기 위한 조회용 provider다.
     private final GuideAvailabilityProvider guideAvailabilityProvider;
 
     @Operation(
@@ -55,7 +69,7 @@ public class AiController {
             headers = @Header(
                     name = RecommendationHttpHeaders.X_RECOMMENDATION_POLICY,
                     description = "룰 정책 버전(응답 body의 policyVersion과 동일). 캐시 키·디버깅에 활용 가능.",
-                    schema = @Schema(implementation = String.class, example = "2026.04.15")
+                    schema = @Schema(implementation = String.class, example = "2026.04.24")
             ),
             content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = GuideRecommendResponse.class))
     )
@@ -77,9 +91,18 @@ public class AiController {
                     content = @Content(schema = @Schema(implementation = PromptRecommendApiRequest.class))
             )
             @RequestBody PromptRecommendApiRequest request) {
+        // 1) 투어 희망 날짜를 확정한다.
+        // 우선순위는 요청 필드 > 프롬프트 문장 파싱 결과이며, 이후 후보 필터링/특별 제시에 함께 사용된다.
+        // 즉 프론트가 날짜를 명시하지 않아도 "4/20~4/22", "다음 주말" 같은 문장에서
+        // 일정 범위를 뽑아 추천 후보 필터에 활용하려는 목적이다.
         LocalDate from = resolveDesiredFromWithPromptFallback(request);
         LocalDate to = resolveDesiredToWithPromptFallback(request, from);
 
+        // 2) 추천 대상 가이드 후보를 모은다.
+        // 실제로는 GuideCandidateProvider 구현체인 DbBackedGuideCandidateProvider#getCandidates(...)가 주로 실행된다.
+        // 이 단계에서 일정 충돌이 있는 가이드는 메인 후보에서 빠질 수 있고,
+        // 동시에 "일정만 아니면 추천됐을 후보"를 위해 unfilteredCandidates도 함께 보관한다.
+        // 그래서 반환 타입도 단순 List가 아니라 GuideCandidateBundle이다.
         GuideCandidateBundle bundle =
                 guideCandidateProvider.getCandidates(
                         request.getPrompt(),
@@ -89,15 +112,29 @@ public class AiController {
                         to
                 );
 
+        // 3) 실제 메인 추천을 수행한다.
+        // 내부에서는 프롬프트 파싱 -> 후보 보정 -> 점수 계산 -> 이유 생성 -> 응답 생성 흐름으로 이어진다.
+        // 여기서 만들어지는 main은 "일정 필터를 통과한 후보들만" 대상으로 계산된 기본 추천 결과다.
+        Map<Long, Integer> availabilityDays = buildAvailabilityDayCounts(bundle, from, to);
+
         GuideRecommendResponse main = promptRecommendationService.recommendByPrompt(
                 request.getPrompt(),
                 request.getTopN(),
-                bundle.candidates()
+                bundle.candidates(),
+                availabilityDays.isEmpty() ? null : availabilityDays
         );
 
+        // 4) 일정 때문에 메인 추천에서 빠졌지만, 원래는 Top1이었을 가이드를 특별 제안(specialSuggestion)으로 만들지 판단한다.
+        // 사용자가 원하는 조건에는 잘 맞지만 선택 날짜에 예약이 있어 빠진 경우를
+        // "아예 숨기지 말고 별도 카드로 보여주자"는 UX 목적의 보조 흐름이다.
         GuideRecommendResponse.SpecialSuggestion specialSuggestion =
-                buildSpecialSuggestionIfNeeded(request, main, bundle, from, to);
+                buildSpecialSuggestionIfNeeded(request, main, bundle, from, to, availabilityDays);
 
+        // 5) 최종 응답을 구성한다.
+        // specialSuggestion이 없으면 메인 추천 응답을 그대로 쓰고,
+        // 있으면 메인 추천 카드 + 특별 제안 카드를 함께 내려 프론트가 별도 섹션으로 보여줄 수 있게 한다.
+        // 즉 recommendations는 "지금 바로 추천 가능한 가이드", specialSuggestion은
+        // "조건은 맞지만 일정 때문에 메인 추천에서 빠진 가이드"라고 이해하면 된다.
         GuideRecommendResponse body = (specialSuggestion == null)
                 ? main
                 : GuideRecommendResponse.builder()
@@ -113,6 +150,10 @@ public class AiController {
                 .specialSuggestion(specialSuggestion)
                 .build();
 
+        // 6) 정책 버전을 헤더와 body에 함께 실어 응답한다.
+        // 프론트는 recommendations로 추천 카드 UI를 그리고,
+        // matchRequestDraft는 이후 매칭 요청 생성 단계의 기본값으로 재사용할 수 있다.
+        // policyVersion은 추천 규칙이 바뀌었는지 확인하는 디버깅/캐시 키 용도로 같이 내려간다.
         String policy = Objects.requireNonNullElse(body.getPolicyVersion(), "");
         return ResponseEntity.ok()
                 .header(RecommendationHttpHeaders.X_RECOMMENDATION_POLICY, policy)
@@ -120,6 +161,7 @@ public class AiController {
     }
 
     private static LocalDate resolveDesiredFrom(PromptRecommendApiRequest request) {
+        // 프론트가 시작일/단일 희망일을 명시적으로 보냈다면 그 값을 우선 신뢰한다.
         if (request.getDesiredTourDateFrom() != null) {
             return request.getDesiredTourDateFrom();
         }
@@ -130,6 +172,7 @@ public class AiController {
     }
 
     private static LocalDate resolveDesiredTo(PromptRecommendApiRequest request, LocalDate from) {
+        // 종료일이 따로 없으면 단일 날짜 요청으로 간주해 from과 동일하게 본다.
         if (request.getDesiredTourDateTo() != null) {
             return request.getDesiredTourDateTo();
         }
@@ -141,6 +184,8 @@ public class AiController {
         if (from != null) {
             return from;
         }
+        // 명시 필드가 비어 있으면 프롬프트에서 날짜 범위를 뽑아본다.
+        // 이 로직 덕분에 "4/20~4/22 가능한 가이드" 같은 문장도 일정 필터에 걸 수 있다.
         PromptParser.DesiredDateRange r = promptParser.extractDesiredTourDateRange(request.getPrompt());
         return r == null ? null : r.from();
     }
@@ -150,6 +195,7 @@ public class AiController {
         if (to != null) {
             return to;
         }
+        // 시작일과 마찬가지로, 종료일도 프롬프트 해석 결과를 fallback으로 사용한다.
         PromptParser.DesiredDateRange r = promptParser.extractDesiredTourDateRange(request.getPrompt());
         return r == null ? null : r.to();
     }
@@ -159,23 +205,27 @@ public class AiController {
             GuideRecommendResponse main,
             GuideCandidateBundle bundle,
             LocalDate from,
-            LocalDate to
+            LocalDate to,
+            Map<Long, Integer> availabilityDays
     ) {
         if (bundle == null || bundle.unfilteredCandidates() == null || bundle.unfilteredCandidates().isEmpty()) {
             return null;
         }
+
+        // 메인 추천이 아예 비었더라도, 일정 필터만 없었다면 추천될 가이드가 있는지 한 번 더 확인한다.
+        // 즉 "추천 불가"와 "일정만 안 맞아서 빠짐"을 구분해서 보여주려는 의도다.
         if (main == null || main.getRecommendations() == null || main.getRecommendations().isEmpty()) {
-            // 메인 추천이 비어도, “일정 필터만 없었다면 Top1”이 있으면 특별 제시한다.
-            return computeTop1SpecialSuggestion(request, bundle, from, to);
+            return computeTop1SpecialSuggestion(request, bundle, from, to, availabilityDays);
         }
 
         Long mainTop1 = main.getRecommendations().get(0).getGuideId();
-        GuideRecommendResponse.SpecialSuggestion special = computeTop1SpecialSuggestion(request, bundle, from, to);
+        GuideRecommendResponse.SpecialSuggestion special = computeTop1SpecialSuggestion(request, bundle, from, to, availabilityDays);
         if (special == null || special.getGuide() == null || special.getGuide().getGuideId() == null) {
             return null;
         }
         Long unfilteredTop1 = special.getGuide().getGuideId();
-        // 정책: “Top1이 일정 때문에 빠졌을 때만” 특별 제시
+        // 정책: 일정 필터 때문에 메인 Top1이 달라진 경우에만 특별 제시한다.
+        // 메인 Top1과 원본 Top1이 같으면 굳이 별도 specialSuggestion을 만들 필요가 없다.
         return Objects.equals(mainTop1, unfilteredTop1) ? null : special;
     }
 
@@ -183,12 +233,16 @@ public class AiController {
             PromptRecommendApiRequest request,
             GuideCandidateBundle bundle,
             LocalDate from,
-            LocalDate to
+            LocalDate to,
+            Map<Long, Integer> availabilityDays
     ) {
+        // 메인 후보 필터를 적용하지 않은 원본 후보군으로 "진짜 Top1"을 다시 계산한다.
+        // 이때 topN을 1로 고정해서 "일정 필터만 없었다면 가장 먼저 추천됐을 가이드"를 찾는다.
         GuideRecommendResponse top1 = promptRecommendationService.recommendByPrompt(
                 request.getPrompt(),
                 1,
-                bundle.unfilteredCandidates()
+                bundle.unfilteredCandidates(),
+                availabilityDays == null || availabilityDays.isEmpty() ? null : availabilityDays
         );
         if (top1.getRecommendations() == null || top1.getRecommendations().isEmpty()) {
             return null;
@@ -206,16 +260,41 @@ public class AiController {
         if (guideId == null || from == null) {
             return base;
         }
+
+        // 특별 제시 카드에는 "이 날짜는 불가하지만 기간 내 가능한 날짜가 언제인지"를 함께 안내한다.
+        // 사용자는 이 안내를 보고 날짜를 바꾸거나, 다른 추천을 선택할지 판단할 수 있다.
         List<LocalDate> available = guideAvailabilityProvider.availableDates(guideId, from, to);
         if (available == null || available.isEmpty()) {
             return base;
         }
-        // 안내는 과도하지 않게 7개까지만
+        // 안내는 과도하지 않게 7개까지만 노출한다.
         List<LocalDate> clipped = new ArrayList<>();
         for (int i = 0; i < available.size() && i < 7; i++) {
             clipped.add(available.get(i));
         }
         String suffix = " (기간 내 가능: " + String.join(", ", clipped.stream().map(LocalDate::toString).toList()) + ")";
         return base + suffix;
+    }
+
+    /**
+     * 희망 기간이 있을 때 후보별 예약 가능 일수를 세어, 랭킹 가산에 넘긴다.
+     */
+    private Map<Long, Integer> buildAvailabilityDayCounts(
+            GuideCandidateBundle bundle,
+            LocalDate from,
+            LocalDate to
+    ) {
+        Map<Long, Integer> out = new HashMap<>();
+        if (from == null || to == null || bundle == null || bundle.candidates() == null) {
+            return out;
+        }
+        for (GuideRecommendRequest.GuideCandidateDto c : bundle.candidates()) {
+            if (c == null || c.getGuideId() == null) {
+                continue;
+            }
+            List<LocalDate> av = guideAvailabilityProvider.availableDates(c.getGuideId(), from, to);
+            out.put(c.getGuideId(), av == null ? 0 : av.size());
+        }
+        return out;
     }
 }

@@ -7,6 +7,7 @@ import lombok.Getter;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 
 @Schema(name = "GuideRecommendRequest", description = "파싱 결과 또는 직접 구성한 추천 요청(내부/테스트용)")
 @Getter
@@ -17,6 +18,10 @@ public class GuideRecommendRequest {
     private String budgetLevel;
     private String companionType;
     private List<String> activityTags;
+    /** 파서가 강한 의도로 분류한 활동 태그(부분집합). */
+    private List<String> requiredActivityTags;
+    /** 파서가 약한 선호로 분류한 활동 태그(부분집합). */
+    private List<String> niceToHaveActivityTags;
     private List<String> preferredLanguages;
     private Integer headcount;
     private Integer durationDays;
@@ -33,6 +38,12 @@ public class GuideRecommendRequest {
      */
     @JsonIgnore
     private List<String> parserNoticeCodes;
+
+    /**
+     * 희망 투어 기간 내 예약 가능한 날짜 수(가이드별). 랭킹 가산에만 쓰이며 JSON API에는 실리지 않는다.
+     */
+    @JsonIgnore
+    private Map<Long, Integer> availabilityDayCountByGuideId;
 
     @Schema(name = "GuideCandidateDto", description = "추천 후보 가이드 프로필")
     @Getter

@@ -20,6 +20,7 @@ import com.team6.domain.guide.repository.GuideProfileRepository;
 import com.team6.domain.matching.entity.enums.PaymentStatus;
 import com.team6.domain.matching.repository.PaymentRepository;
 import com.team6.domain.member.entity.Member;
+import com.team6.domain.member.entity.Role;
 import com.team6.domain.member.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -27,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * 가이드 프로필 서비스 (F06-01, F06-02, F06-06)
@@ -45,14 +47,18 @@ public class GuideProfileService {
     // 가이드 프로필 등록 (F06-01)
     @Transactional
     public GuideProfileResponse createProfile(CreateGuideProfileRequest request, Long userId) {
-        // 이미 등록된 가이드인지 확인
-        if (guideProfileRepository.existsByMemberId(userId)) {
+        Member requester = memberRepository.findById(userId)
+                .orElseThrow(() -> new GuideException(GuideErrorCode.MEMBER_NOT_FOUND));
+        Member guideMember = resolveOrCreateGuideMember(requester);
+
+        // GUIDE 멤버 기준으로 이미 프로필이 있으면 중복 등록 차단
+        if (guideProfileRepository.existsByMemberId(guideMember.getId())) {
             throw new GuideException(GuideErrorCode.GUIDE_ALREADY_EXISTS);
         }
 
         // 엔티티 생성 및 저장
         GuideProfile profile = GuideProfile.builder()
-                .memberId(userId)
+                .memberId(guideMember.getId())
                 .nickname(request.getNickname())
                 .profileImage(request.getProfileImage())
                 .bio(request.getBio())
@@ -66,13 +72,44 @@ public class GuideProfileService {
                 .build();
 
         GuideProfile saved = guideProfileRepository.save(profile);
-
-        // 가이드 프로필 등록 시 Member Role을 GUIDE로 업그레이드
-        Member member = memberRepository.findById(userId)
-                .orElseThrow(() -> new GuideException(GuideErrorCode.MEMBER_NOT_FOUND));
-        member.upgradeToGuide();
-
         return GuideProfileResponse.from(saved);
+    }
+
+    private Member resolveOrCreateGuideMember(Member requester) {
+        if (requester.getRole() == Role.GUIDE) {
+            return requester;
+        }
+        return memberRepository.findByEmailAndRole(requester.getEmail(), Role.GUIDE)
+                .orElseGet(() -> {
+                    String guideNickname = resolveGuideNickname(requester.getNickname(), requester.getEmail());
+                    Member guideMember = Member.builder()
+                            .email(requester.getEmail())
+                            .password(requester.getPassword())
+                            .name(requester.getName())
+                            .nickname(guideNickname)
+                            .role(Role.GUIDE)
+                            .status(requester.getStatus())
+                            .socialType(requester.getSocialType())
+                            .build();
+                    return memberRepository.save(guideMember);
+                });
+    }
+
+    private String resolveGuideNickname(String preferredNickname, String email) {
+        if (preferredNickname != null && !preferredNickname.isBlank() && !memberRepository.existsByNickname(preferredNickname)) {
+            return preferredNickname;
+        }
+
+        String base = (preferredNickname != null && !preferredNickname.isBlank())
+                ? preferredNickname + "_guide"
+                : email.split("@")[0] + "_guide";
+
+        String candidate = base;
+        while (memberRepository.existsByNickname(candidate)) {
+            int suffix = ThreadLocalRandom.current().nextInt(1000, 10000);
+            candidate = base + "_" + suffix;
+        }
+        return candidate;
     }
 
     // 가이드 프로필 수정 (F06-01)
