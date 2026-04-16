@@ -59,6 +59,10 @@ public class ScoringPolicySettings {
     /** strictBudget=true이고 예산이 맞지 않을 때 감점(미스). */
     private int strictBudgetMissPenalty = 20;
 
+    /** 클릭 1회당 보정 점수(상한은 {@link #recommendClickBonusMax}). */
+    private int recommendClickBonusPerCount = 1;
+    private int recommendClickBonusMax = 8;
+
     private int feedbackRefundPenaltyPerApproved = 8;
     private int feedbackRefundPenaltyMax = 24;
     private int feedbackLowRatingMinReviews = 3;

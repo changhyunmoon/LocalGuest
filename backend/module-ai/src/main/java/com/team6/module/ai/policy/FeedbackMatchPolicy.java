@@ -66,6 +66,14 @@ public class FeedbackMatchPolicy {
             );
         }
 
+        Integer clicks = guide.getRecommendClickCount();
+        if (clicks != null && clicks > 0) {
+            bonus += Math.min(
+                    clicks * scoring.recommendClickBonusPerCount(),
+                    scoring.recommendClickBonusMax()
+            );
+        }
+
         if (isColdStartExplorationCandidate(guide)) {
             bonus += scoring.coldStartExplorationBonus();
         }

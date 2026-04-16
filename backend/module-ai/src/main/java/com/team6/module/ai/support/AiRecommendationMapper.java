@@ -73,6 +73,7 @@ public class AiRecommendationMapper {
                         .matchRequestCount(candidate.getMatchRequestCount())
                         .progressedMatchCount(candidate.getProgressedMatchCount())
                         .chatStartCount(candidate.getChatStartCount())
+                        .recommendClickCount(candidate.getRecommendClickCount())
                         .representativeImageUrl(candidate.getRepresentativeImageUrl())
                         .publicFeedThumbnailUrls(copyUrlList(candidate.getPublicFeedThumbnailUrls()))
                         .build())

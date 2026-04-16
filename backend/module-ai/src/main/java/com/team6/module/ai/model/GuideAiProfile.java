@@ -28,6 +28,9 @@ public class GuideAiProfile {
     /** 실제 채팅방 시작 횟수. */
     private Integer chatStartCount;
 
+    /** 추천 카드 클릭(관심/탐색) 집계. null이면 미반영. */
+    private Integer recommendClickCount;
+
     /** 프로필 대표 이미지 URL. */
     private String representativeImageUrl;
 

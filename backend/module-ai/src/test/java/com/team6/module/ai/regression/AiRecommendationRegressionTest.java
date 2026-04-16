@@ -200,6 +200,38 @@ class AiRecommendationRegressionTest {
     }
 
     @Test
+    void regression_click_bonus_can_tiebreak_between_similar_guides() {
+        List<GuideRecommendRequest.GuideCandidateDto> pool = List.of(
+                GuideRecommendRequest.GuideCandidateDto.builder()
+                        .guideId(1001L)
+                        .guideName("A")
+                        .region("제주")
+                        .guideStyle("힐링")
+                        .priceLevel("중간")
+                        .specialtyTags(List.of("카페"))
+                        .languages(List.of("한국어"))
+                        .recommendClickCount(0)
+                        .build(),
+                GuideRecommendRequest.GuideCandidateDto.builder()
+                        .guideId(1002L)
+                        .guideName("B")
+                        .region("제주")
+                        .guideStyle("힐링")
+                        .priceLevel("중간")
+                        .specialtyTags(List.of("카페"))
+                        .languages(List.of("한국어"))
+                        .recommendClickCount(5)
+                        .build()
+        );
+
+        GuideRecommendRequest parsed = promptParser.parse("제주 힐링 카페", 1, pool);
+        GuideRecommendResponse response = createService(ScoringPolicySnapshot.defaults()).recommend(parsed);
+
+        assertThat(response.getRecommendations()).hasSize(1);
+        assertThat(response.getRecommendations().get(0).getGuideId()).isEqualTo(1002L);
+    }
+
+    @Test
     void regression_combo_rule_bonus_can_promote_local_market_guide() {
         ScoringPolicySettings settings = new ScoringPolicySettings();
         ScoringPolicySettings.ComboRuleSetting rule = new ScoringPolicySettings.ComboRuleSetting();
