@@ -151,4 +151,15 @@ public class AiRecommendationMetrics {
         registry.summary(PREFIX + ".diversity_penalty_magnitude", Tags.of("policy_version", pv))
                 .record(penaltyPoints);
     }
+
+    /**
+     * 추천 카드 클릭 이벤트. 저장소/파이프라인이 없더라도 1단계에서는 메트릭으로 수집한다.
+     *
+     * @param rank 추천 리스트 내 노출 순서(1부터). 미전달/비정상이면 unknown.
+     */
+    public void recordRecommendationClick(Integer rank, String policyVersion) {
+        String pv = policyVersion == null ? "unknown" : policyVersion;
+        String r = (rank == null || rank <= 0) ? "unknown" : String.valueOf(rank);
+        registry.counter(PREFIX + ".click", Tags.of("policy_version", pv, "rank", r)).increment();
+    }
 }
