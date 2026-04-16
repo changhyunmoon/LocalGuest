@@ -1,7 +1,6 @@
 package com.team6.domain.guestMyPage.dto.response;
 
 import com.team6.domain.guestMyPage.entity.Scrapbook;
-import com.team6.domain.guestMyPage.service.ScarapbookService;
 import lombok.Builder;
 import lombok.Getter;
 

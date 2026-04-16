@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 public class MemberController {
     private final MemberService memberService;
 
+    // 가입
     @PostMapping("/join")
     public ResponseEntity<Long> join (@Valid @RequestBody MemberJoinRequest requestDto) {
         // [LOG] INFO : [Member-API] 회원가입 요청 수신 (Email : {})
@@ -24,6 +25,7 @@ public class MemberController {
         return ResponseEntity.ok(memberId);
     }
 
+    // 탈퇴
     @DeleteMapping("/me")
     public ResponseEntity<String> withdraw(@RequestParam Role role) {
         memberService.withdraw(role);

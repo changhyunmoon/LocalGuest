@@ -12,7 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 @Transactional
-public class ScarapbookService {
+public class ScrapbookService {
     private final ScrapbookRepository scrapbookRepository;
     private final MatchRequestRepository matchRequestRepository;
 
@@ -20,7 +20,7 @@ public class ScarapbookService {
         //매칭 내역 존재 여부 및 본인 확인
         matchRequestRepository.findById(request.getMatchRequestId())
                 .filter(m -> m.getGuestId().equals(guestId))
-                .orElseThrow(() -> new IllegalArgumentException("권한이 업거나 존재하지 않는 여행입니다. "));
+                .orElseThrow(() -> new IllegalArgumentException("권한이 없거나 존재하지 않는 여행입니다. "));
 
         // 중복 작성 방지
         if(scrapbookRepository.existsByMatchRequestId(request.getMatchRequestId())){

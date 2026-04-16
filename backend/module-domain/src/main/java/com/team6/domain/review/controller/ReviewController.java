@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 public class ReviewController {
     private final ReviewService reviewService;
 
+    // 전체 리뷰 조회
     @GetMapping
     public ResponseEntity<Page<ReviewResponse>> getReviews(
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
@@ -32,6 +33,7 @@ public class ReviewController {
         return ResponseEntity.ok("리뷰 등록 완료!");
     }
 
+    // 리뷰 수정 24시간 내에만 가능
     @PostMapping("/{reviewId}/update")
     public ResponseEntity<Void> updateReview
             (@PathVariable Long reviewId, @Valid @RequestBody ReviewUpdateRequest request)
@@ -40,16 +42,19 @@ public class ReviewController {
         return ResponseEntity.ok().build();
     }
 
-    // AI담당자는 데이터를 긁어가십시여
+    // 리뷰 삭제
+    @DeleteMapping("/{reviewId}")
+    public ResponseEntity<Void> deleteReview(@PathVariable Long reviewId) {
+        reviewService.deleteReview(reviewId);
+        return ResponseEntity.noContent().build();
+    }
+
+    // 특정 가이드의 리뷰 조회
     @GetMapping("/guide/{guideId}")
     public ResponseEntity<Page<ReviewResponse>> getReviews
     (@PathVariable Long guideId, @PageableDefault(size = 10, sort = "id", direction = Sort.Direction.DESC) Pageable pageable) {
         return ResponseEntity.ok(reviewService.getReviewsByGuide(guideId, pageable));
     }
 
-    @DeleteMapping("/{reviewId}")
-    public ResponseEntity<Void> deleteReview(@PathVariable Long reviewId) {
-        reviewService.deleteReview(reviewId);
-        return ResponseEntity.noContent().build();
-    }
+
 }

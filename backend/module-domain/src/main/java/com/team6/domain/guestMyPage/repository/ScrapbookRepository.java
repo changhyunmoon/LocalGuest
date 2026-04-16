@@ -2,10 +2,12 @@ package com.team6.domain.guestMyPage.repository;
 
 import com.team6.domain.guestMyPage.entity.Scrapbook;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
 
+@Repository
 public interface ScrapbookRepository extends JpaRepository<Scrapbook, Long> {
     // 게스트의 스크랩북 목록을 최신순으로 조회
     List<Scrapbook> findByGuestIdOrderByCreatedAtDesc(Long guestId);
