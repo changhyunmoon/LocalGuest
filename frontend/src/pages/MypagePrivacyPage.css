@@ -315,3 +315,24 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+.mp-privacy-danger {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #fecaca;
+}
+
+.mp-privacy-danger h2 {
+  color: #991b1b;
+}
+
+.mp-privacy-danger-hint {
+  margin: 0 0 0.75rem;
+  font-size: 0.84rem;
+  color: #6b7280;
+  line-height: 1.5;
+}
+
+.mp-privacy-danger .mp-btn {
+  margin-top: 0.35rem;
+}

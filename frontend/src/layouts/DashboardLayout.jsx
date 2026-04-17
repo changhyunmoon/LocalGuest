@@ -7,7 +7,6 @@ import { getGuestDisplayName } from '../lib/guestMypagePrefs.js'
 import './DashboardLayout.css'
 
 const guestItems = [
-  { to: '/mypage', label: '🏠 요약', end: true },
   { to: '/mypage/scrapbook', label: '📒 나의 여행 기록(스크랩북)' },
   { to: '/mypage/itinerary', label: '📆 앞으로의 여행 일정' },
   { to: '/mypage/payments', label: '💳 결제 내역' },
@@ -38,9 +37,6 @@ export function DashboardLayout() {
           <p className="dash-local-note" role="note">
             닉네임·알림 등은 서버 프로필이 없을 때 <strong>이 브라우저에만</strong> 저장됩니다.
           </p>
-          <Link to="/mypage/profile" className="dash-profile-edit">
-            프로필 수정
-          </Link>
         </div>
 
         <nav className="dash-nav" aria-label="마이페이지 메뉴">
@@ -48,7 +44,7 @@ export function DashboardLayout() {
             <NavLink
               key={item.to}
               to={item.to}
-              end={item.end}
+              end={item.end ?? false}
               className={({ isActive }) => (isActive ? 'dash-nav-link is-active' : 'dash-nav-link')}
             >
               {item.label}

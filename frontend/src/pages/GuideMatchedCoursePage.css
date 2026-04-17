@@ -27,6 +27,31 @@
   border-radius: 16px;
 }
 
+a.gmc-hero--link {
+  text-decoration: none;
+  color: inherit;
+  box-sizing: border-box;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+a.gmc-hero--link:hover {
+  border-color: #c5cad3;
+  box-shadow: 0 2px 14px rgba(31, 35, 40, 0.06);
+}
+
+a.gmc-hero--link:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+.gmc-hero-cta {
+  margin: 0.5rem 0 0;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #2563eb;
+}
+
 .gmc-avatar {
   width: 5rem;
   height: 5rem;
@@ -207,88 +232,6 @@
 
 .gmc-chat-btn:hover {
   background: #111418;
-}
-
-.gmc-reviews {
-  margin-top: 1.5rem;
-}
-
-.gmc-reviews h2 {
-  margin: 0 0 0.75rem;
-  font-size: 1.02rem;
-  font-weight: 800;
-}
-
-.gmc-review-form {
-  display: flex;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
-}
-
-.gmc-review-input {
-  flex: 1;
-  border: 1px solid #e5e7eb;
-  border-radius: 999px;
-  padding: 0.62rem 0.9rem;
-  font: inherit;
-  font-size: 0.84rem;
-  resize: vertical;
-}
-
-.gmc-review-submit {
-  border: none;
-  border-radius: 999px;
-  padding: 0 1rem;
-  background: #1f2328;
-  color: #fff;
-  font-size: 0.8rem;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.gmc-review-submit:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-.gmc-review-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.65rem;
-}
-
-.gmc-review-item {
-  flex: 1 1 260px;
-  display: flex;
-  gap: 0.6rem;
-  background: #fff;
-  border: 1px solid #e8eaed;
-  border-radius: 12px;
-  padding: 0.7rem 0.75rem;
-}
-
-.gmc-review-av {
-  width: 1.8rem;
-  height: 1.8rem;
-  border-radius: 50%;
-  background: #e5e7eb;
-  flex-shrink: 0;
-}
-
-.gmc-review-name {
-  margin: 0 0 0.2rem;
-  font-size: 0.8rem;
-  font-weight: 700;
-  color: #111827;
-}
-
-.gmc-review-text {
-  margin: 0;
-  font-size: 0.78rem;
-  color: #4b5563;
 }
 
 .gmc-err {

@@ -193,6 +193,23 @@
   font-weight: 600;
 }
 
+button.mp-thumb--match {
+  border: 1px solid #e5e7eb;
+  cursor: pointer;
+  font: inherit;
+  color: #6b7280;
+}
+
+button.mp-thumb--match:hover {
+  background: linear-gradient(145deg, #eef0f3, #e2e5e9);
+  border-color: #d1d5db;
+}
+
+button.mp-thumb--match:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
 .mp-scrap-hero {
   display: flex;
   flex-wrap: wrap;

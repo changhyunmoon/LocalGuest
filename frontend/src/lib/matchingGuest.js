@@ -56,6 +56,24 @@ export async function fetchGuestPayments(apiRequest) {
   ])
 }
 
+/** @param {(path: string, init?: object) => Promise<Response>} apiRequest */
+export async function loadGuideNicknames(apiRequest, guideIds) {
+  const map = {}
+  for (const id of [...new Set(guideIds.filter(Boolean))]) {
+    try {
+      const res = await apiRequest(`/guides/${id}`, { method: 'GET', skipAuth: true })
+      const text = await res.text()
+      if (res.ok && text) {
+        const p = JSON.parse(text)
+        map[id] = p.nickname ?? `가이드 #${id}`
+      }
+    } catch {
+      map[id] = `가이드 #${id}`
+    }
+  }
+  return map
+}
+
 /**
  * @param {string} dateStr `YYYY-MM-DD`
  */
@@ -67,4 +85,24 @@ export function daysUntil(dateStr) {
   today.setHours(0, 0, 0, 0)
   const diff = Math.round((d.getTime() - today.getTime()) / 86400000)
   return diff
+}
+
+/**
+ * 매칭 요청별 완료 결제 ID (여러 건이면 가장 큰 paymentId).
+ * @param {unknown[]} payments
+ * @param {number} requestId
+ * @returns {number | null}
+ */
+export function pickLatestCompletedPaymentIdForRequest(payments, requestId) {
+  const rid = Number(requestId)
+  if (Number.isNaN(rid)) return null
+  let best = null
+  for (const p of Array.isArray(payments) ? payments : []) {
+    if (Number(p.requestId) !== rid) continue
+    if (String(p.status).toUpperCase() !== 'COMPLETED') continue
+    const pid = Number(p.paymentId)
+    if (Number.isNaN(pid)) continue
+    if (best == null || pid > best) best = pid
+  }
+  return best
 }
