@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/members")
 public class MemberController {
     private final MemberService memberService;
+    private final SignupEmailVerificationService signupEmailVerificationService;
 
     // 가입
     @PostMapping("/join")
@@ -30,5 +31,32 @@ public class MemberController {
     public ResponseEntity<String> withdraw(@RequestParam Role role) {
         memberService.withdraw(role);
         return ResponseEntity.ok("회원 탈퇴가 완료되었습니다. ");
+    }
+
+    // 이메일 인증번호 발송
+    @PostMapping("/email-verification/send")
+    public ResponseEntity<EmailVerificationSendResponse> sendEmailCode(
+            @Valid @RequestBody EmailVerificationSendRequest body) {
+        int sec = signupEmailVerificationService.sendCode(body.getEmail());
+        return ResponseEntity.ok(new EmailVerificationSendResponse(sec));
+    }
+
+    // 이메일 인증번호 확인
+    @PostMapping("/email-verification/confirm")
+    public ResponseEntity<Void> confirmEmailCode(
+            @Valid @RequestBody EmailVerificationConfirmRequest body) {
+        signupEmailVerificationService.verify(body.getEmail(), body.getCode());
+        return ResponseEntity.ok().build();
+    }
+
+    // 닉네임 중복 체크
+    @GetMapping("/nickname-availability")
+    public ResponseEntity<NicknameAvailabilityResponse> nicknameAvailability(
+            @RequestParam("nickname") String nickname) {
+        if (nickname == null || nickname.isBlank()) {
+            return ResponseEntity.badRequest().build();
+        }
+        boolean taken = memberService.existsByNickname(nickname.trim());
+        return ResponseEntity.ok(new NicknameAvailabilityResponse(!taken));
     }
 }

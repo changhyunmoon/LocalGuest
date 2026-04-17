@@ -54,6 +54,8 @@ public class SecurityConfig {
 
                         // 1. 누구나 접근 가능한 경로 (화이트리스트)
                         .requestMatchers("/auth/**", "/members/join").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/members/email-verification/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/members/nickname-availability").permitAll()
                         // 인증 인가 경로는 비로그인 유저도 접근 가능
                         .requestMatchers("/oauth2/**").permitAll()
                         .requestMatchers("/login/**").permitAll()

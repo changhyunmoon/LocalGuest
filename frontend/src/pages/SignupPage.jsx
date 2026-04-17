@@ -1,7 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 
-import { apiRequest, toUserErrorMessage } from '../api/client'
+import {
+  apiRequest,
+  confirmSignupEmailVerification,
+  fetchNicknameAvailable,
+  sendSignupEmailVerification,
+  toUserErrorMessage,
+} from '../api/client'
 
 import './SignupPage.css'
 
@@ -79,6 +85,9 @@ export function SignupPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [doneId, setDoneId] = useState(null)
+  const [dupBusy, setDupBusy] = useState(false)
+  const [emailSendBusy, setEmailSendBusy] = useState(false)
+  const [emailConfirmBusy, setEmailConfirmBusy] = useState(false)
 
   const nickname = userId.trim()
 
@@ -108,14 +117,29 @@ export function SignupPage() {
     setAgreeAll(agreeTos && v)
   }
 
-  const handleDupCheck = () => {
+  const handleDupCheck = async () => {
     setError('')
     if (!idPatternOk(nickname)) {
       setError('아이디는 영문·숫자 2~16자여야 합니다.')
       setIdFormatChecked(false)
       return
     }
-    setIdFormatChecked(true)
+    setDupBusy(true)
+    setIdFormatChecked(false)
+    try {
+      const available = await fetchNicknameAvailable(nickname)
+      if (!available) {
+        setError('이미 사용 중인 아이디(닉네임)입니다.')
+        setIdFormatChecked(false)
+        return
+      }
+      setIdFormatChecked(true)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '중복 확인에 실패했습니다.')
+      setIdFormatChecked(false)
+    } finally {
+      setDupBusy(false)
+    }
   }
 
   const resetVerification = () => {
@@ -160,22 +184,41 @@ export function SignupPage() {
     setStep(2)
   }
 
-  const handleSendCode = () => {
+  const handleSendCode = async () => {
     setError('')
     setEmailVerified(false)
     setVerifyCode('')
-    setCodeSent(true)
-    setSecondsLeft(180)
+    setEmailSendBusy(true)
+    try {
+      const { expiresInSeconds } = await sendSignupEmailVerification(email.trim())
+      setCodeSent(true)
+      setSecondsLeft(expiresInSeconds)
+    } catch (err) {
+      setCodeSent(false)
+      setSecondsLeft(null)
+      setError(err instanceof Error ? err.message : '인증번호 발송에 실패했습니다.')
+    } finally {
+      setEmailSendBusy(false)
+    }
   }
 
-  const handleConfirmCode = () => {
+  const handleConfirmCode = async () => {
     setError('')
     if (!/^\d{6}$/.test(verifyCode)) {
       setEmailVerified(false)
       setError('인증번호 6자리를 입력해 주세요.')
       return
     }
-    setEmailVerified(true)
+    setEmailConfirmBusy(true)
+    try {
+      await confirmSignupEmailVerification(email.trim(), verifyCode)
+      setEmailVerified(true)
+    } catch (err) {
+      setEmailVerified(false)
+      setError(err instanceof Error ? err.message : '인증에 실패했습니다.')
+    } finally {
+      setEmailConfirmBusy(false)
+    }
   }
 
   const completeJoin = async () => {
@@ -324,9 +367,7 @@ export function SignupPage() {
 
           <div className="signup-info-box">
             💡 <strong>왜 인증이 필요한가요?</strong> 가이드와 여행자 간의 신뢰할 수 있는 매칭을 위해 필수적인 절차입니다.
-            <span className="signup-info-sub">
-              (실제 메일 발송 API는 없습니다. 발송 버튼은 3분 타이머 데모이며, 6자리 입력 후 확인하면 통과로 처리합니다.)
-            </span>
+            <span className="signup-info-sub">서버에서 인증번호를 발송·검증합니다. (백엔드 API가 준비되어 있어야 합니다.)</span>
           </div>
 
           <div className="signup-field">
@@ -340,10 +381,10 @@ export function SignupPage() {
               <button
                 type="button"
                 className="signup-send-btn"
-                onClick={handleSendCode}
-                disabled={timerActive}
+                onClick={() => void handleSendCode()}
+                disabled={timerActive || emailSendBusy}
               >
-                인증번호 발송
+                {emailSendBusy ? '발송 중…' : '인증번호 발송'}
               </button>
             </div>
             <p className="signup-hint">입력하신 이메일로 6자리 인증번호가 발송됩니다.</p>
@@ -369,13 +410,18 @@ export function SignupPage() {
                 value={verifyCode}
                 onChange={(ev) => setVerifyCode(ev.target.value.replace(/\D/g, '').slice(0, 6))}
               />
-              <button type="button" className="signup-verify-btn" onClick={handleConfirmCode}>
-                확인
+              <button
+                type="button"
+                className="signup-verify-btn"
+                onClick={() => void handleConfirmCode()}
+                disabled={emailConfirmBusy}
+              >
+                {emailConfirmBusy ? '확인 중…' : '확인'}
               </button>
             </div>
             {emailVerified && (
               <p className="signup-hint" style={{ color: '#047857' }}>
-                인증이 완료되었습니다. (데모: 서버 검증 없음)
+                인증이 완료되었습니다.
               </p>
             )}
           </div>
@@ -443,6 +489,7 @@ export function SignupPage() {
             onChange={(ev) => {
               setEmail(ev.target.value)
               setIdFormatChecked(false)
+              resetVerification()
             }}
           />
         </div>
@@ -485,13 +532,13 @@ export function SignupPage() {
                 setIdFormatChecked(false)
               }}
             />
-            <button type="button" className="signup-dup" onClick={handleDupCheck}>
-              중복 확인
+            <button type="button" className="signup-dup" onClick={() => void handleDupCheck()} disabled={dupBusy}>
+              {dupBusy ? '확인 중…' : '중복 확인'}
             </button>
           </div>
           {idFormatChecked && (
             <p className="signup-hint" style={{ color: '#047857' }}>
-              형식 확인 완료 (서버 중복 검사는 추후 연동)
+              사용 가능한 아이디입니다. (최종 가입 시 서버에서 한 번 더 확인합니다.)
             </p>
           )}
         </div>

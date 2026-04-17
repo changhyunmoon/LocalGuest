@@ -91,6 +91,11 @@ export function AuthProvider({ children }) {
         throw new Error('서버 응답 형식이 예상과 다릅니다. accessToken을 확인해 주세요.')
       }
       setToken(accessToken)
+      const signedInRole = getRoleFromToken(accessToken)
+      return {
+        signedInRole: signedInRole ?? attempt.role,
+        requestedRole,
+      }
     },
     [setToken],
   )
