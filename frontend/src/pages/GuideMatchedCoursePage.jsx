@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 
+import { PageError, PageLoading } from '../components/PageStates.jsx'
 import { apiRequest } from '../api/client'
 
 import './GuideMatchedCoursePage.css'
@@ -314,13 +315,18 @@ export function GuideMatchedCoursePage() {
   }
 
   if (loading) {
-    return <p className="gmc" style={{ color: '#6b7280' }}>불러오는 중…</p>
+    return (
+      <div className="gmc">
+        <PageLoading />
+      </div>
+    )
   }
   if (error || !profile) {
     return (
       <div className="gmc">
-        <p className="gmc-err">{error || '가이드 정보를 찾을 수 없습니다.'}</p>
-        <Link to="/ai-search">검색으로 돌아가기</Link>
+        <PageError message={error || '가이드 정보를 찾을 수 없습니다.'}>
+          <Link to="/ai-search">검색으로 돌아가기</Link>
+        </PageError>
       </div>
     )
   }

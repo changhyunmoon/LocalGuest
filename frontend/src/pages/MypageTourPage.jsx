@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
+import { Link, useLocation } from 'react-router-dom'
 
+import { PageEmpty, PageError, PageLoading } from '../components/PageStates.jsx'
 import { apiRequest } from '../api/client.js'
 import { fetchGuestMatchRequests, fetchGuestPayments, parseMatchingApiError } from '../lib/matchingGuest.js'
 
@@ -73,6 +75,7 @@ function dday(v) {
 }
 
 export function MypageTourPage() {
+  const location = useLocation()
   const [requests, setRequests] = useState([])
   const [payments, setPayments] = useState([])
   const [extMap, setExtMap] = useState({})
@@ -80,9 +83,16 @@ export function MypageTourPage() {
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
   const [toast, setToast] = useState('')
+  const [actionApiErr, setActionApiErr] = useState('')
   const [refundPaymentId, setRefundPaymentId] = useState(null)
   const [refundReason, setRefundReason] = useState('')
   const [refundEvidence, setRefundEvidence] = useState('')
+  const [routeHint, setRouteHint] = useState('')
+
+  useEffect(() => {
+    const h = location.state?.hint
+    if (typeof h === 'string' && h.trim()) setRouteHint(h.trim())
+  }, [location.state])
 
   const load = useCallback(async () => {
     const [req, pay] = await Promise.all([fetchGuestMatchRequests(apiRequest), fetchGuestPayments(apiRequest)])
@@ -102,6 +112,18 @@ export function MypageTourPage() {
     }
     setExtMap(m)
   }, [])
+
+  const refetch = useCallback(async () => {
+    setLoading(true)
+    setError('')
+    try {
+      await load()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '불러오기 실패')
+    } finally {
+      setLoading(false)
+    }
+  }, [load])
 
   useEffect(() => {
     let cancelled = false
@@ -124,6 +146,7 @@ export function MypageTourPage() {
   const selectExtension = async (requestId, extend) => {
     setBusy(true)
     setToast('')
+    setActionApiErr('')
     try {
       const res = await apiRequest(`/matching/extensions/${requestId}/select`, {
         method: 'PATCH',
@@ -133,7 +156,7 @@ export function MypageTourPage() {
       if (!res.ok) throw new Error(parseMatchingApiError(text))
       await load()
     } catch (e) {
-      setToast(e instanceof Error ? e.message : '연장 처리 실패')
+      setActionApiErr(e instanceof Error ? e.message : '연장 처리 실패')
     } finally {
       setBusy(false)
     }
@@ -148,6 +171,7 @@ export function MypageTourPage() {
     }
     setBusy(true)
     setToast('')
+    setActionApiErr('')
     try {
       const res = await apiRequest('/matching/payments/refunds', {
         method: 'POST',
@@ -164,7 +188,7 @@ export function MypageTourPage() {
       setRefundEvidence('')
       await load()
     } catch (e) {
-      setToast(e instanceof Error ? e.message : '환불 실패')
+      setActionApiErr(e instanceof Error ? e.message : '환불 실패')
     } finally {
       setBusy(false)
     }
@@ -176,9 +200,39 @@ export function MypageTourPage() {
     <div className="mp-member">
       <h1>투어 연장 및 환불 관리 🔄</h1>
       <p className="sub">투어 종료 직전/직후의 연장 선택과 환불 처리를 한 번에 관리합니다.</p>
-      {error && <p className="err">{error}</p>}
+      {routeHint && (
+        <p
+          className="sub"
+          role="status"
+          style={{
+            padding: '0.75rem 0.95rem',
+            borderRadius: 12,
+            background: '#eff6ff',
+            border: '1px solid #bfdbfe',
+            color: '#1e3a8a',
+            fontWeight: 600,
+          }}
+        >
+          {routeHint}
+        </p>
+      )}
       {toast && <p className="err">{toast}</p>}
-      {loading && <p>불러오는 중…</p>}
+      {actionApiErr && (
+        <PageError
+          message={actionApiErr}
+          onRetry={() => {
+            setActionApiErr('')
+            void refetch()
+          }}
+          retryLabel="목록 새로고침"
+        >
+          <Link to="/mypage/payments">결제 내역 보기</Link>
+          {' · '}
+          같은 오류가 반복되면 팀에 공유된 고객 지원 채널로 문의해 주세요.
+        </PageError>
+      )}
+      {loading && <PageLoading />}
+      {!loading && error && <PageError message={error} onRetry={() => void refetch()} />}
 
       {!loading && !error && (
         <div className="mp-tour-shell">
@@ -186,7 +240,7 @@ export function MypageTourPage() {
             <h2>진행 예정 투어 연장</h2>
             <p className="sub">투어 전날 저녁, 아쉬움이 남는다면 하루 더 로컬과 함께해요.</p>
             {Object.keys(extMap).length === 0 && (
-              <article className="mp-tour-card mp-tour-card--empty">진행 중인 연장 요청이 없습니다.</article>
+              <PageEmpty title="진행 중인 연장 요청이 없습니다">연장 안내가 오면 이 영역에 표시됩니다.</PageEmpty>
             )}
             <div className="mp-cards">
               {Object.entries(extMap).map(([requestId, ex]) => {
@@ -225,7 +279,7 @@ export function MypageTourPage() {
             <h2>투어 취소 및 환불 관리</h2>
             <p className="sub">결제 후 2시간 이내에는 조건에 따라 즉시 환불이 가능합니다.</p>
             {refundable.length === 0 && (
-              <article className="mp-tour-card mp-tour-card--empty">현재 환불 가능한 결제가 없습니다.</article>
+              <PageEmpty title="환불 가능한 결제가 없습니다">조건을 만족하는 결제가 있으면 여기에서 신청할 수 있어요.</PageEmpty>
             )}
             <div className="mp-cards">
               {refundable.map((p) => (

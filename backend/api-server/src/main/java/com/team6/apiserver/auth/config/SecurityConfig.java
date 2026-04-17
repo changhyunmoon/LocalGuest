@@ -73,7 +73,8 @@ public class SecurityConfig {
                                 "/api/swagger-ui.html"
                         ).permitAll()
 
-                        // 2. 리뷰 조회는 비로그인 유저도 가능
+                        // 2. 리뷰 조회는 비로그인 유저도 가능 (단, 본인 목록은 인증 필요 — /reviews/** 보다 먼저 둔다)
+                        .requestMatchers(HttpMethod.GET, "/reviews/me").authenticated()
                         .requestMatchers(HttpMethod.GET, "/reviews/**").permitAll()
                         // 리뷰 등록, 수정, 삭제는 인증 필요
                         .requestMatchers(HttpMethod.POST, "/reviews/**").authenticated()

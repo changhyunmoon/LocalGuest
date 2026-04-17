@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
+import { MypageDevHint } from '../components/MypageDevHint.jsx'
+import { PageEmpty, PageError, PageLoading } from '../components/PageStates.jsx'
 import { apiRequest } from '../api/client.js'
 import { daysUntil, fetchGuestMatchRequests, parseMatchingApiError } from '../lib/matchingGuest.js'
 
@@ -53,6 +55,18 @@ export function MypageItineraryPage() {
     )
     setNames(nm)
   }, [])
+
+  const refetch = useCallback(async () => {
+    setLoading(true)
+    setError('')
+    try {
+      await reload()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '불러오기 실패')
+    } finally {
+      setLoading(false)
+    }
+  }, [reload])
 
   useEffect(() => {
     let cancelled = false
@@ -128,14 +142,18 @@ export function MypageItineraryPage() {
     <div className="mp-member">
       <h1>📆 앞으로의 여행 일정</h1>
       <p className="sub">
-        <code>GET /api/matching/requests/guest/list</code> 중 진행·예정 상태만 표시합니다. 수락/거절/취소는 매칭 API를
-        호출합니다.
+        진행 중이거나 예정된 매칭만 보여 줍니다. 수락·거절·취소는 각 카드에서 진행할 수 있어요.
       </p>
-      {error && <p className="err">{error}</p>}
+      <MypageDevHint>
+        <code>GET /api/matching/requests/guest/list</code> 중 진행·예정 상태만 표시 · 수락/거절/취소는 매칭 API 호출
+      </MypageDevHint>
       {toast && <p className="err">{toast}</p>}
-      {loading && <p>불러오는 중…</p>}
+      {loading && <PageLoading />}
+      {!loading && error && <PageError message={error} onRetry={() => void refetch()} />}
 
-      {!loading && !error && rows.length === 0 && <p className="sub">예정된 여행이 없습니다.</p>}
+      {!loading && !error && rows.length === 0 && (
+        <PageEmpty title="예정된 여행이 없습니다">진행 중이거나 예정된 매칭이 없을 때 표시됩니다.</PageEmpty>
+      )}
 
       {!loading && !error && rows.length > 0 && (
         <div className="mp-cards">

@@ -20,6 +20,26 @@
   line-height: 1.45;
 }
 
+/* 요약 vs 하위 화면 데이터 기준 안내 */
+.mp-data-note {
+  margin: 0 0 1rem;
+  font-size: 0.82rem;
+  color: #4b5563;
+  line-height: 1.5;
+}
+
+/* 개발 모드 전용 API 힌트 (MypageDevHint) */
+.mp-dev-hint {
+  margin: 0 0 1rem;
+  font-size: 0.78rem;
+  color: #6b7280;
+  line-height: 1.45;
+}
+
+.mp-dev-hint code {
+  font-size: 0.76rem;
+}
+
 .mp-member .err {
   color: #b91c1c;
   font-size: 0.88rem;

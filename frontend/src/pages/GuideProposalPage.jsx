@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 
+import { PageError, PageLoading } from '../components/PageStates.jsx'
 import { apiRequest } from '../api/client'
 
 import './GuideProposalPage.css'
@@ -153,12 +154,19 @@ export function GuideProposalPage() {
       : '—'
   const rc = profile?.reviewCount != null ? profile.reviewCount : 0
 
-  if (loading) return <p className="gp" style={{ color: '#6b7280' }}>불러오는 중…</p>
+  if (loading) {
+    return (
+      <div className="gp">
+        <PageLoading />
+      </div>
+    )
+  }
   if (error || !profile) {
     return (
       <div className="gp">
-        <p className="gp-err">{error || '프로필을 찾을 수 없습니다.'}</p>
-        <Link to="/guides">가이드 목록</Link>
+        <PageError message={error || '프로필을 찾을 수 없습니다.'}>
+          <Link to="/guides">가이드 목록</Link>
+        </PageError>
       </div>
     )
   }

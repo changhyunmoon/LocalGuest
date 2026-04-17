@@ -51,6 +51,19 @@
   word-break: break-all;
 }
 
+.dash-local-note {
+  margin: 0.55rem 0 0;
+  padding: 0.45rem 0.5rem;
+  max-width: 100%;
+  font-size: 0.72rem;
+  line-height: 1.45;
+  color: #5c6370;
+  text-align: center;
+  background: #f8fafc;
+  border: 1px solid #e8eaed;
+  border-radius: 10px;
+}
+
 .dash-profile-edit {
   margin-top: 0.65rem;
   padding: 0.35rem 0.75rem;

@@ -1,6 +1,8 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 
+import { MypageDevHint } from '../components/MypageDevHint.jsx'
+import { PageEmpty, PageError, PageLoading } from '../components/PageStates.jsx'
 import { apiRequest } from '../api/client.js'
 import { daysUntil, fetchGuestMatchRequests } from '../lib/matchingGuest.js'
 
@@ -32,19 +34,35 @@ export function MypageScrapbookPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
 
+  const loadScrapbook = useCallback(async () => {
+    const all = await fetchGuestMatchRequests(apiRequest)
+    const completed = (Array.isArray(all) ? all : []).filter((r) => r.status === 'COMPLETED')
+    completed.sort((a, b) => String(b.desiredDate).localeCompare(String(a.desiredDate)))
+    setRows(completed)
+    const gids = completed.map((r) => r.guideId)
+    const nm = await loadGuideNicknames(apiRequest, gids)
+    setNames(nm)
+  }, [])
+
+  const refetch = useCallback(async () => {
+    setLoading(true)
+    setError('')
+    try {
+      await loadScrapbook()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '불러오기 실패')
+    } finally {
+      setLoading(false)
+    }
+  }, [loadScrapbook])
+
   useEffect(() => {
     let cancelled = false
     ;(async () => {
       setLoading(true)
       setError('')
       try {
-        const all = await fetchGuestMatchRequests(apiRequest)
-        const completed = (Array.isArray(all) ? all : []).filter((r) => r.status === 'COMPLETED')
-        completed.sort((a, b) => String(b.desiredDate).localeCompare(String(a.desiredDate)))
-        if (!cancelled) setRows(completed)
-        const gids = completed.map((r) => r.guideId)
-        const nm = await loadGuideNicknames(apiRequest, gids)
-        if (!cancelled) setNames(nm)
+        await loadScrapbook()
       } catch (e) {
         if (!cancelled) setError(e instanceof Error ? e.message : '불러오기 실패')
       } finally {
@@ -54,7 +72,7 @@ export function MypageScrapbookPage() {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [loadScrapbook])
 
   const count = rows.length
 
@@ -67,11 +85,18 @@ export function MypageScrapbookPage() {
     <div className="mp-member">
       <h1>📒 나의 여행 기록 (스크랩북)</h1>
       <p className="sub">
-        <code>GET /api/matching/requests/guest/list</code> 중 <strong>COMPLETED</strong> 만 표시합니다. 가이드 닉네임은{' '}
-        <code>GET /api/guides/&#123;guideId&#125;</code> 로 보강합니다.
+        투어가 <strong>완료</strong>된 매칭만 시간 순으로 모아 보여 줍니다. 가이드 이름은 공개 프로필에서 가져옵니다.
       </p>
-      {error && <p className="err">{error}</p>}
-      {loading && <p>불러오는 중…</p>}
+      <MypageDevHint>
+        <code>GET /api/matching/requests/guest/list</code> 중 <strong>COMPLETED</strong> 만 표시 · 가이드 닉네임은{' '}
+        <code>GET /api/guides/&#123;guideId&#125;</code> 로 보강
+      </MypageDevHint>
+      <p className="sub mp-data-note">
+        <strong>데이터 안내:</strong> 요약 화면의 기록 카드는 <strong>스크랩북(서버 저장)</strong> 기준이라, 이 목록과 개수가
+        다를 수 있어요.
+      </p>
+      {loading && <PageLoading />}
+      {!loading && error && <PageError message={error} onRetry={() => void refetch()} />}
 
       {!loading && !error && (
         <>
@@ -85,7 +110,9 @@ export function MypageScrapbookPage() {
             </Link>
           </div>
 
-          {rows.length === 0 && <p className="sub">완료된 투어가 생기면 여기에 쌓입니다.</p>}
+          {rows.length === 0 && (
+            <PageEmpty title="완료된 투어 기록이 없습니다">투어가 완료되면 여기에 쌓입니다.</PageEmpty>
+          )}
 
           {rows.length > 0 && (
             <div className="mp-cards">

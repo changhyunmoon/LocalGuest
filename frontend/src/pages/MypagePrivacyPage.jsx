@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 
+import { MypageDevHint } from '../components/MypageDevHint.jsx'
 import { useAuth } from '../context/useAuth.js'
 import { loadGuestPrivacyForm, persistGuestPrivacyForm } from '../lib/guestMypagePrefs.js'
 
@@ -61,9 +62,11 @@ export function MypagePrivacyPage() {
         회원 정보 및 여행 설정 <span aria-hidden>⚙️</span>
       </h1>
       <p className="mp-privacy-hint">
-        회원 닉네임·알림·여행 성향은 아직 전용 API가 없어 이 브라우저에만 저장됩니다. 백엔드에{' '}
-        <code>PATCH /members/me</code> 등이 추가되면 연동할 수 있습니다.
+        회원 닉네임·알림·여행 성향은 전용 서버 연동 전까지 이 브라우저에만 저장됩니다.
       </p>
+      <MypageDevHint className="mp-privacy-hint">
+        백엔드에 <code>PATCH /members/me</code> 등이 추가되면 연동 예정입니다.
+      </MypageDevHint>
       {savedFlash && <p className="mp-privacy-banner">설정이 저장되었습니다.</p>}
 
       <section className="mp-privacy-section">

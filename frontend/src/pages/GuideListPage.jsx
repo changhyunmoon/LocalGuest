@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 
+import { PageEmpty, PageError, PageLoading } from '../components/PageStates.jsx'
 import { apiRequest } from '../api/client'
 
 import './GuideListPage.css'
@@ -19,19 +20,35 @@ export function GuideListPage() {
     return items.filter((g) => (g.region || '').toLowerCase().includes(q))
   }, [items, regionFilter])
 
+  const loadGuides = useCallback(async () => {
+    const res = await apiRequest('/guides', { method: 'GET', skipAuth: true })
+    const text = await res.text()
+    if (!res.ok) {
+      throw new Error(text || '목록을 불러오지 못했습니다.')
+    }
+    const data = text ? JSON.parse(text) : []
+    setItems(Array.isArray(data) ? data : [])
+  }, [])
+
+  const refetch = useCallback(async () => {
+    setLoading(true)
+    setError('')
+    try {
+      await loadGuides()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '오류')
+    } finally {
+      setLoading(false)
+    }
+  }, [loadGuides])
+
   useEffect(() => {
     let cancelled = false
     ;(async () => {
       setLoading(true)
       setError('')
       try {
-        const res = await apiRequest('/guides', { method: 'GET', skipAuth: true })
-        const text = await res.text()
-        if (!res.ok) {
-          throw new Error(text || '목록을 불러오지 못했습니다.')
-        }
-        const data = text ? JSON.parse(text) : []
-        if (!cancelled) setItems(Array.isArray(data) ? data : [])
+        await loadGuides()
       } catch (e) {
         if (!cancelled) setError(e instanceof Error ? e.message : '오류')
       } finally {
@@ -41,19 +58,23 @@ export function GuideListPage() {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [loadGuides])
 
   return (
     <div className="guide-list">
       <h1 style={{ marginTop: 0 }}>가이드 목록</h1>
       <p className="guide-list-hint">승인·활성 가이드만 표시됩니다 (`GET /api/guides`).</p>
 
-      {loading && <p>불러오는 중…</p>}
-      {error && <p className="guide-list-error">{error}</p>}
+      {loading && <PageLoading />}
+      {!loading && error && <PageError message={error} onRetry={() => void refetch()} />}
 
-      {!loading && !error && items.length === 0 && <p>표시할 가이드가 없습니다.</p>}
+      {!loading && !error && items.length === 0 && (
+        <PageEmpty title="표시할 가이드가 없습니다">승인된 가이드가 등록되면 여기에 나타납니다.</PageEmpty>
+      )}
       {!loading && !error && items.length > 0 && filtered.length === 0 && regionFilter && (
-        <p>「{regionFilter}」 지역에 해당하는 가이드가 없습니다.</p>
+        <PageEmpty title="검색 결과가 없습니다">
+          「{regionFilter}」 지역에 해당하는 가이드가 없습니다. 필터를 바꿔 보세요.
+        </PageEmpty>
       )}
 
       <ul className="guide-grid">
