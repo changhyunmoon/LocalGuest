@@ -1,13 +1,27 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 import { MypageDevHint } from '../components/MypageDevHint.jsx'
+import { apiRequest } from '../api/client.js'
 import { useAuth } from '../context/useAuth.js'
 import { loadGuestPrivacyForm, persistGuestPrivacyForm } from '../lib/guestMypagePrefs.js'
 
+import './MypageMemberPages.css'
 import './MypagePrivacyPage.css'
 
+function parseApiErrorMessage(text) {
+  if (!text) return '요청 실패'
+  try {
+    const j = JSON.parse(text)
+    return (j.message ?? text) || '요청 실패'
+  } catch {
+    return text || '요청 실패'
+  }
+}
+
 export function MypagePrivacyPage() {
-  const { email } = useAuth()
+  const { email, logout } = useAuth()
+  const navigate = useNavigate()
   const [nickname, setNickname] = useState('')
   const [bookingNotify, setBookingNotify] = useState(true)
   const [guideMessageNotify, setGuideMessageNotify] = useState(true)
@@ -16,6 +30,8 @@ export function MypagePrivacyPage() {
   const [newTag, setNewTag] = useState('')
   const [savedFlash, setSavedFlash] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [withdrawBusy, setWithdrawBusy] = useState(false)
+  const [withdrawErr, setWithdrawErr] = useState('')
 
   useEffect(() => {
     const f = loadGuestPrivacyForm(email)
@@ -54,6 +70,24 @@ export function MypagePrivacyPage() {
 
   const removeTag = (t) => {
     setTags((prev) => prev.filter((x) => x !== t))
+  }
+
+  const onWithdraw = async () => {
+    const ok = window.confirm('정말 탈퇴할까요? 탈퇴 후에는 복구가 어려울 수 있어요.')
+    if (!ok) return
+    setWithdrawBusy(true)
+    setWithdrawErr('')
+    try {
+      const res = await apiRequest('/members/me?role=GUEST', { method: 'DELETE' })
+      const text = await res.text()
+      if (!res.ok) throw new Error(parseApiErrorMessage(text))
+      await logout()
+      navigate('/', { replace: true, state: { hint: '회원 탈퇴가 완료되었습니다.' } })
+    } catch (e) {
+      setWithdrawErr(e instanceof Error ? e.message : '탈퇴 처리 실패')
+    } finally {
+      setWithdrawBusy(false)
+    }
   }
 
   return (
@@ -173,6 +207,20 @@ export function MypagePrivacyPage() {
           설정 저장하기
         </button>
       </div>
+
+      <section className="mp-privacy-section mp-privacy-danger">
+        <h2>계정 탈퇴</h2>
+        <p className="mp-privacy-danger-hint">
+          탈퇴 시 서비스 이용이 종료되며 복구가 어려울 수 있습니다. 로컬에만 있는 닉네임·알림 설정도 더 이상 쓰이지 않습니다.
+        </p>
+        <MypageDevHint className="mp-privacy-hint">
+          API: <code>DELETE /api/members/me?role=GUEST</code>
+        </MypageDevHint>
+        {withdrawErr && <p className="err">{withdrawErr}</p>}
+        <button type="button" className="mp-btn mp-btn--danger" disabled={withdrawBusy} onClick={() => void onWithdraw()}>
+          {withdrawBusy ? '처리 중…' : '회원 탈퇴'}
+        </button>
+      </section>
     </div>
   )
 }

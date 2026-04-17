@@ -1,3 +1,5 @@
+import { Navigate } from 'react-router-dom'
+
 import { ProtectedRoute } from '../components/ProtectedRoute'
 import { MypageShell } from '../layouts/MypageShell'
 import { MypageItineraryPage } from '../pages/MypageItineraryPage'
@@ -7,7 +9,6 @@ import { MypageProfilePage } from '../pages/MypageProfilePage'
 import { MypageReviewsPage } from '../pages/MypageReviewsPage'
 import { MypageScrapbookPage } from '../pages/MypageScrapbookPage'
 import { MypageTourPage } from '../pages/MypageTourPage'
-import { MyPageOverview } from '../pages/MyPageOverview'
 
 export const mypageRoutes = [
   {
@@ -18,7 +19,7 @@ export const mypageRoutes = [
       </ProtectedRoute>
     ),
     children: [
-      { index: true, element: <MyPageOverview /> },
+      { index: true, element: <Navigate to="scrapbook" replace /> },
       { path: 'profile', element: <MypageProfilePage /> },
       {
         path: 'scrapbook',
