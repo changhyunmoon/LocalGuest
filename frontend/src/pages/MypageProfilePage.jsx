@@ -62,7 +62,7 @@ export function MypageProfilePage() {
       <h1>👤 프로필</h1>
       <p className="sub">
         계정 이메일·역할은 로그인 토큰 기준이며, 표시 이름 등은 <strong>개인정보 설정(/mypage/privacy)</strong>에 저장한 값을
-        함께 씁니다.
+        함께 씁니다. 서버에 게스트 프로필이 없을 때 닉네임·알림 설정은 <strong>이 브라우저(로컬)에만</strong> 남습니다.
       </p>
       <MypageDevHint>
         회원 API: <code>POST /members/join</code>, <code>DELETE /members/me?role=...</code> · 표시는 JWT + 로컬 prefs

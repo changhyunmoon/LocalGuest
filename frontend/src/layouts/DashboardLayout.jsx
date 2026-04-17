@@ -35,6 +35,9 @@ export function DashboardLayout() {
           <div className="dash-avatar" aria-hidden />
           <strong className="dash-name">{displayName}</strong>
           <span className="dash-email">{email ?? ''}</span>
+          <p className="dash-local-note" role="note">
+            닉네임·알림 등은 서버 프로필이 없을 때 <strong>이 브라우저에만</strong> 저장됩니다.
+          </p>
           <Link to="/mypage/profile" className="dash-profile-edit">
             프로필 수정
           </Link>

@@ -89,7 +89,7 @@ export function MypageReviewsPage() {
       <h1>⭐ 내 리뷰</h1>
       <p className="sub">
         내가 작성한 리뷰만 모아 보여 줍니다. 팀 정책상 <strong>작성 후 수정은 불가</strong>이며, 잘못 올린 경우{' '}
-        <strong>삭제</strong>만 가능합니다.
+        <strong>삭제</strong>만 가능합니다. 후기는 <strong>완료된 매칭(COMPLETED)</strong>에서만 작성할 수 있어요.
       </p>
       <MypageDevHint>
         <code>GET /reviews/me</code> (로그인 필요)
@@ -100,7 +100,9 @@ export function MypageReviewsPage() {
       {!loading && error && <PageError message={error} onRetry={() => void load(page)} />}
 
       {!loading && !error && rows.length === 0 && (
-        <PageEmpty title="작성한 리뷰가 없습니다">가이드 매칭 화면에서 후기를 남기면 여기에 표시됩니다.</PageEmpty>
+        <PageEmpty title="작성한 리뷰가 없습니다">
+          가이드 매칭이 <strong>완료(COMPLETED)</strong>된 뒤 매칭·결제 화면에서 후기를 남기면 여기에 표시됩니다.
+        </PageEmpty>
       )}
 
       {!loading && !error && rows.length > 0 ? (

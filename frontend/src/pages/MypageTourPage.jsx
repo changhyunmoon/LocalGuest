@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { useLocation } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 
 import { PageEmpty, PageError, PageLoading } from '../components/PageStates.jsx'
 import { apiRequest } from '../api/client.js'
@@ -83,6 +83,7 @@ export function MypageTourPage() {
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
   const [toast, setToast] = useState('')
+  const [actionApiErr, setActionApiErr] = useState('')
   const [refundPaymentId, setRefundPaymentId] = useState(null)
   const [refundReason, setRefundReason] = useState('')
   const [refundEvidence, setRefundEvidence] = useState('')
@@ -145,6 +146,7 @@ export function MypageTourPage() {
   const selectExtension = async (requestId, extend) => {
     setBusy(true)
     setToast('')
+    setActionApiErr('')
     try {
       const res = await apiRequest(`/matching/extensions/${requestId}/select`, {
         method: 'PATCH',
@@ -154,7 +156,7 @@ export function MypageTourPage() {
       if (!res.ok) throw new Error(parseMatchingApiError(text))
       await load()
     } catch (e) {
-      setToast(e instanceof Error ? e.message : '연장 처리 실패')
+      setActionApiErr(e instanceof Error ? e.message : '연장 처리 실패')
     } finally {
       setBusy(false)
     }
@@ -169,6 +171,7 @@ export function MypageTourPage() {
     }
     setBusy(true)
     setToast('')
+    setActionApiErr('')
     try {
       const res = await apiRequest('/matching/payments/refunds', {
         method: 'POST',
@@ -185,7 +188,7 @@ export function MypageTourPage() {
       setRefundEvidence('')
       await load()
     } catch (e) {
-      setToast(e instanceof Error ? e.message : '환불 실패')
+      setActionApiErr(e instanceof Error ? e.message : '환불 실패')
     } finally {
       setBusy(false)
     }
@@ -214,6 +217,20 @@ export function MypageTourPage() {
         </p>
       )}
       {toast && <p className="err">{toast}</p>}
+      {actionApiErr && (
+        <PageError
+          message={actionApiErr}
+          onRetry={() => {
+            setActionApiErr('')
+            void refetch()
+          }}
+          retryLabel="목록 새로고침"
+        >
+          <Link to="/mypage/payments">결제 내역 보기</Link>
+          {' · '}
+          같은 오류가 반복되면 팀에 공유된 고객 지원 채널로 문의해 주세요.
+        </PageError>
+      )}
       {loading && <PageLoading />}
       {!loading && error && <PageError message={error} onRetry={() => void refetch()} />}
 

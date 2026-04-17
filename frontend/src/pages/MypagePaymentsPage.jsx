@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 
 import { MypageDevHint } from '../components/MypageDevHint.jsx'
+import { PaymentDetailPanel } from '../components/PaymentDetailPanel.jsx'
 import { PageEmpty, PageError, PageLoading } from '../components/PageStates.jsx'
 import { apiRequest } from '../api/client.js'
 import { fetchGuestMatchRequests, fetchGuestPayments, parseMatchingApiError } from '../lib/matchingGuest.js'
@@ -33,7 +34,15 @@ export function MypagePaymentsPage() {
   const [tab, setTab] = useState('all')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
-  const [detail, setDetail] = useState(null)
+  const [detailModal, setDetailModal] = useState(
+    /** @type {{ open: boolean, paymentId: number | null, data: Record<string, unknown> | null, err: string, loading: boolean }} */ ({
+      open: false,
+      paymentId: null,
+      data: null,
+      err: '',
+      loading: false,
+    }),
+  )
   const [routeHint, setRouteHint] = useState('')
 
   useEffect(() => {
@@ -85,14 +94,22 @@ export function MypagePaymentsPage() {
 
   const filtered = useMemo(() => payments.filter((p) => tabFilter(tab, p)), [payments, tab])
 
+  const closeDetail = () => {
+    setDetailModal({ open: false, paymentId: null, data: null, err: '', loading: false })
+  }
+
   const openDetail = async (paymentId) => {
+    setDetailModal({ open: true, paymentId, data: null, err: '', loading: true })
     try {
       const res = await apiRequest(`/matching/payments/${paymentId}`, { method: 'GET' })
       const text = await res.text()
       if (!res.ok) throw new Error(parseMatchingApiError(text))
-      setDetail(text ? JSON.parse(text) : null)
+      const raw = text ? JSON.parse(text) : null
+      const data = raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : {}
+      setDetailModal({ open: true, paymentId, data, err: '', loading: false })
     } catch (e) {
-      setError(e instanceof Error ? e.message : '상세 조회 실패')
+      const msg = e instanceof Error ? e.message : '상세 조회 실패'
+      setDetailModal({ open: true, paymentId, data: null, err: msg, loading: false })
     }
   }
 
@@ -212,13 +229,29 @@ export function MypagePaymentsPage() {
         </>
       )}
 
-      {detail && (
+      {detailModal.open && (
         <div className="mp-modal-overlay" role="dialog" aria-modal="true">
           <div className="mp-modal">
             <h2 style={{ marginTop: 0 }}>결제 상세</h2>
-            <pre style={{ fontSize: '0.78rem', overflow: 'auto', maxHeight: '14rem' }}>{JSON.stringify(detail, null, 2)}</pre>
+            {detailModal.loading ? (
+              <PageLoading label="상세 불러오는 중…" />
+            ) : detailModal.err ? (
+              <PageError
+                message={detailModal.err}
+                onRetry={
+                  detailModal.paymentId != null
+                    ? () => {
+                        void openDetail(detailModal.paymentId)
+                      }
+                    : undefined
+                }
+                retryLabel="다시 시도"
+              />
+            ) : (
+              <PaymentDetailPanel detail={detailModal.data ?? {}} />
+            )}
             <div className="mp-modal-actions">
-              <button type="button" className="mp-btn mp-btn--line" onClick={() => setDetail(null)}>
+              <button type="button" className="mp-btn mp-btn--line" onClick={closeDetail}>
                 닫기
               </button>
             </div>
