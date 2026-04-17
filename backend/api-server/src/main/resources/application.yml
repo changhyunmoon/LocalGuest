@@ -1,3 +1,9 @@
+# 프론트(Vite) 기본 API 베이스 `/api`·OAuth redirect-uri(`/api/login/...`)와 맞춘다.
+# 이 값이 없으면 컨트롤러는 `/chat/...`에만 붙고, 클라이언트는 `/api/chat/...`로 호출해 404(정적 리소스)가 난다.
+server:
+  servlet:
+    context-path: /api
+
 spring:
   profiles:
     active: local
@@ -24,8 +30,9 @@ spring:
   mail:
     host: ${MAIL_HOST:smtp.gmail.com}           # 환경변수 MAIL_HOST 값 사용
     port: ${MAIL_PORT:587}       # 환경변수 없으면 기본값 587
-    username: ${MAIL_USERNAME}
-    password: ${MAIL_PASSWORD}
+    # 로컬에서 MAIL_* 미설정이어도 부팅은 되어야 한다. (메일 기능은 미동작 가능)
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
     properties:
       mail:
         smtp:

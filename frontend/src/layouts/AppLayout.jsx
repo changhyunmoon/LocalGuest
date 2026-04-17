@@ -14,10 +14,16 @@ function pillClass(...extra) {
   }
 }
 
+/** `/guides/:id/match/complete` — 일정·매칭 완료 흐름이므로 상단은 마이페이지 탭을 켠다(가이드 탭은 끔). */
+function isGuidesMatchCompletePath(pathname) {
+  return /^\/guides\/[^/]+\/match\/complete(?:\/|$)/.test(pathname)
+}
+
 export function AppLayout() {
   const { pathname } = useLocation()
   const { isAuthenticated, email, isGuide, logout } = useAuth()
   const guideMypageActive = isGuide && pathname.startsWith('/guide/mypage')
+  const matchComplete = isGuidesMatchCompletePath(pathname)
 
   return (
     <div className="shell">
@@ -30,7 +36,15 @@ export function AppLayout() {
           <NavLink to="/" end className={pillClass()}>
             홈
           </NavLink>
-          <NavLink to="/guides" className={pillClass()}>
+          <NavLink
+            to="/guides"
+            className={({ isActive }) => {
+              const on = isActive && !matchComplete
+              const parts = ['shell-pill-link']
+              if (on) parts.push('is-on')
+              return parts.join(' ')
+            }}
+          >
             가이드
           </NavLink>
           <NavLink to="/ai-search" className={pillClass('shell-pill-link--spark')}>
@@ -42,7 +56,7 @@ export function AppLayout() {
           <NavLink
             to={isGuide ? '/guide/mypage/fees' : '/mypage'}
             className={({ isActive }) => {
-              const on = isGuide ? guideMypageActive : isActive
+              const on = isGuide ? guideMypageActive || matchComplete : isActive || matchComplete
               const parts = ['shell-pill-link', 'shell-pill-link--cta']
               if (on) {
                 parts.push('is-on')
