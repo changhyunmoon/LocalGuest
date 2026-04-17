@@ -1,6 +1,4 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
-
 import { MypageDevHint } from '../components/MypageDevHint.jsx'
 import { PageEmpty, PageError, PageLoading } from '../components/PageStates.jsx'
 import { apiRequest } from '../api/client.js'
@@ -105,9 +103,6 @@ export function MypageScrapbookPage() {
               <h2>나의 스크랩북</h2>
               <p>{subtitle}</p>
             </div>
-            <Link to="/mypage/profile" className="mp-btn mp-btn--line" style={{ textDecoration: 'none' }}>
-              프로필 수정
-            </Link>
           </div>
 
           {rows.length === 0 && (
