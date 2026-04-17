@@ -1,3 +1,9 @@
+# 프론트(Vite) 기본 API 베이스 `/api`·OAuth redirect-uri(`/api/login/...`)와 맞춘다.
+# 이 값이 없으면 컨트롤러는 `/chat/...`에만 붙고, 클라이언트는 `/api/chat/...`로 호출해 404(정적 리소스)가 난다.
+server:
+  servlet:
+    context-path: /api
+
 spring:
   profiles:
     active: local

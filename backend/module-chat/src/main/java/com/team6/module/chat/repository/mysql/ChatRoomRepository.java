@@ -18,6 +18,9 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
   
     Optional<ChatRoom> findByRoomId(String roomId);
 
+    /** 매칭 단위 채팅방 제목(LG-MATCH-{requestId}) 조회 — idempotent 생성용 */
+    Optional<ChatRoom> findFirstByTitleOrderByIdAsc(String title);
+
     @Query("SELECT p.userId, COUNT(r.id) " +
             "FROM ChatRoom r JOIN r.participants p " +
             "WHERE p.userId IN :userIds " +

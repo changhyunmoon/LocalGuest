@@ -82,10 +82,9 @@ export function MessagesPage() {
         if (!cancelled) {
           setRooms(list)
           const fromQuery = searchParams.get('roomId')
-          const picked =
-            (fromQuery && list.find((r) => r.roomId === fromQuery)?.roomId) ||
-            list[0]?.roomId ||
-            ''
+          const picked = fromQuery
+            ? list.find((r) => r.roomId === fromQuery)?.roomId ?? fromQuery
+            : list[0]?.roomId ?? ''
           setSelectedRoomId((prev) => prev || picked)
         }
       } catch (e) {

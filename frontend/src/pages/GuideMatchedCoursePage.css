@@ -222,16 +222,28 @@ a.gmc-hero--link:focus-visible {
   justify-content: center;
   width: 100%;
   padding: 0.72rem 1rem;
+  border: none;
   border-radius: 999px;
   background: #1f2328;
   color: #fff !important;
   text-decoration: none;
   font-size: 0.85rem;
   font-weight: 800;
+  cursor: pointer;
+  font-family: inherit;
 }
 
 .gmc-chat-btn:hover {
   background: #111418;
+}
+
+.gmc-chat-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.gmc-chat-err {
+  margin-top: 0.5rem;
 }
 
 .gmc-err {

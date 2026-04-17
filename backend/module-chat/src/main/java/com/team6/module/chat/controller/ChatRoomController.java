@@ -39,4 +39,14 @@ public class ChatRoomController {
         return ResponseEntity.ok(response);
     }
 
+    /**
+     * 매칭 요청 단위 채팅방 조회 또는 생성 (게스트/해당 가이드만).
+     * 프론트는 응답의 roomId로 /messages?roomId= 로 이동하면 된다.
+     */
+    @PostMapping("/for-match-request/{requestId}")
+    public ResponseEntity<ChatRoomResponse> getOrCreateForMatchRequest(@PathVariable Long requestId) {
+        ChatRoomResponse response = chatRoomService.getOrCreateRoomForMatchRequest(requestId);
+        return ResponseEntity.ok(response);
+    }
+
 }
