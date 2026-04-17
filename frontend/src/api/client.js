@@ -94,6 +94,17 @@ export async function apiRequest(path, options = {}) {
     body: json !== undefined ? JSON.stringify(json) : rest.body,
   })
 
+  // 가이드 신청(프로필 생성) 직후 재로그인 시 /guide/apply 로 돌아가지 않도록 로그인 목적지 힌트 저장
+  const method = String(rest.method ?? 'GET').toUpperCase()
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`
+  if (res.ok && method === 'POST' && normalizedPath === '/guides') {
+    try {
+      sessionStorage.setItem('localguest_login_return_override', '/guide/mypage/fees')
+    } catch {
+      /* ignore */
+    }
+  }
+
   if (!skipAuth && res.status === 401 && unauthorizedHandler) {
     try {
       unauthorizedHandler()
@@ -133,4 +144,99 @@ export async function apiLogin(path, body) {
   })
   const text = (await res.text()).trim()
   return { res, text }
+}
+
+/**
+ * 회원가입 단계 — 이메일 인증번호 발송 (백엔드 구현 후 `SecurityConfig`에 permitAll 필요)
+ * POST /members/email-verification/send  body: { email }
+ * 응답 예: { "expiresInSeconds": 180 } 또는 본문 없음(기본 180초)
+ * @param {string} email
+ * @returns {Promise<{ expiresInSeconds: number }>}
+ */
+export async function sendSignupEmailVerification(email) {
+  const res = await apiRequest('/members/email-verification/send', {
+    method: 'POST',
+    json: { email },
+    skipAuth: true,
+  })
+  const text = (await res.text()).trim()
+  if (!res.ok) {
+    let payload = text
+    if (text?.startsWith('{') || text?.startsWith('[')) {
+      try {
+        payload = JSON.parse(text)
+      } catch {
+        payload = text
+      }
+    }
+    throw new Error(toUserErrorMessage(res.status, payload))
+  }
+  if (!text) return { expiresInSeconds: 180 }
+  try {
+    const j = JSON.parse(text)
+    const sec = Number(j?.expiresInSeconds)
+    return { expiresInSeconds: Number.isFinite(sec) && sec > 0 ? sec : 180 }
+  } catch {
+    return { expiresInSeconds: 180 }
+  }
+}
+
+/**
+ * 회원가입 단계 — 이메일 인증번호 확인
+ * POST /members/email-verification/confirm  body: { email, code }
+ * @param {string} email
+ * @param {string} code
+ */
+export async function confirmSignupEmailVerification(email, code) {
+  const res = await apiRequest('/members/email-verification/confirm', {
+    method: 'POST',
+    json: { email, code },
+    skipAuth: true,
+  })
+  const text = (await res.text()).trim()
+  if (!res.ok) {
+    let payload = text
+    if (text?.startsWith('{') || text?.startsWith('[')) {
+      try {
+        payload = JSON.parse(text)
+      } catch {
+        payload = text
+      }
+    }
+    throw new Error(toUserErrorMessage(res.status, payload))
+  }
+}
+
+/**
+ * 닉네임(아이디) 사용 가능 여부 — 가입 전 조회
+ * GET /members/nickname-availability?nickname=
+ * 응답 예: { "available": true }
+ * @param {string} nickname
+ * @returns {Promise<boolean>}
+ */
+export async function fetchNicknameAvailable(nickname) {
+  const q = encodeURIComponent(nickname.trim())
+  const res = await apiRequest(`/members/nickname-availability?nickname=${q}`, {
+    method: 'GET',
+    skipAuth: true,
+  })
+  const text = (await res.text()).trim()
+  if (!res.ok) {
+    let payload = text
+    if (text?.startsWith('{') || text?.startsWith('[')) {
+      try {
+        payload = JSON.parse(text)
+      } catch {
+        payload = text
+      }
+    }
+    throw new Error(toUserErrorMessage(res.status, payload))
+  }
+  if (!text) return false
+  try {
+    const j = JSON.parse(text)
+    return Boolean(j?.available)
+  } catch {
+    return false
+  }
 }

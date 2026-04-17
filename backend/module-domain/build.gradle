@@ -31,6 +31,9 @@ dependencies {
 
     //Redis 사용
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+
+    // 메일 발송
+    implementation 'org.springframework.boot:spring-boot-starter-mail'
 }
 
 bootJar { enabled = false }

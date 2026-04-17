@@ -86,4 +86,11 @@ public class MemberService {
                     return memberRepository.save(newMember);
                 });
     }
+
+    // 닉네임 중복 체크
+    public boolean existsByNickname(String nickname) {
+        return memberRepository.existsByNickname(nickname);
+    }
 }
+
+

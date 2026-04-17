@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 
-import { apiRequest } from '../api/client'
+import { apiRequest, fetchNicknameAvailable } from '../api/client'
 import { setStoredGuideId } from '../lib/guideId.js'
 import { useAuth } from '../context/useAuth.js'
 
@@ -13,6 +13,9 @@ export function GuideApplyPage() {
   const location = useLocation()
   const fromTerms = Boolean(location.state?.fromTerms)
   const [nickname, setNickname] = useState('')
+  const [nicknameChecked, setNicknameChecked] = useState(false)
+  const [nicknameCheckBusy, setNicknameCheckBusy] = useState(false)
+  const [nicknameCheckMsg, setNicknameCheckMsg] = useState('')
   const [profileImage, setProfileImage] = useState('')
   const [bio, setBio] = useState('')
   const [region, setRegion] = useState('')
@@ -23,9 +26,40 @@ export function GuideApplyPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
+  const handleNicknameCheck = async () => {
+    setError('')
+    const trimmed = nickname.trim()
+    if (!trimmed) {
+      setNicknameChecked(false)
+      setNicknameCheckMsg('가이드 닉네임을 먼저 입력해 주세요.')
+      return
+    }
+    setNicknameCheckBusy(true)
+    try {
+      const available = await fetchNicknameAvailable(trimmed)
+      if (available) {
+        setNicknameChecked(true)
+        setNicknameCheckMsg('사용 가능한 가이드명입니다.')
+      } else {
+        setNicknameChecked(false)
+        setNicknameCheckMsg('이미 사용 중인 가이드명입니다.')
+      }
+    } catch (err) {
+      setNicknameChecked(false)
+      setNicknameCheckMsg('')
+      setError(err instanceof Error ? err.message : '가이드명 중복 확인에 실패했습니다.')
+    } finally {
+      setNicknameCheckBusy(false)
+    }
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
+    if (!nicknameChecked) {
+      setError('가이드 닉네임 중복 확인을 완료해 주세요.')
+      return
+    }
     setLoading(true)
     try {
       const price = Number(pricePerHour)
@@ -93,7 +127,32 @@ export function GuideApplyPage() {
       <form className="form-card" onSubmit={(e) => void handleSubmit(e)}>
         <label className="field">
           <span>가이드 닉네임 *</span>
-          <input value={nickname} onChange={(e) => setNickname(e.target.value)} required />
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <input
+              style={{ flex: 1 }}
+              value={nickname}
+              onChange={(e) => {
+                setNickname(e.target.value)
+                setNicknameChecked(false)
+                setNicknameCheckMsg('')
+              }}
+              required
+            />
+            <button type="button" className="submit ghost" onClick={() => void handleNicknameCheck()} disabled={nicknameCheckBusy}>
+              {nicknameCheckBusy ? '확인 중…' : '중복 확인'}
+            </button>
+          </div>
+          {nicknameCheckMsg && (
+            <p
+              style={{
+                margin: 0,
+                fontSize: '0.82rem',
+                color: nicknameChecked ? '#047857' : '#b71c1c',
+              }}
+            >
+              {nicknameCheckMsg}
+            </p>
+          )}
         </label>
         <label className="field">
           <span>프로필 이미지 URL</span>

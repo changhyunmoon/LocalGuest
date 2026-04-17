@@ -22,6 +22,7 @@ export function LoginPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [flash, setFlash] = useState('')
+  const [roleMismatch, setRoleMismatch] = useState(null)
 
   useEffect(() => {
     if (location.state?.hint) {
@@ -40,14 +41,36 @@ export function LoginPage() {
     setError('')
     setLoading(true)
     try {
-      await login(email.trim(), password, role)
+      const meta = await login(email.trim(), password, role)
       sessionStorage.removeItem('prefill_login_email')
-      navigate(returnTo, { replace: true })
+      let destination = returnTo
+      try {
+        const override = sessionStorage.getItem('localguest_login_return_override')
+        if (override) {
+          sessionStorage.removeItem('localguest_login_return_override')
+          destination = override
+        }
+      } catch {
+        /* ignore */
+      }
+      const req = String(meta?.requestedRole ?? role).toUpperCase()
+      const signed = String(meta?.signedInRole ?? '').toUpperCase()
+      if (signed && req && signed !== req) {
+        setRoleMismatch({ destination, requestedRole: req, signedInRole: signed })
+        return
+      }
+      navigate(destination, { replace: true })
     } catch (err) {
       setError(err instanceof Error ? err.message : '로그인 실패')
     } finally {
       setLoading(false)
     }
+  }
+
+  const roleMismatchCopy = () => {
+    if (!roleMismatch) return ''
+    const label = (r) => (r === 'GUIDE' ? '가이드 (GUIDE)' : '여행자 (GUEST)')
+    return `선택하신 로그인 유형은 ${label(roleMismatch.requestedRole)}인데, 실제로는 ${label(roleMismatch.signedInRole)} 계정으로 로그인되었습니다. (이메일·비밀번호는 맞습니다.)`
   }
 
   return (
@@ -107,6 +130,47 @@ export function LoginPage() {
       <p className="form-footer">
         계정이 없나요? <Link to="/auth/signup">회원가입</Link>
       </p>
+
+      {roleMismatch && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(15, 23, 42, 0.45)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 50,
+            padding: '1rem',
+          }}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="role-mismatch-title"
+        >
+          <div
+            className="form-card"
+            style={{ maxWidth: 420, width: '100%', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.35)' }}
+          >
+            <h2 id="role-mismatch-title" style={{ marginTop: 0 }}>
+              로그인 유형 안내
+            </h2>
+            <p className="form-hint" style={{ marginBottom: '1rem' }}>
+              {roleMismatchCopy()}
+            </p>
+            <button
+              type="button"
+              className="submit"
+              onClick={() => {
+                const dest = roleMismatch.destination
+                setRoleMismatch(null)
+                navigate(dest, { replace: true })
+              }}
+            >
+              확인 후 이동
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
