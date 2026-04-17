@@ -1,5 +1,6 @@
 package com.team6.domain.guide.controller;
 
+import com.team6.domain.guide.dto.request.BlockDateRequest;
 import com.team6.domain.guide.dto.request.CreateGuideScheduleRequest;
 import com.team6.domain.guide.dto.request.SubmitGuideScheduleFormRequest;
 import com.team6.domain.guide.dto.request.UpdateGuideScheduleRequest;
@@ -171,5 +172,34 @@ public class GuideScheduleController {
     ) {
         Long userId = guideAuthenticationSupport.getCurrentGuideMemberId();
         return ResponseEntity.ok(guideScheduleService.changeStatus(scheduleId, guideId, status, userId));
+    }
+
+    // BLOCKED 날짜 목록 조회 — 게스트 달력용, 인증 불필요
+    @GetMapping("/blocked")
+    public ResponseEntity<List<GuideScheduleResponse>> getBlockedDates(
+            @PathVariable Long guideId
+    ) {
+        return ResponseEntity.ok(guideScheduleService.getBlockedDates(guideId));
+    }
+
+    // 날짜 단위 BLOCKED 등록 — 가이드 본인만
+    @PostMapping("/block")
+    public ResponseEntity<GuideScheduleResponse> blockDate(
+            @PathVariable Long guideId,
+            @RequestBody @Valid BlockDateRequest request
+    ) {
+        Long userId = guideAuthenticationSupport.getCurrentGuideMemberId();
+        return ResponseEntity.ok(guideScheduleService.blockDate(guideId, request.getDate(), userId));
+    }
+
+    // 날짜 단위 BLOCKED 해제 — 가이드 본인만
+    @DeleteMapping("/block")
+    public ResponseEntity<Void> unblockDate(
+            @PathVariable Long guideId,
+            @RequestBody @Valid BlockDateRequest request
+    ) {
+        Long userId = guideAuthenticationSupport.getCurrentGuideMemberId();
+        guideScheduleService.unblockDate(guideId, request.getDate(), userId);
+        return ResponseEntity.noContent().build();
     }
 }

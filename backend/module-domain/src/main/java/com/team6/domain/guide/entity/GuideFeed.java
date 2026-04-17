@@ -18,30 +18,31 @@ public class GuideFeed extends BaseTimeEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
-    private Long id; // 피드 고유 ID (PK)
+    private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "guide_id", nullable = false)
-    private GuideProfile guideProfile; // 가이드 프로필 (guide_profiles FK)
+    private GuideProfile guideProfile;
 
     @Column(columnDefinition = "TEXT", nullable = false)
-    private String content; // 피드 본문 내용
+    private String content;
 
-    // 로컬 이미지 업로드(data URL) Stub 저장을 위해 길이 제한을 완화한다.
     @Column(name = "image_url", columnDefinition = "LONGTEXT")
-    private String imageUrl; // 피드 이미지 URL (선택)
+    private String imageUrl;
 
     @Column(name = "is_deleted", nullable = false)
     @Builder.Default
-    private Boolean isDeleted = false; // 소프트 삭제 여부 (true = 삭제됨)
+    private Boolean isDeleted = false;
 
     // 피드 내용 수정
     public void update(String content, String imageUrl) {
         this.content = content;
-        this.imageUrl = imageUrl;
+        if (imageUrl != null) {        // null이면 기존 이미지 유지
+            this.imageUrl = imageUrl;
+        }
     }
 
-    // 피드 소프트 삭제 (실제 DB 삭제 없이 플래그만 변경)
+    // 피드 소프트 삭제
     public void delete() {
         this.isDeleted = true;
     }
