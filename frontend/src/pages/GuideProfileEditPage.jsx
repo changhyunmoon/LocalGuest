@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { apiRequest } from '../api/client.js'
 import { useResolvedGuideId } from '../hooks/useResolvedGuideId.js'
@@ -6,6 +6,29 @@ import { buildGuidePutBody } from '../lib/guideProfilePayload.js'
 
 import '../layouts/GuideDashboardLayout.css'
 import './GuideMypagePages.css'
+
+function useToast() {
+  const [toasts, setToasts] = useState([])
+  const addToast = useCallback((message, type = 'success') => {
+    const id = Date.now() + Math.random()
+    setToasts((prev) => [...prev, { id, message, type }])
+    setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 2000)
+  }, [])
+  return { toasts, addToast }
+}
+
+function Toast({ toasts }) {
+  if (toasts.length === 0) return null
+  return (
+    <div style={{ position: 'fixed', bottom: '1.5rem', right: '1.5rem', zIndex: 9999, display: 'flex', flexDirection: 'column', gap: '0.5rem', pointerEvents: 'none' }}>
+      {toasts.map((t) => (
+        <div key={t.id} style={{ padding: '0.7rem 1.2rem', borderRadius: 10, background: t.type === 'success' ? '#15803d' : '#b91c1c', color: '#fff', fontSize: '0.88rem', fontWeight: 600, boxShadow: '0 4px 16px rgba(0,0,0,0.18)', minWidth: 180, maxWidth: 320 }}>
+          {t.message}
+        </div>
+      ))}
+    </div>
+  )
+}
 
 async function readJsonError(res, text) {
   try {
@@ -20,8 +43,9 @@ export function GuideProfileEditPage() {
   const { guideId, loading: idLoading, error: idError } = useResolvedGuideId()
   const [profile, setProfile] = useState(null)
   const [tagInput, setTagInput] = useState('')
+  const { toasts, addToast } = useToast()
+  const photoInputRef = useRef(null)
   const [loadError, setLoadError] = useState('')
-  const [saveError, setSaveError] = useState('')
   const [saving, setSaving] = useState(false)
 
   const load = useCallback(async (id) => {
@@ -73,29 +97,29 @@ export function GuideProfileEditPage() {
 
   const handleSave = async () => {
     if (!guideId || !profile) return
-    setSaveError('')
     setSaving(true)
     try {
       const body = buildGuidePutBody(profile)
       if (!body.nickname || !body.region || !body.language) {
-        setSaveError('닉네임, 활동 지역, 언어는 필수입니다.')
+        addToast('닉네임, 활동 지역, 언어는 필수입니다.', 'error')
         setSaving(false)
         return
       }
       if (!body.pricePerHour || body.pricePerHour <= 0) {
-        setSaveError('시간당 가격은 0보다 커야 합니다. (비용 메뉴에서 종일 패키지로 설정할 수 있습니다.)')
+        addToast('시간당 가격은 0보다 커야 합니다. (비용 메뉴에서 종일 패키지로 설정할 수 있습니다.)', 'error')
         setSaving(false)
         return
       }
       const res = await apiRequest(`/guides/${guideId}`, { method: 'PUT', json: body })
       const text = await res.text()
       if (!res.ok) {
-        setSaveError(await readJsonError(res, text))
+        addToast(await readJsonError(res, text), 'error')
         return
       }
       setProfile(text ? JSON.parse(text) : profile)
+      addToast('저장되었습니다.')
     } catch {
-      setSaveError('네트워크 오류')
+      addToast('네트워크 오류', 'error')
     } finally {
       setSaving(false)
     }
@@ -139,17 +163,27 @@ export function GuideProfileEditPage() {
         <h1>가이드 프로필 등록 📸</h1>
         <p>여행자들에게 보일 기본 정보를 입력해주세요.</p>
       </section>
-      {saveError && <p className="g-error">{saveError}</p>}
-
       <div className="gpv-profile-row">
         <div
           className="gpv-photo"
           style={profile.profileImage ? { backgroundImage: `url(${profile.profileImage})` } : undefined}
         />
         <div className="gpv-photo-actions">
-          <button type="button" className="gpv-photo-btn">
+          <button type="button" className="gpv-photo-btn" onClick={() => photoInputRef.current?.click()}>
             사진 변경
           </button>
+          <input
+            ref={photoInputRef}
+            type="file"
+            accept="image/*"
+            style={{ display: 'none' }}
+            onChange={(e) => {
+              const file = e.target.files?.[0]
+              if (!file) return
+              setField('profileImage', URL.createObjectURL(file))
+              e.target.value = ''
+            }}
+          />
           <details className="gpv-photo-url-box">
             <summary>이미지 URL 직접 입력</summary>
             <input
@@ -228,12 +262,33 @@ export function GuideProfileEditPage() {
           </div>
         </div>
 
+        <div className="gpv-field">
+          <label htmlFor="gp-course">기본 코스</label>
+          <input
+            id="gp-course"
+            value={profile.defaultCourse ?? ''}
+            onChange={(e) => setField('defaultCourse', e.target.value)}
+            placeholder="예: 골목 투어 → 전통 시장 → 야경"
+          />
+        </div>
+
+        <div className="gpv-field">
+          <label htmlFor="gp-style">가이드 스타일</label>
+          <input
+            id="gp-style"
+            value={profile.guideStyle ?? ''}
+            onChange={(e) => setField('guideStyle', e.target.value)}
+            placeholder="예: 편안하고 친근한 동네 산책형"
+          />
+        </div>
+
         <div className="gpv-save-row">
           <button type="button" className="gpv-save" onClick={() => void handleSave()} disabled={saving}>
             {saving ? '저장 중…' : '저장하기'}
           </button>
         </div>
       </div>
+      <Toast toasts={toasts} />
     </div>
   )
 }

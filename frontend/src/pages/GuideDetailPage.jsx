@@ -34,6 +34,19 @@ function toScheduleList(raw) {
 }
 
 /**
+ * @param {unknown} t
+ * @returns {string}
+ */
+function formatLocalTime(t) {
+  if (t == null) return ''
+  if (typeof t === 'string') return t.slice(0, 5)
+  if (typeof t === 'object' && t.hour != null) {
+    return `${String(t.hour).padStart(2, '0')}:${String(t.minute).padStart(2, '0')}`
+  }
+  return String(t)
+}
+
+/**
  * status 가 비어 있어도(구버전/임시 응답) 일단 예약 후보로 본다.
  * @param {any} schedule
  * @returns {boolean}
@@ -283,7 +296,7 @@ export function GuideDetailPage() {
                 >
                   {schedules.map((s) => (
                     <option key={s.scheduleId} value={s.scheduleId}>
-                      {formatScheduleDate(s.availableDate)} {s.startTime ?? ''} ~ {s.endTime ?? ''}
+                      {formatScheduleDate(s.availableDate)} {formatLocalTime(s.startTime)} ~ {formatLocalTime(s.endTime)}
                     </option>
                   ))}
                 </select>

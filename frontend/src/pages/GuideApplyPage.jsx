@@ -3,12 +3,10 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 
 import { apiRequest, fetchNicknameAvailable } from '../api/client'
 import { setStoredGuideId } from '../lib/guideId.js'
-import { useAuth } from '../context/useAuth.js'
 
 import './FormPage.css'
 
 export function GuideApplyPage() {
-  const { email, logout } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const fromTerms = Boolean(location.state?.fromTerms)
@@ -93,16 +91,7 @@ export function GuideApplyPage() {
       if (profile?.guideId != null) {
         setStoredGuideId(profile.guideId)
       }
-      const approved = profile?.isApproved === true
-      sessionStorage.setItem(
-        'login_flash',
-        `가이드 프로필이 등록되었습니다. 관리자 승인: ${approved ? '완료' : '대기'} · JWT 역할 반영을 위해 다시 로그인해 주세요.`,
-      )
-      if (email) {
-        sessionStorage.setItem('prefill_login_email', email)
-      }
-      await logout()
-      navigate('/auth/login', { replace: true })
+      navigate('/guide/mypage', { replace: true })
     } catch {
       setError('네트워크 오류가 발생했습니다.')
     } finally {
