@@ -1,0 +1,94 @@
+.mp-pay-detail {
+  margin: 0.5rem 0 0;
+}
+
+.mp-pay-detail-empty {
+  margin: 0.5rem 0 0;
+  font-size: 0.88rem;
+  color: #6b7280;
+}
+
+.mp-pay-detail-dl {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.65rem 1rem;
+  margin: 0;
+}
+
+@media (max-width: 640px) {
+  .mp-pay-detail-dl {
+    grid-template-columns: 1fr;
+  }
+}
+
+.mp-pay-detail-dl > div {
+  margin: 0;
+  padding: 0.65rem 0.75rem;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  background: #fafafa;
+}
+
+.mp-pay-detail-dl .mp-pay-detail-span {
+  grid-column: 1 / -1;
+}
+
+.mp-pay-detail-dl dt {
+  margin: 0 0 0.25rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #6b7280;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.mp-pay-detail-dl dd {
+  margin: 0;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #111827;
+  line-height: 1.4;
+}
+
+.mp-pay-detail-mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+  font-size: 0.82rem;
+  font-weight: 500;
+}
+
+.mp-pay-detail-break {
+  word-break: break-all;
+}
+
+.mp-pay-detail-extra {
+  margin-top: 0.85rem;
+  font-size: 0.86rem;
+  color: #374151;
+}
+
+.mp-pay-detail-extra summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.mp-pay-detail-table {
+  width: 100%;
+  margin-top: 0.5rem;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+
+.mp-pay-detail-table th,
+.mp-pay-detail-table td {
+  border: 1px solid #e5e7eb;
+  padding: 0.4rem 0.5rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.mp-pay-detail-table th {
+  width: 38%;
+  background: #f9fafb;
+  font-weight: 600;
+  color: #4b5563;
+}
