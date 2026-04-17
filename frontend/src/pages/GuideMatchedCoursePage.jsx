@@ -272,8 +272,13 @@ export function GuideMatchedCoursePage() {
     setChatBusy(true)
     setChatErr('')
     try {
-      setChatErr('현재는 가이드 이메일이 프론트에 없어 채팅방을 생성할 수 없습니다. (AI/결제 응답에 guideEmail을 포함하거나, 별도의 채팅 생성 API가 필요합니다.)')
-      navigate('/messages')
+      const res = await apiRequest(`/matching/chat/rooms/for-guide/${encodeURIComponent(guideId)}`, { method: 'POST' })
+      const text = await res.text()
+      if (!res.ok) throw new Error(text || '채팅방을 열 수 없습니다.')
+      const data = text ? JSON.parse(text) : {}
+      const roomId = data?.roomId
+      if (!roomId) throw new Error('채팅방 정보가 올바르지 않습니다.')
+      navigate(`/messages?roomId=${encodeURIComponent(roomId)}`)
     } catch (e) {
       setChatErr(e instanceof Error ? e.message : '오류')
     } finally {
