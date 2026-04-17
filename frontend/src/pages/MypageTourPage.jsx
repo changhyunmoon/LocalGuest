@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { useLocation } from 'react-router-dom'
 
 import { PageEmpty, PageError, PageLoading } from '../components/PageStates.jsx'
 import { apiRequest } from '../api/client.js'
@@ -74,6 +75,7 @@ function dday(v) {
 }
 
 export function MypageTourPage() {
+  const location = useLocation()
   const [requests, setRequests] = useState([])
   const [payments, setPayments] = useState([])
   const [extMap, setExtMap] = useState({})
@@ -84,6 +86,12 @@ export function MypageTourPage() {
   const [refundPaymentId, setRefundPaymentId] = useState(null)
   const [refundReason, setRefundReason] = useState('')
   const [refundEvidence, setRefundEvidence] = useState('')
+  const [routeHint, setRouteHint] = useState('')
+
+  useEffect(() => {
+    const h = location.state?.hint
+    if (typeof h === 'string' && h.trim()) setRouteHint(h.trim())
+  }, [location.state])
 
   const load = useCallback(async () => {
     const [req, pay] = await Promise.all([fetchGuestMatchRequests(apiRequest), fetchGuestPayments(apiRequest)])
@@ -189,6 +197,22 @@ export function MypageTourPage() {
     <div className="mp-member">
       <h1>투어 연장 및 환불 관리 🔄</h1>
       <p className="sub">투어 종료 직전/직후의 연장 선택과 환불 처리를 한 번에 관리합니다.</p>
+      {routeHint && (
+        <p
+          className="sub"
+          role="status"
+          style={{
+            padding: '0.75rem 0.95rem',
+            borderRadius: 12,
+            background: '#eff6ff',
+            border: '1px solid #bfdbfe',
+            color: '#1e3a8a',
+            fontWeight: 600,
+          }}
+        >
+          {routeHint}
+        </p>
+      )}
       {toast && <p className="err">{toast}</p>}
       {loading && <PageLoading />}
       {!loading && error && <PageError message={error} onRetry={() => void refetch()} />}
