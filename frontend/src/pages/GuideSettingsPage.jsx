@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 
+import { PageError, PageLoading } from '../components/PageStates.jsx'
 import { apiRequest } from '../api/client.js'
 import { useResolvedGuideId } from '../hooks/useResolvedGuideId.js'
 
@@ -74,7 +75,7 @@ export function GuideSettingsPage() {
   if (idLoading) {
     return (
       <div className="g-panel">
-        <p>불러오는 중…</p>
+        <PageLoading />
       </div>
     )
   }
@@ -82,7 +83,7 @@ export function GuideSettingsPage() {
   if (idError) {
     return (
       <div className="g-panel">
-        <p className="g-error">{idError}</p>
+        <PageError message={idError} />
       </div>
     )
   }
@@ -90,7 +91,7 @@ export function GuideSettingsPage() {
   if (loadError) {
     return (
       <div className="g-panel">
-        <p className="g-error">{loadError}</p>
+        <PageError message={loadError} onRetry={() => guideId != null && void load(guideId)} />
       </div>
     )
   }

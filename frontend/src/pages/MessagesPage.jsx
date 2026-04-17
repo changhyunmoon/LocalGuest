@@ -3,6 +3,7 @@ import SockJS from 'sockjs-client/dist/sockjs'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 
+import { PageEmpty, PageError, PageLoading } from '../components/PageStates.jsx'
 import { apiRequest } from '../api/client'
 import { useAuth } from '../context/useAuth.js'
 
@@ -209,8 +210,12 @@ export function MessagesPage() {
     <div className="msg">
       <aside className="msg-rooms">
         <h2>대화 목록</h2>
-        {loadingRooms && <p className="msg-muted">불러오는 중…</p>}
-        {!loadingRooms && rooms.length === 0 && <p className="msg-muted">참여 중인 채팅방이 없습니다.</p>}
+        {loadingRooms && <PageLoading className="page-state--tight" />}
+        {!loadingRooms && rooms.length === 0 && (
+          <PageEmpty className="page-state--tight" title="채팅방이 없습니다">
+            매칭 후 대화가 시작되면 여기에 표시됩니다.
+          </PageEmpty>
+        )}
         <ul>
           {rooms.map((room) => (
             <li key={room.roomId}>
@@ -240,10 +245,13 @@ export function MessagesPage() {
         </header>
 
         <div ref={chatBodyRef} className="msg-body">
-          {error && <p className="msg-error">{error}</p>}
+          {error && <PageError message={error} className="page-state--tight" />}
           {!selectedRoomId && <p className="msg-muted">왼쪽 목록에서 채팅방을 선택해 주세요.</p>}
+          {selectedRoomId && loadingMessages && <PageLoading className="page-state--tight" label="메시지를 불러오는 중…" />}
           {selectedRoomId && !loadingMessages && messages.length === 0 && (
-            <p className="msg-muted">아직 메시지가 없습니다. 첫 메시지를 보내보세요.</p>
+            <PageEmpty className="page-state--tight" title="아직 메시지가 없습니다">
+              첫 메시지를 보내보세요.
+            </PageEmpty>
           )}
           {selectedRoomId && messages.length > 0 && (
             <>

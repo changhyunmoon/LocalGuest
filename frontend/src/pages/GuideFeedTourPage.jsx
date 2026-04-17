@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 
+import { PageEmpty, PageError, PageLoading } from '../components/PageStates.jsx'
 import { apiRequest } from '../api/client'
 import { useAuth } from '../context/useAuth.js'
 
@@ -110,7 +111,7 @@ export function GuideFeedTourPage() {
   if (loading) {
     return (
       <div className="gft">
-        <p className="gft-muted">불러오는 중…</p>
+        <PageLoading />
       </div>
     )
   }
@@ -121,8 +122,9 @@ export function GuideFeedTourPage() {
         <button type="button" className="gft-back" onClick={() => goBack()}>
           ← 뒤로 가기
         </button>
-        <p className="gft-err">{error || '가이드를 찾을 수 없습니다.'}</p>
-        <Link to="/guides">가이드 목록</Link>
+        <PageError message={error || '가이드를 찾을 수 없습니다.'}>
+          <Link to="/guides">가이드 목록</Link>
+        </PageError>
       </div>
     )
   }
@@ -133,8 +135,10 @@ export function GuideFeedTourPage() {
         <button type="button" className="gft-back" onClick={() => goBack()}>
           ← 뒤로 가기
         </button>
-        <p className="gft-err">이 피드는 삭제되었거나 없습니다.</p>
-        <Link to={`/guides/${guideId}`}>가이드 프로필</Link>
+        <PageEmpty title="이 피드를 찾을 수 없습니다">
+          삭제되었거나 주소가 바뀌었을 수 있어요.{' '}
+          <Link to={`/guides/${guideId}`}>가이드 프로필</Link>로 이동
+        </PageEmpty>
       </div>
     )
   }

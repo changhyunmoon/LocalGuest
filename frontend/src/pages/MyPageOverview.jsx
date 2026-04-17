@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 
+import { PageEmpty, PageError, PageLoading } from '../components/PageStates.jsx'
 import { apiRequest } from '../api/client.js'
 import { useAuth } from '../context/useAuth.js'
 
@@ -28,25 +29,29 @@ export function MyPageOverview() {
   const [error, setError] = useState('')
   const [data, setData] = useState(null)
 
+  const fetchDashboard = useCallback(async () => {
+    const res = await apiRequest('/mypage/guest/dashboard', { method: 'GET' })
+    const text = await res.text()
+    if (!res.ok) {
+      let msg = '대시보드를 불러오지 못했습니다.'
+      try {
+        const j = JSON.parse(text)
+        if (typeof j?.message === 'string' && j.message.trim()) msg = j.message.trim()
+      } catch {
+        if (text) msg = text
+      }
+      throw new Error(msg)
+    }
+    return text ? JSON.parse(text) : null
+  }, [])
+
   useEffect(() => {
     let cancelled = false
     ;(async () => {
       setLoading(true)
       setError('')
       try {
-        const res = await apiRequest('/mypage/guest/dashboard', { method: 'GET' })
-        const text = await res.text()
-        if (!res.ok) {
-          let msg = '대시보드를 불러오지 못했습니다.'
-          try {
-            const j = JSON.parse(text)
-            if (typeof j?.message === 'string' && j.message.trim()) msg = j.message.trim()
-          } catch {
-            if (text) msg = text
-          }
-          throw new Error(msg)
-        }
-        const json = text ? JSON.parse(text) : null
+        const json = await fetchDashboard()
         if (!cancelled) setData(json)
       } catch (e) {
         if (!cancelled) setError(e instanceof Error ? e.message : '불러오기 실패')
@@ -57,7 +62,22 @@ export function MyPageOverview() {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [fetchDashboard])
+
+  const onRetry = useCallback(() => {
+    void (async () => {
+      setLoading(true)
+      setError('')
+      try {
+        const json = await fetchDashboard()
+        setData(json)
+      } catch (e) {
+        setError(e instanceof Error ? e.message : '불러오기 실패')
+      } finally {
+        setLoading(false)
+      }
+    })()
+  }, [fetchDashboard])
 
   const upcoming = useMemo(() => (Array.isArray(data?.upcomingMatches) ? data.upcomingMatches : []), [data])
   const scrapbooks = useMemo(() => (Array.isArray(data?.scrapbooks) ? data.scrapbooks : []), [data])
@@ -98,14 +118,14 @@ export function MyPageOverview() {
         </div>
       </div>
 
-      {error && <p className="err">{error}</p>}
-      {loading && <p>불러오는 중…</p>}
+      {loading && <PageLoading />}
+      {!loading && error && <PageError message={error} onRetry={onRetry} />}
 
       {!loading && !error && (
         <>
           <h2 style={{ margin: '0 0 0.75rem', fontSize: '0.95rem', fontWeight: 800 }}>다가오는 여행</h2>
           {upcoming.length === 0 ? (
-            <p className="sub">예정된 여행이 없어요.</p>
+            <PageEmpty title="예정된 여행이 없어요">일정 메뉴에서 매칭을 확인하거나 새 요청을 이어가 보세요.</PageEmpty>
           ) : (
             <div className="mp-cards">
               {upcoming.map((m) => (
@@ -138,7 +158,7 @@ export function MyPageOverview() {
 
           <h2 style={{ margin: '1.5rem 0 0.75rem', fontSize: '0.95rem', fontWeight: 800 }}>나의 여행 기록</h2>
           {scrapbooks.length === 0 ? (
-            <p className="sub">아직 스크랩북이 없어요.</p>
+            <PageEmpty title="아직 스크랩북이 없어요">완료된 투어가 쌓이면 여기에 표시됩니다.</PageEmpty>
           ) : (
             <div className="mp-cards">
               {scrapbooks.slice(0, 3).map((s) => (

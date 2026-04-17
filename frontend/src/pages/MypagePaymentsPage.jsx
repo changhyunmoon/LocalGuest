@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 
+import { PageEmpty, PageError, PageLoading } from '../components/PageStates.jsx'
 import { apiRequest } from '../api/client.js'
 import { fetchGuestMatchRequests, fetchGuestPayments, parseMatchingApiError } from '../lib/matchingGuest.js'
 
@@ -31,20 +32,35 @@ export function MypagePaymentsPage() {
   const [loading, setLoading] = useState(true)
   const [detail, setDetail] = useState(null)
 
+  const loadPayments = useCallback(async () => {
+    const [pay, req] = await Promise.all([fetchGuestPayments(apiRequest), fetchGuestMatchRequests(apiRequest)])
+    setPayments(Array.isArray(pay) ? pay : [])
+    const map = {}
+    for (const r of Array.isArray(req) ? req : []) {
+      map[r.requestId] = r
+    }
+    setRequestsById(map)
+  }, [])
+
+  const refetch = useCallback(async () => {
+    setLoading(true)
+    setError('')
+    try {
+      await loadPayments()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '불러오기 실패')
+    } finally {
+      setLoading(false)
+    }
+  }, [loadPayments])
+
   useEffect(() => {
     let cancelled = false
     ;(async () => {
       setLoading(true)
       setError('')
       try {
-        const [pay, req] = await Promise.all([fetchGuestPayments(apiRequest), fetchGuestMatchRequests(apiRequest)])
-        if (cancelled) return
-        setPayments(Array.isArray(pay) ? pay : [])
-        const map = {}
-        for (const r of Array.isArray(req) ? req : []) {
-          map[r.requestId] = r
-        }
-        setRequestsById(map)
+        await loadPayments()
       } catch (e) {
         if (!cancelled) setError(e instanceof Error ? e.message : '불러오기 실패')
       } finally {
@@ -54,7 +70,7 @@ export function MypagePaymentsPage() {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [loadPayments])
 
   const filtered = useMemo(() => payments.filter((p) => tabFilter(tab, p)), [payments, tab])
 
@@ -75,8 +91,8 @@ export function MypagePaymentsPage() {
       <p className="sub">
         <code>GET /api/matching/payments/guest/list</code> · 상세 <code>GET /api/matching/payments/&#123;paymentId&#125;</code>
       </p>
-      {error && <p className="err">{error}</p>}
-      {loading && <p>불러오는 중…</p>}
+      {loading && <PageLoading />}
+      {!loading && error && <PageError message={error} onRetry={() => void refetch()} />}
 
       {!loading && !error && (
         <>
@@ -92,8 +108,10 @@ export function MypagePaymentsPage() {
             </button>
           </div>
 
-          {filtered.length === 0 && <p className="sub">해당하는 결제 내역이 없습니다.</p>}
-
+          {filtered.length === 0 ? (
+            <PageEmpty title="해당하는 결제 내역이 없습니다">다른 탭을 선택하거나 매칭 결제를 완료해 보세요.</PageEmpty>
+          ) : (
+            <>
           <div className="mp-pay-wrap">
             <table className="mp-pay-table">
               <thead>
@@ -160,6 +178,8 @@ export function MypagePaymentsPage() {
               )
             })}
           </div>
+            </>
+          )}
         </>
       )}
 
