@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 
 import { PageError, PageLoading } from '../components/PageStates.jsx'
 import { apiRequest } from '../api/client'
+import { fetchGuestPayments, pickLatestCompletedPaymentIdForRequest } from '../lib/matchingGuest.js'
 
 import './GuideMatchOptionsPage.css'
 
@@ -73,21 +74,38 @@ export function GuideMatchOptionsPage() {
       const detail = text ? JSON.parse(text) : null
       setProfile(detail?.profile ?? null)
 
+      const listRes = await apiRequest('/matching/requests/guest/list', { method: 'GET' })
+      const list = listRes.ok ? (await listRes.text().then((t) => (t ? JSON.parse(t) : []))) : []
+      const safeList = Array.isArray(list) ? list : []
+
       let rid = stateRequestId != null ? Number(stateRequestId) : null
       if (rid == null || Number.isNaN(rid)) {
-        const listRes = await apiRequest('/matching/requests/guest/list', { method: 'GET' })
-        if (listRes.ok) {
-          const lt = await listRes.text()
-          const list = lt ? JSON.parse(lt) : []
-          const proposed = findLatestProposal(list, guideId)
-          rid = proposed?.requestId != null ? Number(proposed.requestId) : null
-          if (rid == null) {
-            const anyReq = findLatestRequestForGuide(list, guideId)
-            rid = anyReq?.requestId != null ? Number(anyReq.requestId) : null
-          }
+        const proposed = findLatestProposal(safeList, guideId)
+        rid = proposed?.requestId != null ? Number(proposed.requestId) : null
+        if (rid == null) {
+          const anyReq = findLatestRequestForGuide(safeList, guideId)
+          rid = anyReq?.requestId != null ? Number(anyReq.requestId) : null
         }
       }
-      setRequestId(rid != null && !Number.isNaN(rid) ? rid : null)
+
+      const activeRid = rid != null && !Number.isNaN(rid) ? rid : null
+      const row = activeRid != null ? safeList.find((r) => Number(r.requestId) === Number(activeRid)) : null
+      if (row && (row.status === 'PAID' || row.status === 'IN_PROGRESS')) {
+        let payments = []
+        try {
+          payments = await fetchGuestPayments(apiRequest)
+        } catch {
+          payments = []
+        }
+        const paymentId = pickLatestCompletedPaymentIdForRequest(payments, activeRid)
+        const qs = new URLSearchParams()
+        qs.set('requestId', String(activeRid))
+        if (paymentId != null) qs.set('paymentId', String(paymentId))
+        navigate(`/guides/${guideId}/match/complete?${qs.toString()}`, { replace: true })
+        return
+      }
+
+      setRequestId(activeRid)
 
       const revRes = await apiRequest(`/reviews/guide/${guideId}?size=12&sort=createdAt,desc`, { method: 'GET', skipAuth: true })
       const revText = await revRes.text()
@@ -103,7 +121,7 @@ export function GuideMatchOptionsPage() {
     } finally {
       setLoading(false)
     }
-  }, [guideId, stateRequestId])
+  }, [guideId, stateRequestId, navigate])
 
   useEffect(() => {
     void load()

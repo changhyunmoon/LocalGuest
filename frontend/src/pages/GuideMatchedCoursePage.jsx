@@ -159,19 +159,14 @@ export function GuideMatchedCoursePage() {
   const [error, setError] = useState('')
   const [profile, setProfile] = useState(null)
   const [requestData, setRequestData] = useState(null)
-  const [reviews, setReviews] = useState([])
-  const [reviewText, setReviewText] = useState('')
-  const [reviewErr, setReviewErr] = useState('')
-  const [reviewSubmitting, setReviewSubmitting] = useState(false)
   const [mapErr, setMapErr] = useState('')
 
   const load = useCallback(async () => {
     setLoading(true)
     setError('')
     try {
-      const [detailRes, reviewRes, reqRes] = await Promise.all([
+      const [detailRes, reqRes] = await Promise.all([
         apiRequest(`/guides/${guideId}/detail`, { method: 'GET', skipAuth: true }),
-        apiRequest(`/reviews/guide/${guideId}?size=12&sort=createdAt,desc`, { method: 'GET', skipAuth: true }),
         apiRequest('/matching/requests/guest/list', { method: 'GET' }),
       ])
 
@@ -179,15 +174,6 @@ export function GuideMatchedCoursePage() {
       if (!detailRes.ok) throw new Error(detailText || '가이드 정보를 불러오지 못했습니다.')
       const detail = detailText ? JSON.parse(detailText) : null
       setProfile(detail?.profile ?? null)
-
-      const reviewTextPayload = await reviewRes.text()
-      if (reviewRes.ok) {
-        const page = reviewTextPayload ? JSON.parse(reviewTextPayload) : {}
-        const raw = page?.content
-        setReviews(Array.isArray(raw) ? raw : [])
-      } else {
-        setReviews([])
-      }
 
       const reqText = await reqRes.text()
       if (reqRes.ok) {
@@ -280,40 +266,6 @@ export function GuideMatchedCoursePage() {
   const rc = profile?.reviewCount != null ? profile.reviewCount : 0
   const likes = useMemo(() => Math.max(Math.round(rc * 2.8) + 40, 12), [rc])
 
-  const onSubmitReview = async (e) => {
-    e.preventDefault()
-    setReviewErr('')
-    const content = reviewText.trim()
-    if (content.length < 10) {
-      setReviewErr('후기는 10자 이상 입력해 주세요.')
-      return
-    }
-    if (!requestData?.requestId) {
-      setReviewErr('매칭 정보가 없어 리뷰를 등록할 수 없습니다.')
-      return
-    }
-    setReviewSubmitting(true)
-    try {
-      const res = await apiRequest('/reviews', {
-        method: 'POST',
-        json: {
-          guideId: Number(guideId),
-          matchRequestId: requestData.requestId,
-          rating: 5,
-          content,
-        },
-      })
-      const text = await res.text()
-      if (!res.ok) throw new Error(text || '리뷰 등록에 실패했습니다.')
-      setReviewText('')
-      void load()
-    } catch (e) {
-      setReviewErr(e instanceof Error ? e.message : '오류')
-    } finally {
-      setReviewSubmitting(false)
-    }
-  }
-
   if (loading) {
     return (
       <div className="gmc">
@@ -337,7 +289,11 @@ export function GuideMatchedCoursePage() {
         ← Back to Search
       </button>
 
-      <header className="gmc-hero">
+      <Link
+        to={`/guides/${guideId}`}
+        className="gmc-hero gmc-hero--link"
+        aria-label={`${profile.nickname ?? '가이드'} 프로필 및 피드 보기`}
+      >
         <div
           className="gmc-avatar"
           style={profile.profileImage ? { backgroundImage: `url(${profile.profileImage})` } : undefined}
@@ -348,9 +304,10 @@ export function GuideMatchedCoursePage() {
             📍 {profile.region ?? ''} · ⭐ {rating} ({rc} 리뷰)
           </p>
           <p className="gmc-quote">“{profile.bio?.slice(0, 120) || '관광객은 모르는 사진 찍기 좋은 조용한 루트를 안내합니다.'}”</p>
+          <p className="gmc-hero-cta">프로필·피드 보기 →</p>
         </div>
         <div className="gmc-likes">♥ {likes}</div>
-      </header>
+      </Link>
 
       <section className="gmc-course">
         <h2 className="gmc-title">매칭 완료! 상세 코스</h2>
@@ -375,49 +332,6 @@ export function GuideMatchedCoursePage() {
             </Link>
           </aside>
         </div>
-      </section>
-
-      <section className="gmc-reviews">
-        <h2>여행자들의 후기 ({rc})</h2>
-        {reviewErr && <p className="gmc-err">{reviewErr}</p>}
-        <form className="gmc-review-form" onSubmit={(e) => void onSubmitReview(e)}>
-          <textarea
-            className="gmc-review-input"
-            rows={2}
-            placeholder="가이드에게 궁금한 점이나 후기를 남겨주세요..."
-            value={reviewText}
-            onChange={(e) => setReviewText(e.target.value)}
-            disabled={!requestData?.requestId}
-          />
-          <button
-            type="submit"
-            className="gmc-review-submit"
-            disabled={reviewSubmitting || !requestData?.requestId}
-          >
-            등록
-          </button>
-        </form>
-        <ul className="gmc-review-list">
-          {reviews.length === 0 ? (
-            <li className="gmc-review-item">
-              <div className="gmc-review-av" />
-              <div>
-                <p className="gmc-review-name">LocalGuest</p>
-                <p className="gmc-review-text">아직 등록된 후기가 없어요.</p>
-              </div>
-            </li>
-          ) : (
-            reviews.slice(0, 6).map((r) => (
-              <li key={r.id} className="gmc-review-item">
-                <div className="gmc-review-av" />
-                <div>
-                  <p className="gmc-review-name">{r.writeNickname ?? '여행자'}</p>
-                  <p className="gmc-review-text">{r.content}</p>
-                </div>
-              </li>
-            ))
-          )}
-        </ul>
       </section>
     </div>
   )
