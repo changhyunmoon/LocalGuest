@@ -1,31 +1,21 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import { MypageDevHint } from '../components/MypageDevHint.jsx'
 import { PageEmpty, PageError, PageLoading } from '../components/PageStates.jsx'
 import { apiRequest } from '../api/client.js'
-import { daysUntil, fetchGuestMatchRequests, parseMatchingApiError } from '../lib/matchingGuest.js'
+import {
+  daysUntil,
+  fetchGuestMatchRequests,
+  fetchGuestPayments,
+  loadGuideNicknames,
+  parseMatchingApiError,
+  pickLatestCompletedPaymentIdForRequest,
+} from '../lib/matchingGuest.js'
 
 import './MypageMemberPages.css'
 
 const UPCOMING = new Set(['PENDING', 'ACCEPTED', 'PAID', 'IN_PROGRESS'])
-
-async function loadGuideNicknames(apiRequest, guideIds) {
-  const map = {}
-  for (const id of [...new Set(guideIds.filter(Boolean))]) {
-    try {
-      const res = await apiRequest(`/guides/${id}`, { method: 'GET', skipAuth: true })
-      const text = await res.text()
-      if (res.ok && text) {
-        const p = JSON.parse(text)
-        map[id] = p.nickname ?? `가이드 #${id}`
-      }
-    } catch {
-      map[id] = `가이드 #${id}`
-    }
-  }
-  return map
-}
 
 export function MypageItineraryPage() {
   const navigate = useNavigate()
@@ -35,12 +25,16 @@ export function MypageItineraryPage() {
   const [loading, setLoading] = useState(true)
   const [busyId, setBusyId] = useState(null)
   const [toast, setToast] = useState('')
-  const [detail, setDetail] = useState(null)
   const [modal, setModal] = useState(null)
   const [reason, setReason] = useState('')
+  const [paymentIdByRequest, setPaymentIdByRequest] = useState(() => ({}))
 
   const reload = useCallback(async () => {
-    const all = await fetchGuestMatchRequests(apiRequest)
+    const [all, paysRaw] = await Promise.all([
+      fetchGuestMatchRequests(apiRequest),
+      fetchGuestPayments(apiRequest).catch(() => []),
+    ])
+    const pays = Array.isArray(paysRaw) ? paysRaw : []
     const list = (Array.isArray(all) ? all : []).filter((r) => UPCOMING.has(r.status))
     list.sort((a, b) => {
       const da = String(a.desiredDate ?? '')
@@ -54,6 +48,12 @@ export function MypageItineraryPage() {
       list.map((r) => r.guideId),
     )
     setNames(nm)
+    const payMap = {}
+    for (const r of list) {
+      const pid = pickLatestCompletedPaymentIdForRequest(pays, r.requestId)
+      if (pid != null) payMap[r.requestId] = pid
+    }
+    setPaymentIdByRequest(payMap)
   }, [])
 
   const refetch = useCallback(async () => {
@@ -86,18 +86,23 @@ export function MypageItineraryPage() {
     }
   }, [reload])
 
-  const goPay = useCallback(
+  /** 결제 전·대기·수락: 매칭(옵션) 화면 / 결제 후·진행: 상세 코스(지도) */
+  const openMatchScreen = useCallback(
     (row) => {
       if (!row?.guideId || !row?.requestId) return
+      const st = String(row.status ?? '')
+      if (st === 'PAID' || st === 'IN_PROGRESS') {
+        const qs = new URLSearchParams()
+        qs.set('requestId', String(row.requestId))
+        const pid = paymentIdByRequest[row.requestId]
+        if (pid != null) qs.set('paymentId', String(pid))
+        navigate(`/guides/${row.guideId}/match/complete?${qs.toString()}`)
+        return
+      }
       navigate(`/guides/${row.guideId}/match`, { state: { requestId: row.requestId } })
     },
-    [navigate],
+    [navigate, paymentIdByRequest],
   )
-
-  const detailGuideName = useMemo(() => {
-    if (!detail) return ''
-    return names[detail.guideId] ?? `가이드 #${detail.guideId}`
-  }, [detail, names])
 
   const openModal = (mode, requestId) => {
     setReason('')
@@ -142,10 +147,13 @@ export function MypageItineraryPage() {
     <div className="mp-member">
       <h1>📆 앞으로의 여행 일정</h1>
       <p className="sub">
-        진행 중이거나 예정된 매칭만 보여 줍니다. 수락·거절·취소는 각 카드에서 진행할 수 있어요.
+        진행 중이거나 예정된 매칭만 보여 줍니다. <strong>일정 제목</strong> 또는 <strong>Preview</strong>를 누르면, 결제가 끝난 일정은{' '}
+        <strong>상세 코스(카카오 지도)</strong> 화면으로, 아직이면 <strong>매칭·결제</strong> 화면으로 이동합니다. 거절·취소는 각 카드 버튼에서
+        진행할 수 있어요.
       </p>
       <MypageDevHint>
-        <code>GET /api/matching/requests/guest/list</code> 중 진행·예정 상태만 표시 · 수락/거절/취소는 매칭 API 호출
+        PAID/IN_PROGRESS → <code>/guides/&#123;id&#125;/match/complete?requestId=…</code> · 그 외 →{' '}
+        <code>/guides/&#123;id&#125;/match</code>
       </MypageDevHint>
       {toast && <p className="err">{toast}</p>}
       {loading && <PageLoading />}
@@ -166,7 +174,7 @@ export function MypageItineraryPage() {
               <article key={r.requestId} className="mp-trip-card">
                 <div className="mp-trip-card__meta">
                   <span className="mp-dday">{dday}</span>
-                  <button type="button" className="mp-trip-title-btn" onClick={() => setDetail(r)}>
+                  <button type="button" className="mp-trip-title-btn" onClick={() => openMatchScreen(r)}>
                     {nick}와(과) 함께하는 {r.destination}
                   </button>
                   <p className="mp-trip-detail">
@@ -176,12 +184,12 @@ export function MypageItineraryPage() {
                   <p className="mp-trip-detail">예산: {r.desiredBudget != null ? `₩${Number(r.desiredBudget).toLocaleString()}` : '—'}</p>
                 </div>
                 <div className="mp-trip-actions">
-                  <span className="mp-thumb" style={{ minHeight: '4.5rem' }}>
+                  <button type="button" className="mp-thumb mp-thumb--match" style={{ minHeight: '4.5rem' }} onClick={() => openMatchScreen(r)}>
                     Preview
-                  </span>
+                  </button>
                   {r.status === 'ACCEPTED' && (
                     <>
-                      <button type="button" className="mp-btn" disabled={busyId != null} onClick={() => goPay(r)}>
+                      <button type="button" className="mp-btn" disabled={busyId != null} onClick={() => openMatchScreen(r)}>
                         결제하고 확정
                       </button>
                       <button type="button" className="mp-btn mp-btn--danger" disabled={busyId != null} onClick={() => openModal('decline', r.requestId)}>
@@ -223,44 +231,6 @@ export function MypageItineraryPage() {
         </div>
       )}
 
-      {detail && (
-        <div className="mp-modal-overlay" role="dialog" aria-modal="true">
-          <div className="mp-modal" style={{ maxWidth: '28rem' }}>
-            <h2 style={{ marginTop: 0 }}>여행 일정 상세</h2>
-            <p className="sub">
-              {detailGuideName} · 요청 #{detail.requestId}
-            </p>
-            <div style={{ display: 'grid', gap: '0.35rem' }}>
-              <p className="mp-trip-detail" style={{ margin: 0 }}>
-                목적지: <strong>{detail.destination ?? '—'}</strong>
-              </p>
-              <p className="mp-trip-detail" style={{ margin: 0 }}>
-                여행일: {detail.desiredDate ?? '—'}
-              </p>
-              <p className="mp-trip-detail" style={{ margin: 0 }}>
-                제시 일정: {detail.proposedSchedule ?? '—'}
-              </p>
-              <p className="mp-trip-detail" style={{ margin: 0 }}>
-                상태: {detail.status}
-              </p>
-              <p className="mp-trip-detail" style={{ margin: 0 }}>
-                예산:{' '}
-                {detail.desiredBudget != null ? `₩${Number(detail.desiredBudget).toLocaleString()}` : '—'}
-              </p>
-            </div>
-            <div className="mp-modal-actions">
-              {detail.status === 'ACCEPTED' && (
-                <button type="button" className="mp-btn" onClick={() => goPay(detail)} disabled={busyId != null}>
-                  결제하고 확정
-                </button>
-              )}
-              <button type="button" className="mp-btn mp-btn--line" onClick={() => setDetail(null)}>
-                닫기
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }
