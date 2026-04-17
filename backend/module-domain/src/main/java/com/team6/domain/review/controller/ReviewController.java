@@ -27,6 +27,14 @@ public class ReviewController {
         return ResponseEntity.ok(reviewService.findAll(pageable));
     }
 
+    /** 마이페이지 등: 로그인한 작성자 본인의 리뷰만 조회 */
+    @GetMapping("/me")
+    public ResponseEntity<Page<ReviewResponse>> getMyReviews(
+            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
+    ) {
+        return ResponseEntity.ok(reviewService.listMyReviews(pageable));
+    }
+
     @PostMapping
     public ResponseEntity<String> create(@Valid @RequestBody ReviewRequest request) {
         reviewService.saveReview(request);

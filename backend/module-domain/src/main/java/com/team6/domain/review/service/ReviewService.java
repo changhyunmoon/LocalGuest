@@ -90,6 +90,14 @@ public class ReviewService {
                 .map(ReviewResponse::new);
     }
 
+    /** 현재 로그인한 회원이 작성한 리뷰(삭제 제외) */
+    @Transactional(readOnly = true)
+    public Page<ReviewResponse> listMyReviews(Pageable pageable) {
+        Member member = getCurrentMember();
+        return reviewRepository.findAllByMemberAndDeletedFalse(member, pageable)
+                .map(ReviewResponse::new);
+    }
+
     // 리뷰 삭제
     @Transactional
     public void deleteReview(Long reviewId) {

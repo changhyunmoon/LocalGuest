@@ -20,6 +20,9 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
     @EntityGraph(attributePaths = {"member"})
     Page<Review> findAllByDeletedFalse(Pageable pageable);
 
+    @EntityGraph(attributePaths = {"member"})
+    Page<Review> findAllByMemberAndDeletedFalse(Member member, Pageable pageable);
+
     boolean existsByMatchRequestId(Long matchedRequestedId);
 
     @Query("SELECT AVG(r.rating), COUNT(r) FROM Review r WHERE r.guideId = :guideId")
