@@ -52,11 +52,6 @@ export function AppLayout() {
           >
             {isGuide ? '가이드 마이페이지' : '마이페이지'}
           </NavLink>
-          {isAuthenticated && !isGuide && (
-            <NavLink to="/guide/register" className={pillClass()}>
-              가이드 등록
-            </NavLink>
-          )}
           {isGuide && (
             <NavLink to="/guide/inbox" className={pillClass('shell-pill-link--guide')}>
               가이드 예약함

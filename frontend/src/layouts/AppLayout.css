@@ -59,48 +59,56 @@
   color: #5c6370;
   text-decoration: none;
   white-space: nowrap;
+  background: transparent;
 }
 
-.shell-pill-link:hover {
+.shell-pill-link:hover:not(.is-on) {
   color: #1f2328;
   background: #f4f5f7;
 }
 
-.shell-pill-link.is-on:not(.shell-pill-link--cta):not(.shell-pill-link--guide) {
-  color: #1f2328;
+/* 활성 탭: 홈·가이드·메시지·AI 검색·마이페이지 동일 회색 (가이드 예약함만 별색) */
+.shell-pill-link.is-on:not(.shell-pill-link--guide) {
+  background: #e8eaed;
+  color: #111827;
   font-weight: 700;
 }
 
-.shell-pill-link--spark.is-on,
-.shell-pill-link--spark:hover {
-  background: #1a2b4a;
-  color: #fff;
+.shell-pill-link--spark:not(.is-on) {
+  color: #5c6370;
+  font-weight: 500;
 }
 
-.shell-pill-link--spark:not(.is-on):not(:hover) {
-  background: #1a2b4a;
-  color: #fff;
+.shell-pill-link--spark:hover:not(.is-on) {
+  color: #1f2328;
+  background: #f4f5f7;
 }
 
-.shell-pill-link--cta {
-  background: #1f2328;
-  color: #fff !important;
-  font-weight: 600;
+.shell-pill-link--cta:not(.is-on) {
+  background: transparent;
+  color: #5c6370 !important;
+  font-weight: 500;
 }
 
-.shell-pill-link--cta:hover {
-  background: #111418;
-  color: #fff !important;
+.shell-pill-link--cta:hover:not(.is-on) {
+  background: #f4f5f7 !important;
+  color: #1f2328 !important;
 }
 
-.shell-pill-link--guide {
-  color: #0d47a1;
-  font-weight: 600;
+.shell-pill-link--guide:not(.is-on) {
+  color: #5c6370;
+  font-weight: 500;
+}
+
+.shell-pill-link--guide:hover:not(.is-on) {
+  color: #1f2328;
+  background: #f4f5f7;
 }
 
 .shell-pill-link--guide.is-on {
   background: #e3f2fd;
   color: #0d47a1;
+  font-weight: 700;
 }
 
 .shell-actions {

@@ -64,21 +64,6 @@
   border-radius: 10px;
 }
 
-.dash-profile-edit {
-  margin-top: 0.65rem;
-  padding: 0.35rem 0.75rem;
-  border-radius: 999px;
-  border: 1px solid #d8dde3;
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: #3c434d;
-  text-decoration: none;
-}
-
-.dash-profile-edit:hover {
-  background: #f4f5f7;
-}
-
 .dash-nav {
   display: flex;
   flex-direction: column;
