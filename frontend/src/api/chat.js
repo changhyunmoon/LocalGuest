@@ -1,7 +1,9 @@
 import { apiRequest } from './client.js'
 
 /**
- * module-chat REST — 읽지 않은 개수·목록은 GET /chat/rooms, 방 생성은 POST /chat/rooms.
+ * Chat 목록/생성:
+ * - 목록: GET /matching/chat/rooms (domain에서 상대 닉네임으로 title 가공)
+ * - 생성: POST /chat/rooms (module-chat)
  * @typedef {{ roomId: string, title: string, ownerEmail: string, participantCount: number, lastMessage: string | null, lastMessageAt: string | null, unreadCount: number, createdAt?: string }} ChatRoomListItem
  */
 
@@ -9,7 +11,7 @@ import { apiRequest } from './client.js'
  * @returns {Promise<ChatRoomListItem[]>}
  */
 export async function fetchChatRooms() {
-  const res = await apiRequest('/chat/rooms', { method: 'GET' })
+  const res = await apiRequest('/matching/chat/rooms', { method: 'GET' })
   const text = await res.text()
   if (!res.ok) throw new Error(text || '채팅방 목록을 불러오지 못했습니다.')
   const data = text ? JSON.parse(text) : {}

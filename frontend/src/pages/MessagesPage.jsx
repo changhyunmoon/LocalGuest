@@ -51,6 +51,7 @@ export function MessagesPage() {
   const [error, setError] = useState('')
   const [sending, setSending] = useState(false)
   const readUpdateTimerRef = useRef(/** @type {ReturnType<typeof setTimeout> | null} */ (null))
+  const autoReadTimerRef = useRef(/** @type {ReturnType<typeof setTimeout> | null} */ (null))
 
   const myNickname = useMemo(() => {
     const fromClaims =
@@ -62,6 +63,12 @@ export function MessagesPage() {
     () => rooms.find((r) => r.roomId === selectedRoomId) ?? null,
     [rooms, selectedRoomId],
   )
+
+  // 선택된 방은 목록에서 unreadCount를 0으로 유지한다(현재 보고 있으면 '안 읽음' 표시 X).
+  useEffect(() => {
+    if (!selectedRoomId) return
+    setRooms((prev) => prev.map((r) => (r.roomId === selectedRoomId ? { ...r, unreadCount: 0 } : r)))
+  }, [selectedRoomId])
 
   useEffect(() => {
     if (!isAuthenticated || !token) return
@@ -80,7 +87,7 @@ export function MessagesPage() {
       refreshTimer = setTimeout(async () => {
         try {
           const list = await fetchChatRooms()
-          setRooms(list)
+          setRooms(list.map((r) => (selectedRoomId && r.roomId === selectedRoomId ? { ...r, unreadCount: 0 } : r)))
         } catch {
           /* ignore */
         }
@@ -90,6 +97,10 @@ export function MessagesPage() {
     es.addEventListener('chat-event', (evt) => {
       try {
         const payload = JSON.parse(String(/** @type {MessageEvent} */ (evt).data || '{}'))
+        // 현재 보고 있는 방에서의 NEW_MESSAGE는 unreadCount 갱신 대상이 아니다(0 유지).
+        if (payload?.type === 'NEW_MESSAGE' && payload?.roomId && payload.roomId === selectedRoomId) {
+          return
+        }
         if (payload?.type === 'NEW_MESSAGE' || payload?.type === 'NEW_ROOM') {
           scheduleRefreshRooms()
         }
@@ -123,6 +134,7 @@ export function MessagesPage() {
               ...r,
               lastMessage: message ?? r.lastMessage,
               lastMessageAt: createdAt ?? r.lastMessageAt,
+              unreadCount: r.roomId === selectedRoomId ? 0 : r.unreadCount,
             }
           : r,
       )
@@ -176,6 +188,15 @@ export function MessagesPage() {
     if (!isAuthenticated || !selectedRoomId || !email) return
     let cancelled = false
 
+    const markReadNow = async () => {
+      const q = encodeURIComponent(email)
+      try {
+        await apiRequest(`/chat/rooms/${selectedRoomId}/read?email=${q}`, { method: 'POST' })
+      } catch {
+        /* ignore */
+      }
+    }
+
     const loadMessages = async () => {
       setLoadingMessages(true)
       try {
@@ -194,12 +215,7 @@ export function MessagesPage() {
     }
 
     const markRead = async () => {
-      const q = encodeURIComponent(email)
-      try {
-        await apiRequest(`/chat/rooms/${selectedRoomId}/read?email=${q}`, { method: 'POST' })
-      } catch {
-        /* ignore */
-      }
+      await markReadNow()
     }
 
     void loadMessages()
@@ -246,6 +262,24 @@ export function MessagesPage() {
         // 실시간 메시지 수신 시, 방 목록 프리뷰도 같이 갱신한다.
         if (payload?.roomId && payload?.message) {
           bumpRoomPreview(payload.roomId, payload.message, payload.createdAt)
+        }
+        // 내가 보고 있는 방에서 상대가 보낸 메시지는 즉시 읽음 처리(서버 unreadCount/READ_UPDATE 갱신).
+        if (
+          payload?.roomId === selectedRoomId &&
+          payload?.senderEmail &&
+          payload.senderEmail !== email
+        ) {
+          if (autoReadTimerRef.current) clearTimeout(autoReadTimerRef.current)
+          autoReadTimerRef.current = setTimeout(async () => {
+            try {
+              const q = encodeURIComponent(email)
+              await apiRequest(`/chat/rooms/${selectedRoomId}/read?email=${q}`, { method: 'POST' })
+              // UI도 즉시 0으로 맞춘다.
+              setRooms((prev) => prev.map((r) => (r.roomId === selectedRoomId ? { ...r, unreadCount: 0 } : r)))
+            } catch {
+              /* ignore */
+            }
+          }, 120)
         }
         setMessages((prev) => [...prev, payload])
       })
