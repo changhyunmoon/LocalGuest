@@ -40,6 +40,7 @@ export function MessagesPage() {
   const [searchParams] = useSearchParams()
   const chatBodyRef = useRef(null)
   const stompRef = useRef(/** @type {Client | null} */ (null))
+  const sseRef = useRef(/** @type {EventSource | null} */ (null))
 
   const [rooms, setRooms] = useState(/** @type {ChatRoom[]} */ ([]))
   const [selectedRoomId, setSelectedRoomId] = useState('')
@@ -61,6 +62,52 @@ export function MessagesPage() {
     () => rooms.find((r) => r.roomId === selectedRoomId) ?? null,
     [rooms, selectedRoomId],
   )
+
+  useEffect(() => {
+    if (!isAuthenticated || !token) return
+
+    // SSE: NEW_MESSAGE/NEW_ROOM 실시간 수신(방 목록 unreadCount 갱신용)
+    sseRef.current?.close()
+    const qs = encodeURIComponent(token)
+    const es = new EventSource(`/api/notifications/subscribe?token=${qs}`)
+    sseRef.current = es
+
+    /** @type {ReturnType<typeof setTimeout> | null} */
+    let refreshTimer = null
+
+    const scheduleRefreshRooms = () => {
+      if (refreshTimer) clearTimeout(refreshTimer)
+      refreshTimer = setTimeout(async () => {
+        try {
+          const list = await fetchChatRooms()
+          setRooms(list)
+        } catch {
+          /* ignore */
+        }
+      }, 400)
+    }
+
+    es.addEventListener('chat-event', (evt) => {
+      try {
+        const payload = JSON.parse(String(/** @type {MessageEvent} */ (evt).data || '{}'))
+        if (payload?.type === 'NEW_MESSAGE' || payload?.type === 'NEW_ROOM') {
+          scheduleRefreshRooms()
+        }
+      } catch {
+        /* ignore */
+      }
+    })
+
+    es.onerror = () => {
+      // 브라우저가 자동 재연결한다. 조용히 둔다.
+    }
+
+    return () => {
+      if (refreshTimer) clearTimeout(refreshTimer)
+      es.close()
+      if (sseRef.current === es) sseRef.current = null
+    }
+  }, [isAuthenticated, token])
 
   const onPickRoom = (roomId) => {
     setSelectedRoomId(roomId)
