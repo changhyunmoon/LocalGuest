@@ -384,7 +384,7 @@ export function SignupPage() {
                 onClick={() => void handleSendCode()}
                 disabled={timerActive || emailSendBusy}
               >
-                {emailSendBusy ? '발송 중…' : '인증번호 발송'}
+                {emailSendBusy ? '발송 중…' : codeSent ? '발송완료' : '인증번호 발송'}
               </button>
             </div>
             <p className="signup-hint">입력하신 이메일로 6자리 인증번호가 발송됩니다.</p>
