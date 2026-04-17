@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 
+import { PageEmpty, PageError, PageLoading } from '../components/PageStates.jsx'
 import { apiRequest } from '../api/client.js'
 import { useResolvedGuideId } from '../hooks/useResolvedGuideId.js'
 
@@ -70,7 +71,7 @@ export function GuideReviewsManagePage() {
   if (idLoading) {
     return (
       <div className="g-panel">
-        <p>불러오는 중…</p>
+        <PageLoading />
       </div>
     )
   }
@@ -78,7 +79,7 @@ export function GuideReviewsManagePage() {
   if (idError) {
     return (
       <div className="g-panel">
-        <p className="g-error">{idError}</p>
+        <PageError message={idError} />
       </div>
     )
   }
@@ -87,8 +88,10 @@ export function GuideReviewsManagePage() {
     <div className="g-panel">
       <h1>⭐ 가이드 리뷰</h1>
 
-      {loadError && <p className="g-error">{loadError}</p>}
-      {listLoading && <p style={{ marginTop: '0.75rem' }}>목록 불러오는 중…</p>}
+      {loadError && (
+        <PageError message={loadError} onRetry={() => guideId != null && void loadPage(guideId, page)} />
+      )}
+      {listLoading && <PageLoading label="목록을 불러오는 중…" />}
 
       <section className="grv-wrap">
         <header className="grv-head">
@@ -105,7 +108,9 @@ export function GuideReviewsManagePage() {
           </article>
         </header>
 
-        {!listLoading && rows.length === 0 && <p className="gm-hint">아직 등록된 리뷰가 없습니다.</p>}
+        {!listLoading && rows.length === 0 && (
+          <PageEmpty title="등록된 리뷰가 없습니다">게스트가 남긴 후기가 있으면 여기에 표시됩니다.</PageEmpty>
+        )}
 
         {rows.length > 0 && (
           <div className="grv-grid">

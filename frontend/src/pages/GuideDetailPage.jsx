@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams, useLocation, useNavigate } from 'react-router-dom'
 
+import { PageEmpty, PageError, PageLoading } from '../components/PageStates.jsx'
 import { apiRequest } from '../api/client'
 import { useAuth } from '../context/useAuth.js'
 
@@ -196,9 +197,27 @@ export function GuideDetailPage() {
     }
   }
 
-  if (loading) return <p>불러오는 중…</p>
-  if (error) return <p style={{ color: '#b71c1c' }}>{error}</p>
-  if (!detail?.profile) return <p>데이터가 없습니다.</p>
+  if (loading) {
+    return (
+      <div style={{ maxWidth: 720, margin: '0 auto', padding: '1rem' }}>
+        <PageLoading />
+      </div>
+    )
+  }
+  if (error) {
+    return (
+      <div style={{ maxWidth: 720, margin: '0 auto', padding: '1rem' }}>
+        <PageError message={error} />
+      </div>
+    )
+  }
+  if (!detail?.profile) {
+    return (
+      <div style={{ maxWidth: 720, margin: '0 auto', padding: '1rem' }}>
+        <PageEmpty title="표시할 프로필이 없습니다">가이드 ID를 확인하거나 목록으로 돌아가 주세요.</PageEmpty>
+      </div>
+    )
+  }
 
   const p = detail.profile
 

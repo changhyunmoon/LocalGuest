@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 
+import { PageEmpty, PageError, PageLoading } from '../components/PageStates.jsx'
 import { apiRequest } from '../api/client.js'
 
 import './MypageMemberPages.css'
@@ -91,13 +92,14 @@ export function MypageReviewsPage() {
       </p>
 
       {actionErr && <p className="err">{actionErr}</p>}
-      {error && <p className="err">{error}</p>}
+      {loading && <PageLoading />}
+      {!loading && error && <PageError message={error} onRetry={() => void load(page)} />}
 
-      {loading ? (
-        <p className="sub">불러오는 중…</p>
-      ) : rows.length === 0 ? (
-        <p className="sub">아직 작성한 리뷰가 없습니다. 가이드 매칭 화면에서 후기를 남겨 보세요.</p>
-      ) : (
+      {!loading && !error && rows.length === 0 && (
+        <PageEmpty title="작성한 리뷰가 없습니다">가이드 매칭 화면에서 후기를 남기면 여기에 표시됩니다.</PageEmpty>
+      )}
+
+      {!loading && !error && rows.length > 0 ? (
         <div className="mp-cards">
           {rows.map((r) => (
             <article key={r.id} className="mp-trip-card mp-trip-card--past">
@@ -138,16 +140,18 @@ export function MypageReviewsPage() {
             </article>
           ))}
         </div>
-      )}
+      ) : null}
 
-      <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem', flexWrap: 'wrap' }}>
-        <button type="button" className="mp-btn mp-btn--line" disabled={first || loading} onClick={() => setPage((p) => Math.max(0, p - 1))}>
-          이전
-        </button>
-        <button type="button" className="mp-btn mp-btn--line" disabled={last || loading} onClick={() => setPage((p) => p + 1)}>
-          다음
-        </button>
-      </div>
+      {!error && (
+        <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem', flexWrap: 'wrap' }}>
+          <button type="button" className="mp-btn mp-btn--line" disabled={first || loading} onClick={() => setPage((p) => Math.max(0, p - 1))}>
+            이전
+          </button>
+          <button type="button" className="mp-btn mp-btn--line" disabled={last || loading} onClick={() => setPage((p) => p + 1)}>
+            다음
+          </button>
+        </div>
+      )}
     </div>
   )
 }

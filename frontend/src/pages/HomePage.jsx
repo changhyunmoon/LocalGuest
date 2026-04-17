@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 
+import { PageEmpty, PageError, PageLoading } from '../components/PageStates.jsx'
 import { apiRequest } from '../api/client'
 import { useAuth } from '../context/useAuth.js'
 
@@ -34,19 +35,35 @@ export function HomePage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
+  const loadGuides = useCallback(async () => {
+    const res = await apiRequest('/guides', { method: 'GET', skipAuth: true })
+    const text = await res.text()
+    if (!res.ok) {
+      throw new Error(text || '가이드 목록을 불러오지 못했습니다.')
+    }
+    const data = text ? JSON.parse(text) : []
+    setGuides(Array.isArray(data) ? data : [])
+  }, [])
+
+  const refetchGuides = useCallback(async () => {
+    setLoading(true)
+    setError('')
+    try {
+      await loadGuides()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '오류')
+    } finally {
+      setLoading(false)
+    }
+  }, [loadGuides])
+
   useEffect(() => {
     let cancelled = false
     ;(async () => {
       setLoading(true)
       setError('')
       try {
-        const res = await apiRequest('/guides', { method: 'GET', skipAuth: true })
-        const text = await res.text()
-        if (!res.ok) {
-          throw new Error(text || '가이드 목록을 불러오지 못했습니다.')
-        }
-        const data = text ? JSON.parse(text) : []
-        if (!cancelled) setGuides(Array.isArray(data) ? data : [])
+        await loadGuides()
       } catch (e) {
         if (!cancelled) setError(e instanceof Error ? e.message : '오류')
       } finally {
@@ -56,7 +73,7 @@ export function HomePage() {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [loadGuides])
 
   const experts = guides.slice(0, 3)
 
@@ -129,9 +146,11 @@ export function HomePage() {
         <h2 id="f02-exp-title" className="f02-section-title f02-section-title--solo">
           Local Experts
         </h2>
-        {loading && <p className="f02-muted">가이드를 불러오는 중…</p>}
-        {error && <p className="f02-err">{error}</p>}
-        {!loading && !error && experts.length === 0 && <p className="f02-muted">등록된 가이드가 없습니다. 가이드 신청을 기다리고 있어요.</p>}
+        {loading && <PageLoading label="가이드를 불러오는 중…" />}
+        {!loading && error && <PageError message={error} onRetry={() => void refetchGuides()} />}
+        {!loading && !error && experts.length === 0 && (
+          <PageEmpty title="등록된 가이드가 없습니다">가이드 신청을 기다리고 있어요.</PageEmpty>
+        )}
         {!loading && !error && experts.length > 0 && (
           <div className="f02-expert-grid">
             {experts.map((g) => {

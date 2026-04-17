@@ -1,0 +1,131 @@
+/* 공통 로딩 / 오류 / 빈 상태 — mp-member·gmo 등 레이아웃과 함께 사용 */
+
+.page-state--loading {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  color: #6b7280;
+  font-size: 0.9rem;
+  margin: 0 0 1rem;
+  line-height: 1.45;
+}
+
+.page-state-spinner {
+  flex-shrink: 0;
+  width: 1.1rem;
+  height: 1.1rem;
+  border: 2px solid #e5e7eb;
+  border-top-color: #374151;
+  border-radius: 50%;
+  animation: page-state-spin 0.65s linear infinite;
+}
+
+@keyframes page-state-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.page-state-label {
+  font-weight: 500;
+}
+
+.page-state--error {
+  padding: 0.85rem 1rem;
+  border-radius: 12px;
+  border: 1px solid #fecaca;
+  background: #fff7f7;
+  margin: 0 0 1rem;
+}
+
+.page-state--error .page-state-title {
+  margin: 0 0 0.35rem;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #991b1b;
+}
+
+.page-state--error .page-state-msg {
+  margin: 0;
+  font-size: 0.88rem;
+  color: #b91c1c;
+  line-height: 1.45;
+}
+
+.page-state-retry {
+  margin-top: 0.65rem;
+  padding: 0.45rem 0.9rem;
+  border-radius: 10px;
+  border: 1px solid #e8eaed;
+  background: #fff;
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.86rem;
+  cursor: pointer;
+  color: #1f2328;
+}
+
+.page-state-retry:hover {
+  background: #f9fafb;
+}
+
+.page-state-retry:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+.page-state--error .page-state-footer {
+  margin-top: 0.65rem;
+  font-size: 0.88rem;
+}
+
+.page-state--error .page-state-footer a {
+  color: #1f2328;
+  font-weight: 600;
+}
+
+.page-state--empty {
+  padding: 1.15rem 1rem;
+  border-radius: 12px;
+  border: 1px dashed #e5e7eb;
+  background: #f9fafb;
+  margin: 0 0 1rem;
+  color: #4b5563;
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+.page-state-empty-title {
+  margin: 0 0 0.4rem;
+  font-weight: 700;
+  font-size: 0.92rem;
+  color: #1f2328;
+}
+
+.page-state-empty-body {
+  margin: 0;
+}
+
+.page-state--muted {
+  color: #6b7280;
+}
+
+/* 사이드바·좁은 영역 */
+.page-state--tight.page-state--loading {
+  margin-bottom: 0.65rem;
+}
+
+.page-state--tight.page-state--error {
+  margin-bottom: 0.65rem;
+  padding: 0.7rem 0.85rem;
+}
+
+.page-state--tight.page-state--empty {
+  padding: 0.75rem 0.85rem;
+  margin-bottom: 0.65rem;
+  font-size: 0.86rem;
+}
+
+.page-state--tight.page-state--empty .page-state-empty-title {
+  font-size: 0.88rem;
+}
