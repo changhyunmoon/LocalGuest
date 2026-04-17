@@ -1,7 +1,5 @@
 package com.team6.module.chat.service;
 
-import com.team6.domain.guide.repository.GuideProfileRepository;
-import com.team6.domain.member.repository.MemberRepository;
 import com.team6.module.chat.dto.chatRoom.ChatRoomCreateRequest;
 import com.team6.module.chat.dto.chatRoom.ChatRoomResponse;
 import com.team6.module.chat.dto.chatRoom.ChatRoomsResponse;
@@ -10,18 +8,13 @@ import com.team6.module.chat.entity.mysql.ChatParticipant;
 import com.team6.module.chat.entity.mysql.ChatRoom;
 import com.team6.module.chat.repository.mongodb.ChatMessageRepository;
 import com.team6.module.chat.repository.mysql.ChatRoomRepository;
-import com.team6.module.common.global.util.SecurityUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Locale;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -30,8 +23,6 @@ public class ChatRoomService {
     private final ChatRoomRepository chatRoomRepository;
     private final ChatMessageRepository chatMessageRepository;
     private final NotificationService notificationService;
-    private final GuideProfileRepository guideProfileRepository;
-    private final MemberRepository memberRepository;
 
     //채팅방 생성
     @Transactional
@@ -63,60 +54,6 @@ public class ChatRoomService {
         });
 
         return response;
-    }
-
-    /**
-     * 게스트가 특정 가이드(guide_profiles PK)와 1:1 DM 방을 조회/생성한다.
-     * title 은 가이드 기준 비식별 키로 고정하고(ownerEmail과 조합), 게스트별 중복 생성을 막는다.
-     */
-    @Transactional
-    public ChatRoomResponse getOrCreateDmRoomForGuide(Long guideId) {
-        String role = SecurityUtil.getCurrentUserRoleString();
-        if (!"ROLE_GUEST".equals(role)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "게스트만 채팅방을 생성할 수 있습니다.");
-        }
-
-        String ownerEmail = SecurityUtil.getCurrentUserEmail();
-        String guideEmail = resolveGuideEmail(guideId);
-        if (ownerEmail != null && ownerEmail.equalsIgnoreCase(guideEmail)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "본인과의 채팅방은 만들 수 없습니다.");
-        }
-
-        String title = dmTitleForGuide(guideId);
-        Optional<ChatRoom> existing = chatRoomRepository.findByTitleAndOwnerEmailWithParticipants(title, ownerEmail);
-        if (existing.isPresent()) {
-            ChatRoom room = existing.get();
-            if (containsEmail(room, guideEmail)) {
-                return ChatRoomResponse.from(room);
-            }
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "기존 채팅방 참여자 정보가 올바르지 않습니다.");
-        }
-
-        ChatRoomCreateRequest req = new ChatRoomCreateRequest(title, List.of(guideEmail));
-        return createChatRoom(ownerEmail, req);
-    }
-
-    private String resolveGuideEmail(Long guideId) {
-        Long memberId = guideProfileRepository.findById(guideId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "가이드를 찾을 수 없습니다."))
-                .getMemberId();
-        return memberRepository.findById(memberId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "가이드 계정을 찾을 수 없습니다."))
-                .getEmail();
-    }
-
-    private static String dmTitleForGuide(Long guideId) {
-        return "LG-DM-GUIDE-" + guideId;
-    }
-
-    private static boolean containsEmail(ChatRoom room, String email) {
-        if (email == null) return false;
-        String target = email.toLowerCase(Locale.ROOT);
-        return room.getParticipants().stream()
-                .map(ChatParticipant::getUserEmail)
-                .filter(e -> e != null)
-                .map(e -> e.toLowerCase(Locale.ROOT))
-                .anyMatch(target::equals);
     }
 
     //참여 중인 채팅방 목록 조회

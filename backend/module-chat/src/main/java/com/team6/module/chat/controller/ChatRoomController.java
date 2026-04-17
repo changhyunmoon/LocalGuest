@@ -39,14 +39,4 @@ public class ChatRoomController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * 1:1 DM 채팅방 조회/생성 (게스트 → 특정 가이드).
-     * 가이드 이메일은 서버가 guideId(guide_profiles PK)로 해석한다.
-     */
-    @PostMapping("/for-guide/{guideId}")
-    public ResponseEntity<ChatRoomResponse> getOrCreateForGuide(@PathVariable Long guideId) {
-        ChatRoomResponse response = chatRoomService.getOrCreateDmRoomForGuide(guideId);
-        return ResponseEntity.ok(response);
-    }
-
 }
