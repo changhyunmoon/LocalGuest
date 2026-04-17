@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 
+import { MypageDevHint } from '../components/MypageDevHint.jsx'
 import { PageEmpty, PageError, PageLoading } from '../components/PageStates.jsx'
 import { apiRequest } from '../api/client.js'
 import { fetchGuestMatchRequests, fetchGuestPayments, parseMatchingApiError } from '../lib/matchingGuest.js'
@@ -98,9 +99,11 @@ export function MypagePaymentsPage() {
   return (
     <div className="mp-member">
       <h1>💳 나의 결제 내역</h1>
-      <p className="sub">
-        <code>GET /api/matching/payments/guest/list</code> · 상세 <code>GET /api/matching/payments/&#123;paymentId&#125;</code>
-      </p>
+      <p className="sub">결제·환불 상태를 확인하고, 영수증 상세를 열어 볼 수 있어요.</p>
+      <MypageDevHint>
+        목록 <code>GET /api/matching/payments/guest/list</code> · 상세{' '}
+        <code>GET /api/matching/payments/&#123;paymentId&#125;</code>
+      </MypageDevHint>
       {routeHint && (
         <p
           className="sub"

@@ -26,6 +26,18 @@
   line-height: 1.45;
 }
 
+/* MypageDevHint — 개발 모드 API 힌트 (프로덕션에서는 미렌더) */
+.mp-privacy .mp-dev-hint {
+  margin: 0 0 1rem;
+  font-size: 0.78rem;
+  color: #9aa0a6;
+  line-height: 1.45;
+}
+
+.mp-privacy .mp-dev-hint code {
+  font-size: 0.74rem;
+}
+
 .mp-privacy-section {
   padding: 1rem 0;
   border-top: 1px solid #eef0f3;

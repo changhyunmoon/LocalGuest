@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 
+import { MypageDevHint } from '../components/MypageDevHint.jsx'
 import { PageEmpty, PageError, PageLoading } from '../components/PageStates.jsx'
 import { apiRequest } from '../api/client.js'
 import { daysUntil, fetchGuestMatchRequests } from '../lib/matchingGuest.js'
@@ -84,8 +85,15 @@ export function MypageScrapbookPage() {
     <div className="mp-member">
       <h1>📒 나의 여행 기록 (스크랩북)</h1>
       <p className="sub">
-        <code>GET /api/matching/requests/guest/list</code> 중 <strong>COMPLETED</strong> 만 표시합니다. 가이드 닉네임은{' '}
-        <code>GET /api/guides/&#123;guideId&#125;</code> 로 보강합니다.
+        투어가 <strong>완료</strong>된 매칭만 시간 순으로 모아 보여 줍니다. 가이드 이름은 공개 프로필에서 가져옵니다.
+      </p>
+      <MypageDevHint>
+        <code>GET /api/matching/requests/guest/list</code> 중 <strong>COMPLETED</strong> 만 표시 · 가이드 닉네임은{' '}
+        <code>GET /api/guides/&#123;guideId&#125;</code> 로 보강
+      </MypageDevHint>
+      <p className="sub mp-data-note">
+        <strong>데이터 안내:</strong> 요약 화면의 기록 카드는 <strong>스크랩북(서버 저장)</strong> 기준이라, 이 목록과 개수가
+        다를 수 있어요.
       </p>
       {loading && <PageLoading />}
       {!loading && error && <PageError message={error} onRetry={() => void refetch()} />}
