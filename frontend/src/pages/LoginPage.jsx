@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 
+import { beginGoogleOAuth } from '../api/client'
 import { useAuth } from '../context/useAuth.js'
 
 import './FormPage.css'
@@ -122,8 +123,13 @@ export function LoginPage() {
 
       <div className="form-social">
         <p>소셜 로그인</p>
-        <button type="button" className="submit ghost" disabled title="백엔드 미구현">
-          카카오 / 네이버 (예정)
+        <button
+          type="button"
+          className="submit ghost"
+          onClick={() => beginGoogleOAuth(role, returnTo)}
+          title="Google OAuth2 로그인"
+        >
+          Google 로그인
         </button>
       </div>
 
