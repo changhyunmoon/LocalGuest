@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 
+import { MypageDevHint } from '../components/MypageDevHint.jsx'
 import { PageEmpty, PageError, PageLoading } from '../components/PageStates.jsx'
 import { apiRequest } from '../api/client.js'
 
@@ -87,9 +88,12 @@ export function MypageReviewsPage() {
     <div className="mp-member">
       <h1>⭐ 내 리뷰</h1>
       <p className="sub">
-        <code>GET /reviews/me</code>로 내가 작성한 리뷰만 불러옵니다. 팀 정책상 <strong>작성 후 수정은 불가</strong>이며, 잘못 올린 경우{' '}
+        내가 작성한 리뷰만 모아 보여 줍니다. 팀 정책상 <strong>작성 후 수정은 불가</strong>이며, 잘못 올린 경우{' '}
         <strong>삭제</strong>만 가능합니다.
       </p>
+      <MypageDevHint>
+        <code>GET /reviews/me</code> (로그인 필요)
+      </MypageDevHint>
 
       {actionErr && <p className="err">{actionErr}</p>}
       {loading && <PageLoading />}

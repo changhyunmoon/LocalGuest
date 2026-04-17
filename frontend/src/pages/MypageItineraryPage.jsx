@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
+import { MypageDevHint } from '../components/MypageDevHint.jsx'
 import { PageEmpty, PageError, PageLoading } from '../components/PageStates.jsx'
 import { apiRequest } from '../api/client.js'
 import { daysUntil, fetchGuestMatchRequests, parseMatchingApiError } from '../lib/matchingGuest.js'
@@ -141,9 +142,11 @@ export function MypageItineraryPage() {
     <div className="mp-member">
       <h1>📆 앞으로의 여행 일정</h1>
       <p className="sub">
-        <code>GET /api/matching/requests/guest/list</code> 중 진행·예정 상태만 표시합니다. 수락/거절/취소는 매칭 API를
-        호출합니다.
+        진행 중이거나 예정된 매칭만 보여 줍니다. 수락·거절·취소는 각 카드에서 진행할 수 있어요.
       </p>
+      <MypageDevHint>
+        <code>GET /api/matching/requests/guest/list</code> 중 진행·예정 상태만 표시 · 수락/거절/취소는 매칭 API 호출
+      </MypageDevHint>
       {toast && <p className="err">{toast}</p>}
       {loading && <PageLoading />}
       {!loading && error && <PageError message={error} onRetry={() => void refetch()} />}

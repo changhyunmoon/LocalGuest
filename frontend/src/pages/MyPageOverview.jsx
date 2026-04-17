@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 
+import { MypageDevHint } from '../components/MypageDevHint.jsx'
 import { PageEmpty, PageError, PageLoading } from '../components/PageStates.jsx'
 import { apiRequest } from '../api/client.js'
 import { useAuth } from '../context/useAuth.js'
@@ -96,7 +97,14 @@ export function MyPageOverview() {
     <div className="mp-member">
       <h1>마이페이지</h1>
       <p className="sub">
-        <code>GET /api/mypage/guest/dashboard</code> 기반 요약입니다. 세부 관리는 아래 바로가기로 이동할 수 있어요.
+        일정·기록·결제를 한곳에서 요약해 보여 드려요. 세부 내용은 왼쪽 메뉴나 아래 바로가기에서 확인할 수 있어요.
+      </p>
+      <MypageDevHint>
+        <code>GET /api/mypage/guest/dashboard</code> 응답 기반 요약입니다.
+      </MypageDevHint>
+      <p className="sub mp-data-note">
+        <strong>데이터 안내:</strong> 아래 「나의 여행 기록」은 서버에 저장된 <strong>스크랩북</strong>이고, 「기록 전체」
+        메뉴는 <strong>완료된 매칭만</strong> 모은 목록이라 건수가 다를 수 있어요.
       </p>
 
       <div className="mp-scrap-hero" style={{ marginBottom: '1rem' }}>

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 
+import { MypageDevHint } from '../components/MypageDevHint.jsx'
 import { apiRequest } from '../api/client.js'
 import { useAuth } from '../context/useAuth.js'
 import { getGuestDisplayName, loadGuestPrivacyForm } from '../lib/guestMypagePrefs.js'
@@ -60,9 +61,12 @@ export function MypageProfilePage() {
     <div className="mp-member">
       <h1>👤 프로필</h1>
       <p className="sub">
-        현재 백엔드는 <code>POST /members/join</code>, <code>DELETE /members/me?role=...</code> 중심입니다. 표시 정보는{' '}
-        <strong>JWT + 로컬 설정(/mypage/privacy)</strong> 기반으로 구성합니다.
+        계정 이메일·역할은 로그인 토큰 기준이며, 표시 이름 등은 <strong>개인정보 설정(/mypage/privacy)</strong>에 저장한 값을
+        함께 씁니다.
       </p>
+      <MypageDevHint>
+        회원 API: <code>POST /members/join</code>, <code>DELETE /members/me?role=...</code> · 표시는 JWT + 로컬 prefs
+      </MypageDevHint>
 
       {toast && <p className="err">{toast}</p>}
 
