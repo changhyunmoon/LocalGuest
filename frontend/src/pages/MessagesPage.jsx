@@ -115,6 +115,27 @@ export function MessagesPage() {
     setRooms((prev) => prev.map((r) => (r.roomId === roomId ? { ...r, unreadCount: 0 } : r)))
   }
 
+  const bumpRoomPreview = (roomId, message, createdAt) => {
+    setRooms((prev) => {
+      const next = prev.map((r) =>
+        r.roomId === roomId
+          ? {
+              ...r,
+              lastMessage: message ?? r.lastMessage,
+              lastMessageAt: createdAt ?? r.lastMessageAt,
+            }
+          : r,
+      )
+      // 최신 메시지 방을 상단으로 올린다(카톡 UX).
+      next.sort((a, b) => {
+        const ta = a.lastMessageAt ? new Date(a.lastMessageAt).getTime() : 0
+        const tb = b.lastMessageAt ? new Date(b.lastMessageAt).getTime() : 0
+        return tb - ta
+      })
+      return next
+    })
+  }
+
   useEffect(() => {
     const el = chatBodyRef.current
     if (!el) return
@@ -222,6 +243,10 @@ export function MessagesPage() {
           }, 250)
           return
         }
+        // 실시간 메시지 수신 시, 방 목록 프리뷰도 같이 갱신한다.
+        if (payload?.roomId && payload?.message) {
+          bumpRoomPreview(payload.roomId, payload.message, payload.createdAt)
+        }
         setMessages((prev) => [...prev, payload])
       })
     }
@@ -244,6 +269,8 @@ export function MessagesPage() {
     if (!content || !selectedRoomId || !email || !stompRef.current?.connected) return
     setSending(true)
     try {
+      // sender(나)는 NEW_MESSAGE SSE를 받지 않으므로, 방 목록 프리뷰는 즉시 갱신한다.
+      bumpRoomPreview(selectedRoomId, content, new Date().toISOString())
       stompRef.current.publish({
         destination: '/pub/chat/message',
         body: JSON.stringify({
