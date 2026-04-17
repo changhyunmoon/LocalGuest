@@ -4,7 +4,7 @@ import com.team6.domain.member.entity.Member;
 import com.team6.domain.member.entity.Role;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
-
+import com.team6.domain.member.entity.Status;
 import java.util.Optional;
 
 @Repository
@@ -17,6 +17,7 @@ public interface MemberRepository extends JpaRepository <Member, Long>{
     boolean existsByEmailAndRole(String email, Role role);
 
     //닉네임 중복 체크용
+    boolean existsByNicknameAndStatus(String nickname, Status status);
     boolean existsByNickname(String nickname);
 
 

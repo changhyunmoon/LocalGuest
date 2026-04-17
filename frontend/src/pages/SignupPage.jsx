@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 
 import {
   apiRequest,
+  beginGoogleOAuth,
   confirmSignupEmailVerification,
   fetchNicknameAvailable,
   sendSignupEmailVerification,
@@ -83,6 +84,7 @@ export function SignupPage() {
   const [emailVerified, setEmailVerified] = useState(false)
 
   const [error, setError] = useState('')
+  const [idCheckMessage, setIdCheckMessage] = useState('')
   const [loading, setLoading] = useState(false)
   const [doneId, setDoneId] = useState(null)
   const [dupBusy, setDupBusy] = useState(false)
@@ -119,8 +121,9 @@ export function SignupPage() {
 
   const handleDupCheck = async () => {
     setError('')
+    setIdCheckMessage('')
     if (!idPatternOk(nickname)) {
-      setError('아이디는 영문·숫자 2~16자여야 합니다.')
+      setIdCheckMessage('아이디는 영문·숫자 2~16자여야 합니다.')
       setIdFormatChecked(false)
       return
     }
@@ -129,11 +132,12 @@ export function SignupPage() {
     try {
       const available = await fetchNicknameAvailable(nickname)
       if (!available) {
-        setError('이미 사용 중인 아이디(닉네임)입니다.')
+        setIdCheckMessage('이미 사용 중인 아이디(닉네임)입니다.')
         setIdFormatChecked(false)
         return
       }
       setIdFormatChecked(true)
+      setIdCheckMessage('사용 가능한 아이디입니다. (최종 가입 시 서버에서 한 번 더 확인합니다.)')
     } catch (err) {
       setError(err instanceof Error ? err.message : '중복 확인에 실패했습니다.')
       setIdFormatChecked(false)
@@ -464,7 +468,7 @@ export function SignupPage() {
         <h1 className="signup-title">계정 정보를 입력해주세요</h1>
         <p className="signup-lead">나만의 로컬 여행을 시작하기 위한 첫 번째 단계예요.</p>
 
-        <button type="button" className="signup-google" disabled title="백엔드 미구현">
+        <button type="button" className="signup-google" onClick={() => beginGoogleOAuth('GUEST', '/mypage')}>
           <span className="signup-google-icon" aria-hidden>
             G
           </span>
@@ -530,15 +534,16 @@ export function SignupPage() {
               onChange={(ev) => {
                 setUserId(ev.target.value)
                 setIdFormatChecked(false)
+                setIdCheckMessage('')
               }}
             />
             <button type="button" className="signup-dup" onClick={() => void handleDupCheck()} disabled={dupBusy}>
               {dupBusy ? '확인 중…' : '중복 확인'}
             </button>
           </div>
-          {idFormatChecked && (
-            <p className="signup-hint" style={{ color: '#047857' }}>
-              사용 가능한 아이디입니다. (최종 가입 시 서버에서 한 번 더 확인합니다.)
+          {idCheckMessage && (
+            <p className="signup-hint" style={{ color: idFormatChecked ? '#047857' : '#b71c1c' }}>
+              {idCheckMessage}
             </p>
           )}
         </div>

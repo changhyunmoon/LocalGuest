@@ -47,7 +47,7 @@ public class MemberService {
                 })
                 .orElseGet(()->{
                     // 신규 가입
-                    if (memberRepository.existsByNickname(member.getNickname())) {
+                    if (memberRepository.existsByNicknameAndStatus(member.getNickname(), Status.ACTIVE)) {
                         throw new IllegalArgumentException("이미 사용 중인 닉네임입니다.");
                     }
 
@@ -89,7 +89,7 @@ public class MemberService {
 
     // 닉네임 중복 체크
     public boolean existsByNickname(String nickname) {
-        return memberRepository.existsByNickname(nickname);
+        return memberRepository.existsByNicknameAndStatus(nickname, Status.ACTIVE);
     }
 }
 

@@ -35,7 +35,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         String token = jwtTokenProvider.createToken(email, role);
 
         // 프론트엔드로 토큰과 함께 리다이렉트
-        String redirectUrl = "http://localhost:3000/oauth2/callback?token=" + token;
+        String redirectUrl = "http://localhost:5173/oauth2/callback?token=" + token;
         getRedirectStrategy().sendRedirect(request,response, redirectUrl);
 
         // 프론트 없을 때 임시 테스트용 → 토큰을 바로 응답으로 반환

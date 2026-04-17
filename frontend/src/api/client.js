@@ -240,3 +240,21 @@ export async function fetchNicknameAvailable(nickname) {
     return false
   }
 }
+
+/**
+ * Google OAuth2 로그인 시작.
+ * - 백엔드 CustomOauth2UserService가 role 쿠키를 읽으므로 짧게 저장한다.
+ * - 콜백 이후 이동 경로를 sessionStorage에 저장한다.
+ * @param {'GUEST' | 'GUIDE' | string} role
+ * @param {string} [returnTo]
+ */
+export function beginGoogleOAuth(role = 'GUEST', returnTo = '/mypage') {
+  const normalizedRole = String(role || 'GUEST').toUpperCase() === 'GUIDE' ? 'GUIDE' : 'GUEST'
+  try {
+    document.cookie = `role=${normalizedRole}; path=/; max-age=600; samesite=lax`
+    sessionStorage.setItem('oauth_return_to', returnTo)
+  } catch {
+    /* ignore */
+  }
+  window.location.href = joinApiUrl('/oauth2/authorization/google')
+}
