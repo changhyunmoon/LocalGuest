@@ -5,6 +5,7 @@
   display: grid;
   grid-template-columns: 260px minmax(0, 1fr);
   gap: 0.9rem;
+  align-items: stretch;
 }
 
 @media (max-width: 920px) {
@@ -18,7 +19,7 @@
   border: 1px solid #e8eaed;
   border-radius: 16px;
   padding: 0.85rem;
-  max-height: min(74vh, 720px);
+  height: min(74vh, 720px);
   overflow: auto;
 }
 
@@ -104,7 +105,8 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  min-height: min(74vh, 720px);
+  height: min(74vh, 720px);
+  min-height: 0; /* allow children to scroll instead of expanding page */
 }
 
 .msg-header {
@@ -146,6 +148,7 @@
   overflow: auto;
   padding: 1rem;
   background: #f9fafb;
+  min-height: 0;
 }
 
 .msg-day {
