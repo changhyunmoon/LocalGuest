@@ -40,12 +40,12 @@ public class ChatRoomController {
     }
 
     /**
-     * 매칭 요청 단위 채팅방 조회 또는 생성 (게스트/해당 가이드만).
-     * 프론트는 응답의 roomId로 /messages?roomId= 로 이동하면 된다.
+     * 1:1 DM 채팅방 조회/생성 (게스트 → 특정 가이드).
+     * 가이드 이메일은 서버가 guideId(guide_profiles PK)로 해석한다.
      */
-    @PostMapping("/for-match-request/{requestId}")
-    public ResponseEntity<ChatRoomResponse> getOrCreateForMatchRequest(@PathVariable Long requestId) {
-        ChatRoomResponse response = chatRoomService.getOrCreateRoomForMatchRequest(requestId);
+    @PostMapping("/for-guide/{guideId}")
+    public ResponseEntity<ChatRoomResponse> getOrCreateForGuide(@PathVariable Long guideId) {
+        ChatRoomResponse response = chatRoomService.getOrCreateDmRoomForGuide(guideId);
         return ResponseEntity.ok(response);
     }
 

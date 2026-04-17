@@ -58,6 +58,36 @@
   margin-bottom: 0.2rem;
 }
 
+.msg-room-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.msg-room-title-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.msg-room-badge {
+  flex: 0 0 auto;
+  min-width: 1.3rem;
+  height: 1.3rem;
+  padding: 0 0.42rem;
+  border-radius: 999px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 900;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
 .msg-room-btn span {
   display: block;
   font-size: 0.75rem;
@@ -181,6 +211,19 @@
 
 .msg-bubble-wrap.mine .msg-bubble-box time {
   text-align: right;
+}
+
+.msg-meta {
+  display: inline-flex;
+  gap: 0.4rem;
+  align-items: center;
+  justify-content: flex-end;
+  width: 100%;
+}
+
+.msg-unread {
+  color: #ef4444;
+  font-weight: 900;
 }
 
 .msg-input-bar {

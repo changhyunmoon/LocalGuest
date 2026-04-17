@@ -268,23 +268,11 @@ export function GuideMatchedCoursePage() {
   const rc = profile?.reviewCount != null ? profile.reviewCount : 0
   const likes = useMemo(() => Math.max(Math.round(rc * 2.8) + 40, 12), [rc])
 
-  const matchRequestIdForChat =
-    requestId != null && String(requestId).trim() !== ''
-      ? String(requestId)
-      : requestData?.requestId != null
-        ? String(requestData.requestId)
-        : ''
-
   const handleOpenMatchChat = async () => {
-    const rid = matchRequestIdForChat.trim()
-    if (!rid) {
-      setChatErr('매칭 요청 정보를 찾을 수 없습니다. URL에 requestId가 있는지 확인해 주세요.')
-      return
-    }
     setChatBusy(true)
     setChatErr('')
     try {
-      const res = await apiRequest(`/chat/rooms/for-match-request/${encodeURIComponent(rid)}`, { method: 'POST' })
+      const res = await apiRequest(`/chat/rooms/for-guide/${encodeURIComponent(guideId)}`, { method: 'POST' })
       const text = await res.text()
       if (!res.ok) throw new Error(text || '채팅방을 열 수 없습니다.')
       const data = text ? JSON.parse(text) : {}
@@ -362,7 +350,7 @@ export function GuideMatchedCoursePage() {
             <button
               type="button"
               className="gmc-chat-btn"
-              disabled={chatBusy || !matchRequestIdForChat.trim()}
+              disabled={chatBusy}
               onClick={() => void handleOpenMatchChat()}
             >
               {chatBusy ? '채팅방 연결 중…' : '가이드와 채팅방 입장하기'}

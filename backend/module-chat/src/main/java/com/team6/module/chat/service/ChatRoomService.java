@@ -1,13 +1,6 @@
 package com.team6.module.chat.service;
 
 import com.team6.domain.guide.repository.GuideProfileRepository;
-import com.team6.domain.matching.entity.MatchRequest;
-import com.team6.domain.matching.entity.enums.MatchRequestStatus;
-import com.team6.domain.matching.exception.MatchingErrorCode;
-import com.team6.domain.matching.exception.MatchingException;
-import com.team6.domain.matching.repository.MatchRequestRepository;
-import com.team6.domain.matching.support.MatchingAuthenticationSupport;
-import com.team6.domain.member.entity.Role;
 import com.team6.domain.member.repository.MemberRepository;
 import com.team6.module.chat.dto.chatRoom.ChatRoomCreateRequest;
 import com.team6.module.chat.dto.chatRoom.ChatRoomResponse;
@@ -19,9 +12,10 @@ import com.team6.module.chat.repository.mongodb.ChatMessageRepository;
 import com.team6.module.chat.repository.mysql.ChatRoomRepository;
 import com.team6.module.common.global.util.SecurityUtil;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.Comparator;
@@ -29,7 +23,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ChatRoomService {
@@ -37,10 +30,8 @@ public class ChatRoomService {
     private final ChatRoomRepository chatRoomRepository;
     private final ChatMessageRepository chatMessageRepository;
     private final NotificationService notificationService;
-    private final MatchRequestRepository matchRequestRepository;
     private final GuideProfileRepository guideProfileRepository;
     private final MemberRepository memberRepository;
-    private final MatchingAuthenticationSupport matchingAuthenticationSupport;
 
     //채팅방 생성
     @Transactional
@@ -75,97 +66,57 @@ public class ChatRoomService {
     }
 
     /**
-     * 매칭 요청에 묶인 1:1 채팅방을 조회하거나 없으면 생성한다.
-     * 제목은 {@code LG-MATCH-{requestId}} 로 고정해 동일 매칭에 대한 중복 방 생성을 막는다.
+     * 게스트가 특정 가이드(guide_profiles PK)와 1:1 DM 방을 조회/생성한다.
+     * title 은 가이드 기준 비식별 키로 고정하고(ownerEmail과 조합), 게스트별 중복 생성을 막는다.
      */
     @Transactional
-    public ChatRoomResponse getOrCreateRoomForMatchRequest(Long requestId) {
-        MatchRequest mr = matchRequestRepository.findById(requestId)
-                .orElseThrow(() -> new MatchingException(MatchingErrorCode.MATCH_REQUEST_NOT_FOUND));
-
-        assertMatchAllowsChat(mr);
-        assertUserPartyToMatch(mr);
-
-        String guestEmail = memberRepository.findById(mr.getGuestId())
-                .orElseThrow(() -> new MatchingException(MatchingErrorCode.MATCH_REQUEST_NOT_FOUND))
-                .getEmail();
-        Long guideMemberId = guideProfileRepository.findById(mr.getGuideId())
-                .orElseThrow(() -> new MatchingException(MatchingErrorCode.MATCH_REQUEST_NOT_FOUND))
-                .getMemberId();
-        String guideEmail = memberRepository.findById(guideMemberId)
-                .orElseThrow(() -> new MatchingException(MatchingErrorCode.MATCH_REQUEST_NOT_FOUND))
-                .getEmail();
-
-        if (guestEmail.equalsIgnoreCase(guideEmail)) {
-            throw new MatchingException(MatchingErrorCode.GUEST_GUIDE_SAME);
-        }
-
-        String title = matchRoomTitle(requestId);
-        Optional<ChatRoom> existing = chatRoomRepository.findFirstByTitleOrderByIdAsc(title);
-        if (existing.isPresent()) {
-            ChatRoom room = existing.get();
-            if (roomContainsBoth(room, guestEmail, guideEmail)) {
-                log.info("[MATCH_CHAT] 기존 채팅방 사용 — requestId={}, roomId={}", requestId, room.getRoomId());
-                return ChatRoomResponse.from(room);
-            }
-            log.warn("[MATCH_CHAT] 제목 충돌(참여자 불일치) — requestId={}, roomId={}", requestId, room.getRoomId());
-            throw new MatchingException(MatchingErrorCode.INVALID_REQUEST);
+    public ChatRoomResponse getOrCreateDmRoomForGuide(Long guideId) {
+        String role = SecurityUtil.getCurrentUserRoleString();
+        if (!"ROLE_GUEST".equals(role)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "게스트만 채팅방을 생성할 수 있습니다.");
         }
 
         String ownerEmail = SecurityUtil.getCurrentUserEmail();
-        String counterpart = ownerEmail.equalsIgnoreCase(guestEmail) ? guideEmail : guestEmail;
+        String guideEmail = resolveGuideEmail(guideId);
+        if (ownerEmail != null && ownerEmail.equalsIgnoreCase(guideEmail)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "본인과의 채팅방은 만들 수 없습니다.");
+        }
 
-        ChatRoomCreateRequest req = new ChatRoomCreateRequest(
-                title,
-                List.of(counterpart)
-        );
-        ChatRoomResponse created = createChatRoom(ownerEmail, req);
-        log.info("[MATCH_CHAT] 채팅방 생성 — requestId={}, roomId={}", requestId, created.roomId());
-        return created;
+        String title = dmTitleForGuide(guideId);
+        Optional<ChatRoom> existing = chatRoomRepository.findByTitleAndOwnerEmailWithParticipants(title, ownerEmail);
+        if (existing.isPresent()) {
+            ChatRoom room = existing.get();
+            if (containsEmail(room, guideEmail)) {
+                return ChatRoomResponse.from(room);
+            }
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "기존 채팅방 참여자 정보가 올바르지 않습니다.");
+        }
+
+        ChatRoomCreateRequest req = new ChatRoomCreateRequest(title, List.of(guideEmail));
+        return createChatRoom(ownerEmail, req);
     }
 
-    private static String matchRoomTitle(long requestId) {
-        return "LG-MATCH-" + requestId;
+    private String resolveGuideEmail(Long guideId) {
+        Long memberId = guideProfileRepository.findById(guideId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "가이드를 찾을 수 없습니다."))
+                .getMemberId();
+        return memberRepository.findById(memberId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "가이드 계정을 찾을 수 없습니다."))
+                .getEmail();
     }
 
-    private static boolean roomContainsBoth(ChatRoom room, String guestEmail, String guideEmail) {
-        String g = guestEmail.toLowerCase(Locale.ROOT);
-        String gv = guideEmail.toLowerCase(Locale.ROOT);
-        return room.getParticipants().stream().map(ChatParticipant::getUserEmail)
+    private static String dmTitleForGuide(Long guideId) {
+        return "LG-DM-GUIDE-" + guideId;
+    }
+
+    private static boolean containsEmail(ChatRoom room, String email) {
+        if (email == null) return false;
+        String target = email.toLowerCase(Locale.ROOT);
+        return room.getParticipants().stream()
+                .map(ChatParticipant::getUserEmail)
+                .filter(e -> e != null)
                 .map(e -> e.toLowerCase(Locale.ROOT))
-                .filter(e -> e.equals(g) || e.equals(gv))
-                .distinct()
-                .count() >= 2;
-    }
-
-    private void assertMatchAllowsChat(MatchRequest mr) {
-        MatchRequestStatus s = mr.getStatus();
-        boolean ok = switch (s) {
-            case ACCEPTED, PAID, IN_PROGRESS, COMPLETED -> true;
-            default -> false;
-        };
-        if (!ok) {
-            throw new MatchingException(MatchingErrorCode.MATCH_REQUEST_INVALID_STATUS);
-        }
-    }
-
-    private void assertUserPartyToMatch(MatchRequest mr) {
-        Role r = matchingAuthenticationSupport.resolveTokenRole();
-        if (r == Role.GUEST) {
-            Long guestMemberId = matchingAuthenticationSupport.getCurrentGuestMemberId();
-            if (!mr.getGuestId().equals(guestMemberId)) {
-                throw new MatchingException(MatchingErrorCode.MATCH_REQUEST_UNAUTHORIZED);
-            }
-            return;
-        }
-        if (r == Role.GUIDE) {
-            Long guideProfileId = matchingAuthenticationSupport.getCurrentGuideProfileId();
-            if (!mr.getGuideId().equals(guideProfileId)) {
-                throw new MatchingException(MatchingErrorCode.MATCH_REQUEST_UNAUTHORIZED);
-            }
-            return;
-        }
-        throw new MatchingException(MatchingErrorCode.MATCH_REQUEST_UNAUTHORIZED);
+                .anyMatch(target::equals);
     }
 
     //참여 중인 채팅방 목록 조회
