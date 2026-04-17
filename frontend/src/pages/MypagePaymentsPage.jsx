@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useLocation } from 'react-router-dom'
 
 import { PageEmpty, PageError, PageLoading } from '../components/PageStates.jsx'
 import { apiRequest } from '../api/client.js'
@@ -25,12 +26,21 @@ function tabFilter(tab, p) {
 }
 
 export function MypagePaymentsPage() {
+  const location = useLocation()
   const [payments, setPayments] = useState([])
   const [requestsById, setRequestsById] = useState({})
   const [tab, setTab] = useState('all')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
   const [detail, setDetail] = useState(null)
+  const [routeHint, setRouteHint] = useState('')
+
+  useEffect(() => {
+    const h = location.state?.hint
+    if (typeof h === 'string' && h.trim()) {
+      setRouteHint(h.trim())
+    }
+  }, [location.state])
 
   const loadPayments = useCallback(async () => {
     const [pay, req] = await Promise.all([fetchGuestPayments(apiRequest), fetchGuestMatchRequests(apiRequest)])
@@ -91,6 +101,22 @@ export function MypagePaymentsPage() {
       <p className="sub">
         <code>GET /api/matching/payments/guest/list</code> · 상세 <code>GET /api/matching/payments/&#123;paymentId&#125;</code>
       </p>
+      {routeHint && (
+        <p
+          className="sub"
+          role="status"
+          style={{
+            padding: '0.75rem 0.95rem',
+            borderRadius: 12,
+            background: '#ecfdf5',
+            border: '1px solid #a7f3d0',
+            color: '#065f46',
+            fontWeight: 600,
+          }}
+        >
+          {routeHint}
+        </p>
+      )}
       {loading && <PageLoading />}
       {!loading && error && <PageError message={error} onRetry={() => void refetch()} />}
 
