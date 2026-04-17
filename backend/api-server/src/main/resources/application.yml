@@ -30,8 +30,9 @@ spring:
   mail:
     host: ${MAIL_HOST:smtp.gmail.com}           # 환경변수 MAIL_HOST 값 사용
     port: ${MAIL_PORT:587}       # 환경변수 없으면 기본값 587
-    username: ${MAIL_USERNAME}
-    password: ${MAIL_PASSWORD}
+    # 로컬에서 MAIL_* 미설정이어도 부팅은 되어야 한다. (메일 기능은 미동작 가능)
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
     properties:
       mail:
         smtp:
