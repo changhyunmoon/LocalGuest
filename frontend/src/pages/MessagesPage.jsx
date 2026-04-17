@@ -63,6 +63,12 @@ export function MessagesPage() {
     [rooms, selectedRoomId],
   )
 
+  // 선택된 방은 목록에서 unreadCount를 0으로 유지한다(현재 보고 있으면 '안 읽음' 표시 X).
+  useEffect(() => {
+    if (!selectedRoomId) return
+    setRooms((prev) => prev.map((r) => (r.roomId === selectedRoomId ? { ...r, unreadCount: 0 } : r)))
+  }, [selectedRoomId])
+
   useEffect(() => {
     if (!isAuthenticated || !token) return
 
@@ -80,7 +86,7 @@ export function MessagesPage() {
       refreshTimer = setTimeout(async () => {
         try {
           const list = await fetchChatRooms()
-          setRooms(list)
+          setRooms(list.map((r) => (selectedRoomId && r.roomId === selectedRoomId ? { ...r, unreadCount: 0 } : r)))
         } catch {
           /* ignore */
         }
@@ -90,6 +96,10 @@ export function MessagesPage() {
     es.addEventListener('chat-event', (evt) => {
       try {
         const payload = JSON.parse(String(/** @type {MessageEvent} */ (evt).data || '{}'))
+        // 현재 보고 있는 방에서의 NEW_MESSAGE는 unreadCount 갱신 대상이 아니다(0 유지).
+        if (payload?.type === 'NEW_MESSAGE' && payload?.roomId && payload.roomId === selectedRoomId) {
+          return
+        }
         if (payload?.type === 'NEW_MESSAGE' || payload?.type === 'NEW_ROOM') {
           scheduleRefreshRooms()
         }
@@ -123,6 +133,7 @@ export function MessagesPage() {
               ...r,
               lastMessage: message ?? r.lastMessage,
               lastMessageAt: createdAt ?? r.lastMessageAt,
+              unreadCount: r.roomId === selectedRoomId ? 0 : r.unreadCount,
             }
           : r,
       )
