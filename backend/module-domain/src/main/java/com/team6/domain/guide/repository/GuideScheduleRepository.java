@@ -21,6 +21,9 @@ public interface GuideScheduleRepository extends JpaRepository<GuideSchedule, Lo
     // 상태별 스케줄 조회 — 대기 스케줄 확인 (F06-04)
     List<GuideSchedule> findByGuideProfile_IdAndStatus(Long guideId, GuideScheduleStatus status);
 
+    // 특정 날짜의 스케줄 목록 조회 — blockDate/unblockDate 에서 날짜 단위 조회에 사용
+    List<GuideSchedule> findByGuideProfile_IdAndAvailableDate(Long guideId, LocalDate date);
+
     // 시간대 겹침 체크 — UniqueConstraint (guide_id, available_date, start_time, end_time) 기준
     // 같은 날짜에 기존 스케줄과 시간이 겹치면 true (startTime < 기존종료 AND endTime > 기존시작)
     @Query("SELECT COUNT(s) > 0 FROM GuideSchedule s " +

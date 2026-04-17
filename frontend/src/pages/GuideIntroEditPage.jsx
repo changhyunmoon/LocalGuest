@@ -22,8 +22,10 @@ export function GuideIntroEditPage() {
   const [profile, setProfile] = useState(null)
   const [bio, setBio] = useState('')
   const [localStory, setLocalStory] = useState('')
+  const [residenceYears, setResidenceYears] = useState('')
   const [loadError, setLoadError] = useState('')
   const [saveError, setSaveError] = useState('')
+  const [saveSuccess, setSaveSuccess] = useState(false)
   const [saving, setSaving] = useState(false)
 
   const load = useCallback(async (id) => {
@@ -38,6 +40,7 @@ export function GuideIntroEditPage() {
       setProfile(p)
       setBio(p?.bio ?? '')
       setLocalStory(p?.localStory ?? '')
+      setResidenceYears(p?.residenceYears != null ? String(p.residenceYears) : '')
     } catch (e) {
       setLoadError(e instanceof Error ? e.message : '불러오기 실패')
     }
@@ -51,9 +54,10 @@ export function GuideIntroEditPage() {
   const handleSave = async () => {
     if (!guideId || !profile) return
     setSaveError('')
+    setSaveSuccess(false)
     setSaving(true)
     try {
-      const merged = { ...profile, bio, localStory }
+      const merged = { ...profile, bio, localStory, residenceYears: residenceYears ? Number(residenceYears) : undefined }
       const body = buildGuidePutBody(merged)
       const res = await apiRequest(`/guides/${guideId}`, { method: 'PUT', json: body })
       const text = await res.text()
@@ -65,6 +69,8 @@ export function GuideIntroEditPage() {
       setProfile(p)
       setBio(p?.bio ?? '')
       setLocalStory(p?.localStory ?? '')
+      setResidenceYears(p?.residenceYears != null ? String(p.residenceYears) : '')
+      setSaveSuccess(true)
     } catch {
       setSaveError('네트워크 오류')
     } finally {
@@ -104,6 +110,7 @@ export function GuideIntroEditPage() {
         지역 등은 <Link to="/guide/mypage/profile">프로필 등록</Link>에서 수정합니다.
       </p>
       {saveError && <p className="g-error">{saveError}</p>}
+      {saveSuccess && <p className="g-success">저장되었습니다.</p>}
 
       <div className="gm-stack" style={{ marginTop: '0.75rem', maxWidth: '40rem' }}>
         <div className="gm-field">
@@ -118,6 +125,17 @@ export function GuideIntroEditPage() {
             onChange={(e) => setLocalStory(e.target.value)}
             rows={8}
             maxLength={4000}
+          />
+        </div>
+        <div className="gm-field">
+          <label htmlFor="gi-years">거주 연수 (residenceYears)</label>
+          <input
+            id="gi-years"
+            type="number"
+            min={0}
+            value={residenceYears}
+            onChange={(e) => setResidenceYears(e.target.value.replace(/[^\d]/g, ''))}
+            placeholder="예: 15"
           />
         </div>
         <div className="gm-actions">

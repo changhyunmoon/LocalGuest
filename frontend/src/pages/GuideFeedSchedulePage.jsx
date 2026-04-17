@@ -38,6 +38,29 @@ function nextStatus(s) {
   return 'plain'
 }
 
+function useToast() {
+  const [toasts, setToasts] = useState([])
+  const addToast = useCallback((message, type = 'success') => {
+    const id = Date.now() + Math.random()
+    setToasts((prev) => [...prev, { id, message, type }])
+    setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 2000)
+  }, [])
+  return { toasts, addToast }
+}
+
+function Toast({ toasts }) {
+  if (toasts.length === 0) return null
+  return (
+    <div style={{ position: 'fixed', bottom: '1.5rem', right: '1.5rem', zIndex: 9999, display: 'flex', flexDirection: 'column', gap: '0.5rem', pointerEvents: 'none' }}>
+      {toasts.map((t) => (
+        <div key={t.id} style={{ padding: '0.7rem 1.2rem', borderRadius: 10, background: t.type === 'success' ? '#15803d' : '#b91c1c', color: '#fff', fontSize: '0.88rem', fontWeight: 600, boxShadow: '0 4px 16px rgba(0,0,0,0.18)', minWidth: 180, maxWidth: 320 }}>
+          {t.message}
+        </div>
+      ))}
+    </div>
+  )
+}
+
 async function readJsonError(res, text) {
   try {
     const j = JSON.parse(text)
@@ -71,11 +94,9 @@ export function GuideFeedSchedulePage() {
   const [feedExtraImageUrl, setFeedExtraImageUrl] = useState('')
   const [feedMainFileName, setFeedMainFileName] = useState('')
   const [feedExtraFileName, setFeedExtraFileName] = useState('')
-  const [schDate, setSchDate] = useState('')
-  const [schStart, setSchStart] = useState('')
-  const [schEnd, setSchEnd] = useState('')
+  const { toasts, addToast } = useToast()
+  const [blockedDates, setBlockedDates] = useState(() => new Set())
   const [busy, setBusy] = useState(false)
-  const [msg, setMsg] = useState('')
   const mainFileInputRef = useRef(null)
   const extraFileInputRef = useRef(null)
   const currentTab = searchParams.get('tab') === 'schedule' ? 'schedule' : 'feed'
@@ -86,17 +107,18 @@ export function GuideFeedSchedulePage() {
 
   const loadAll = useCallback(async (id) => {
     setLoadError('')
-    setMsg('')
     try {
-      const [fr, sr, pr, guideReq] = await Promise.all([
+      const [fr, sr, pr, br, guideReq] = await Promise.all([
         apiRequest(`/guides/${id}/feeds`, { method: 'GET', skipAuth: true }),
         apiRequest(`/guides/${id}/schedules`, { method: 'GET', skipAuth: true }),
         apiRequest(`/guides/${id}/schedules/pending`, { method: 'GET' }),
+        apiRequest(`/guides/${id}/schedules/blocked`, { method: 'GET', skipAuth: true }),
         fetchGuideMatchRequests(apiRequest),
       ])
       const ft = await fr.text()
       const st = await sr.text()
       const pt = await pr.text()
+      const bt = await br.text()
       if (!fr.ok) {
         throw new Error(await readJsonError(fr, ft))
       }
@@ -109,6 +131,10 @@ export function GuideFeedSchedulePage() {
         setPendingSchedules(pt ? JSON.parse(pt) : [])
       } else {
         setPendingSchedules([])
+      }
+      if (br.ok) {
+        const blockedList = bt ? JSON.parse(bt) : []
+        setBlockedDates(new Set(blockedList.map((s) => s.availableDate)))
       }
       setGuideRequests(Array.isArray(guideReq) ? guideReq : [])
     } catch (e) {
@@ -195,7 +221,6 @@ export function GuideFeedSchedulePage() {
   const addFeed = async () => {
     if (!guideId || !feedContent.trim()) return
     setBusy(true)
-    setMsg('')
     try {
       const res = await apiRequest(`/guides/${guideId}/feeds`, {
         method: 'POST',
@@ -206,7 +231,7 @@ export function GuideFeedSchedulePage() {
       })
       const text = await res.text()
       if (!res.ok) {
-        setMsg(await readJsonError(res, text))
+        addToast(await readJsonError(res, text), 'error')
         return
       }
       setFeedContent('')
@@ -214,9 +239,10 @@ export function GuideFeedSchedulePage() {
       setFeedExtraImageUrl('')
       setFeedMainFileName('')
       setFeedExtraFileName('')
+      addToast('등록되었습니다.')
       await loadAll(guideId)
     } catch {
-      setMsg('피드 등록 실패')
+      addToast('피드 등록 실패', 'error')
     } finally {
       setBusy(false)
     }
@@ -225,49 +251,44 @@ export function GuideFeedSchedulePage() {
   const removeFeed = async (feedId) => {
     if (!guideId || !window.confirm('이 피드를 삭제할까요?')) return
     setBusy(true)
-    setMsg('')
     try {
       const res = await apiRequest(`/guides/${guideId}/feeds/${feedId}`, { method: 'DELETE' })
       if (!res.ok) {
         const text = await res.text()
-        setMsg(await readJsonError(res, text))
+        addToast(await readJsonError(res, text), 'error')
         return
       }
       await loadAll(guideId)
     } catch {
-      setMsg('삭제 실패')
+      addToast('삭제 실패', 'error')
     } finally {
       setBusy(false)
     }
   }
 
-  const addSchedule = async () => {
-    if (!guideId || !schDate || !schStart || !schEnd) {
-      setMsg('날짜·시작·종료 시간을 모두 입력해 주세요.')
-      return
-    }
+  const toggleBlock = async (dateStr) => {
+    if (!guideId || busy) return
     setBusy(true)
-    setMsg('')
     try {
-      const res = await apiRequest(`/guides/${guideId}/schedules`, {
-        method: 'POST',
-        json: {
-          availableDate: schDate,
-          startTime: schStart.length === 5 ? `${schStart}:00` : schStart,
-          endTime: schEnd.length === 5 ? `${schEnd}:00` : schEnd,
-        },
+      const isBlocked = blockedDates.has(dateStr)
+      const res = await apiRequest(`/guides/${guideId}/schedules/block`, {
+        method: isBlocked ? 'DELETE' : 'POST',
+        json: { date: dateStr },
       })
       const text = await res.text()
       if (!res.ok) {
-        setMsg(await readJsonError(res, text))
+        addToast(await readJsonError(res, text), 'error')
         return
       }
-      setSchDate('')
-      setSchStart('')
-      setSchEnd('')
+      setBlockedDates((prev) => {
+        const next = new Set(prev)
+        if (isBlocked) next.delete(dateStr)
+        else next.add(dateStr)
+        return next
+      })
       await loadAll(guideId)
     } catch {
-      setMsg('스케줄 등록 실패')
+      addToast('날짜 설정 실패', 'error')
     } finally {
       setBusy(false)
     }
@@ -276,17 +297,16 @@ export function GuideFeedSchedulePage() {
   const acceptPendingSchedule = async (scheduleId) => {
     if (!guideId) return
     setBusy(true)
-    setMsg('')
     try {
       const res = await apiRequest(`/guides/${guideId}/schedules/${scheduleId}/accept`, { method: 'POST' })
       const text = await res.text()
       if (!res.ok) {
-        setMsg(await readJsonError(res, text))
+        addToast(await readJsonError(res, text), 'error')
         return
       }
       await loadAll(guideId)
     } catch {
-      setMsg('스케줄 수락 실패')
+      addToast('스케줄 수락 실패', 'error')
     } finally {
       setBusy(false)
     }
@@ -295,17 +315,16 @@ export function GuideFeedSchedulePage() {
   const rejectPendingSchedule = async (scheduleId) => {
     if (!guideId || !window.confirm('이 예약 대기 스케줄을 거절할까요?')) return
     setBusy(true)
-    setMsg('')
     try {
       const res = await apiRequest(`/guides/${guideId}/schedules/${scheduleId}/reject`, { method: 'POST' })
       const text = await res.text()
       if (!res.ok) {
-        setMsg(await readJsonError(res, text))
+        addToast(await readJsonError(res, text), 'error')
         return
       }
       await loadAll(guideId)
     } catch {
-      setMsg('스케줄 거절 실패')
+      addToast('스케줄 거절 실패', 'error')
     } finally {
       setBusy(false)
     }
@@ -314,17 +333,16 @@ export function GuideFeedSchedulePage() {
   const removeSchedule = async (scheduleId) => {
     if (!guideId || !window.confirm('이 스케줄을 삭제할까요?')) return
     setBusy(true)
-    setMsg('')
     try {
       const res = await apiRequest(`/guides/${guideId}/schedules/${scheduleId}`, { method: 'DELETE' })
       if (!res.ok) {
         const text = await res.text()
-        setMsg(await readJsonError(res, text))
+        addToast(await readJsonError(res, text), 'error')
         return
       }
       await loadAll(guideId)
     } catch {
-      setMsg('스케줄 삭제 실패')
+      addToast('스케줄 삭제 실패', 'error')
     } finally {
       setBusy(false)
     }
@@ -334,7 +352,7 @@ export function GuideFeedSchedulePage() {
     const file = e.target.files?.[0]
     if (!file) return
     if (file.size > MAX_LOCAL_IMAGE_BYTES) {
-      setMsg('이미지 용량이 너무 큽니다. 2MB 이하 파일을 선택해 주세요.')
+      addToast('이미지 용량이 너무 큽니다. 2MB 이하 파일을 선택해 주세요.', 'error')
       e.target.value = ''
       return
     }
@@ -342,9 +360,8 @@ export function GuideFeedSchedulePage() {
       const dataUrl = await readFileAsDataUrl(file)
       setFeedImageUrl(dataUrl)
       setFeedMainFileName(file.name)
-      setMsg('')
     } catch {
-      setMsg('메인 사진을 읽지 못했습니다.')
+      addToast('메인 사진을 읽지 못했습니다.', 'error')
     } finally {
       e.target.value = ''
     }
@@ -354,7 +371,7 @@ export function GuideFeedSchedulePage() {
     const file = e.target.files?.[0]
     if (!file) return
     if (file.size > MAX_LOCAL_IMAGE_BYTES) {
-      setMsg('이미지 용량이 너무 큽니다. 2MB 이하 파일을 선택해 주세요.')
+      addToast('이미지 용량이 너무 큽니다. 2MB 이하 파일을 선택해 주세요.', 'error')
       e.target.value = ''
       return
     }
@@ -362,9 +379,8 @@ export function GuideFeedSchedulePage() {
       const dataUrl = await readFileAsDataUrl(file)
       setFeedExtraImageUrl(dataUrl)
       setFeedExtraFileName(file.name)
-      setMsg('')
     } catch {
-      setMsg('추가 사진을 읽지 못했습니다.')
+      addToast('추가 사진을 읽지 못했습니다.', 'error')
     } finally {
       e.target.value = ''
     }
@@ -409,7 +425,7 @@ export function GuideFeedSchedulePage() {
         </button>
       </div>
       {loadError && <p className="g-error">{loadError}</p>}
-      {msg && <p className="g-error">{msg}</p>}
+      <Toast toasts={toasts} />
       {currentTab === 'feed' ? (
         <section className="gfs-feed">
           <div className="gfs-badge">📸 피드 등록</div>
@@ -547,18 +563,27 @@ export function GuideFeedSchedulePage() {
                 {calendarCells.map((cell) => {
                   const dayKey = ymd(cell.date)
                   const daySchedules = scheduleByDate.get(dayKey) ?? []
-                  const primary = daySchedules[0]
-                  const kind = primary ? nextStatus(primary.status) : 'plain'
+                  const isBlocked = blockedDates.has(dayKey)
+                  const hasBooked = daySchedules.some((s) => s.status === 'BOOKED')
+                  const hasPending = daySchedules.some((s) => s.status === 'PENDING')
+                  let kind = 'plain'
+                  if (isBlocked) kind = 'blocked'
+                  else if (hasBooked) kind = 'booked'
+                  else if (hasPending) kind = 'pending'
                   const today = ymd(new Date()) === dayKey
+                  const canToggle = cell.inMonth && !hasBooked && !hasPending
                   return (
                     <button
                       key={cell.key}
                       type="button"
                       className={`gss-day ${cell.inMonth ? '' : 'is-out'} ${kind !== 'plain' ? `is-${kind}` : ''} ${today ? 'is-today' : ''}`}
-                      title={daySchedules.length ? `${dayKey} · ${daySchedules.length}건` : dayKey}
+                      title={isBlocked ? `${dayKey} · 예약 불가 (클릭 시 해제)` : canToggle ? `${dayKey} · 클릭 시 예약 불가 설정` : dayKey}
+                      onClick={canToggle ? () => void toggleBlock(dayKey) : undefined}
+                      disabled={!cell.inMonth || busy}
                     >
                       <span>{cell.date.getDate()}</span>
-                      {daySchedules.length > 0 && <small>{daySchedules.length}</small>}
+                      {isBlocked && <small>✕</small>}
+                      {!isBlocked && daySchedules.length > 0 && <small>{daySchedules.length}</small>}
                     </button>
                   )
                 })}
@@ -630,25 +655,9 @@ export function GuideFeedSchedulePage() {
               </ul>
             </div>
           )}
-          <div className="gm-grid" style={{ maxWidth: 'none' }}>
-            <div className="gm-field">
-              <label htmlFor="sc-date">가능 날짜</label>
-              <input id="sc-date" type="date" value={schDate} onChange={(e) => setSchDate(e.target.value)} />
-            </div>
-            <div className="gm-field">
-              <label htmlFor="sc-start">시작</label>
-              <input id="sc-start" type="time" value={schStart} onChange={(e) => setSchStart(e.target.value)} />
-            </div>
-            <div className="gm-field">
-              <label htmlFor="sc-end">종료</label>
-              <input id="sc-end" type="time" value={schEnd} onChange={(e) => setSchEnd(e.target.value)} />
-            </div>
-          </div>
-          <div className="gm-actions">
-            <button type="button" className="gm-btn" onClick={() => void addSchedule()} disabled={busy}>
-              스케줄 추가
-            </button>
-          </div>
+          <p className="gm-hint" style={{ marginBottom: '0.5rem' }}>
+            캘린더에서 날짜를 클릭해 예약 불가 설정/해제할 수 있습니다. (BOOKED·PENDING 날짜는 변경 불가)
+          </p>
           <ul className="gm-list" style={{ marginTop: '0.85rem' }}>
             {schedules.length === 0 && <li>등록된 스케줄이 없습니다.</li>}
             {schedules.map((s) => (

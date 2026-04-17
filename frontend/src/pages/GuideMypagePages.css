@@ -89,6 +89,11 @@
   border: 1px solid #d1d5db;
 }
 
+.gm-btn--danger {
+  background: #b91c1c;
+  color: #fff;
+}
+
 .gm-split {
   display: grid;
   grid-template-columns: 1fr 1fr;

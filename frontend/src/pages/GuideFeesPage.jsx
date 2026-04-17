@@ -5,6 +5,38 @@ import { resolveGuideId } from '../lib/guideId.js'
 
 import '../layouts/GuideDashboardLayout.css'
 
+function useToast() {
+  const [toasts, setToasts] = useState([])
+  const addToast = useCallback((message, type = 'success') => {
+    const id = Date.now() + Math.random()
+    setToasts((prev) => [...prev, { id, message, type }])
+    setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 2000)
+  }, [])
+  return { toasts, addToast }
+}
+
+function Toast({ toasts }) {
+  if (toasts.length === 0) return null
+  return (
+    <div style={{ position: 'fixed', bottom: '1.5rem', right: '1.5rem', zIndex: 9999, display: 'flex', flexDirection: 'column', gap: '0.5rem', pointerEvents: 'none' }}>
+      {toasts.map((t) => (
+        <div key={t.id} style={{ padding: '0.7rem 1.2rem', borderRadius: 10, background: t.type === 'success' ? '#15803d' : '#b91c1c', color: '#fff', fontSize: '0.88rem', fontWeight: 600, boxShadow: '0 4px 16px rgba(0,0,0,0.18)', minWidth: 180, maxWidth: 320 }}>
+          {t.message}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+async function readJsonError(res, text) {
+  try {
+    const j = JSON.parse(text)
+    return (j.message ?? text) || '요청 실패'
+  } catch {
+    return text || '요청 실패'
+  }
+}
+
 const HOURS = 8
 const LS_PUSH = 'guide_pref_push_notif'
 const LS_EMAIL = 'guide_pref_email_notif'
@@ -19,9 +51,10 @@ function loadBool(key, fallback) {
 export function GuideFeesPage() {
   const [guideId, setGuideId] = useState(null)
   const [profile, setProfile] = useState(null)
+  const { toasts, addToast } = useToast()
   const [loadError, setLoadError] = useState('')
-  const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
+  const [toggling, setToggling] = useState(false)
 
   const [pushOn, setPushOn] = useState(() => loadBool(LS_PUSH, true))
   const [emailOn, setEmailOn] = useState(() => loadBool(LS_EMAIL, false))
@@ -65,6 +98,28 @@ export function GuideFeesPage() {
     }
   }, [loadProfile])
 
+  const handleToggleActive = async () => {
+    if (!guideId || toggling) return
+    setToggling(true)
+    try {
+      const res = await apiRequest(`/guides/${guideId}/active`, { method: 'PATCH' })
+      const text = await res.text()
+      if (!res.ok) {
+        addToast(await readJsonError(res, text), 'error')
+        return
+      }
+      const updated = text ? JSON.parse(text) : null
+      const newActive = updated?.isActive !== false
+      if (updated) setProfile(updated)
+      setProfileVisible(newActive)
+      addToast(newActive ? '활성화되었습니다.' : '비활성화되었습니다.')
+    } catch {
+      addToast('요청 실패', 'error')
+    } finally {
+      setToggling(false)
+    }
+  }
+
   const savePrefs = () => {
     localStorage.setItem(LS_PUSH, pushOn ? '1' : '0')
     localStorage.setItem(LS_EMAIL, emailOn ? '1' : '0')
@@ -72,13 +127,12 @@ export function GuideFeesPage() {
 
   const handleSave = async () => {
     if (!guideId || !profile) return
-    setError('')
     setSaving(true)
     savePrefs()
     try {
       const pkg = Number(packageWon.replace(/[^\d]/g, ''))
       if (!Number.isFinite(pkg) || pkg <= 0) {
-        setError('종일 패키지 금액을 올바르게 입력해 주세요.')
+        addToast('종일 패키지 금액을 올바르게 입력해 주세요.', 'error')
         setSaving(false)
         return
       }
@@ -90,7 +144,7 @@ export function GuideFeesPage() {
         region: profile.region,
         language: profile.language,
         pricePerHour: hourly,
-        isActive: profileVisible,
+        isActive: profile?.isActive ?? profileVisible,
         residenceYears: profile.residenceYears ?? undefined,
         localStory: profile.localStory ?? undefined,
         keywords: profile.keywords ?? undefined,
@@ -100,18 +154,14 @@ export function GuideFeesPage() {
       const res = await apiRequest(`/guides/${guideId}`, { method: 'PUT', json: body })
       const text = await res.text()
       if (!res.ok) {
-        try {
-          const j = JSON.parse(text)
-          setError(j.message ?? '저장에 실패했습니다.')
-        } catch {
-          setError(text || '저장에 실패했습니다.')
-        }
+        addToast(await readJsonError(res, text), 'error')
         return
       }
       const updated = text ? JSON.parse(text) : null
       setProfile(updated)
+      addToast('저장되었습니다.')
     } catch {
-      setError('네트워크 오류가 발생했습니다.')
+      addToast('네트워크 오류가 발생했습니다.', 'error')
     } finally {
       setSaving(false)
     }
@@ -138,7 +188,7 @@ export function GuideFeesPage() {
     <div className="g-panel">
       <h1>⚙️ 가이드 비용</h1>
 
-      {error && <p className="g-error">{error}</p>}
+      <Toast toasts={toasts} />
 
       <section className="g-section">
         <h2>알림 설정</h2>
@@ -172,7 +222,7 @@ export function GuideFeesPage() {
             <p>서버 필드 <code>isActive</code> 와 연동됩니다.</p>
           </div>
           <label className="g-toggle">
-            <input type="checkbox" checked={profileVisible} onChange={(e) => setProfileVisible(e.target.checked)} />
+            <input type="checkbox" checked={profileVisible} onChange={() => void handleToggleActive()} disabled={toggling} />
             <span className="g-toggle-ui" />
           </label>
         </div>

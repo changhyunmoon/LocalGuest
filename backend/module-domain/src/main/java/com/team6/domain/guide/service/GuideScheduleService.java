@@ -17,6 +17,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 
 /**
@@ -285,6 +287,64 @@ public class GuideScheduleService {
         log.info("[F05-01][F05-02] 스케줄 AVAILABLE 복구 동기화 — guideId={}, scheduleId={}, actorId={}",
                 guideId, scheduleId, actorMemberId);
         return GuideScheduleResponse.from(schedule);
+    }
+
+    // BLOCKED 상태 스케줄 목록 조회 — 게스트 달력 조회용 (인증 불필요)
+    @Transactional(readOnly = true)
+    public List<GuideScheduleResponse> getBlockedDates(Long guideId) {
+        return guideScheduleRepository.findByGuideProfile_IdAndStatus(guideId, GuideScheduleStatus.BLOCKED).stream()
+                .map(GuideScheduleResponse::from)
+                .toList();
+    }
+
+    // 날짜 단위 BLOCKED 등록 — 이미 BLOCKED면 스킵, AVAILABLE이면 상태 변경, 없으면 신규 생성
+    @Transactional
+    public GuideScheduleResponse blockDate(Long guideId, LocalDate date, Long userId) {
+        GuideProfile profile = getVerifiedProfile(guideId, userId);
+
+        List<GuideSchedule> existing = guideScheduleRepository.findByGuideProfile_IdAndAvailableDate(guideId, date);
+
+        // 이미 BLOCKED인 날짜면 스킵 (멱등)
+        boolean alreadyBlocked = existing.stream()
+                .anyMatch(s -> s.getStatus() == GuideScheduleStatus.BLOCKED);
+        if (alreadyBlocked) {
+            GuideSchedule blocked = existing.stream()
+                    .filter(s -> s.getStatus() == GuideScheduleStatus.BLOCKED)
+                    .findFirst()
+                    .orElseThrow();
+            return GuideScheduleResponse.from(blocked);
+        }
+
+        // AVAILABLE 스케줄이 있으면 상태 변경
+        if (!existing.isEmpty()) {
+            GuideSchedule target = existing.get(0);
+            target.changeStatus(GuideScheduleStatus.BLOCKED);
+            return GuideScheduleResponse.from(target);
+        }
+
+        // 등록된 스케줄 없음 → 종일 BLOCKED 레코드 신규 생성 (00:00 – 23:59 sentinel)
+        GuideSchedule block = GuideSchedule.builder()
+                .guideProfile(profile)
+                .availableDate(date)
+                .startTime(LocalTime.of(0, 0))
+                .endTime(LocalTime.of(23, 59))
+                .status(GuideScheduleStatus.BLOCKED)
+                .build();
+        return GuideScheduleResponse.from(guideScheduleRepository.save(block));
+    }
+
+    // 날짜 단위 BLOCKED 해제 — BLOCKED → AVAILABLE, 없으면 무시
+    @Transactional
+    public void unblockDate(Long guideId, LocalDate date, Long userId) {
+        getVerifiedProfile(guideId, userId);
+
+        List<GuideSchedule> blocked = guideScheduleRepository
+                .findByGuideProfile_IdAndAvailableDate(guideId, date)
+                .stream()
+                .filter(s -> s.getStatus() == GuideScheduleStatus.BLOCKED)
+                .toList();
+
+        blocked.forEach(s -> s.changeStatus(GuideScheduleStatus.AVAILABLE));
     }
 
     // 시작 시간 < 종료 시간 검증 공통 메서드 — DB의 CHECK 제약과 이중 보호
