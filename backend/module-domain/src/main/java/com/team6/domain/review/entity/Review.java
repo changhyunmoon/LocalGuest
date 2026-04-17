@@ -1,7 +1,6 @@
 package com.team6.domain.review.entity;
 
 import com.team6.domain.member.entity.Member;
-import com.team6.domain.member.service.MemberService;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -56,12 +55,6 @@ public class Review {
         this.member = member;
         this.guideId = guideId;
         this.matchRequestId = matchRequestId;
-    }
-
-    // 리뷰 수정시 날짜 및 콘텐츠 수정
-    public void update(Integer rating, String content) {
-        this.rating = rating;
-        this.content = content;
     }
 
     public void delete() {

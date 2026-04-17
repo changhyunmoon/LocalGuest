@@ -1,7 +1,6 @@
 package com.team6.domain.review.controller;
 
 import com.team6.domain.review.dto.request.ReviewRequest;
-import com.team6.domain.review.dto.request.ReviewUpdateRequest;
 import com.team6.domain.review.dto.response.ReviewResponse;
 import com.team6.domain.review.service.ReviewService;
 import jakarta.validation.Valid;
@@ -39,15 +38,6 @@ public class ReviewController {
     public ResponseEntity<String> create(@Valid @RequestBody ReviewRequest request) {
         reviewService.saveReview(request);
         return ResponseEntity.ok("리뷰 등록 완료!");
-    }
-
-    // 리뷰 수정 24시간 내에만 가능
-    @PostMapping("/{reviewId}/update")
-    public ResponseEntity<Void> updateReview
-            (@PathVariable Long reviewId, @Valid @RequestBody ReviewUpdateRequest request)
-    {
-        reviewService.updateReview(reviewId, request);
-        return ResponseEntity.ok().build();
     }
 
     // 리뷰 삭제

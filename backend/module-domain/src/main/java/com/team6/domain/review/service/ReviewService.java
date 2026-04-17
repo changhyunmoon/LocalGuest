@@ -8,7 +8,6 @@ import com.team6.domain.member.entity.Role;
 import com.team6.domain.member.entity.Status;
 import com.team6.domain.member.repository.MemberRepository;
 import com.team6.domain.review.dto.request.ReviewRequest;
-import com.team6.domain.review.dto.request.ReviewUpdateRequest;
 import com.team6.domain.review.dto.response.ReviewResponse;
 import com.team6.domain.review.entity.Review;
 import com.team6.domain.review.repository.ReviewRepository;
@@ -22,7 +21,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.time.LocalDateTime;
 import java.util.List;
 
 
@@ -57,23 +55,6 @@ public class ReviewService {
         reviewRepository.save(review);
 
         syncGuideRating(request.getGuideId());
-    }
-
-    // 리뷰 수정 (24시간 이내만 수정 가능)
-    @Transactional
-    public void updateReview(Long reviewId, ReviewUpdateRequest request) {
-        Member member = getCurrentMember();
-
-        Review review = reviewRepository.findByIdAndMember(reviewId, member)
-                .orElseThrow(()-> new IllegalArgumentException("해당 리뷰를 찾을 수 없습니다."));
-
-        // 수정 기간 확인
-        if(review.getCreatedAt().isBefore(LocalDateTime.now().minusDays(1))) {
-            throw new IllegalStateException("리뷰 수정 가능 시간(24시간)이 지났습니다.");
-        }
-
-        review.update(request.getRating(), request.getContent());
-        syncGuideRating(review.getGuideId());
     }
 
     // 모든 리뷰 조회
