@@ -16,6 +16,24 @@ async function readJsonError(res, text) {
   }
 }
 
+function statusLabel(status) {
+  const map = {
+    PENDING:     { label: '대기중',      bg: '#fef9c3', color: '#854d0e' },
+    ACCEPTED:    { label: '제시안 전송됨', bg: '#dbeafe', color: '#1e40af' },
+    REJECTED:    { label: '거절됨',      bg: '#fee2e2', color: '#991b1b' },
+    PAID:        { label: '결제완료',    bg: '#ede9fe', color: '#6d28d9' },
+    COMPLETED:   { label: '완료',        bg: '#d1fae5', color: '#065f46' },
+    IN_PROGRESS: { label: '투어 진행중', bg: '#fef9c3', color: '#854d0e' },
+    CANCELLED:   { label: '취소됨',      bg: '#f3f4f6', color: '#6b7280' },
+  }
+  const s = map[status] ?? { label: status, bg: '#f3f4f6', color: '#374151' }
+  return (
+    <span style={{ fontSize: '0.76rem', fontWeight: 700, padding: '0.2rem 0.55rem', borderRadius: 999, background: s.bg, color: s.color, whiteSpace: 'nowrap' }}>
+      {s.label}
+    </span>
+  )
+}
+
 export function GuideInboxPage() {
   const { isGuide } = useAuth()
   const [rows, setRows] = useState([])
@@ -30,6 +48,12 @@ export function GuideInboxPage() {
   const fetchList = useCallback(async () => {
     setError('')
     setToast('')
+    setRows([
+      { requestId: 1, guestId: 42, status: 'PENDING', destination: '제주 올레길', desiredDate: '2026-05-10', desiredBudget: 150000, conceptSummary: '자연 속 힐링 여행', createdAt: '2026-04-18T10:00:00' },
+      { requestId: 2, guestId: 55, status: 'ACCEPTED', destination: '부산 감천문화마을', desiredDate: '2026-05-15', desiredBudget: 200000, conceptSummary: '감성 사진 투어', createdAt: '2026-04-17T14:30:00' },
+      { requestId: 3, guestId: 78, status: 'REJECTED', destination: '경주 역사탐방', desiredDate: '2026-04-20', desiredBudget: 100000, conceptSummary: null, createdAt: '2026-04-15T09:00:00' },
+    ])
+    return // TODO: 목업 확인 후 이 블록 삭제
     const data = await fetchGuideMatchRequests(apiRequest)
     setRows(Array.isArray(data) ? data : [])
   }, [])
@@ -134,17 +158,18 @@ export function GuideInboxPage() {
   return (
     <div className="inbox">
       <h1>🤝 매칭 수락/거절</h1>
-      <p className="inbox-hint">
-        목록 <code>GET /api/matching/requests/guide/list</code> · 거절{' '}
-        <code>PATCH /api/matching/requests/&#123;id&#125;/reject</code> · 가이드 측 확정 플로우는 제시안 등록{' '}
-        <code>PATCH …/propose</code> (본문: proposedSchedule, proposeMessage)
-      </p>
 
       {loading && <p>불러오는 중…</p>}
       {error && <p className="inbox-error">{error}</p>}
       {toast && <p className="inbox-error">{toast}</p>}
 
-      {!loading && !error && rows.length === 0 && <p>받은 예약 요청이 없습니다.</p>}
+      {!loading && !error && rows.length === 0 && (
+        <div className="inbox-empty">
+          <span className="inbox-empty-icon">🤝</span>
+          <p className="inbox-empty-title">받은 예약 요청이 없습니다</p>
+          <p className="inbox-empty-desc">게스트가 매칭을 요청하면 여기에 표시됩니다</p>
+        </div>
+      )}
 
       {!loading && !error && rows.length > 0 && (
         <>
@@ -152,8 +177,8 @@ export function GuideInboxPage() {
             <table className="inbox-table">
               <thead>
                 <tr>
-                  <th>ID</th>
                   <th>상태</th>
+                  <th>게스트</th>
                   <th>목적지</th>
                   <th>희망일</th>
                   <th>예산</th>
@@ -163,11 +188,11 @@ export function GuideInboxPage() {
               <tbody>
                 {rows.map((r) => (
                   <tr key={r.requestId}>
-                    <td>{r.requestId}</td>
-                    <td>{r.status}</td>
+                    <td>{statusLabel(r.status)}</td>
+                    <td>{`게스트 #${r.guestId}`}</td>
                     <td>{r.destination}</td>
                     <td>{r.desiredDate ?? '—'}</td>
-                    <td>{r.desiredBudget ?? '—'}</td>
+                    <td>{r.desiredBudget ? '₩' + Number(r.desiredBudget).toLocaleString('ko-KR') : '—'}</td>
                     <td className="inbox-actions">
                       {r.status === 'PENDING' && (
                         <>
@@ -193,20 +218,28 @@ export function GuideInboxPage() {
 
           <div className="inbox-cards" aria-label="예약 요청 카드 목록">
             {rows.map((r) => (
-              <article key={`card-${r.requestId}`} className="inbox-card">
+              <article
+                key={`card-${r.requestId}`}
+                className="inbox-card"
+                style={['REJECTED', 'CANCELLED', 'COMPLETED'].includes(r.status) ? { opacity: 0.55 } : undefined}
+              >
                 <header className="inbox-card-head">
                   <span className="inbox-card-id">#{r.requestId}</span>
-                  <span className="inbox-card-status">{r.status}</span>
+                  {statusLabel(r.status)}
                 </header>
-                <p className="inbox-card-line">
-                  <strong>목적지</strong> {r.destination}
-                </p>
-                <p className="inbox-card-line">
-                  <strong>희망일</strong> {r.desiredDate ?? '—'}
-                </p>
-                <p className="inbox-card-line">
-                  <strong>예산</strong> {r.desiredBudget ?? '—'}
-                </p>
+                <p className="inbox-card-line">👤 <strong>게스트</strong> {`게스트 #${r.guestId}`}</p>
+                <p className="inbox-card-line">📍 <strong>목적지</strong> {r.destination ?? '—'}</p>
+                <p className="inbox-card-line">📅 <strong>희망일</strong> {r.desiredDate ?? '—'}</p>
+                <p className="inbox-card-line">💰 <strong>예산</strong> {r.desiredBudget ? '₩' + Number(r.desiredBudget).toLocaleString('ko-KR') : '—'}</p>
+                {r.conceptSummary && (
+                  <p className="inbox-card-line">🗺️ <strong>여행 컨셉</strong> {r.conceptSummary}</p>
+                )}
+                {r.createdAt && (
+                  <p className="inbox-card-line">🕐 <strong>요청일</strong> {new Date(r.createdAt).toLocaleDateString('ko-KR')}</p>
+                )}
+                {r.status === 'ACCEPTED' && (
+                  <p className="inbox-proposed-hint">✉️ 제시안을 전송했습니다. 게스트가 수락하면 결제로 진행됩니다.</p>
+                )}
                 {r.status === 'PENDING' && (
                   <div className="inbox-card-actions">
                     <button type="button" className="inbox-btn" onClick={() => openPropose(r)} disabled={busyId != null}>
