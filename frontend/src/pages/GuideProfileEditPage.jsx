@@ -45,6 +45,8 @@ export function GuideProfileEditPage() {
   const [tagInput, setTagInput] = useState('')
   const { toasts, addToast } = useToast()
   const photoInputRef = useRef(null)
+  const [previewUrl, setPreviewUrl] = useState(null)
+  const [imageDeleted, setImageDeleted] = useState(false)
   const [loadError, setLoadError] = useState('')
   const [saving, setSaving] = useState(false)
 
@@ -110,14 +112,19 @@ export function GuideProfileEditPage() {
         setSaving(false)
         return
       }
+      if (imageDeleted) {
+        body.profileImage = null
+      } else if (previewUrl) {
+        body.profileImage = profile.profileImage ?? undefined
+      }
       const res = await apiRequest(`/guides/${guideId}`, { method: 'PUT', json: body })
       const text = await res.text()
       if (!res.ok) {
         addToast(await readJsonError(res, text), 'error')
         return
       }
-      setProfile(text ? JSON.parse(text) : profile)
       addToast('저장되었습니다.')
+      window.location.reload()
     } catch {
       addToast('네트워크 오류', 'error')
     } finally {
@@ -166,7 +173,10 @@ export function GuideProfileEditPage() {
       <div className="gpv-profile-row">
         <div
           className="gpv-photo"
-          style={profile.profileImage ? { backgroundImage: `url(${profile.profileImage})` } : undefined}
+          style={(() => {
+            const img = imageDeleted ? null : (previewUrl ?? profile.profileImage ?? null)
+            return img ? { backgroundImage: `url(${img})` } : undefined
+          })()}
         />
         <div className="gpv-photo-actions">
           <button type="button" className="gpv-photo-btn" onClick={() => photoInputRef.current?.click()}>
@@ -180,17 +190,33 @@ export function GuideProfileEditPage() {
             onChange={(e) => {
               const file = e.target.files?.[0]
               if (!file) return
-              setField('profileImage', URL.createObjectURL(file))
+              setPreviewUrl(URL.createObjectURL(file))
+              setImageDeleted(false)
               e.target.value = ''
             }}
           />
+          <button
+            type="button"
+            className="gpv-photo-btn"
+            onClick={() => {
+              setImageDeleted(true)
+              setPreviewUrl(null)
+              if (photoInputRef.current) photoInputRef.current.value = ''
+            }}
+          >
+            사진 삭제
+          </button>
           <details className="gpv-photo-url-box">
             <summary>이미지 URL 직접 입력</summary>
             <input
               id="gp-img"
               className="gpv-photo-input"
-              value={profile.profileImage ?? ''}
-              onChange={(e) => setField('profileImage', e.target.value)}
+              value={imageDeleted ? '' : (previewUrl ? '' : (profile.profileImage ?? ''))}
+              onChange={(e) => {
+                setField('profileImage', e.target.value)
+                setPreviewUrl(null)
+                setImageDeleted(false)
+              }}
               placeholder="https://image-url"
             />
           </details>
