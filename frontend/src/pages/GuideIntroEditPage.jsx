@@ -8,6 +8,29 @@ import { buildGuidePutBody } from '../lib/guideProfilePayload.js'
 import '../layouts/GuideDashboardLayout.css'
 import './GuideMypagePages.css'
 
+function useToast() {
+  const [toasts, setToasts] = useState([])
+  const addToast = useCallback((message, type = 'success') => {
+    const id = Date.now() + Math.random()
+    setToasts((prev) => [...prev, { id, message, type }])
+    setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 2000)
+  }, [])
+  return { toasts, addToast }
+}
+
+function Toast({ toasts }) {
+  if (toasts.length === 0) return null
+  return (
+    <div style={{ position: 'fixed', bottom: '1.5rem', right: '1.5rem', zIndex: 9999, display: 'flex', flexDirection: 'column', gap: '0.5rem', pointerEvents: 'none' }}>
+      {toasts.map((t) => (
+        <div key={t.id} style={{ padding: '0.7rem 1.2rem', borderRadius: 10, background: t.type === 'success' ? '#15803d' : '#b91c1c', color: '#fff', fontSize: '0.88rem', fontWeight: 600, boxShadow: '0 4px 16px rgba(0,0,0,0.18)', minWidth: 180, maxWidth: 320 }}>
+          {t.message}
+        </div>
+      ))}
+    </div>
+  )
+}
+
 async function readJsonError(res, text) {
   try {
     const j = JSON.parse(text)
@@ -24,9 +47,8 @@ export function GuideIntroEditPage() {
   const [localStory, setLocalStory] = useState('')
   const [residenceYears, setResidenceYears] = useState('')
   const [loadError, setLoadError] = useState('')
-  const [saveError, setSaveError] = useState('')
-  const [saveSuccess, setSaveSuccess] = useState(false)
   const [saving, setSaving] = useState(false)
+  const { toasts, addToast } = useToast()
 
   const load = useCallback(async (id) => {
     setLoadError('')
@@ -53,8 +75,6 @@ export function GuideIntroEditPage() {
 
   const handleSave = async () => {
     if (!guideId || !profile) return
-    setSaveError('')
-    setSaveSuccess(false)
     setSaving(true)
     try {
       const merged = { ...profile, bio, localStory, residenceYears: residenceYears ? Number(residenceYears) : undefined }
@@ -62,7 +82,7 @@ export function GuideIntroEditPage() {
       const res = await apiRequest(`/guides/${guideId}`, { method: 'PUT', json: body })
       const text = await res.text()
       if (!res.ok) {
-        setSaveError(await readJsonError(res, text))
+        addToast(await readJsonError(res, text), 'error')
         return
       }
       const p = text ? JSON.parse(text) : merged
@@ -70,9 +90,9 @@ export function GuideIntroEditPage() {
       setBio(p?.bio ?? '')
       setLocalStory(p?.localStory ?? '')
       setResidenceYears(p?.residenceYears != null ? String(p.residenceYears) : '')
-      setSaveSuccess(true)
+      addToast('저장되었습니다.')
     } catch {
-      setSaveError('네트워크 오류')
+      addToast('네트워크 오류', 'error')
     } finally {
       setSaving(false)
     }
@@ -109,8 +129,6 @@ export function GuideIntroEditPage() {
         <code>PUT /api/guides/&#123;guideId&#125;</code> 의 <code>bio</code>, <code>localStory</code> 필드입니다. 닉네임·
         지역 등은 <Link to="/guide/mypage/profile">프로필 등록</Link>에서 수정합니다.
       </p>
-      {saveError && <p className="g-error">{saveError}</p>}
-      {saveSuccess && <p className="g-success">저장되었습니다.</p>}
 
       <div className="gm-stack" style={{ marginTop: '0.75rem', maxWidth: '40rem' }}>
         <div className="gm-field">
@@ -144,6 +162,7 @@ export function GuideIntroEditPage() {
           </button>
         </div>
       </div>
+      <Toast toasts={toasts} />
     </div>
   )
 }
