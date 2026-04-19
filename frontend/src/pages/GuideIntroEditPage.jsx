@@ -52,7 +52,6 @@ export function GuideIntroEditPage() {
   const [guideStyle, setGuideStyle] = useState('')
   const [keywords, setKeywords] = useState([])
   const [defaultCourse, setDefaultCourse] = useState('')
-  const [showCustomInput, setShowCustomInput] = useState(false)
   const [tagInput, setTagInput] = useState('')
   const [loadError, setLoadError] = useState('')
   const [saving, setSaving] = useState(false)
@@ -117,7 +116,7 @@ export function GuideIntroEditPage() {
         localStory,
         residenceYears: residenceYears !== '' ? Number(residenceYears) : undefined,
         language,
-        guideStyle,
+        guideStyle: guideStyle,
         keywords: keywords.join(','),
         defaultCourse,
       }
@@ -250,28 +249,21 @@ export function GuideIntroEditPage() {
                 <button
                   key={chip}
                   type="button"
-                  className={`gi-chip${guideStyle === chip && !showCustomInput ? ' is-on' : ''}`}
-                  onClick={() => { setGuideStyle(chip); setShowCustomInput(false) }}
+                  className={`gi-chip${guideStyle === chip ? ' is-on' : ''}`}
+                  onClick={() => setGuideStyle((prev) => (prev === chip ? '' : chip))}
                 >
                   {chip}
                 </button>
               ))}
-              <button
-                type="button"
-                className={`gi-chip${showCustomInput ? ' is-on' : ''}`}
-                onClick={() => { setShowCustomInput(true); setGuideStyle('') }}
-              >
-                직접 입력
-              </button>
             </div>
-            {showCustomInput && (
+            <div className="gi-tag-row" style={{ marginTop: '0.5rem' }}>
               <input
-                className="gi-custom-input"
-                value={guideStyle}
+                className="gi-tag-input"
+                value={GUIDE_STYLE_OPTIONS.includes(guideStyle) ? '' : guideStyle}
                 onChange={(e) => setGuideStyle(e.target.value)}
-                placeholder="나만의 스타일을 입력하세요"
+                placeholder="직접 입력 (선택 옵션 외)"
               />
-            )}
+            </div>
           </div>
 
           <div className="gm-field">
