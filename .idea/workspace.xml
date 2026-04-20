@@ -4,7 +4,28 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="84d1b3de-8103-452e-83cf-38ecd34993e7" name="Changes" comment="" />
+    <list default="true" id="84d1b3de-8103-452e-83cf-38ecd34993e7" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/.gitignore" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/LocalGuest.iml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/compiler.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/gradle.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/modules.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/modules/api-server/api-server_main.iml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/modules/api-server/backend.api-server.main.iml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/modules/module-ai-integration/backend.module-ai-integration.main.iml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/modules/module-ai-integration/module-ai-integration_main.iml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/modules/module-ai/backend.module-ai.main.iml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/modules/module-ai/module-ai_main.iml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/modules/module-auth/backend.module-auth.main.iml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/modules/module-chat/backend.module-chat.main.iml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/modules/module-chat/module-chat_main.iml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/modules/module-common/backend.module-common.main.iml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/modules/module-common/module-common_main.iml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/modules/module-domain/backend.module-domain.main.iml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/modules/module-domain/module-domain_main.iml" beforeDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -98,7 +119,7 @@
       <workItem from="1776588720196" duration="62000" />
       <workItem from="1776588797682" duration="2773000" />
       <workItem from="1776597332655" duration="4592000" />
-      <workItem from="1776641819519" duration="7218000" />
+      <workItem from="1776641819519" duration="2328000" />
     </task>
     <servers />
   </component>
