@@ -88,6 +88,8 @@ export function GuideMatchedCoursePage() {
   // schedule form 데이터 (백엔드 GuideScheduleFormResponse)
   const [formData, setFormData] = useState(null)
   const [mapErr, setMapErr] = useState('')
+  const [chatBusy, setChatBusy] = useState(false)
+  const [chatErr, setChatErr] = useState('')
 
   // ── 데이터 로드 ─────────────────────────────────────────────────────────
   // 변경 포인트:
@@ -202,6 +204,27 @@ export function GuideMatchedCoursePage() {
     return () => { cancelled = true }
   }, [spots, isPaid, profile?.region])
 
+  const handleOpenMatchChat = async () => {
+    setChatBusy(true)
+    setChatErr('')
+    try {
+      const res = await apiRequest(
+        `/matching/chat/rooms/for-guide/${encodeURIComponent(guideId)}`,
+        { method: 'POST' },
+      )
+      const text = await res.text()
+      if (!res.ok) throw new Error(text || '채팅방을 열 수 없습니다.')
+      const data = text ? JSON.parse(text) : {}
+      const roomId = data?.roomId
+      if (!roomId) throw new Error('채팅방 정보가 올바르지 않습니다.')
+      navigate(`/messages?roomId=${encodeURIComponent(roomId)}`)
+    } catch (e) {
+      setChatErr(e instanceof Error ? e.message : '오류')
+    } finally {
+      setChatBusy(false)
+    }
+  }
+
   const rating = profile?.averageRating != null && profile?.averageRating !== ''
     ? Number(profile.averageRating).toFixed(1) : '—'
   const rc = profile?.reviewCount != null ? profile.reviewCount : 0
@@ -311,9 +334,15 @@ export function GuideMatchedCoursePage() {
                 <p className="gmc-spot-desc">곧 업데이트될 예정입니다.</p>
               </article>
             )}
-            <Link to="/messages" className="gmc-chat-btn">
-              가이드와 채팅방 입장하기
-            </Link>
+            <button
+              type="button"
+              className="gmc-chat-btn"
+              disabled={chatBusy}
+              onClick={() => void handleOpenMatchChat()}
+            >
+              {chatBusy ? '채팅방 연결 중…' : '가이드와 채팅방 입장하기'}
+            </button>
+            {chatErr && <p className="gmc-err gmc-chat-err">{chatErr}</p>}
           </aside>
         </div>
       </section>
