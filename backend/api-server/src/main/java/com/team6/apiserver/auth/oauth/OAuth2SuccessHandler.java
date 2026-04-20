@@ -6,45 +6,40 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
-import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
-import org.springframework.security.oauth2.client.userinfo.OAuth2UserService;
-import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
 public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
+
     private final JwtTokenProvider jwtTokenProvider;
 
     @Override
     public void onAuthenticationSuccess(
-        HttpServletRequest request,
-        HttpServletResponse response,
-        Authentication authentication) throws IOException {
-        //인증된 사용자에게서 이메일 추출
+            HttpServletRequest request,
+            HttpServletResponse response,
+            Authentication authentication) throws IOException {
+
         OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
         String email = (String) oAuth2User.getAttributes().get("email");
-        String role = authentication.getAuthorities().iterator().next().getAuthority();
 
-        // JWT 발급
-        String token = jwtTokenProvider.createToken(email, role);
+        // ✅ 모든 권한을 Set<Role>로 변환
+        Set<Role> roles = authentication.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .map(Role::valueOf)
+                .collect(Collectors.toSet());
 
-        // 프론트엔드로 토큰과 함께 리다이렉트
+        // ✅ Set<Role>로 토큰 생성
+        String token = jwtTokenProvider.createToken(email, roles);
+
         String redirectUrl = "http://localhost:5173/oauth2/callback?token=" + token;
-        getRedirectStrategy().sendRedirect(request,response, redirectUrl);
-
-        // 프론트 없을 때 임시 테스트용 → 토큰을 바로 응답으로 반환
-//        response.setContentType("application/json");
-//        response.setCharacterEncoding("UTF-8");
-//        response.getWriter().write("{\"token\": \"" + token + "\"}");
-
-        // 프론트 있을 때
-        // String redirectUrl = "http://localhost:5173/oauth2/callback?token=" + token;
-        // getRedirectStrategy().sendRedirect(request, response, redirectUrl);
+        getRedirectStrategy().sendRedirect(request, response, redirectUrl);
     }
 }

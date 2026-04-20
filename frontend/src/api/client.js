@@ -241,7 +241,6 @@ export async function fetchNicknameAvailable(nickname) {
   }
 }
 
-
 /**
  * Google OAuth2 로그인 시작.
  * - 백엔드 CustomOauth2UserService가 role 쿠키를 읽으므로 짧게 저장한다.
@@ -259,5 +258,3 @@ export function beginGoogleOAuth(role = 'GUEST', returnTo = '/mypage') {
   }
   window.location.href = joinApiUrl('/oauth2/authorization/google')
 }
-
-
