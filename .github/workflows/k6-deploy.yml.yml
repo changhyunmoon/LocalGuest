@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - 'stress-test/**' # stress-test 폴더 내 파일 변경 시에만 실행
+  workflow_dispatch:
 
 jobs:
   deploy:

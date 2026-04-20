@@ -3,7 +3,7 @@ import {sleep} from 'k6';
 
 export const options = {
     stages: [
-        { duration: '10m', target: 6000 }// 10분 동안 6,000명까지 증가
+        { duration: '1m', target: 100 }// 10분 동안 6,000명까지 증가
     ],
 };
 
