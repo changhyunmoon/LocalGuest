@@ -29,21 +29,22 @@ function splitProposeMessage(msg) {
   return { courseLine: '', note: t }
 }
 
-function findLatestProposal(list, guideId) {
+function findLatestRequestForGuide(list, guideId) {
   const gid = Number(guideId)
   if (!Array.isArray(list)) return null
-  const rows = list.filter(
-    (r) =>
-      Number(r.guideId) === gid &&
-      r.status === 'ACCEPTED' &&
-      (String(r.proposedSchedule ?? '').trim() || String(r.proposeMessage ?? '').trim()),
-  )
+  const rows = list.filter((r) => Number(r.guideId) === gid)
   rows.sort((a, b) => {
     const ta = a.createdAt ? new Date(a.createdAt).getTime() : 0
     const tb = b.createdAt ? new Date(b.createdAt).getTime() : 0
     return tb - ta
   })
   return rows[0] ?? null
+}
+
+function hasVisibleProposal(row) {
+  if (!row) return false
+  if (String(row.status) !== 'ACCEPTED') return false
+  return !!(String(row.proposedSchedule ?? '').trim() || String(row.proposeMessage ?? '').trim())
 }
 
 function formatWon(n) {
@@ -85,9 +86,9 @@ export function GuideProposalPage() {
           setMatchState('list_error')
         } else {
           const list = lt ? JSON.parse(lt) : []
-          const match = findLatestProposal(list, guideId)
-          setProposal(match)
-          setMatchState(match ? 'has_match' : 'no_match')
+          const latest = findLatestRequestForGuide(list, guideId)
+          setProposal(latest)
+          setMatchState(hasVisibleProposal(latest) ? 'has_match' : 'no_match')
         }
       }
     } catch (e) {

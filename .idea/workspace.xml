@@ -5,11 +5,15 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="84d1b3de-8103-452e-83cf-38ecd34993e7" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/.github/workflows/stress_test_cicd.yml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/module-common/src/main/java/com/team6/module/common/global/stressTest/StressTestController.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/stress-test/scripts/test1.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/api-server/src/main/resources/application.yml" beforeDir="false" afterPath="$PROJECT_DIR$/backend/api-server/src/main/resources/application.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/module-domain/src/main/java/com/team6/domain/matching/entity/MatchRequest.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/module-domain/src/main/java/com/team6/domain/matching/entity/MatchRequest.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/module-domain/src/main/java/com/team6/domain/matching/service/PaymentService.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/module-domain/src/main/java/com/team6/domain/matching/service/PaymentService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/pages/AiQuickSearchPage.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/AiQuickSearchPage.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/pages/GuideCoursePanel.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/GuideCoursePanel.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/pages/GuideInboxPage.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/GuideInboxPage.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/pages/GuideMatchOptionsPage.css" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/GuideMatchOptionsPage.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/pages/GuideMatchOptionsPage.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/GuideMatchOptionsPage.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/pages/GuideProposalPage.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/GuideProposalPage.jsx" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -49,18 +53,16 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
-  <component name="GithubPullRequestsUISettings"><![CDATA[{
-  "selectedUrlAndAccountId": {
-    "url": "https://github.com/changhyunmoon/LocalGuest.git",
-    "accountId": "ab2dd1a0-5e0b-4833-8ecb-19fd2fed9f7e"
-  }
-}]]></component>
+  <component name="McpProjectServerCommands">
+    <commands />
+    <urls />
+  </component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 6
 }</component>
   <component name="ProjectId" id="3CUUfaDPnzSfpshZ55xkgJA2fum" />
   <component name="ProjectLevelVcsManager">
-    <ConfirmationsSetting value="2" id="Add" />
+    <ConfirmationsSetting value="1" id="Add" />
   </component>
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
@@ -69,6 +71,7 @@
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
     "Gradle.Build backend.executor": "Run",
+    "Gradle.backend 빌드.executor": "Run",
     "ModuleVcsDetector.initialDetectionPerformed": "true",
     "RequestMappingsPanelOrder0": "0",
     "RequestMappingsPanelOrder1": "1",
@@ -79,9 +82,9 @@
     "RunOnceActivity.git.unshallow": "true",
     "RunOnceActivity.typescript.service.memoryLimit.init": "true",
     "Spring Boot.ApiServerApplication.executor": "Run",
-    "git-widget-placeholder": "Feat/be#320",
+    "git-widget-placeholder": "main",
     "kotlin-language-version-configured": "true",
-    "last_opened_file_path": "C:/mch/programmers/LocalGuest",
+    "last_opened_file_path": "C:/Team6LocalGuest_4",
     "node.js.detected.package.eslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
     "node.js.selected.package.tslint": "(autodetect)",
