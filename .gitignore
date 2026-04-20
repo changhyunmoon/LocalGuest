@@ -10,4 +10,4 @@ backend/_tmp_localguest/
 .name
 out/
 gen/
-backend/.gradle-user
+backend/.gradle-user.idea/
