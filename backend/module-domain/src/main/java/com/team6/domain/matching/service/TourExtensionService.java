@@ -29,13 +29,21 @@ public class TourExtensionService {
     private final TourExtensionRepository tourExtensionRepository;
     private final MatchRequestRepository matchRequestRepository;
 
+    /**
+     * 연장 조회 권한: {@code actorId} 는 JWT 역할에 따라 의미가 다르다.
+     * <ul>
+     *   <li>게스트 API: {@code member.id} (match_request.guest_id 와 동일)</li>
+     *   <li>가이드 API: {@code guide_profiles.id} (match_request.guide_id 와 동일)</li>
+     * </ul>
+     * 한 사람이 Guest+Guide 역할을 동시에 가져도, 위 두 값은 서로 다른 식별자 체계이므로 혼동하지 않는다.
+     */
     @Transactional(readOnly = true)
-    public TourExtensionResponseDto getByRequestId(Long requestId, Long memberId) {
+    public TourExtensionResponseDto getByRequestId(Long requestId, Long actorId) {
         TourExtension extension = tourExtensionRepository.findByMatchRequest_Id(requestId)
                 .orElseThrow(() -> new MatchingException(MatchingErrorCode.TOUR_EXTENSION_NOT_FOUND));
 
-        boolean isGuest = extension.getGuestId().equals(memberId);
-        boolean isGuide = extension.getMatchRequest().getGuideId().equals(memberId);
+        boolean isGuest = extension.getGuestId().equals(actorId);
+        boolean isGuide = extension.getMatchRequest().getGuideId().equals(actorId);
         if (!isGuest && !isGuide) {
             throw new MatchingException(MatchingErrorCode.MATCH_REQUEST_UNAUTHORIZED);
         }

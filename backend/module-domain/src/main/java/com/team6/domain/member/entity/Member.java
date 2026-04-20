@@ -1,6 +1,5 @@
 package com.team6.domain.member.entity;
 
-import com.team6.domain.guide.entity.GuideProfile;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -64,9 +63,7 @@ public class Member {
     @OneToOne(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true)
     private GuestProfile guestProfile;
 
-    // ✅ Guide 프로필 추가 (기존 코드가 있다면 유지)
-    @OneToOne(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true)
-    private GuideProfile guideProfile;
+    // 가이드 프로필: GuideProfile.member_id(Long) — 엔티티 연관은 GuideProfile → Member 방향만 사용
 
     // ========== 메서드 ==========
 
