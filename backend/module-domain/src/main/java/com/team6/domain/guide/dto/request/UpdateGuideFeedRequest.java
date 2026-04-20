@@ -4,6 +4,8 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 /**
  * 가이드 피드 수정 요청 DTO (F06-03)
  */
@@ -12,7 +14,9 @@ import lombok.NoArgsConstructor;
 public class UpdateGuideFeedRequest {
 
     @NotBlank
-    private String content;  // 피드 본문 내용 (필수)
+    private String content;       // 피드 본문 내용 (필수)
 
-    private String imageUrl; // 피드 이미지 URL (선택)
+    private String imageUrl;      // 단일 이미지 URL (하위 호환용)
+
+    private List<String> imageUrls; // 다중 이미지 URL 목록 (최대 10장)
 }

@@ -7,6 +7,7 @@ import { fetchGuideMatchRequests } from '../lib/matchingGuest.js'
 
 import '../layouts/GuideDashboardLayout.css'
 import './GuideMypagePages.css'
+import { GuideCoursePanel } from './GuideCoursePanel.jsx'
 
 function formatTime(t) {
   if (t == null) return '—'
@@ -36,6 +37,20 @@ function nextStatus(s) {
   if (s === 'PENDING') return 'pending'
   if (s === 'BLOCKED') return 'blocked'
   return 'plain'
+}
+
+function parseFeedHeading(content) {
+  if (!content || !String(content).trim()) {
+    return { title: '가이드 투어 피드', body: '' }
+  }
+  const lines = String(content).split(/\r?\n/)
+  const title = lines[0]?.trim() || '가이드 투어 피드'
+  const body = lines.slice(1).join('\n').trim()
+  return { title, body: body || String(content).trim() }
+}
+
+function isInstagramUrl(url) {
+  return typeof url === 'string' && url.includes('instagram.com')
 }
 
 function useToast() {
@@ -89,31 +104,45 @@ export function GuideFeedSchedulePage() {
   const [pendingSchedules, setPendingSchedules] = useState([])
   const [guideRequests, setGuideRequests] = useState([])
   const [loadError, setLoadError] = useState('')
-  const [feedContent, setFeedContent] = useState('')
-  const [feedImageUrl, setFeedImageUrl] = useState('')
-  const [feedExtraImageUrl, setFeedExtraImageUrl] = useState('')
-  const [feedMainFileName, setFeedMainFileName] = useState('')
-  const [feedExtraFileName, setFeedExtraFileName] = useState('')
+  const [feedTitle, setFeedTitle] = useState('')
+  const [feedBody, setFeedBody] = useState('')
+  const [feedImages, setFeedImages] = useState([])
+  const [feedImageMode, setFeedImageMode] = useState('file')
+  const [urlInput, setUrlInput] = useState('')
+  const [feedLocationTags, setFeedLocationTags] = useState([])
+  const [showLocationInput, setShowLocationInput] = useState(false)
+  const [locationInput, setLocationInput] = useState('')
+  const [courseTarget, setCourseTarget] = useState(null)
   const { toasts, addToast } = useToast()
   const [blockedDates, setBlockedDates] = useState(() => new Set())
   const [busy, setBusy] = useState(false)
   const mainFileInputRef = useRef(null)
-  const extraFileInputRef = useRef(null)
+  const dragIdx = useRef(null)
   const currentTab = searchParams.get('tab') === 'schedule' ? 'schedule' : 'feed'
   const [calendarMonth, setCalendarMonth] = useState(() => {
     const now = new Date()
     return new Date(now.getFullYear(), now.getMonth(), 1)
   })
 
+  const reloadFeeds = useCallback(async (id) => {
+    try {
+      const res = await apiRequest(`/guides/${id}/feeds`, { method: 'GET', skipAuth: true })
+      const text = await res.text()
+      if (res.ok) setFeeds(text ? JSON.parse(text) : [])
+      else console.error('[reloadFeeds] 피드 목록 조회 실패', res.status)
+    } catch (e) {
+      console.error('[reloadFeeds] 네트워크 오류:', e)
+    }
+  }, [])
+
   const loadAll = useCallback(async (id) => {
     setLoadError('')
     try {
-      const [fr, sr, pr, br, guideReq] = await Promise.all([
+      const [fr, sr, pr, br] = await Promise.all([
         apiRequest(`/guides/${id}/feeds`, { method: 'GET', skipAuth: true }),
         apiRequest(`/guides/${id}/schedules`, { method: 'GET', skipAuth: true }),
         apiRequest(`/guides/${id}/schedules/pending`, { method: 'GET' }),
         apiRequest(`/guides/${id}/schedules/blocked`, { method: 'GET', skipAuth: true }),
-        fetchGuideMatchRequests(apiRequest),
       ])
       const ft = await fr.text()
       const st = await sr.text()
@@ -136,11 +165,17 @@ export function GuideFeedSchedulePage() {
         const blockedList = bt ? JSON.parse(bt) : []
         setBlockedDates(new Set(blockedList.map((s) => s.availableDate)))
       }
-      setGuideRequests(Array.isArray(guideReq) ? guideReq : [])
     } catch (e) {
       setLoadError(e instanceof Error ? e.message : '불러오기 실패')
     }
   }, [])
+
+  useEffect(() => {
+    if (!guideId) return
+    fetchGuideMatchRequests(apiRequest)
+      .then((data) => setGuideRequests(Array.isArray(data) ? data : []))
+      .catch((e) => console.warn('매칭 요청 조회 실패:', e))
+  }, [guideId])
 
   const requestsByScheduleId = useMemo(() => {
     const map = new Map()
@@ -167,6 +202,7 @@ export function GuideFeedSchedulePage() {
           startTime: formatTime(s.startTime),
           endTime: formatTime(s.endTime),
           isPaid: !!s.isPaid,
+          hasCourse: !!s.hasCourse,
           matchRequestId: s.matchRequestId ?? request?.requestId ?? null,
           destination: request?.destination ?? '로컬 투어',
           desiredDate: request?.desiredDate ?? s.availableDate,
@@ -219,29 +255,39 @@ export function GuideFeedSchedulePage() {
   }, [guideId, loadAll])
 
   const addFeed = async () => {
-    if (!guideId || !feedContent.trim()) return
+    if (!guideId || !feedTitle.trim()) return
+    // 파일 업로드(base64 data:URL)는 백엔드 페이로드 제한 초과로 전송 불가 → URL 모드 권장
+    const validUrls = feedImages.map((img) => img.src).filter((src) => !src.startsWith('data:'))
+    if (feedImages.length > 0 && validUrls.length < feedImages.length) {
+      addToast('파일 이미지는 서버 용량 제한으로 저장되지 않습니다. URL 입력 탭을 이용해주세요.', 'error')
+    }
     setBusy(true)
     try {
+      const tagLine = feedLocationTags.length > 0 ? '\n' + feedLocationTags.map((t) => `#${t}`).join(' ') : ''
+      const content = (feedTitle.trim() + '\n' + feedBody.trim() + tagLine).trim()
       const res = await apiRequest(`/guides/${guideId}/feeds`, {
         method: 'POST',
-        json: {
-          content: feedContent.trim(),
-          imageUrl: feedImageUrl.trim() || undefined,
-        },
+        json: { content, imageUrls: validUrls.length > 0 ? validUrls : undefined },
       })
       const text = await res.text()
       if (!res.ok) {
-        addToast(await readJsonError(res, text), 'error')
+        const msg = await readJsonError(res, text)
+        console.error('[addFeed] API error', res.status, msg)
+        addToast(msg, 'error')
         return
       }
-      setFeedContent('')
-      setFeedImageUrl('')
-      setFeedExtraImageUrl('')
-      setFeedMainFileName('')
-      setFeedExtraFileName('')
+      setFeedTitle('')
+      setFeedBody('')
+      setFeedImages([])
+      setUrlInput('')
+      setFeedImageMode('file')
+      setFeedLocationTags([])
+      setLocationInput('')
+      setShowLocationInput(false)
       addToast('등록되었습니다.')
-      await loadAll(guideId)
-    } catch {
+      await reloadFeeds(guideId)
+    } catch (e) {
+      console.error('[addFeed] 네트워크/예외 오류:', e)
       addToast('피드 등록 실패', 'error')
     } finally {
       setBusy(false)
@@ -258,7 +304,7 @@ export function GuideFeedSchedulePage() {
         addToast(await readJsonError(res, text), 'error')
         return
       }
-      await loadAll(guideId)
+      await reloadFeeds(guideId)
     } catch {
       addToast('삭제 실패', 'error')
     } finally {
@@ -286,6 +332,7 @@ export function GuideFeedSchedulePage() {
         else next.add(dateStr)
         return next
       })
+      addToast(isBlocked ? `${dateStr} 예약 가능으로 변경됐어요 ✅` : `${dateStr} 예약 불가로 설정됐어요 🚫`)
       await loadAll(guideId)
     } catch {
       addToast('날짜 설정 실패', 'error')
@@ -348,42 +395,53 @@ export function GuideFeedSchedulePage() {
     }
   }
 
-  const onPickMainFile = async (e) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    if (file.size > MAX_LOCAL_IMAGE_BYTES) {
-      addToast('이미지 용량이 너무 큽니다. 2MB 이하 파일을 선택해 주세요.', 'error')
-      e.target.value = ''
-      return
-    }
-    try {
-      const dataUrl = await readFileAsDataUrl(file)
-      setFeedImageUrl(dataUrl)
-      setFeedMainFileName(file.name)
-    } catch {
-      addToast('메인 사진을 읽지 못했습니다.', 'error')
-    } finally {
-      e.target.value = ''
-    }
+  const onPickFiles = async (e) => {
+    const files = Array.from(e.target.files ?? [])
+    e.target.value = ''
+    if (!files.length) return
+    const remaining = 10 - feedImages.length
+    const toProcess = files.slice(0, remaining)
+    const oversized = toProcess.filter((f) => f.size > MAX_LOCAL_IMAGE_BYTES)
+    if (oversized.length) addToast(`${oversized.length}개 파일이 2MB를 초과해 제외됐습니다.`, 'error')
+    const valid = toProcess.filter((f) => f.size <= MAX_LOCAL_IMAGE_BYTES)
+    const results = await Promise.allSettled(valid.map(readFileAsDataUrl))
+    const newImgs = results
+      .filter((r) => r.status === 'fulfilled')
+      .map((r) => ({ id: Date.now() + Math.random(), src: r.value }))
+    setFeedImages((prev) => [...prev, ...newImgs].slice(0, 10))
   }
 
-  const onPickExtraFile = async (e) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    if (file.size > MAX_LOCAL_IMAGE_BYTES) {
-      addToast('이미지 용량이 너무 큽니다. 2MB 이하 파일을 선택해 주세요.', 'error')
-      e.target.value = ''
-      return
-    }
-    try {
-      const dataUrl = await readFileAsDataUrl(file)
-      setFeedExtraImageUrl(dataUrl)
-      setFeedExtraFileName(file.name)
-    } catch {
-      addToast('추가 사진을 읽지 못했습니다.', 'error')
-    } finally {
-      e.target.value = ''
-    }
+  const addUrlImage = () => {
+    const src = urlInput.trim()
+    if (!src || feedImages.length >= 10) return
+    setFeedImages((prev) => [...prev, { id: Date.now() + Math.random(), src }])
+    setUrlInput('')
+  }
+
+  const removeImage = (id) => {
+    setFeedImages((prev) => prev.filter((img) => img.id !== id))
+  }
+
+  const reorderImages = (dropIdx) => {
+    if (dragIdx.current === null || dragIdx.current === dropIdx) return
+    setFeedImages((prev) => {
+      const next = [...prev]
+      const [moved] = next.splice(dragIdx.current, 1)
+      next.splice(dropIdx, 0, moved)
+      return next
+    })
+    dragIdx.current = null
+  }
+
+  const addLocationTag = (raw) => {
+    const tag = raw.trim().replace(/^#/, '')
+    if (!tag || feedLocationTags.includes(tag)) return
+    setFeedLocationTags((prev) => [...prev, tag])
+    setLocationInput('')
+  }
+
+  const removeLocationTag = (tag) => {
+    setFeedLocationTags((prev) => prev.filter((t) => t !== tag))
   }
 
   if (idLoading) {
@@ -430,95 +488,178 @@ export function GuideFeedSchedulePage() {
         <section className="gfs-feed">
           <div className="gfs-badge">📸 피드 등록</div>
 
-          <div className="gfs-upload-grid">
-            <button
-              type="button"
-              className="gfs-upload-box"
-              onClick={() => mainFileInputRef.current?.click()}
-              style={feedImageUrl ? { backgroundImage: `url(${feedImageUrl})` } : undefined}
-            >
-              <span className="gfs-tape gfs-tape--pink" />
-              <span className="gfs-plus">+</span>
-              <span className="gfs-upload-label">메인 사진 업로드</span>
-              {feedMainFileName && <span className="gfs-file-name">{feedMainFileName}</span>}
+          {/* 이미지 입력 방식 탭 */}
+          <div className="gfi-mode-tabs">
+            {[
+              { key: 'file', label: '파일 업로드' },
+              { key: 'url', label: 'URL 입력' },
+            ].map(({ key, label }) => (
+              <button
+                key={key}
+                type="button"
+                className={`gfi-mode-tab ${feedImageMode === key ? 'is-on' : ''}`}
+                onClick={() => setFeedImageMode(key)}
+              >
+                {label}
+              </button>
+            ))}
+            <button type="button" className="gfi-mode-tab gfi-mode-tab--disabled" disabled>
+              인스타그램 (준비 중)
+            </button>
+          </div>
+
+          {/* 파일 업로드 */}
+          {feedImageMode === 'file' && feedImages.length < 10 && (
+            <div className="gfi-file-row">
+              <button type="button" className="gm-btn gm-btn--ghost" onClick={() => mainFileInputRef.current?.click()}>
+                {feedImages.length === 0 ? '파일 선택' : `+ 추가 (${feedImages.length}/10)`}
+              </button>
               <input
                 ref={mainFileInputRef}
                 type="file"
                 accept="image/*"
-                className="gfs-file-hidden"
-                onChange={(e) => void onPickMainFile(e)}
+                multiple
+                style={{ display: 'none' }}
+                onChange={(e) => void onPickFiles(e)}
               />
+            </div>
+          )}
+
+          {/* URL 입력 */}
+          {feedImageMode === 'url' && (
+            <div className="gfi-file-row" style={{ gap: '0.5rem' }}>
               <input
-                className="gfs-url-input"
-                onClick={(e) => e.stopPropagation()}
-                placeholder="메인 이미지 URL"
-                value={feedImageUrl}
-                onChange={(e) => setFeedImageUrl(e.target.value)}
+                className="gfi-text-input"
+                placeholder="https://example.com/image.jpg"
+                value={urlInput}
+                onChange={(e) => setUrlInput(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addUrlImage() } }}
               />
-            </button>
+              <button
+                type="button"
+                className="gm-btn gm-btn--ghost"
+                onClick={addUrlImage}
+                disabled={!urlInput.trim() || feedImages.length >= 10}
+              >
+                추가
+              </button>
+            </div>
+          )}
+
+          {/* 썸네일 그리드 */}
+          {feedImages.length > 0 ? (
+            <div className="gfi-thumb-grid">
+              {feedImages.map((img, idx) => (
+                <div
+                  key={img.id}
+                  className="gfi-thumb-item"
+                  draggable
+                  onDragStart={() => { dragIdx.current = idx }}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={() => reorderImages(idx)}
+                >
+                  <img src={img.src} alt="" />
+                  {idx === 0 && <span className="gfi-thumb-badge">대표</span>}
+                  <button type="button" className="gfi-thumb-del" onClick={() => removeImage(img.id)} aria-label="이미지 삭제">×</button>
+                </div>
+              ))}
+              {feedImageMode === 'file' && feedImages.length < 10 && (
+                <button type="button" className="gfi-thumb-add" onClick={() => mainFileInputRef.current?.click()} aria-label="이미지 추가">+</button>
+              )}
+            </div>
+          ) : (
+            <div className="gfi-preview">
+              <span className="gfi-preview-empty">이미지를 추가해보세요</span>
+            </div>
+          )}
+
+          {/* 피드 내용 입력 */}
+          <div className="gfs-content-wrap" style={{ marginTop: '1rem' }}>
+            <input
+              type="text"
+              className="gfi-title-input"
+              placeholder="예: 해방촌 골목골목, 진짜 서울을 보여드릴게요"
+              value={feedTitle}
+              onChange={(e) => setFeedTitle(e.target.value)}
+              maxLength={100}
+            />
+            <textarea
+              className="gfs-content"
+              rows={4}
+              maxLength={1000}
+              placeholder="피드 내용과 장소를 입력해주세요..."
+              value={feedBody}
+              onChange={(e) => setFeedBody(e.target.value)}
+            />
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <button type="button" className="gfs-tag-hint-btn" onClick={() => setShowLocationInput((v) => !v)}>
+                📍 장소 태그 {showLocationInput ? '닫기' : '추가'}
+              </button>
+              <span className="gfi-char-count">{feedBody.length} / 1000</span>
+            </div>
+            {showLocationInput && (
+              <div style={{ marginTop: '0.5rem' }}>
+                <input
+                  className="gi-tag-input"
+                  placeholder="장소명 입력 후 Enter"
+                  value={locationInput}
+                  onChange={(e) => setLocationInput(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addLocationTag(locationInput) } }}
+                />
+                {feedLocationTags.length > 0 && (
+                  <div className="gi-tag-list" style={{ marginTop: '0.4rem' }}>
+                    {feedLocationTags.map((tag) => (
+                      <span key={tag} className="gi-tag">
+                        #{tag}
+                        <button type="button" className="gi-tag-del" onClick={() => removeLocationTag(tag)} aria-label={`${tag} 삭제`}>×</button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '0.75rem' }}>
             <button
               type="button"
-              className="gfs-upload-box"
-              onClick={() => extraFileInputRef.current?.click()}
-              style={feedExtraImageUrl ? { backgroundImage: `url(${feedExtraImageUrl})` } : undefined}
+              className="gfs-upload-btn"
+              onClick={() => void addFeed()}
+              disabled={busy || !feedTitle.trim()}
             >
-              <span className="gfs-tape gfs-tape--green" />
-              <span className="gfs-plus">+</span>
-              <span className="gfs-upload-label">추가 사진 업로드</span>
-              {feedExtraFileName && <span className="gfs-file-name">{feedExtraFileName}</span>}
-              <input
-                ref={extraFileInputRef}
-                type="file"
-                accept="image/*"
-                className="gfs-file-hidden"
-                onChange={(e) => void onPickExtraFile(e)}
-              />
-              <input
-                className="gfs-url-input"
-                onClick={(e) => e.stopPropagation()}
-                placeholder="추가 이미지 URL(옵션)"
-                value={feedExtraImageUrl}
-                onChange={(e) => setFeedExtraImageUrl(e.target.value)}
-              />
+              {busy ? <><span className="gfi-spinner" aria-hidden="true" /> 업로드 중…</> : '업로드 🚀'}
             </button>
           </div>
 
-          <div className="gfs-input-row">
-            <div className="gfs-content-wrap">
-              <textarea
-                id="fd-content"
-                className="gfs-content"
-                value={feedContent}
-                onChange={(e) => setFeedContent(e.target.value)}
-                rows={2}
-                placeholder="피드 내용과 장소를 입력해주세요..."
-              />
-              <p className="gfs-tag-hint">📍 장소 태그 추가</p>
-            </div>
-            <button type="button" className="gfs-upload-btn" onClick={() => void addFeed()} disabled={busy || !feedContent.trim()}>
-              업로드 🚀
-            </button>
-          </div>
-
-          {!!feedExtraImageUrl && <p className="gm-hint">추가 사진 URL은 현재 미리보기 전용입니다. (백엔드 단일 imageUrl 저장)</p>}
-
-          <ul className="gm-list" style={{ marginTop: '0.95rem' }}>
-            {feeds.length === 0 && <li>등록된 피드가 없습니다.</li>}
-            {feeds.map((f) => (
-              <li key={f.feedId}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.5rem', flexWrap: 'wrap' }}>
-                  <span>{f.content}</span>
+          {/* 피드 목록 */}
+          <p className="gm-hint" style={{ marginTop: '1.25rem', marginBottom: '0.5rem' }}>등록된 피드 {feeds.length}개</p>
+          <ul className="gfi-feed-list">
+            {feeds.length === 0 && (
+              <li style={{ padding: '0.65rem 0.75rem', fontSize: '0.84rem', color: '#9ca3af' }}>등록된 피드가 없습니다.</li>
+            )}
+            {feeds.map((f) => {
+              const { title } = parseFeedHeading(f.content)
+              const dateStr = f.createdAt ? String(f.createdAt).slice(0, 10).replace(/-/g, '.') : null
+              return (
+                <li key={f.feedId} className="gfi-feed-card">
+                  <div className="gfi-feed-thumb">
+                    {(() => {
+                      const thumb = f.imageUrls?.[0] ?? f.imageUrl ?? null
+                      if (!thumb) return <div className="gfi-thumb-empty" />
+                      if (isInstagramUrl(thumb)) return <span className="gfi-thumb-insta">📷</span>
+                      return <img src={thumb} alt="" />
+                    })()}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p className="gfi-feed-title">{title}</p>
+                    {dateStr && <p className="gfi-feed-date">{dateStr}</p>}
+                  </div>
                   <button type="button" className="gm-danger" onClick={() => void removeFeed(f.feedId)} disabled={busy}>
                     삭제
                   </button>
-                </div>
-                {f.imageUrl && (
-                  <p className="gm-hint" style={{ marginTop: '0.35rem' }}>
-                    {f.imageUrl}
-                  </p>
-                )}
-              </li>
-            ))}
+                </li>
+              )
+            })}
           </ul>
         </section>
       ) : (
@@ -527,6 +668,9 @@ export function GuideFeedSchedulePage() {
             <h2>🗓️ 스케줄 관리</h2>
             <p>투어 가능 일정을 관리하고 예약 현황을 확인하세요.</p>
           </header>
+          <div className="gss-banner">
+            💡 기본적으로 모든 날짜는 예약 가능입니다. 막고 싶은 날짜를 클릭하면 예약 불가로 설정됩니다.
+          </div>
           <div className="gss-grid">
             <article className="gss-cal-card">
               <div className="gss-cal-top">
@@ -566,7 +710,7 @@ export function GuideFeedSchedulePage() {
                   const isBlocked = blockedDates.has(dayKey)
                   const hasBooked = daySchedules.some((s) => s.status === 'BOOKED')
                   const hasPending = daySchedules.some((s) => s.status === 'PENDING')
-                  let kind = 'plain'
+                  let kind = cell.inMonth ? 'available' : 'plain'
                   if (isBlocked) kind = 'blocked'
                   else if (hasBooked) kind = 'booked'
                   else if (hasPending) kind = 'pending'
@@ -582,13 +726,14 @@ export function GuideFeedSchedulePage() {
                       disabled={!cell.inMonth || busy}
                     >
                       <span>{cell.date.getDate()}</span>
-                      {isBlocked && <small>✕</small>}
+                      {isBlocked && <small className="gss-blocked-x">✕</small>}
                       {!isBlocked && daySchedules.length > 0 && <small>{daySchedules.length}</small>}
                     </button>
                   )
                 })}
               </div>
               <div className="gss-legend">
+                <span className="gss-dot gss-dot--available">예약 가능</span>
                 <span className="gss-dot gss-dot--today">오늘</span>
                 <span className="gss-dot gss-dot--booked">투어 예약 있음</span>
                 <span className="gss-dot gss-dot--pending">예약 대기</span>
@@ -601,7 +746,7 @@ export function GuideFeedSchedulePage() {
               <div className="gss-upcoming-list">
                 {upcomingTours.length === 0 && <p className="gm-hint">예약된 투어가 아직 없습니다.</p>}
                 {upcomingTours.slice(0, 6).map((tour) => (
-                  <section key={tour.scheduleId} className="gss-tour-card">
+                  <section key={tour.scheduleId} className={`gss-tour-card${tour.hasCourse ? ' course-done' : ''}`}>
                     <p className="gss-tour-time">
                       {tour.availableDate} ({tour.startTime})
                     </p>
@@ -613,6 +758,21 @@ export function GuideFeedSchedulePage() {
                     <p className="gss-tour-meta">
                       예약번호: {tour.matchRequestId ?? '미연결'} · 스케줄 #{tour.scheduleId}
                     </p>
+                    {tour.status === 'BOOKED' && (
+                      <button
+                        type="button"
+                        className="gss-course-btn"
+                        onClick={() => setCourseTarget({
+                          scheduleId: tour.scheduleId,
+                          availableDate: tour.availableDate,
+                          startTime: tour.startTime,
+                          endTime: tour.endTime,
+                          destination: tour.destination,
+                        })}
+                      >
+                        {tour.hasCourse ? '코스 수정하기 →' : '코스 작성하기 →'}
+                      </button>
+                    )}
                   </section>
                 ))}
               </div>
@@ -681,6 +841,14 @@ export function GuideFeedSchedulePage() {
           </ul>
           </div>
         </section>
+      )}
+      {courseTarget && (
+        <GuideCoursePanel
+          guideId={guideId}
+          schedule={courseTarget}
+          onClose={() => setCourseTarget(null)}
+          onSaved={() => { setCourseTarget(null); void loadAll(guideId) }}
+        />
       )}
     </div>
   )
