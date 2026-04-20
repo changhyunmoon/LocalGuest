@@ -4,27 +4,32 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="84d1b3de-8103-452e-83cf-38ecd34993e7" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/.gitignore" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/LocalGuest.iml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/compiler.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/gradle.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/modules.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/modules/api-server/api-server_main.iml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/modules/api-server/backend.api-server.main.iml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/modules/module-ai-integration/backend.module-ai-integration.main.iml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/modules/module-ai-integration/module-ai-integration_main.iml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/modules/module-ai/backend.module-ai.main.iml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/modules/module-ai/module-ai_main.iml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/modules/module-auth/backend.module-auth.main.iml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/modules/module-chat/backend.module-chat.main.iml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/modules/module-chat/module-chat_main.iml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/modules/module-common/backend.module-common.main.iml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/modules/module-common/module-common_main.iml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/modules/module-domain/backend.module-domain.main.iml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/modules/module-domain/module-domain_main.iml" beforeDir="false" />
+    <list default="true" id="4efe3f4e-85a3-49aa-b921-e0ad954fbbb2" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/compiler.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/compiler.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/gradle.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/gradle.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/api-server/src/main/java/com/team6/apiserver/auth/filter/JwtAuthenticationFilter.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/api-server/src/main/java/com/team6/apiserver/auth/filter/JwtAuthenticationFilter.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/api-server/src/main/java/com/team6/apiserver/auth/oauth/CustomOauth2UserService.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/api-server/src/main/java/com/team6/apiserver/auth/oauth/CustomOauth2UserService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/api-server/src/main/java/com/team6/apiserver/auth/oauth/OAuth2SuccessHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/api-server/src/main/java/com/team6/apiserver/auth/oauth/OAuth2SuccessHandler.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/module-domain/src/main/java/com/team6/domain/auth/dto/LoginRequest.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/module-domain/src/main/java/com/team6/domain/auth/dto/LoginRequest.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/module-domain/src/main/java/com/team6/domain/auth/provider/JwtTokenProvider.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/module-domain/src/main/java/com/team6/domain/auth/provider/JwtTokenProvider.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/module-domain/src/main/java/com/team6/domain/auth/service/AuthService.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/module-domain/src/main/java/com/team6/domain/auth/service/AuthService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/module-domain/src/main/java/com/team6/domain/member/controller/MemberController.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/module-domain/src/main/java/com/team6/domain/member/controller/MemberController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/module-domain/src/main/java/com/team6/domain/member/dto/request/GuestProfileRequest.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/module-domain/src/main/java/com/team6/domain/member/dto/request/GuestProfileRequest.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/module-domain/src/main/java/com/team6/domain/member/dto/request/MemberJoinRequest.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/module-domain/src/main/java/com/team6/domain/member/dto/request/MemberJoinRequest.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/module-domain/src/main/java/com/team6/domain/member/entity/Member.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/module-domain/src/main/java/com/team6/domain/member/entity/Member.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/module-domain/src/main/java/com/team6/domain/member/repository/MemberRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/module-domain/src/main/java/com/team6/domain/member/repository/MemberRepository.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/module-domain/src/main/java/com/team6/domain/member/service/MemberService.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/module-domain/src/main/java/com/team6/domain/member/service/MemberService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/module-domain/src/test/java/com/team6/domain/guide/GuideScheduleJpaTestApplication.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/module-domain/src/test/java/com/team6/domain/guide/repository/GuideScheduleRepositoryJpqlIT.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/module-domain/src/test/java/com/team6/domain/guide/service/GuideScheduleServiceTest.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/module-domain/src/test/java/com/team6/domain/matching/service/MatchRequestServiceTest.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/module-domain/src/test/java/com/team6/domain/matching/service/PaymentServiceTest.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/module-domain/src/test/java/com/team6/domain/matching/service/TourExtensionServiceTest.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/module-domain/src/test/java/com/team6/domain/member/MemberApplicationTest.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/module-domain/src/test/java/com/team6/domain/member/TestPasswordConfig.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/module-domain/src/test/java/com/team6/domain/member/service/MemberServiceTest.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/module-domain/src/test/resources/application-test.yml" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -53,40 +58,32 @@
       </state>
     </system>
   </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Class" />
+      </list>
+    </option>
+  </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
-  <component name="ProjectColorInfo">{
-  &quot;associatedIndex&quot;: 6
-}</component>
-  <component name="ProjectId" id="3CUUfaDPnzSfpshZ55xkgJA2fum" />
-  <component name="ProjectViewState">
-    <option name="hideEmptyMiddlePackages" value="true" />
-    <option name="showLibraryContents" value="true" />
-  </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;Gradle.Build backend.executor&quot;: &quot;Run&quot;,
-    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
-    &quot;RequestMappingsPanelOrder0&quot;: &quot;0&quot;,
-    &quot;RequestMappingsPanelOrder1&quot;: &quot;1&quot;,
-    &quot;RequestMappingsPanelWidth0&quot;: &quot;75&quot;,
-    &quot;RequestMappingsPanelWidth1&quot;: &quot;75&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
-    &quot;Spring Boot.ApiServerApplication.executor&quot;: &quot;Run&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;Feat/be#305&quot;,
-    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;C:/Team6LocalGuest_4&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "Gradle.Build backend.executor": "Run",
+    "RequestMappingsPanelOrder0": "0",
+    "RequestMappingsPanelOrder1": "1",
+    "RequestMappingsPanelWidth0": "75",
+    "RequestMappingsPanelWidth1": "75",
+    "Spring Boot.ApiServerApplication.executor": "Run",
+    "git-widget-placeholder": "Feat/be#300",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "project.structure.last.edited": "Project",
+    "project.structure.proportion": "0.0",
+    "project.structure.side.proportion": "0.0",
+    "settings.editor.selected.configurable": "reference.settingsdialog.project.gradle"
   }
-}</component>
+}]]></component>
   <component name="RunManager">
     <configuration name="ApiServerApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" nameIsGenerated="true">
       <module name="backend.api-server.main" />
@@ -96,34 +93,7 @@
       </method>
     </configuration>
   </component>
-  <component name="SharedIndexes">
-    <attachedChunks>
-      <set>
-        <option value="bundled-jdk-30f59d01ecdd-2fc7cc6b9a17-intellij.indexing.shared.core-IU-253.31033.145" />
-        <option value="bundled-js-predefined-d6986cc7102b-9b0f141eb926-JavaScript-IU-253.31033.145" />
-      </set>
-    </attachedChunks>
-  </component>
   <component name="TaskManager">
-    <task active="true" id="Default" summary="Default task">
-      <changelist id="84d1b3de-8103-452e-83cf-38ecd34993e7" name="Changes" comment="" />
-      <created>1776439748071</created>
-      <option name="number" value="Default" />
-      <option name="presentableId" value="Default" />
-      <updated>1776439748071</updated>
-      <workItem from="1776439750048" duration="27000" />
-      <workItem from="1776510431257" duration="274000" />
-      <workItem from="1776510869764" duration="4658000" />
-      <workItem from="1776554335473" duration="1607000" />
-      <workItem from="1776558524159" duration="5925000" />
-      <workItem from="1776588720196" duration="62000" />
-      <workItem from="1776588797682" duration="2773000" />
-      <workItem from="1776597332655" duration="4592000" />
-      <workItem from="1776641819519" duration="2328000" />
-    </task>
     <servers />
-  </component>
-  <component name="TypeScriptGeneratedFilesManager">
-    <option name="version" value="3" />
   </component>
 </project>

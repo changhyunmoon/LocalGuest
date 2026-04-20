@@ -16,7 +16,7 @@
         <module name="backend.module-domain.main" />
       </profile>
     </annotationProcessing>
-    <bytecodeTargetLevel>
+    <bytecodeTargetLevel target="17">
       <module name="api-server_main" target="17" />
       <module name="api-server_test" target="17" />
       <module name="backend.module-auth.main" target="17" />
@@ -36,33 +36,13 @@
     </bytecodeTargetLevel>
   </component>
   <component name="JavacSettings">
+    <option name="ADDITIONAL_OPTIONS_STRING" value="-parameters" />
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
       <module name="api-server_main" options="-parameters" />
       <module name="api-server_test" options="-parameters" />
-      <module name="backend" options="-parameters" />
-      <module name="backend.api-server" options="-parameters" />
-      <module name="backend.api-server.main" options="-parameters" />
-      <module name="backend.api-server.test" options="-parameters" />
-      <module name="backend.main" options="-parameters" />
-      <module name="backend.module-ai" options="-parameters" />
-      <module name="backend.module-ai-integration" options="-parameters" />
-      <module name="backend.module-ai-integration.main" options="-parameters" />
-      <module name="backend.module-ai-integration.test" options="-parameters" />
-      <module name="backend.module-ai.main" options="-parameters" />
-      <module name="backend.module-ai.test" options="-parameters" />
       <module name="backend.module-auth" options="-parameters" />
       <module name="backend.module-auth.main" options="-parameters" />
       <module name="backend.module-auth.test" options="-parameters" />
-      <module name="backend.module-chat" options="-parameters" />
-      <module name="backend.module-chat.main" options="-parameters" />
-      <module name="backend.module-chat.test" options="-parameters" />
-      <module name="backend.module-common" options="-parameters" />
-      <module name="backend.module-common.main" options="-parameters" />
-      <module name="backend.module-common.test" options="-parameters" />
-      <module name="backend.module-domain" options="-parameters" />
-      <module name="backend.module-domain.main" options="-parameters" />
-      <module name="backend.module-domain.test" options="-parameters" />
-      <module name="backend.test" options="-parameters" />
       <module name="backend_main" options="-parameters" />
       <module name="backend_test" options="-parameters" />
       <module name="module-ai-integration_main" options="-parameters" />

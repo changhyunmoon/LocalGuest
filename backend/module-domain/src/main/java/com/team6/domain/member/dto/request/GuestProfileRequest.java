@@ -1,4 +1,4 @@
-package com.team6.domain.member.dto;
+package com.team6.domain.member.dto.request;
 
 import com.team6.domain.member.entity.GuestProfile;
 import com.team6.domain.member.entity.Member;
