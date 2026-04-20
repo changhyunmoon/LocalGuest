@@ -2,3 +2,8 @@
 # local
 .DS_Store
 backend/_tmp_localguest/
+
+.claude/
+.idea/.name
+.idea/vcs.xml
+backend/.gradle-user
