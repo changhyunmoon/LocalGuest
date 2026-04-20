@@ -163,11 +163,10 @@ public class MatchRequestService {
         log.info("[F05-02] 가이드 취소 완료 — requestId={}, guideId={}", requestId, guideId);
         return MatchRequestActionResponse.from(matchRequest);
     }
+    //그대로 return 하지 않고,
+    //.from()이라는 정적 팩토리 메서드를 호출하여 D
+    // DTO로 변환한 뒤 반환
 
-    /**
-     * 동일 이메일에 Guest/Guide 역할이 한 {@code member} 행에 공존할 수 있다.
-     * 자기 자신의 가이드 프로필에게 매칭 요청하는 경우에만 {@code guestId == guideMemberId}가 되므로 이를 차단한다.
-     */
     private void validateCreateRequest(Long guestId, Long guideMemberId) {
         if (guestId.equals(guideMemberId)) {
             throw new MatchingException(MatchingErrorCode.GUEST_GUIDE_SAME);
@@ -226,10 +225,6 @@ public class MatchRequestService {
         return nf.format(desiredBudget) + "원";
     }
 
-    /**
-     * 스케줄 동기화 등에 넘기는 actor — 가이드 측 {@code member.id}.
-     * {@code guideProfileId}는 {@code guide_profiles.id}; 프로필당 member 1명이므로 항상 단일 member PK로 귀결된다.
-     */
     private Long resolveGuideMemberId(Long guideProfileId) {
         return guideProfileRepository.findById(guideProfileId)
                 .map(guideProfile -> guideProfile.getMemberId())

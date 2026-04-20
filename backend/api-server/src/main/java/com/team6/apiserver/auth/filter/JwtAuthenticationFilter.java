@@ -7,7 +7,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.util.StringUtils;
@@ -38,16 +37,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         // 토큰이 유효하면 유저 정보를 시큐리티 세션에 담음
         if(token != null && jwtTokenProvider.validToken(token)) {
-            // 블랙리스트 확인(로그아웃된 토큰)
-            String blacklisted = redisTemplate.opsForValue().get("BL:" + token);
-            if(blacklisted != null) {
-                // 블랙리스트에 있는 토큰은 무시
-                filterChain.doFilter(request, response);
-                return;
-            }
+            // 토큰에서 이메일 추출
+            String email = jwtTokenProvider.getEmail(token);
+            String role = jwtTokenProvider.getRole(token);
+            String authority = role != null && role.startsWith("ROLE_") ? role : "ROLE_" + role;
 
-            // 토큰에서 사용자 정보 추출 → Authentication 생성
-            Authentication authentication = jwtTokenProvider.getAuthentication(token);
+            // 시큐리티 전용 인증 토큰 생성
+            UsernamePasswordAuthenticationToken authentication =
+                    new UsernamePasswordAuthenticationToken(
+                            email,
+                            null,
+                            List.of(new SimpleGrantedAuthority(authority))
+                    );
 
             // 시큐리티 보관함에 저장
             SecurityContextHolder.getContext().setAuthentication(authentication);

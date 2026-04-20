@@ -181,8 +181,7 @@ public class ChatOrchestrationController {
             if ("ROLE_GUIDE".equals(role)) {
                 String ownerEmail = asString(room.get("ownerEmail"));
                 if (ownerEmail == null || ownerEmail.isBlank()) return rawTitle;
-                return memberRepository.findByEmail(ownerEmail)
-                        .filter(m -> m.hasRole(Role.GUEST))
+                return memberRepository.findByEmailAndRole(ownerEmail, Role.GUEST)
                         .map(m -> m.getNickname() != null && !m.getNickname().isBlank() ? m.getNickname() : ownerEmail.split("@")[0])
                         .orElse(ownerEmail.split("@")[0]);
             }

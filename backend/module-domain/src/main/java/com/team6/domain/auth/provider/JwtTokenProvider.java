@@ -1,51 +1,39 @@
 package com.team6.domain.auth.provider;
 
-import com.team6.domain.member.entity.Role;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.security.Key;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.Date;
+import java.util.UUID;
 
 @Component
 public class JwtTokenProvider {
-
     @Value("${jwt.secret}")
     private String secretKey;
 
     private Key key;
-    private final long ACCESS_TOKEN_VALIDITY = 1000L * 60 * 60;  // 1시간
-    private final long REFRESH_TOKEN_VALIDITY = 1000L * 60 * 60 * 24 * 7;  // 7일
+    private final long ACCESS_TOKEN_VALIDITY = 1000L*60*60;   // 1시간 유효
+    private final long REFRESH_TOKEN_VALIDITY = 1000L*60*60*24*7;  // 7일
 
     @PostConstruct
     protected void init() {
+        // [LOG] INFO : [Auth-Domain] SecretKey를 기반으로 암호화 키 생성
         this.key = Keys.hmacShaKeyFor(secretKey.getBytes());
     }
 
-    // ✅ Set<Role>을 받도록 수정
-    public String createToken(String email, Set<Role> roles) {
+    public String createToken(String email, String role) {
+        // [LOG] INFO : [Auth-Domain] JWT 토큰 생성 시작 (Target : {})
         Date now = new Date();
-
-        // ✅ 여러 역할을 List<String>으로 변환
-        List<String> roleNames = roles.stream()
-                .map(Role::name)
-                .collect(Collectors.toList());
-
         return Jwts.builder()
                 .subject(email)
-                .claim("roles", roleNames)  // ✅ "roles" (복수)
+                .claim("role", role)
                 .claim("jti", UUID.randomUUID().toString())
                 .issuedAt(now)
                 .expiration(new Date(now.getTime() + ACCESS_TOKEN_VALIDITY))
@@ -53,17 +41,11 @@ public class JwtTokenProvider {
                 .compact();
     }
 
-    // ✅ Refresh Token도 roles 사용
-    public String createRefreshToken(String email, Set<Role> roles) {
+    public String createRefreshToken(String email, String role) {
         Date now = new Date();
-
-        List<String> roleNames = roles.stream()
-                .map(Role::name)
-                .collect(Collectors.toList());
-
         return Jwts.builder()
                 .subject(email)
-                .claim("roles", roleNames)
+                .claim("role", role)
                 .issuedAt(now)
                 .expiration(new Date(now.getTime() + REFRESH_TOKEN_VALIDITY))
                 .signWith(key)
@@ -71,48 +53,27 @@ public class JwtTokenProvider {
     }
 
     public boolean validToken(String token) {
-        try {
+        try{
             Jwts.parser()
-                    .verifyWith((SecretKey) key)
-                    .build()
-                    .parseSignedClaims(token);
+                .verifyWith((SecretKey) key)
+                .build()
+                .parseSignedClaims(token);
             return true;
-        } catch (Exception e) {
+        }catch (Exception e) {
+            //[LOG] Warn : 유효하지 않은 토큰입니다.
             return false;
+
         }
     }
 
-    // ✅ JWT에서 Authentication 생성 (여러 역할 처리)
-    public Authentication getAuthentication(String token) {
-        Claims claims = getClaims(token);
-        String email = claims.getSubject();
-
-        // ✅ roles를 List로 파싱
-        List<String> roleNames = claims.get("roles", List.class);
-
-        // ✅ GrantedAuthority로 변환
-        Collection<GrantedAuthority> authorities = roleNames.stream()
-                .map(SimpleGrantedAuthority::new)
-                .collect(Collectors.toList());
-
-        UserDetails userDetails = new User(email, "", authorities);
-
-        return new UsernamePasswordAuthenticationToken(userDetails, "", authorities);
-    }
-
+    // 이메일 추출
     public String getEmail(String token) {
         return getClaims(token).getSubject();
     }
 
-    // ✅ 단일 역할 조회 (하위 호환성 유지)
+    // 역할 추출
     public String getRole(String token) {
-        List<String> roles = getRoles(token);
-        return roles.isEmpty() ? null : roles.get(0);
-    }
-
-    // ✅ 모든 역할 조회
-    public List<String> getRoles(String token) {
-        return getClaims(token).get("roles", List.class);
+        return getClaims(token).get("role", String.class);
     }
 
     private Claims getClaims(String token) {

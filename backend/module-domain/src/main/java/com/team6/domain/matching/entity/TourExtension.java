@@ -35,9 +35,9 @@ public class TourExtension extends BaseTimeEntity {
     )
     private MatchRequest matchRequest;  // MATCH_REQUEST FK
 
-    /** {@code member.id} — match_request.guest_id 와 동일한 의미(게스트 member PK). */
+    // TODO: Member 엔티티 완성 후 @ManyToOne으로 교체
     @Column(name = "guest_id", nullable = false)
-    private Long guestId;
+    private Long guestId;               // 게스트 MEMBER FK
 
     @Column(name = "extended_date", nullable = false)
     private LocalDate extendedDate;     // 연장 날짜

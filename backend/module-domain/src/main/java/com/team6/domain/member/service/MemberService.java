@@ -1,185 +1,96 @@
 package com.team6.domain.member.service;
 
-import com.team6.domain.member.dto.request.*;
-import com.team6.domain.member.dto.response.*;
-import com.team6.domain.member.entity.*;
-import com.team6.domain.member.repository.*;
+import com.team6.domain.member.entity.Member;
+import com.team6.domain.member.entity.Role;
+import com.team6.domain.member.entity.SocialType;
+import com.team6.domain.member.entity.Status;
+import com.team6.domain.member.repository.MemberRepository;
 import com.team6.module.common.global.util.SecurityUtil;
 import lombok.RequiredArgsConstructor;
+import org.apache.coyote.BadRequestException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.Set;
+import org.slf4j.*;
 
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class MemberService {
-
     private final MemberRepository memberRepository;
-    private final GuestProfileRepository guestProfileRepository;
     private final PasswordEncoder passwordEncoder;
 
-    // ✅ 닉네임 중복 체크 (ACTIVE 상태만)
-    public boolean existsByNickname(String nickname) {
-        return memberRepository.existsByNicknameAndStatus(nickname, Status.ACTIVE);
-    }
-
-    // ✅ 회원가입 (완전히 새로 작성)
+    // 회원가입
     @Transactional
-    public Long join(MemberJoinRequest request) {
-        // 1. 닉네임 중복 체크
-        if (existsByNickname(request.getNickname())) {
-            throw new IllegalArgumentException("이미 사용 중인 닉네임입니다.");
-        }
+    public Long join(Member member) {
+        // log.info("[Member-Domain] 회원가입 로직 시작 - email: {}", member.getEmail());
 
-        // 2. 이메일 중복 체크 (기존 회원 조회)
-        return memberRepository.findByEmail(request.getEmail())
+        // 암호화된 비밀번호 값으로 교체
+        // [LOG] DEBUG : [Member-Domain] 비밀번호 암호화 수행 중...
+        String encodedPassword = passwordEncoder.encode(member.getPassword());
+
+        return memberRepository.findByEmailAndRole(member.getEmail(), member.getRole())
                 .map(existingMember -> {
-                    // 2-1. 이미 가입된 이메일이 있는 경우
-                    if (existingMember.getStatus() == Status.ACTIVE) {
-                        throw new IllegalStateException("이미 가입된 계정이 존재합니다.");
+                    // 이메일 + role 조합으로 기존 가입 이력 확인
+                    if(existingMember.getStatus() == Status.ACTIVE) {
+                        throw new IllegalStateException("이미 해당 역할로 가입된 계정이 존재합니다. ");
                     }
 
-                    // 2-2. 탈퇴 회원 재가입
-                    String encodedPassword = passwordEncoder.encode(request.getPassword());
-                    String finalNickname = request.getNickname();
-
-                    // 닉네임 중복 시 랜덤 숫자 추가
-                    if (existsByNickname(finalNickname)) {
+                    // 탈퇴 회원 재가입 로직
+                    String finalNickname = member.getNickname();
+                    if(memberRepository.existsByNickname(finalNickname)) {
                         finalNickname = finalNickname + "_" + (int)(Math.random() * 1000);
                     }
 
-                    existingMember.reactivate(encodedPassword, request.getName(), finalNickname);
-
-                    // 역할 설정
-                    Role role = request.getRole() != null ? request.getRole() : Role.GUEST;
-                    existingMember.addRole(role);
-
+                    existingMember.reactivate(encodedPassword, member.getName(), finalNickname);
                     return existingMember.getId();
                 })
-                .orElseGet(() -> {
-                    // 3. 신규 가입
-                    String encodedPassword = passwordEncoder.encode(request.getPassword());
-
-                    // Member 생성
-                    Member member = Member.builder()
-                            .email(request.getEmail())
-                            .password(encodedPassword)
-                            .name(request.getName())
-                            .nickname(request.getNickname())
-                            .status(Status.ACTIVE)
-                            .build();
-
-                    // 역할 설정 (기본 GUEST)
-                    Role role = request.getRole() != null ? request.getRole() : Role.GUEST;
-                    member.addRole(role);
-
-                    Member savedMember = memberRepository.save(member);
-
-                    // Guest 역할이면 Guest 프로필 생성
-                    if (member.hasRole(Role.GUEST) && request.getGuestProfile() != null) {
-                        GuestProfile guestProfile = request.getGuestProfile().toEntity(savedMember);
-                        guestProfileRepository.save(guestProfile);
-                        savedMember.setGuestProfile(guestProfile);
+                .orElseGet(()->{
+                    // 신규 가입
+                    if (memberRepository.existsByNicknameAndStatus(member.getNickname(), Status.ACTIVE)) {
+                        throw new IllegalArgumentException("이미 사용 중인 닉네임입니다.");
                     }
 
-                    return savedMember.getId();
+                    member.updatePassword(encodedPassword);
+                    return memberRepository.save(member).getId();
                 });
     }
 
-    // ✅ 회원 탈퇴 (수정)
+    // 회원 탈퇴 기능 - common-module에 securityUtil구현 후 구현 가능
     @Transactional
-    public void withdraw() {
+    public void withdraw(Role role) {
         String email = SecurityUtil.getCurrentUserEmail();
-
-        // ✅ email로만 조회 (role 제거)
-        Member member = memberRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+        Member member = memberRepository.findByEmailAndRole(email, role)
+                .orElseThrow(()->new IllegalArgumentException("사용자를 찾을 수 없습니다. "));
 
         member.withdraw();
     }
 
-    // ✅ 소셜로그인 회원 조회/생성 (수정)
+    // 소셜로그인을 통한 위한 회원 조회 및 회원가입
     @Transactional
     public Member findOrCreateMember(String email, String name, String picture, Role selectedRole) {
-        return memberRepository.findByEmail(email)
+        return memberRepository.findByEmailAndRole(email, selectedRole)
                 .orElseGet(() -> {
-                    // 닉네임 자동 생성
-                    String tempNickname = email.split("@")[0] + "_" + (int)(Math.random()*10000);
-
-                    // Member 생성
+                    String tempNickname = email.split("@")[0]
+                            + "_" + (int)(Math.random()*10000);
+                    // 조회 후 없으면 신규 소셜 회원 가입
                     Member newMember = Member.builder()
                             .email(email)
                             .name(name)
-                            .password("")  // 소셜 로그인은 비밀번호 없음
+                            .password("")
                             .nickname(tempNickname)
+                            .role(selectedRole)
                             .socialType(SocialType.GOOGLE)
                             .status(Status.ACTIVE)
                             .build();
-
-                    // 역할 추가
-                    newMember.addRole(selectedRole);
-
-                    Member savedMember = memberRepository.save(newMember);
-
-                    // Guest 역할이면 기본 Guest 프로필 생성
-                    if (selectedRole == Role.GUEST) {
-                        GuestProfile guestProfile = GuestProfile.builder()
-                                .member(savedMember)
-                                .profileImageUrl(picture)  // 구글 프로필 사진
-                                .build();
-                        guestProfileRepository.save(guestProfile);
-                        savedMember.setGuestProfile(guestProfile);
-                    }
-
-                    return savedMember;
+                    return memberRepository.save(newMember);
                 });
     }
 
-    // ✅ Guest 프로필 조회
-    public GuestProfileResponse getGuestProfile(Long memberId) {
-        GuestProfile profile = guestProfileRepository.findByMemberId(memberId)
-                .orElse(null);
-
-        return GuestProfileResponse.from(profile);
-    }
-
-    // ✅ Guest 프로필 업데이트
-    @Transactional
-    public void updateGuestProfile(Long memberId, GuestProfileUpdateRequest request) {
-        GuestProfile profile = guestProfileRepository.findByMemberId(memberId)
-                .orElseThrow(() -> new IllegalArgumentException("Guest 프로필을 찾을 수 없습니다."));
-
-        if (request.getProfileImageUrl() != null) {
-            profile.updateProfileImage(request.getProfileImageUrl());
-        }
-        if (request.getBio() != null) {
-            profile.updateBio(request.getBio());
-        }
-    }
-
-    // ✅ 여행 선호도 업데이트
-    @Transactional
-    public void updateTravelPreference(Long memberId, TravelPreferenceUpdateRequest request) {
-        GuestProfile guestProfile = guestProfileRepository.findByMemberId(memberId)
-                .orElseThrow(() -> new IllegalArgumentException("Guest 프로필을 찾을 수 없습니다."));
-
-        TravelPreference preference = guestProfile.getTravelPreference();
-
-        if (preference == null) {
-            throw new IllegalArgumentException("여행 선호도 정보를 찾을 수 없습니다.");
-        }
-
-        preference.update(
-                request.getConcepts(),
-                request.getPlanningStyle(),
-                request.getCompanionType(),
-                request.getPreferredDurationDays(),
-                request.getDistancePreference(),
-                request.getGuideMatchingStyle(),
-                request.getInterestRegions()
-        );
+    // 닉네임 중복 체크
+    public boolean existsByNickname(String nickname) {
+        return memberRepository.existsByNicknameAndStatus(nickname, Status.ACTIVE);
     }
 }
+
+

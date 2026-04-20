@@ -5,7 +5,6 @@ import com.team6.domain.member.entity.Role;
 import com.team6.domain.member.service.MemberService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
@@ -17,8 +16,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.Collections;
 import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -31,6 +28,10 @@ public class CustomOauth2UserService implements OAuth2UserService<OAuth2UserRequ
         // 구글에서 사용자 정보 가져오기
         OAuth2UserService<OAuth2UserRequest, OAuth2User> delegate = new DefaultOAuth2UserService();
         OAuth2User oAuth2User = delegate.loadUser(userRequest);
+
+//        String roleParam = request.getParameter("role");
+//        Role selectedRole = (roleParam != null && roleParam.equalsIgnoreCase("GUEST"))
+//                            ? Role.GUEST : Role.GUIDE;
 
         String selectedRoleStr = "GUEST";
         if(request.getCookies() != null) {
@@ -51,15 +52,11 @@ public class CustomOauth2UserService implements OAuth2UserService<OAuth2UserRequ
         String picture = (String) attributes.get("picture");
 
         // service에 사용자가 선택한 Role전달
-        Member member = memberService.findOrCreateMember(email, name, picture, selectedRole);
-
-        Set<GrantedAuthority> authorities = member.getRoles().stream()
-                .map(role -> new SimpleGrantedAuthority(role.name()))
-                .collect(Collectors.toSet());
+        Member member = memberService.findOrCreateMember(email, name, null, selectedRole);
 
         // Spring Security가 인식할 수 있는 형태로 변환
         return new DefaultOAuth2User(
-                authorities,
+                Collections.singleton(new SimpleGrantedAuthority(member.getRole().getKey())),
                 attributes,
                 "email"
         );

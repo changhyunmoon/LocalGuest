@@ -28,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * 가이드 프로필 서비스 (F06-01, F06-02, F06-06)
@@ -48,7 +49,7 @@ public class GuideProfileService {
     public GuideProfileResponse createProfile(CreateGuideProfileRequest request, Long userId) {
         Member requester = memberRepository.findById(userId)
                 .orElseThrow(() -> new GuideException(GuideErrorCode.MEMBER_NOT_FOUND));
-        Member guideMember = ensureGuideRole(requester);
+        Member guideMember = resolveOrCreateGuideMember(requester);
 
         // GUIDE 멤버 기준으로 이미 프로필이 있으면 중복 등록 차단
         if (guideProfileRepository.existsByMemberId(guideMember.getId())) {
@@ -77,12 +78,41 @@ public class GuideProfileService {
         return GuideProfileResponse.from(saved);
     }
 
-    /** 이메일당 단일 Member — GUIDE 역할이 없으면 부여한다. */
-    private Member ensureGuideRole(Member member) {
-        if (!member.hasRole(Role.GUIDE)) {
-            member.upgradeToGuide();
+    private Member resolveOrCreateGuideMember(Member requester) {
+        if (requester.getRole() == Role.GUIDE) {
+            return requester;
         }
-        return member;
+        return memberRepository.findByEmailAndRole(requester.getEmail(), Role.GUIDE)
+                .orElseGet(() -> {
+                    String guideNickname = resolveGuideNickname(requester.getNickname(), requester.getEmail());
+                    Member guideMember = Member.builder()
+                            .email(requester.getEmail())
+                            .password(requester.getPassword())
+                            .name(requester.getName())
+                            .nickname(guideNickname)
+                            .role(Role.GUIDE)
+                            .status(requester.getStatus())
+                            .socialType(requester.getSocialType())
+                            .build();
+                    return memberRepository.save(guideMember);
+                });
+    }
+
+    private String resolveGuideNickname(String preferredNickname, String email) {
+        if (preferredNickname != null && !preferredNickname.isBlank() && !memberRepository.existsByNickname(preferredNickname)) {
+            return preferredNickname;
+        }
+
+        String base = (preferredNickname != null && !preferredNickname.isBlank())
+                ? preferredNickname + "_guide"
+                : email.split("@")[0] + "_guide";
+
+        String candidate = base;
+        while (memberRepository.existsByNickname(candidate)) {
+            int suffix = ThreadLocalRandom.current().nextInt(1000, 10000);
+            candidate = base + "_" + suffix;
+        }
+        return candidate;
     }
 
     // 가이드 프로필 수정 (F06-01)
