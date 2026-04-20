@@ -1,0 +1,23 @@
+name: Deploy k6 Scripts
+
+on:
+  push:
+    paths:
+      - 'stress-test/**' # stress-test 폴더 내 파일 변경 시에만 실행
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Copy scripts to k6 EC2
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.K6_SERVER_HOST }}
+          username: ${{ secrets.K6_SERVER_USER }}
+          key: ${{ secrets.K6_SERVER_KEY }}
+          source: "stress-test/scripts/*"
+          target: "/home/ubuntu/stress-test"
+          strip_components: 1 # 폴더 구조를 유지하지 않고 scripts 안의 내용만 보낼 때 사용
