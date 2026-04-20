@@ -24,17 +24,24 @@ function stars(rating) {
 export function GuideReviewsManagePage() {
   const { guideId, loading: idLoading, error: idError } = useResolvedGuideId()
   const [summary, setSummary] = useState(null)
+  const [summaryLoading, setSummaryLoading] = useState(false)
   const [page, setPage] = useState(0)
+  const [totalPages, setTotalPages] = useState(1)
   const [rows, setRows] = useState([])
   const [last, setLast] = useState(true)
   const [loadError, setLoadError] = useState('')
   const [listLoading, setListLoading] = useState(false)
 
   const loadSummary = useCallback(async (id) => {
-    const res = await apiRequest(`/guides/${id}/reviews/summary`, { method: 'GET', skipAuth: true })
-    const text = await res.text()
-    if (!res.ok) return
-    setSummary(text ? JSON.parse(text) : null)
+    setSummaryLoading(true)
+    try {
+      const res = await apiRequest(`/guides/${id}/reviews/summary`, { method: 'GET', skipAuth: true })
+      const text = await res.text()
+      if (!res.ok) return
+      setSummary(text ? JSON.parse(text) : null)
+    } finally {
+      setSummaryLoading(false)
+    }
   }, [])
 
   const loadPage = useCallback(async (id, p) => {
@@ -51,6 +58,7 @@ export function GuideReviewsManagePage() {
       const content = Array.isArray(data.content) ? data.content : []
       setRows(content)
       setLast(data.last === true || content.length === 0)
+      setTotalPages(data.totalPages > 0 ? data.totalPages : 1)
     } catch {
       setLoadError('리뷰 목록 조회 실패')
     } finally {
@@ -99,13 +107,19 @@ export function GuideReviewsManagePage() {
             <span className="grv-title-mark" />
             <strong>✨ 가이드 리뷰</strong>
           </div>
-          <article className="grv-score-card">
-            <p>나의 평균 평점</p>
-            <strong>
-              ★ {summary?.averageRating != null ? Number(summary.averageRating).toFixed(1) : '0.0'}
-            </strong>
-            <span>리뷰 {summary?.reviewCount ?? 0}개</span>
-          </article>
+          {summaryLoading ? (
+            <p style={{ fontSize: '13px', color: '#9ca3af' }}>로딩 중…</p>
+          ) : summary?.reviewCount === 0 || summary == null ? (
+            <p style={{ fontSize: '13px', color: '#9ca3af' }}>아직 받은 리뷰가 없어요</p>
+          ) : (
+            <article className="grv-score-card">
+              <p>나의 평균 평점</p>
+              <strong>
+                ★ {Number(summary.averageRating).toFixed(1)}
+              </strong>
+              <span>리뷰 {summary.reviewCount}개</span>
+            </article>
+          )}
         </header>
 
         {!listLoading && rows.length === 0 && (
@@ -114,35 +128,15 @@ export function GuideReviewsManagePage() {
 
         {rows.length > 0 && (
           <div className="grv-grid">
-            <article className="grv-note grv-note--left">
-              <p className="grv-stars">{stars(rows[0]?.rating)}</p>
-              <p className="grv-content">{rows[0]?.content ?? '리뷰 내용이 없습니다.'}</p>
-              <p className="grv-meta">
-                - 여행자 '{rows[0]?.writeNickname ?? '익명'}' ({formatDt(rows[0]?.createdAt)})
-              </p>
-              <span className="grv-dot" aria-hidden />
-            </article>
-
-            {rows[1] && (
-              <article className="grv-note grv-note--right">
-                <span className="grv-tape" aria-hidden />
-                <p className="grv-stars">{stars(rows[1]?.rating)}</p>
-                <p className="grv-content">{rows[1]?.content}</p>
+            {rows.map((review) => (
+              <article key={review.id} className="grv-wide">
+                <p className="grv-stars">{stars(review.rating)}</p>
+                <p className="grv-content">{review.content ?? '리뷰 내용이 없습니다.'}</p>
                 <p className="grv-meta">
-                  - 여행자 '{rows[1]?.writeNickname ?? '익명'}' ({formatDt(rows[1]?.createdAt)})
+                  - 여행자 '{review.writeNickname ?? '익명'}' ({formatDt(review.createdAt)})
                 </p>
               </article>
-            )}
-
-            {rows[2] && (
-              <article className="grv-wide">
-                <p className="grv-stars">{stars(rows[2]?.rating)}</p>
-                <p className="grv-content">{rows[2]?.content}</p>
-                <p className="grv-meta">
-                  - 여행자 '{rows[2]?.writeNickname ?? '익명'}' ({formatDt(rows[2]?.createdAt)})
-                </p>
-              </article>
-            )}
+            ))}
           </div>
         )}
 
@@ -155,6 +149,9 @@ export function GuideReviewsManagePage() {
           >
             이전 리뷰
           </button>
+          <span style={{ fontSize: '13px', color: '#6b7280', alignSelf: 'center' }}>
+            {page + 1} / {totalPages} 페이지
+          </span>
           <button
             type="button"
             className="gm-btn gm-btn--ghost"

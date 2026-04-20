@@ -3,8 +3,12 @@
 .DS_Store
 backend/_tmp_localguest/
 
-.idea/
 *.iml
 .name
 out/
 gen/
+.claude/
+.idea/.name
+.idea/vcs.xml
+backend/.gradle-user
+

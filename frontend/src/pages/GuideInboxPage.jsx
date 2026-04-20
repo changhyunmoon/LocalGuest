@@ -48,12 +48,6 @@ export function GuideInboxPage() {
   const fetchList = useCallback(async () => {
     setError('')
     setToast('')
-    setRows([
-      { requestId: 1, guestId: 42, status: 'PENDING', destination: '제주 올레길', desiredDate: '2026-05-10', desiredBudget: 150000, conceptSummary: '자연 속 힐링 여행', createdAt: '2026-04-18T10:00:00' },
-      { requestId: 2, guestId: 55, status: 'ACCEPTED', destination: '부산 감천문화마을', desiredDate: '2026-05-15', desiredBudget: 200000, conceptSummary: '감성 사진 투어', createdAt: '2026-04-17T14:30:00' },
-      { requestId: 3, guestId: 78, status: 'REJECTED', destination: '경주 역사탐방', desiredDate: '2026-04-20', desiredBudget: 100000, conceptSummary: null, createdAt: '2026-04-15T09:00:00' },
-    ])
-    return // TODO: 목업 확인 후 이 블록 삭제
     const data = await fetchGuideMatchRequests(apiRequest)
     setRows(Array.isArray(data) ? data : [])
   }, [])

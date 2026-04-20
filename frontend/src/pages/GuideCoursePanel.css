@@ -1,0 +1,422 @@
+/* GuideCoursePanel.css */
+
+/* ── 배경 오버레이 ──────────────────────────────────────────────────────── */
+.gcp-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 1000;
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* ── 슬라이드 패널 ────────────────────────────────────────────────────── */
+.gcp-panel {
+  width: min(560px, 100vw);
+  height: 100dvh;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: gcp-slide-in 0.22s ease;
+}
+
+@keyframes gcp-slide-in {
+  from { transform: translateX(100%); }
+  to   { transform: translateX(0); }
+}
+
+/* ── 헤더 ─────────────────────────────────────────────────────────────── */
+.gcp-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid #f0f0f0;
+  flex-shrink: 0;
+}
+
+.gcp-header-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.gcp-header-title {
+  font-size: 17px;
+  font-weight: 600;
+  color: #111;
+  margin: 0 0 2px;
+}
+
+.gcp-header-meta {
+  font-size: 13px;
+  color: #6b7280;
+  margin: 0;
+}
+
+.gcp-close {
+  background: none;
+  border: none;
+  font-size: 16px;
+  color: #9ca3af;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 6px;
+  line-height: 1;
+  flex-shrink: 0;
+  margin-top: 2px;
+  transition: color 0.15s, background 0.15s;
+}
+
+.gcp-close:hover {
+  color: #111;
+  background: #f3f4f6;
+}
+
+/* ── 스크롤 바디 ─────────────────────────────────────────────────────── */
+.gcp-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 24px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.gcp-loading {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  color: #9ca3af;
+}
+
+.gcp-error {
+  padding: 10px 12px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  color: #b91c1c;
+  font-size: 13px;
+  margin: 0;
+}
+
+.gcp-success {
+  padding: 10px 12px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+  color: #15803d;
+  font-size: 13px;
+  margin: 0;
+}
+
+/* ── 지도 ─────────────────────────────────────────────────────────────── */
+.gcp-map-wrap {
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+  flex-shrink: 0;
+}
+
+.gcp-map {
+  width: 100%;
+  height: 220px; /* JS inline style로 동적 조절됨 */
+  display: block;
+  background: #e8ede8;
+  transition: height 0.25s ease;
+}
+
+.gcp-map-err {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(185, 28, 28, 0.88);
+  color: #fff;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  white-space: nowrap;
+  margin: 0;
+}
+
+.gcp-map-empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(232, 237, 232, 0.7);
+  pointer-events: none;
+}
+
+.gcp-map-empty span {
+  font-size: 13px;
+  color: #6b7280;
+  background: rgba(255, 255, 255, 0.85);
+  padding: 6px 14px;
+  border-radius: 20px;
+}
+
+/* 지도 커스텀 핀 */
+.gcp-pin {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: default;
+}
+
+.gcp-pin-num {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #111;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  flex-shrink: 0;
+}
+
+.gcp-pin-label {
+  background: #111;
+  color: #fff;
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  white-space: nowrap;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── 섹션 ─────────────────────────────────────────────────────────────── */
+.gcp-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.gcp-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #374151;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.gcp-label-hint {
+  font-size: 11px;
+  font-weight: 400;
+  color: #9ca3af;
+}
+
+/* ── 인풋 공통 ───────────────────────────────────────────────────────── */
+.gcp-input {
+  width: 100%;
+  padding: 9px 12px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  background: #fafafa;
+  color: #111;
+  font-size: 14px;
+  font-family: inherit;
+  transition: border-color 0.15s, background 0.15s;
+  box-sizing: border-box;
+}
+
+.gcp-input:focus {
+  outline: none;
+  border-color: #111;
+  background: #fff;
+}
+
+.gcp-textarea {
+  width: 100%;
+  padding: 9px 12px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  background: #fafafa;
+  color: #111;
+  font-size: 14px;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 68px;
+  transition: border-color 0.15s;
+  box-sizing: border-box;
+}
+
+.gcp-textarea:focus {
+  outline: none;
+  border-color: #111;
+  background: #fff;
+}
+
+/* ── 스팟 리스트 ─────────────────────────────────────────────────────── */
+.gcp-spot-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.gcp-spot-item {
+  background: #fafafa;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.gcp-spot-item[draggable] {
+  cursor: default;
+}
+
+.gcp-drag-handle {
+  font-size: 16px;
+  color: #d1d5db;
+  cursor: grab;
+  flex-shrink: 0;
+  user-select: none;
+  line-height: 1;
+}
+
+.gcp-drag-handle:active {
+  cursor: grabbing;
+}
+
+.gcp-spot-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.gcp-spot-num {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #111;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.gcp-input--spot-name {
+  flex: 1;
+  font-weight: 500;
+}
+
+.gcp-spot-remove {
+  background: none;
+  border: none;
+  font-size: 12px;
+  color: #d1d5db;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  line-height: 1;
+  flex-shrink: 0;
+  transition: color 0.15s;
+}
+
+.gcp-spot-remove:hover {
+  color: #b91c1c;
+}
+
+.gcp-spot-row2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.gcp-geo-status {
+  font-size: 11px;
+  margin: 0;
+  min-height: 16px;
+}
+
+.gcp-geo-status--ok      { color: #15803d; }
+.gcp-geo-status--pending { color: #9ca3af; }
+.gcp-geo-status--idle    { color: #d1d5db; }
+.gcp-geo-status--error   { color: #b91c1c; }
+
+/* ── 스팟 추가 버튼 ──────────────────────────────────────────────────── */
+.gcp-add-spot {
+  width: 100%;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px dashed #d1d5db;
+  background: none;
+  color: #6b7280;
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.gcp-add-spot:hover {
+  border-color: #111;
+  color: #111;
+}
+
+/* ── 하단 액션 ───────────────────────────────────────────────────────── */
+.gcp-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.gcp-btn {
+  flex: 1;
+  padding: 13px;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: opacity 0.15s;
+  border: none;
+}
+
+.gcp-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.gcp-btn--primary {
+  background: #111;
+  color: #fff;
+}
+
+.gcp-btn--ghost {
+  background: #f3f4f6;
+  color: #374151;
+  flex: 0 0 auto;
+  padding-left: 20px;
+  padding-right: 20px;
+}
+
+.gcp-btn--primary:hover:not(:disabled) { opacity: 0.85; }
+.gcp-btn--ghost:hover { background: #e5e7eb; }
