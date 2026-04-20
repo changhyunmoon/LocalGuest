@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="84d1b3de-8103-452e-83cf-38ecd34993e7" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/module-domain/src/main/java/com/team6/domain/matching/entity/MatchRequest.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/module-domain/src/main/java/com/team6/domain/matching/entity/MatchRequest.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/module-domain/src/main/java/com/team6/domain/matching/service/PaymentService.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/module-domain/src/main/java/com/team6/domain/matching/service/PaymentService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/pages/AiQuickSearchPage.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/AiQuickSearchPage.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/pages/GuideCoursePanel.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/GuideCoursePanel.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/pages/GuideInboxPage.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/GuideInboxPage.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/pages/GuideMatchOptionsPage.css" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/GuideMatchOptionsPage.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/pages/GuideMatchOptionsPage.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/GuideMatchOptionsPage.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/pages/GuideProposalPage.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/GuideProposalPage.jsx" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="ExternalProjectsData">
+    <projectState path="$PROJECT_DIR$/backend">
+      <ProjectState />
+    </projectState>
+  </component>
+  <component name="ExternalProjectsManager">
+    <system id="GRADLE">
+      <state>
+        <projects_view>
+          <tree_state>
+            <expand>
+              <path>
+                <item name="" type="6a2764b6:ExternalProjectsStructure$RootNode" />
+                <item name="backend" type="f1a62948:ProjectNode" />
+              </path>
+            </expand>
+            <select />
+          </tree_state>
+        </projects_view>
+      </state>
+    </system>
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Class" />
+        <option value="GitHub Workflow" />
+      </list>
+    </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="McpProjectServerCommands">
+    <commands />
+    <urls />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 6
+}</component>
+  <component name="ProjectId" id="3CUUfaDPnzSfpshZ55xkgJA2fum" />
+  <component name="ProjectLevelVcsManager">
+    <ConfirmationsSetting value="1" id="Add" />
+  </component>
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "Gradle.Build backend.executor": "Run",
+    "Gradle.backend 빌드.executor": "Run",
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RequestMappingsPanelOrder0": "0",
+    "RequestMappingsPanelOrder1": "1",
+    "RequestMappingsPanelWidth0": "75",
+    "RequestMappingsPanelWidth1": "75",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
+    "Spring Boot.ApiServerApplication.executor": "Run",
+    "git-widget-placeholder": "main",
+    "kotlin-language-version-configured": "true",
+    "last_opened_file_path": "C:/Team6LocalGuest_4",
+    "node.js.detected.package.eslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "vue.rearranger.settings.migration": "true"
+  }
+}]]></component>
+  <component name="RunManager">
+    <configuration default="true" type="JetRunConfigurationType">
+      <module name="backend.module-ai.main" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration default="true" type="KotlinStandaloneScriptRunConfigurationType">
+      <module name="backend.module-ai.main" />
+      <option name="filePath" />
+      <method v="2" />
+    </configuration>
+    <configuration name="ApiServerApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" nameIsGenerated="true">
+      <module name="backend.api-server.main" />
+      <option name="SPRING_BOOT_MAIN_CLASS" value="com.team6.apiserver.ApiServerApplication" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+  </component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-jdk-30f59d01ecdd-2fc7cc6b9a17-intellij.indexing.shared.core-IU-253.31033.145" />
+        <option value="bundled-js-predefined-d6986cc7102b-9b0f141eb926-JavaScript-IU-253.31033.145" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="84d1b3de-8103-452e-83cf-38ecd34993e7" name="Changes" comment="" />
+      <created>1776439748071</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1776439748071</updated>
+      <workItem from="1776439750048" duration="27000" />
+      <workItem from="1776510431257" duration="274000" />
+      <workItem from="1776510869764" duration="4658000" />
+      <workItem from="1776554335473" duration="1607000" />
+      <workItem from="1776558524159" duration="5925000" />
+      <workItem from="1776588720196" duration="62000" />
+      <workItem from="1776588797682" duration="2773000" />
+      <workItem from="1776597332655" duration="4592000" />
+      <workItem from="1776641819519" duration="2328000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+</project>

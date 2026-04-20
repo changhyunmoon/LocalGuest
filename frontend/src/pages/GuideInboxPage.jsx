@@ -3,7 +3,9 @@ import { Link } from 'react-router-dom'
 
 import { apiRequest } from '../api/client.js'
 import { useAuth } from '../context/useAuth.js'
+import { useResolvedGuideId } from '../hooks/useResolvedGuideId.js'
 import { fetchGuideMatchRequests } from '../lib/matchingGuest.js'
+import { GuideCoursePanel, parseCourseDetail } from './GuideCoursePanel.jsx'
 
 import './GuideInboxPage.css'
 
@@ -36,14 +38,14 @@ function statusLabel(status) {
 
 export function GuideInboxPage() {
   const { isGuide } = useAuth()
+  const { guideId } = useResolvedGuideId()
   const [rows, setRows] = useState([])
+  const [schedulesById, setSchedulesById] = useState({})
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
   const [busyId, setBusyId] = useState(null)
   const [toast, setToast] = useState('')
-  const [proposeFor, setProposeFor] = useState(null)
-  const [proposedSchedule, setProposedSchedule] = useState('')
-  const [proposeMessage, setProposeMessage] = useState('')
+  const [courseTarget, setCourseTarget] = useState(null)
 
   const fetchList = useCallback(async () => {
     setError('')
@@ -94,39 +96,104 @@ export function GuideInboxPage() {
     }
   }
 
-  const openPropose = (r) => {
-    setProposeFor(r.requestId)
-    setProposedSchedule(r.proposedSchedule ?? '')
-    setProposeMessage(r.proposeMessage ?? '')
-  }
-
-  const closePropose = () => {
-    setProposeFor(null)
-    setProposedSchedule('')
-    setProposeMessage('')
-  }
-
-  const submitPropose = async () => {
-    if (proposeFor == null) return
-    const body = {
-      proposedSchedule: proposedSchedule.trim(),
-      proposeMessage: proposeMessage.trim() || undefined,
-    }
-    if (!body.proposedSchedule) {
-      setToast('제시 일정(proposedSchedule)은 필수입니다.')
+  const loadSchedules = useCallback(async () => {
+    if (!guideId) {
+      setSchedulesById({})
       return
     }
-    setBusyId(proposeFor)
+    try {
+      const res = await apiRequest(`/guides/${guideId}/schedules`, { method: 'GET', skipAuth: true })
+      const text = await res.text()
+      if (!res.ok) {
+        setSchedulesById({})
+        return
+      }
+      const schedules = text ? JSON.parse(text) : []
+      const map = {}
+      for (const schedule of Array.isArray(schedules) ? schedules : []) {
+        if (schedule?.scheduleId != null) {
+          map[Number(schedule.scheduleId)] = schedule
+        }
+      }
+      setSchedulesById(map)
+    } catch {
+      setSchedulesById({})
+    }
+  }, [guideId])
+
+  useEffect(() => {
+    void loadSchedules()
+  }, [loadSchedules])
+
+  const openCourseWriter = async (r) => {
+    if (guideId == null) {
+      setToast('가이드 프로필 정보를 불러오는 중입니다. 잠시 후 다시 시도해 주세요.')
+      return
+    }
+    const sid = Number(r.scheduleId)
+    if (Number.isNaN(sid)) {
+      setToast('연결된 스케줄이 없어 코스를 작성할 수 없습니다.')
+      return
+    }
+    const linkedSchedule = schedulesById[sid]
+    if (linkedSchedule?.status === 'PENDING') {
+      setBusyId(r.requestId)
+      try {
+        const acceptRes = await apiRequest(`/guides/${guideId}/schedules/${sid}/accept`, { method: 'POST' })
+        const acceptText = await acceptRes.text()
+        if (!acceptRes.ok) {
+          if (acceptRes.status !== 409) {
+            setToast(await readJsonError(acceptRes, acceptText))
+            return
+          }
+        }
+        await loadSchedules()
+      } catch {
+        setToast('코스 작성 준비 중 오류가 발생했습니다.')
+        return
+      } finally {
+        setBusyId(null)
+      }
+    }
+    setCourseTarget({
+      requestId: r.requestId,
+      scheduleId: sid,
+      availableDate: linkedSchedule?.availableDate ?? r.desiredDate ?? '',
+      startTime: linkedSchedule?.startTime ?? '00:00',
+      endTime: linkedSchedule?.endTime ?? '23:59',
+      destination: r.destination ?? '',
+    })
+  }
+
+  const buildProposedSchedule = (courseDetail) => {
+    const spots = parseCourseDetail(courseDetail).filter((spot) => String(spot.name ?? '').trim())
+    if (spots.length === 0) return ''
+    return spots.map((spot) => spot.name.trim()).join(' -> ')
+  }
+
+  const submitProposalFromForm = async (requestId, savedForm) => {
+    const proposedSchedule = buildProposedSchedule(savedForm?.courseDetail ?? '')
+    const proposeMessage = String(savedForm?.guideMessage ?? '').trim()
+    const body = {
+      proposedSchedule,
+      proposeMessage: proposeMessage || undefined,
+    }
+    if (!proposedSchedule) {
+      setToast('코스 스팟을 1개 이상 작성해야 제시안을 보낼 수 있습니다.')
+      return
+    }
+    setBusyId(requestId)
     setToast('')
     try {
-      const res = await apiRequest(`/matching/requests/${proposeFor}/propose`, { method: 'PATCH', json: body })
+      const res = await apiRequest(`/matching/requests/${requestId}/propose`, { method: 'PATCH', json: body })
       const text = await res.text()
       if (!res.ok) {
         setToast(await readJsonError(res, text))
         return
       }
-      closePropose()
       await fetchList()
+      await loadSchedules()
+      setCourseTarget(null)
     } catch {
       setToast('제시안 전송 실패')
     } finally {
@@ -190,8 +257,8 @@ export function GuideInboxPage() {
                     <td className="inbox-actions">
                       {r.status === 'PENDING' && (
                         <>
-                          <button type="button" className="inbox-btn" onClick={() => openPropose(r)} disabled={busyId != null}>
-                            제시안 보내기
+                          <button type="button" className="inbox-btn" onClick={() => openCourseWriter(r)} disabled={busyId != null}>
+                            코스 작성하기
                           </button>
                           <button
                             type="button"
@@ -236,8 +303,8 @@ export function GuideInboxPage() {
                 )}
                 {r.status === 'PENDING' && (
                   <div className="inbox-card-actions">
-                    <button type="button" className="inbox-btn" onClick={() => openPropose(r)} disabled={busyId != null}>
-                      제시안 보내기
+                    <button type="button" className="inbox-btn" onClick={() => openCourseWriter(r)} disabled={busyId != null}>
+                      코스 작성하기
                     </button>
                     <button
                       type="button"
@@ -255,42 +322,13 @@ export function GuideInboxPage() {
         </>
       )}
 
-      {proposeFor != null && (
-        <div className="inbox-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="inbox-propose-title">
-          <div className="inbox-modal">
-            <h2 id="inbox-propose-title">제시안 보내기</h2>
-            <p className="inbox-hint">요청 #{proposeFor}</p>
-            <label className="inbox-modal-label" htmlFor="psched">
-              제시 일정 (필수)
-            </label>
-            <textarea
-              id="psched"
-              className="inbox-modal-text"
-              value={proposedSchedule}
-              onChange={(e) => setProposedSchedule(e.target.value)}
-              rows={4}
-              placeholder="예: 10:00 명동 집합 → 남산 코스 → 18:00 해산"
-            />
-            <label className="inbox-modal-label" htmlFor="pmsg">
-              메시지 (선택)
-            </label>
-            <textarea
-              id="pmsg"
-              className="inbox-modal-text"
-              value={proposeMessage}
-              onChange={(e) => setProposeMessage(e.target.value)}
-              rows={3}
-            />
-            <div className="inbox-modal-actions">
-              <button type="button" className="inbox-btn inbox-btn--ghost" onClick={closePropose} disabled={busyId != null}>
-                취소
-              </button>
-              <button type="button" className="inbox-btn" onClick={() => void submitPropose()} disabled={busyId != null}>
-                {busyId === proposeFor ? '전송 중…' : '전송'}
-              </button>
-            </div>
-          </div>
-        </div>
+      {courseTarget && guideId != null && (
+        <GuideCoursePanel
+          guideId={guideId}
+          schedule={courseTarget}
+          onClose={() => setCourseTarget(null)}
+          onSaved={(savedForm) => void submitProposalFromForm(courseTarget.requestId, savedForm)}
+        />
       )}
     </div>
   )

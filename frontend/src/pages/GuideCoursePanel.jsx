@@ -81,7 +81,7 @@ export function parseCourseDetail(text) {
  *   guideId: number,
  *   schedule: { scheduleId: number, availableDate: string, startTime: string, endTime: string, destination?: string },
  *   onClose: () => void,
- *   onSaved: () => void,
+ *   onSaved: (savedForm?: { meetingPoint?: string, guideMessage?: string, courseDetail?: string, isPaid?: boolean }) => void,
  * }} props
  */
 export function GuideCoursePanel({ guideId, schedule, onClose, onSaved }) {
@@ -283,25 +283,60 @@ export function GuideCoursePanel({ guideId, schedule, onClose, onSaved }) {
     setSaveMsg('')
     setError('')
     try {
-      const res = await apiRequest(
+      const payload = {
+        meetingPoint: meetingPoint.trim(),
+        guideMessage: guideMessage.trim(),
+        courseDetail: serializeCourse(spots),
+      }
+      let res = await apiRequest(
         `/guides/${guideId}/schedules/${schedule.scheduleId}/form`,
         {
           method: 'PUT',
-          json: {
-            meetingPoint: meetingPoint.trim(),
-            guideMessage: guideMessage.trim(),
-            courseDetail: serializeCourse(spots),
-          },
+          json: payload,
         },
       )
-      const text = await res.text()
+      let text = await res.text()
+      if (!res.ok && res.status === 409) {
+        const acceptRes = await apiRequest(
+          `/guides/${guideId}/schedules/${schedule.scheduleId}/accept`,
+          { method: 'POST' },
+        )
+        const acceptText = await acceptRes.text()
+        if (!acceptRes.ok && acceptRes.status !== 409) {
+          const aj = (() => { try { return JSON.parse(acceptText) } catch { return null } })()
+          throw new Error(aj?.message ?? acceptText ?? '코스 저장 준비 실패')
+        }
+        res = await apiRequest(
+          `/guides/${guideId}/schedules/${schedule.scheduleId}/form`,
+          {
+            method: 'PUT',
+            json: payload,
+          },
+        )
+        text = await res.text()
+      }
       if (!res.ok) {
         const j = (() => { try { return JSON.parse(text) } catch { return null } })()
         throw new Error(j?.message ?? text ?? '저장 실패')
       }
+      const savedForm = (() => {
+        if (!text) return null
+        try {
+          return JSON.parse(text)
+        } catch {
+          return null
+        }
+      })()
+      const mergedSavedForm = {
+        ...(savedForm ?? {}),
+        // 결제 전에는 응답 courseDetail이 null로 마스킹되므로, 저장 직전 원본 값을 콜백으로 전달한다.
+        courseDetail: payload.courseDetail,
+        meetingPoint: savedForm?.meetingPoint ?? payload.meetingPoint,
+        guideMessage: savedForm?.guideMessage ?? payload.guideMessage,
+      }
       setSaveMsg('저장되었습니다!')
       setTimeout(() => setSaveMsg(''), 2500)
-      onSaved()
+      onSaved(mergedSavedForm)
     } catch (e) {
       setError(e instanceof Error ? e.message : '저장 실패')
     } finally {
