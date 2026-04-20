@@ -26,7 +26,7 @@ public class S3FileStorageAdapter implements FileStoragePort {
 
     private final S3Client s3Client;
 
-    @Value("${cloud.aws.s3.bucket}")
+    @Value("${cloud.aws.s3.bucket:}")
     private String bucket;
 
     @Value("${cloud.aws.s3.public-url:https://%s.s3.amazonaws.com}")
