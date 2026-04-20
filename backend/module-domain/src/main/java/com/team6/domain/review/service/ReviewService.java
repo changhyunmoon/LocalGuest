@@ -124,7 +124,8 @@ public class ReviewService {
         // "ROLE_" 접두사 제거 후 Enum 변환
         Role role = Role.valueOf(roleString.replace("ROLE_", ""));
 
-        return memberRepository.findByEmailAndRole(email, role)
+        return memberRepository.findByEmail(email)
+                .filter(m -> m.hasRole(role))
                 .orElseThrow(() -> new EntityNotFoundException("사용자를 찾을 수 없습니다."));
     }
 }

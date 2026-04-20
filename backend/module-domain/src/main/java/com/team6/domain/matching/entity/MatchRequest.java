@@ -35,11 +35,11 @@ public class MatchRequest extends BaseTimeEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // TODO: Member 엔티티 완성 후 @ManyToOne으로 교체
+    /** 게스트 쪽 식별자 — 항상 {@code member.id} (이메일당 단일 Member, roles에 GUEST 포함 가능). */
     @Column(name = "guest_id", nullable = false)
     private Long guestId;
 
-    // TODO: GuideProfile 엔티티 완성 후 @ManyToOne으로 교체
+    /** 가이드 쪽 식별자 — {@code guide_profiles.id} (FK는 member_id를 갖지만 매칭 행에는 프로필 PK 저장). */
     @Column(name = "guide_id", nullable = false)
     private Long guideId;
 

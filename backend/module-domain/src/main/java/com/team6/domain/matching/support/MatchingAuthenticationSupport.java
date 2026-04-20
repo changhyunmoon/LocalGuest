@@ -14,8 +14,10 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
 /**
- * 매칭 API용 인증: JWT의 ROLE 과 DB의 (email, role) 행을 함께 맞춘다.
- * 동일 이메일로 GUEST/GUIDE 계정이 분리된 경우 {@link MemberRepository#findByEmail(String)} 만으로는 잘못된 행이 선택될 수 있다.
+ * 매칭 API용 인증: JWT의 ROLE 과 DB {@code member.roles} 를 맞춘다.
+ * <p>한 계정(email)당 Member 한 행 — Guest/Guide 역할 동시 보유 가능.
+ * API별로 쓰는 식별자: 게스트 흐름은 {@code member.id}, 가이드 흐름은 가이드 작업 기준으로 {@code guide_profiles.id}
+ * ({@code MatchRequest#guideId}와 동일)를 사용한다.</p>
  */
 @Component
 @RequiredArgsConstructor
@@ -57,7 +59,8 @@ public class MatchingAuthenticationSupport {
         if (resolveTokenRole() != Role.GUEST) {
             throw new MatchingException(MatchingErrorCode.MATCH_REQUEST_UNAUTHORIZED);
         }
-        return memberRepository.findByEmailAndRole(email, Role.GUEST)
+        return memberRepository.findByEmail(email)
+                .filter(m -> m.hasRole(Role.GUEST))
                 .map(Member::getId)
                 .orElseThrow(() -> new MatchingException(MatchingErrorCode.MATCH_REQUEST_UNAUTHORIZED));
     }
@@ -67,7 +70,8 @@ public class MatchingAuthenticationSupport {
         if (resolveTokenRole() != Role.GUIDE) {
             throw new MatchingException(MatchingErrorCode.MATCH_REQUEST_UNAUTHORIZED);
         }
-        Long memberId = memberRepository.findByEmailAndRole(email, Role.GUIDE)
+        Long memberId = memberRepository.findByEmail(email)
+                .filter(m -> m.hasRole(Role.GUIDE))
                 .map(Member::getId)
                 .orElseThrow(() -> new MatchingException(MatchingErrorCode.MATCH_REQUEST_UNAUTHORIZED));
         return guideProfileRepository.findByMemberId(memberId)
@@ -82,12 +86,14 @@ public class MatchingAuthenticationSupport {
         String email = SecurityUtil.getCurrentUserEmail();
         Role role = resolveTokenRole();
         if (role == Role.GUEST) {
-            return memberRepository.findByEmailAndRole(email, Role.GUEST)
+            return memberRepository.findByEmail(email)
+                    .filter(m -> m.hasRole(Role.GUEST))
                     .map(Member::getId)
                     .orElseThrow(() -> new MatchingException(MatchingErrorCode.MATCH_REQUEST_UNAUTHORIZED));
         }
         if (role == Role.GUIDE) {
-            Long memberId = memberRepository.findByEmailAndRole(email, Role.GUIDE)
+            Long memberId = memberRepository.findByEmail(email)
+                    .filter(m -> m.hasRole(Role.GUIDE))
                     .map(Member::getId)
                     .orElseThrow(() -> new MatchingException(MatchingErrorCode.MATCH_REQUEST_UNAUTHORIZED));
             return guideProfileRepository.findByMemberId(memberId)

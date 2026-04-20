@@ -21,7 +21,8 @@ public class GuideAuthenticationSupport {
     public Long getCurrentMemberId() {
         String email = SecurityUtil.getCurrentUserEmail();
         Role role = resolveTokenRole();
-        return memberRepository.findByEmailAndRole(email, role)
+        return memberRepository.findByEmail(email)
+                .filter(m -> m.hasRole(role))
                 .map(Member::getId)
                 .orElseThrow(() -> new GuideException(GuideErrorCode.MEMBER_NOT_FOUND));
     }
@@ -31,7 +32,8 @@ public class GuideAuthenticationSupport {
         if (resolveTokenRole() != Role.GUIDE) {
             throw new GuideException(GuideErrorCode.GUIDE_UNAUTHORIZED);
         }
-        return memberRepository.findByEmailAndRole(email, Role.GUIDE)
+        return memberRepository.findByEmail(email)
+                .filter(m -> m.hasRole(Role.GUIDE))
                 .map(Member::getId)
                 .orElseThrow(() -> new GuideException(GuideErrorCode.GUIDE_UNAUTHORIZED));
     }
