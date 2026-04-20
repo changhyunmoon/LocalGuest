@@ -240,11 +240,6 @@ export async function fetchNicknameAvailable(nickname) {
     return false
   }
 }
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-
->>>>>>> 3f6707156f1ccb2f3c5a1482a44f2401b82d0f2f
 
 /**
  * Google OAuth2 로그인 시작.
@@ -263,10 +258,3 @@ export function beginGoogleOAuth(role = 'GUEST', returnTo = '/mypage') {
   }
   window.location.href = joinApiUrl('/oauth2/authorization/google')
 }
-<<<<<<< HEAD
-=======
->>>>>>> 36b3e0c980354db3f4293ec772e1767c6ef7ed7a
-=======
-
-
->>>>>>> 3f6707156f1ccb2f3c5a1482a44f2401b82d0f2f

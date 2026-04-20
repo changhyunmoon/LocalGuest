@@ -15,6 +15,7 @@ public interface MemberRepository extends JpaRepository <Member, Long>{
     // Role별 중복 가입을 위해 이메일 + Role 조합으로 찾기
     Optional<Member> findByEmailAndRole(String email, Role role);
     boolean existsByEmailAndRole(String email, Role role);
+    Optional <Member> findByNicknameAndStatus(String nickname, Status status);
 
     //닉네임 중복 체크용
     boolean existsByNicknameAndStatus(String nickname, Status status);
