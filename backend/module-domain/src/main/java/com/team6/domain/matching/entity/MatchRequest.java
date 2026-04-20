@@ -158,10 +158,12 @@ public class MatchRequest extends BaseTimeEntity {
     }
 
     /**
-     * 결제 완료 시 매칭 요청을 PAID로 전이한다. 이미 PAID 이후이면 변경하지 않는다(연장 결제 등).
+     * 결제 완료 시 매칭 요청을 PAID로 전이한다.
+     * 제시안 이전(PENDING) 결제 플로우도 허용하므로 PENDING/ACCEPTED 모두 PAID로 전이한다.
+     * 이미 PAID 이후이면 변경하지 않는다(연장 결제 등).
      */
-    public void markAsPaidIfAccepted() {
-        if (this.status == MatchRequestStatus.ACCEPTED) {
+    public void markAsPaidIfAcceptedOrPending() {
+        if (this.status == MatchRequestStatus.ACCEPTED || this.status == MatchRequestStatus.PENDING) {
             this.status = MatchRequestStatus.PAID;
             log.info("[Payment] 매칭 요청 결제 반영 — status=PAID, requestId={}", this.id);
         }

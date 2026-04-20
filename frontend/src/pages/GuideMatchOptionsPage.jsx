@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 
 import { PageError, PageLoading } from '../components/PageStates.jsx'
@@ -9,25 +9,41 @@ import './GuideMatchOptionsPage.css'
 
 const PRICE_CHAT = 10000
 const PRICE_ACCOMPANY = 50000
+const KAKAO_APP_KEY = import.meta.env.VITE_KAKAO_MAP_APP_KEY
 
-function findLatestProposal(list, guideId) {
-  const gid = Number(guideId)
-  if (!Array.isArray(list)) return null
-  const rows = list.filter(
-    (r) =>
-      Number(r.guideId) === gid &&
-      r.status === 'ACCEPTED' &&
-      (String(r.proposedSchedule ?? '').trim() || String(r.proposeMessage ?? '').trim()),
-  )
-  rows.sort((a, b) => {
-    const ta = a.createdAt ? new Date(a.createdAt).getTime() : 0
-    const tb = b.createdAt ? new Date(b.createdAt).getTime() : 0
-    return tb - ta
+function loadKakaoSdk(appKey) {
+  if (!appKey) return Promise.reject(new Error('카카오맵 앱 키가 없습니다.'))
+  if (window.kakao?.maps?.services) return Promise.resolve(window.kakao)
+  return new Promise((resolve, reject) => {
+    const existing = document.getElementById('kakao-map-sdk')
+    if (existing) {
+      existing.addEventListener('load', () => window.kakao.maps.load(() => resolve(window.kakao)))
+      existing.addEventListener('error', () => reject(new Error('카카오맵 SDK 로드 실패')))
+      return
+    }
+    const script = document.createElement('script')
+    script.id = 'kakao-map-sdk'
+    script.async = true
+    script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${appKey}&autoload=false&libraries=services`
+    script.onload = () => window.kakao.maps.load(() => resolve(window.kakao))
+    script.onerror = () => reject(new Error('카카오맵 SDK 로드 실패'))
+    document.head.appendChild(script)
   })
-  return rows[0] ?? null
 }
 
-/** 제안문이 없어도, 이 가이드에 대한 최신 매칭 요청 id (결제·후기 UI 연결용) */
+function geocodeAddress(kakao, query) {
+  return new Promise((resolve) => {
+    const geocoder = new kakao.maps.services.Geocoder()
+    geocoder.addressSearch(query, (result, status) => {
+      if (status !== kakao.maps.services.Status.OK || !result?.length) {
+        resolve(null)
+        return
+      }
+      resolve({ lat: Number(result[0].y), lng: Number(result[0].x) })
+    })
+  })
+}
+
 function findLatestRequestForGuide(list, guideId) {
   const gid = Number(guideId)
   if (!Array.isArray(list)) return null
@@ -44,6 +60,23 @@ function formatKrw(n) {
   return `₩ ${Number(n).toLocaleString('ko-KR')}`
 }
 
+function parsePreviewSpots(proposedSchedule) {
+  const raw = String(proposedSchedule ?? '').trim()
+  if (!raw) return []
+  const normalized = raw.replace(/\s*->\s*/g, '\n')
+  const rows = normalized
+    .split(/\r?\n|,/)
+    .map((v) => v.trim())
+    .filter(Boolean)
+  return rows
+}
+
+function hasProposalContent(row) {
+  if (!row) return false
+  if (String(row.status ?? '').toUpperCase() !== 'ACCEPTED') return false
+  return !!(String(row.proposedSchedule ?? '').trim() || String(row.proposeMessage ?? '').trim())
+}
+
 export function GuideMatchOptionsPage() {
   const { guideId } = useParams()
   const location = useLocation()
@@ -54,19 +87,27 @@ export function GuideMatchOptionsPage() {
   const [error, setError] = useState('')
   const [profile, setProfile] = useState(null)
   const [requestId, setRequestId] = useState(stateRequestId != null ? Number(stateRequestId) : null)
+  const [activeRequest, setActiveRequest] = useState(null)
   const [paymentType, setPaymentType] = useState(/** @type {'CHAT' | 'ACCOMPANY'} */ ('CHAT'))
   const [reviews, setReviews] = useState([])
-  const [reviewText, setReviewText] = useState('')
   const [paying, setPaying] = useState(false)
-  const [reviewSubmitting, setReviewSubmitting] = useState(false)
   const [payErr, setPayErr] = useState('')
-  const [reviewErr, setReviewErr] = useState('')
+  const [payFocus, setPayFocus] = useState(false)
+  const [proposalArrivedNotice, setProposalArrivedNotice] = useState(false)
+  const [checkingProposal, setCheckingProposal] = useState(false)
+  const matchingOptionsRef = useRef(null)
+  const previewMapRef = useRef(null)
+  const hasProposalRef = useRef(false)
+  const initializedProposalRef = useRef(false)
 
   const amount = paymentType === 'CHAT' ? PRICE_CHAT : PRICE_ACCOMPANY
 
-  const load = useCallback(async () => {
-    setLoading(true)
-    setError('')
+  const load = useCallback(async (options = {}) => {
+    const silent = Boolean(options?.silent)
+    if (!silent) {
+      setLoading(true)
+      setError('')
+    }
     try {
       const res = await apiRequest(`/guides/${guideId}/detail`, { method: 'GET', skipAuth: true })
       const text = await res.text()
@@ -80,16 +121,22 @@ export function GuideMatchOptionsPage() {
 
       let rid = stateRequestId != null ? Number(stateRequestId) : null
       if (rid == null || Number.isNaN(rid)) {
-        const proposed = findLatestProposal(safeList, guideId)
-        rid = proposed?.requestId != null ? Number(proposed.requestId) : null
-        if (rid == null) {
-          const anyReq = findLatestRequestForGuide(safeList, guideId)
-          rid = anyReq?.requestId != null ? Number(anyReq.requestId) : null
-        }
+        const latest = findLatestRequestForGuide(safeList, guideId)
+        rid = latest?.requestId != null ? Number(latest.requestId) : null
       }
 
       const activeRid = rid != null && !Number.isNaN(rid) ? rid : null
       const row = activeRid != null ? safeList.find((r) => Number(r.requestId) === Number(activeRid)) : null
+      const hasProposalNow = hasProposalContent(row)
+      if (initializedProposalRef.current) {
+        if (!hasProposalRef.current && hasProposalNow) {
+          setProposalArrivedNotice(true)
+        }
+      } else {
+        initializedProposalRef.current = true
+      }
+      hasProposalRef.current = hasProposalNow
+      setActiveRequest(row ?? null)
       if (row && (row.status === 'PAID' || row.status === 'IN_PROGRESS')) {
         let payments = []
         try {
@@ -117,9 +164,13 @@ export function GuideMatchOptionsPage() {
         setReviews([])
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : '오류')
+      if (!silent) {
+        setError(e instanceof Error ? e.message : '오류')
+      }
     } finally {
-      setLoading(false)
+      if (!silent) {
+        setLoading(false)
+      }
     }
   }, [guideId, stateRequestId, navigate])
 
@@ -140,10 +191,110 @@ export function GuideMatchOptionsPage() {
     return '“관광객은 모르는, 사진 찍기 좋은 조용한 루트를 안내합니다.”'
   }, [profile])
 
+  const previewSpots = useMemo(() => {
+    return parsePreviewSpots(activeRequest?.proposedSchedule)
+  }, [activeRequest])
+
+  const previewHint = useMemo(() => {
+    return String(activeRequest?.proposeMessage ?? '').trim()
+  }, [activeRequest])
+  const courseReadyForPayment = useMemo(() => {
+    return String(activeRequest?.proposedSchedule ?? '').trim().length > 0
+  }, [activeRequest])
+  const previewFirstSpot = previewSpots[0] ?? ''
+  const previewLockedSpots = previewSpots.slice(1)
+  const hasLockedPreview = previewLockedSpots.length > 0 || !!previewHint
+
+  useEffect(() => {
+    if (!payFocus) return
+    const timer = setTimeout(() => setPayFocus(false), 1400)
+    return () => clearTimeout(timer)
+  }, [payFocus])
+
+  useEffect(() => {
+    if (!proposalArrivedNotice) return
+    const timer = setTimeout(() => setProposalArrivedNotice(false), 5000)
+    return () => clearTimeout(timer)
+  }, [proposalArrivedNotice])
+
+  useEffect(() => {
+    if (requestId == null) return
+    if (courseReadyForPayment) return
+    const timer = setInterval(() => {
+      if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return
+      void load({ silent: true })
+    }, 45000)
+    return () => clearInterval(timer)
+  }, [requestId, courseReadyForPayment, load])
+
+  useEffect(() => {
+    if (requestId == null || courseReadyForPayment) return
+    const onFocus = () => {
+      void load({ silent: true })
+    }
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        void load({ silent: true })
+      }
+    }
+    window.addEventListener('focus', onFocus)
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => {
+      window.removeEventListener('focus', onFocus)
+      document.removeEventListener('visibilitychange', onVisibility)
+    }
+  }, [requestId, courseReadyForPayment, load])
+
+  const onCheckProposalNow = async () => {
+    if (checkingProposal) return
+    setCheckingProposal(true)
+    try {
+      await load({ silent: true })
+    } finally {
+      setCheckingProposal(false)
+    }
+  }
+
+  const moveToPaymentOptions = () => {
+    matchingOptionsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    setPayFocus(true)
+  }
+
+  useEffect(() => {
+    if (!previewMapRef.current) return
+    let cancelled = false
+    ;(async () => {
+      try {
+        const kakao = await loadKakaoSdk(KAKAO_APP_KEY)
+        if (cancelled || !previewMapRef.current) return
+        const fallback = { lat: 33.4996, lng: 126.5312 }
+        const map = new kakao.maps.Map(previewMapRef.current, {
+          center: new kakao.maps.LatLng(fallback.lat, fallback.lng),
+          level: 7,
+        })
+        const query = profile?.region?.trim()
+        if (!query) return
+        const point = await geocodeAddress(kakao, query)
+        if (cancelled || !point) return
+        const center = new kakao.maps.LatLng(point.lat, point.lng)
+        map.setCenter(center)
+      } catch {
+        /* preview map fallback: keep grey background */
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [profile?.region])
+
   const onPay = async () => {
     setPayErr('')
     if (requestId == null) {
       setPayErr('매칭 요청이 없으면 결제할 수 없습니다. 가이드 제안을 받은 뒤 다시 시도해 주세요.')
+      return
+    }
+    if (!courseReadyForPayment) {
+      setPayErr('가이드가 코스를 작성한 뒤 결제를 진행할 수 있어요.')
       return
     }
     setPaying(true)
@@ -179,40 +330,6 @@ export function GuideMatchOptionsPage() {
     }
   }
 
-  const onReviewSubmit = async (e) => {
-    e.preventDefault()
-    setReviewErr('')
-    const content = reviewText.trim()
-    if (content.length < 10) {
-      setReviewErr('후기는 10자 이상 입력해 주세요.')
-      return
-    }
-    if (requestId == null) {
-      setReviewErr('리뷰는 매칭이 완료된 뒤 작성할 수 있어요.')
-      return
-    }
-    setReviewSubmitting(true)
-    try {
-      const res = await apiRequest('/reviews', {
-        method: 'POST',
-        json: {
-          guideId: Number(guideId),
-          matchRequestId: requestId,
-          rating: 5,
-          content,
-        },
-      })
-      const t = await res.text()
-      if (!res.ok) throw new Error(t || '등록에 실패했습니다.')
-      setReviewText('')
-      void load()
-    } catch (e) {
-      setReviewErr(e instanceof Error ? e.message : '오류')
-    } finally {
-      setReviewSubmitting(false)
-    }
-  }
-
   if (loading) {
     return (
       <div className="gmo">
@@ -241,6 +358,17 @@ export function GuideMatchOptionsPage() {
           아직 이 가이드와 연결된 <strong>매칭 요청</strong>이 없습니다. 코스는 미리보기만 제공되며, 결제는 제안을 받은 뒤에 가능합니다.
         </p>
       )}
+      {requestId != null && !courseReadyForPayment && (
+        <div className="gmo-watch-banner">
+          <p>가이드 제시안을 기다리는 중이에요. 이 탭으로 돌아오면 자동으로 최신 상태를 확인합니다.</p>
+          <button type="button" className="gmo-watch-btn" onClick={() => void onCheckProposalNow()} disabled={checkingProposal}>
+            {checkingProposal ? '확인 중…' : '지금 확인'}
+          </button>
+        </div>
+      )}
+      {proposalArrivedNotice && (
+        <p className="gmo-arrived-banner">제시안이 도착했어요! 아래에서 코스 일부를 확인하고 결제를 진행해 주세요.</p>
+      )}
 
       <header className="gmo-hero">
         <div
@@ -263,15 +391,22 @@ export function GuideMatchOptionsPage() {
         <section className="gmo-preview" aria-labelledby="gmo-preview-title">
           <h2 id="gmo-preview-title">추천 코스 미리보기</h2>
           <div className="gmo-map">
-            <div className="gmo-lock" aria-hidden>
-              🔒
+            <div ref={previewMapRef} className="gmo-map-canvas" />
+            <div className="gmo-map-overlay">
+              <div className="gmo-lock" aria-hidden>
+                🔒
+              </div>
+              <p className="gmo-map-title">매칭 후 상세 코스가 공개됩니다</p>
+              <p className="gmo-map-sub">결제 및 매칭을 완료하고 나만의 비밀 지도를 확인하세요.</p>
             </div>
-            <p className="gmo-map-title">매칭 후 상세 코스가 공개됩니다</p>
-            <p className="gmo-map-sub">결제 및 매칭을 완료하고 나만의 비밀 지도를 확인하세요.</p>
           </div>
         </section>
 
-        <aside className="gmo-side" aria-labelledby="gmo-side-title">
+        <aside
+          ref={matchingOptionsRef}
+          className={`gmo-side${payFocus ? ' gmo-side--focus' : ''}`}
+          aria-labelledby="gmo-side-title"
+        >
           <h2 id="gmo-side-title">가이드 매칭 옵션</h2>
 
           <label className="gmo-opt">
@@ -311,29 +446,81 @@ export function GuideMatchOptionsPage() {
             <strong>{formatKrw(amount)}</strong>
           </div>
 
-          <button type="button" className="gmo-pay" disabled={paying || requestId == null} onClick={() => void onPay()}>
-            {paying ? '처리 중…' : '결제하고 코스 열기'}
+          <button
+            type="button"
+            className="gmo-pay"
+            disabled={paying || requestId == null || !courseReadyForPayment}
+            onClick={() => void onPay()}
+          >
+            {paying ? '처리 중…' : !courseReadyForPayment ? '가이드 코스 작성 대기중' : '결제하고 코스 열기'}
           </button>
+          {!courseReadyForPayment && (
+            <p className="gmo-course-gate">가이드가 코스를 작성하면 결제 버튼이 활성화됩니다.</p>
+          )}
           {payErr && <p className="gmo-err">{payErr}</p>}
         </aside>
       </div>
 
+      {previewSpots.length > 0 && (
+        <section className="gmo-half-preview" aria-label="코스 텍스트 미리보기">
+          <p className="gmo-half-title">가이드가 작성한 코스 일부</p>
+          <ul className="gmo-spot-preview-list">
+            <li className="gmo-spot-preview-item">
+              <span className="gmo-spot-preview-num">1</span>
+              <span className="gmo-spot-preview-name">{previewFirstSpot}</span>
+            </li>
+          </ul>
+
+          {hasLockedPreview && (
+            <div className="gmo-locked-zone">
+              <div className="gmo-locked-blur" aria-hidden>
+                <ul className="gmo-spot-preview-list">
+                  {previewLockedSpots.map((spot, idx) => (
+                    <li key={`${idx + 1}-${spot.slice(0, 12)}`} className="gmo-spot-preview-item">
+                      <span className="gmo-spot-preview-num">{idx + 2}</span>
+                      <span className="gmo-spot-preview-name">{spot}</span>
+                    </li>
+                  ))}
+                </ul>
+                {previewHint && <p className="gmo-half-visible">가이드 메모: {previewHint}</p>}
+                <p className="gmo-half-foot">나머지 상세 코스는 결제 후 공개됩니다.</p>
+              </div>
+              <div className="gmo-locked-overlay">
+                <div className="gmo-pay-hint-card">
+                  <p className="gmo-pay-hint-title">아직 공개되지 않은 코스가 있어요</p>
+                  <p className="gmo-pay-hint-sub">결제하기를 누르면 위 매칭 옵션에서 바로 진행할 수 있어요.</p>
+                  <button type="button" className="gmo-pay-hint-btn" onClick={moveToPaymentOptions}>
+                    결제하기로 이동
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+          {!hasLockedPreview && (
+            <div className="gmo-pay-hint-inline">
+              <p className="gmo-half-foot">나머지 상세 코스는 결제 후 공개됩니다.</p>
+            </div>
+          )}
+          {!hasLockedPreview && (
+            <div className="gmo-pay-hint-inline">
+              <button type="button" className="gmo-pay-hint-btn" onClick={moveToPaymentOptions}>
+                결제하기로 이동
+              </button>
+            </div>
+          )}
+        </section>
+      )}
+      {previewSpots.length === 0 && (
+        <section className="gmo-course-pending" aria-live="polite">
+          <span className="gmo-course-pending-dot" aria-hidden />
+          <p className="gmo-course-pending-title">가이드가 코스를 작성 중이에요</p>
+          <p className="gmo-course-pending-sub">조금만 기다려 주세요. 작성이 완료되면 일부 코스가 여기에 먼저 공개됩니다.</p>
+        </section>
+      )}
+
       <section className="gmo-reviews" aria-labelledby="gmo-rev-title">
         <h2 id="gmo-rev-title">여행자들의 후기 ({rc})</h2>
-        {reviewErr && <p className="gmo-err">{reviewErr}</p>}
-        <form className="gmo-review-form" onSubmit={(e) => void onReviewSubmit(e)}>
-          <textarea
-            className="gmo-review-input"
-            rows={2}
-            placeholder="가이드에게 궁금한 점이나 후기를 남겨주세요…"
-            value={reviewText}
-            onChange={(e) => setReviewText(e.target.value)}
-            disabled={requestId == null}
-          />
-          <button type="submit" className="gmo-review-submit" disabled={reviewSubmitting || requestId == null}>
-            등록
-          </button>
-        </form>
+        <p className="gmo-reviews-readonly">후기는 투어가 완료된 뒤 작성할 수 있어요. 지금은 기존 후기만 확인할 수 있습니다.</p>
         <ul className="gmo-review-list">
           {reviews.length === 0 ? (
             <li className="gmo-review-item">

@@ -48,7 +48,8 @@ public class PaymentService {
 
     /**
      * 결제 요청 생성 — PENDING, Stub PG 주문번호 발급.
-     * 매칭 요청이 게스트 소유이며 ACCEPTED 일 때만 가능. (match_request_id, payment_type) 중복 불가.
+     * 매칭 요청이 게스트 소유이며 PENDING/ACCEPTED 일 때 가능.
+     * 동일 (match_request_id, payment_type) 재요청은 기존 결제를 재사용해 멱등 처리한다.
      */
     public PaymentResponseDto createPayment(Long guestId, PaymentCreateRequest request) {
         MatchRequest matchRequest = matchRequestRepository.findById(request.getMatchRequestId())
@@ -57,13 +58,34 @@ public class PaymentService {
         if (!matchRequest.getGuestId().equals(guestId)) {
             throw new MatchingException(MatchingErrorCode.MATCH_REQUEST_UNAUTHORIZED);
         }
-        if (matchRequest.getStatus() != MatchRequestStatus.ACCEPTED) {
+        if (matchRequest.getStatus() != MatchRequestStatus.PENDING
+                && matchRequest.getStatus() != MatchRequestStatus.ACCEPTED) {
             throw new MatchingException(MatchingErrorCode.MATCH_REQUEST_INVALID_STATUS);
         }
 
-        if (paymentRepository.findByMatchRequest_IdAndPaymentType(matchRequest.getId(), request.getPaymentType())
-                .isPresent()) {
-            throw new MatchingException(MatchingErrorCode.PAYMENT_DUPLICATE_TYPE);
+        Payment existing = paymentRepository
+                .findByMatchRequest_IdAndPaymentType(matchRequest.getId(), request.getPaymentType())
+                .orElse(null);
+        if (existing != null) {
+            log.info("[Payment] 기존 결제 재사용 — paymentId={}, requestId={}, guestId={}, status={}, type={}",
+                    existing.getId(), matchRequest.getId(), guestId, existing.getStatus(), request.getPaymentType());
+            if (existing.getStatus() == PaymentStatus.PENDING && isKakaoProvider()) {
+                String partnerUserId = String.valueOf(guestId);
+                String itemName = "LocalGuest " + existing.getPaymentType();
+                KakaoPayClient.ReadyResult readyResult = kakaoPayClient.ready(
+                        existing.getPgOrderNo(),
+                        partnerUserId,
+                        itemName,
+                        existing.getAmount()
+                );
+                existing.storePgTransactionId(readyResult.tid());
+                return PaymentResponseDto.from(existing, readyResult.redirectUrl());
+            }
+            if (existing.getStatus() != PaymentStatus.PENDING
+                    && existing.getStatus() != PaymentStatus.COMPLETED) {
+                throw new MatchingException(MatchingErrorCode.PAYMENT_NOT_PENDING);
+            }
+            return PaymentResponseDto.from(existing);
         }
 
         String pgOrderNo = FakePgClient.STUB_PG_ORDER_PREFIX + UUID.randomUUID();
@@ -111,7 +133,9 @@ public class PaymentService {
         }
 
         if (payment.getStatus() == PaymentStatus.COMPLETED) {
-            throw new MatchingException(MatchingErrorCode.PAYMENT_ALREADY_COMPLETED);
+            log.info("[Payment] 이미 완료된 결제 재확인 요청 수신 — paymentId={}, pgOrderNo={}",
+                    payment.getId(), payment.getPgOrderNo());
+            return PaymentResponseDto.from(payment);
         }
         if (payment.getStatus() != PaymentStatus.PENDING) {
             throw new MatchingException(MatchingErrorCode.PAYMENT_NOT_PENDING);
@@ -121,6 +145,9 @@ public class PaymentService {
         if (isKakaoProvider()) {
             if (request.getPgToken() == null || request.getPgToken().isBlank()) {
                 throw new MatchingException(MatchingErrorCode.INVALID_REQUEST);
+            }
+            if (payment.getPgTransactionId() == null || payment.getPgTransactionId().isBlank()) {
+                throw new MatchingException(MatchingErrorCode.PAYMENT_PG_VERIFICATION_FAILED);
             }
             KakaoPayClient.ApproveResult approveResult = kakaoPayClient.approve(
                     payment.getPgTransactionId(),
@@ -135,7 +162,7 @@ public class PaymentService {
         }
 
         payment.complete(pgTransactionId);
-        payment.getMatchRequest().markAsPaidIfAccepted();
+        payment.getMatchRequest().markAsPaidIfAcceptedOrPending();
         syncGuideSchedulePaidSafely(payment);
 
         log.info("[Payment] Stub PG 승인 완료 — paymentId={}, pgTransactionId={}, paidAt={}, refundDeadline={}",

@@ -411,7 +411,7 @@ export function AiQuickSearchPage() {
                                 feeds.slice(0, 6).map((f) => (
                                   <Link
                                     key={f.feedId}
-                                    to={`/guides/${g.guideId}/proposal`}
+                                    to={`/guides/${g.guideId}#match-request`}
                                     className="ais-feed-thumb"
                                     title={f.content ? String(f.content).slice(0, 80) : 'AI 추천 코스 상세보기'}
                                   >
@@ -424,7 +424,7 @@ export function AiQuickSearchPage() {
                                 ))
                               ) : (
                                 <Link
-                                  to={`/guides/${g.guideId}/proposal`}
+                                  to={`/guides/${g.guideId}#match-request`}
                                   className="ais-feed-empty"
                                   title="AI 추천 코스 상세보기"
                                 >
@@ -457,7 +457,7 @@ export function AiQuickSearchPage() {
                                 </div>
                               </div>
                               <Link
-                                to={`/guides/${g.guideId}/proposal`}
+                                to={`/guides/${g.guideId}#match-request`}
                                 className={`ais-profile-btn ${idx === 0 ? 'ais-profile-btn--primary' : ''}`}
                               >
                                 AI 추천 코스 상세보기
