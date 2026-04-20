@@ -2,3 +2,9 @@
 # local
 .DS_Store
 backend/_tmp_localguest/
+
+.idea/
+*.iml
+.name
+out/
+gen/
