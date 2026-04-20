@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 가이드 피드 서비스 (F06-03)
@@ -31,11 +32,14 @@ public class GuideFeedService {
         // 가이드 프로필 조회 및 본인 확인
         GuideProfile profile = getVerifiedProfile(guideId, userId);
 
+        // imageUrls 우선, 없으면 imageUrl 단일 값 사용
+        String imageUrl = joinImageUrls(request.getImageUrls(), request.getImageUrl());
+
         // 피드 엔티티 생성 및 저장
         GuideFeed feed = GuideFeed.builder()
                 .guideProfile(profile)
                 .content(request.getContent())
-                .imageUrl(request.getImageUrl())
+                .imageUrl(imageUrl)
                 .build();
 
         return GuideFeedResponse.fullFrom(guideFeedRepository.save(feed));
@@ -50,8 +54,11 @@ public class GuideFeedService {
         // 피드 조회 및 본인 소유 확인
         GuideFeed feed = getVerifiedFeed(feedId, guideId);
 
+        // imageUrls 우선, 없으면 imageUrl 단일 값 사용
+        String imageUrl = joinImageUrls(request.getImageUrls(), request.getImageUrl());
+
         // 피드 내용 수정
-        feed.update(request.getContent(), request.getImageUrl());
+        feed.update(request.getContent(), imageUrl);
 
         return GuideFeedResponse.fullFrom(feed);
     }
@@ -92,6 +99,16 @@ public class GuideFeedService {
         }
 
         return profile;
+    }
+
+    // imageUrls 리스트 → 콤마 join. 리스트가 비어있으면 fallback으로 imageUrl 단일값 사용
+    private String joinImageUrls(List<String> imageUrls, String fallbackImageUrl) {
+        if (imageUrls != null && !imageUrls.isEmpty()) {
+            return imageUrls.stream()
+                    .filter(url -> url != null && !url.isBlank())
+                    .collect(Collectors.joining(","));
+        }
+        return fallbackImageUrl;
     }
 
     // 피드 조회 + 해당 가이드 소유 확인 공통 메서드

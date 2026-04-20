@@ -24,6 +24,7 @@ public class GuideScheduleResponse {
     private GuideScheduleStatus status;     // 스케줄 상태
     private Long matchRequestId;            // 매칭 요청 ID (예약 시 설정)
     private Boolean isPaid;                 // 결제 완료 여부
+    private Boolean hasCourse;             // 코스 작성 완료 여부
     private LocalDateTime createdAt;        // 등록일시
     private LocalDateTime updatedAt;        // 수정일시
 
@@ -38,6 +39,8 @@ public class GuideScheduleResponse {
                 .status(schedule.getStatus())
                 .matchRequestId(schedule.getMatchRequestId())
                 .isPaid(schedule.getIsPaid())
+                .hasCourse(schedule.getCourseDetail() != null
+                    && !schedule.getCourseDetail().isBlank())
                 .createdAt(schedule.getCreatedAt())
                 .updatedAt(schedule.getUpdatedAt())
                 .build();
