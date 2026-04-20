@@ -5,26 +5,11 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="84d1b3de-8103-452e-83cf-38ecd34993e7" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/.gitignore" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/LocalGuest.iml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/compiler.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/gradle.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/modules.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/modules/api-server/api-server_main.iml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/modules/api-server/backend.api-server.main.iml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/modules/module-ai-integration/backend.module-ai-integration.main.iml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/modules/module-ai-integration/module-ai-integration_main.iml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/modules/module-ai/backend.module-ai.main.iml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/modules/module-ai/module-ai_main.iml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/modules/module-auth/backend.module-auth.main.iml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/modules/module-chat/backend.module-chat.main.iml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/modules/module-chat/module-chat_main.iml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/modules/module-common/backend.module-common.main.iml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/modules/module-common/module-common_main.iml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/modules/module-domain/backend.module-domain.main.iml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/modules/module-domain/module-domain_main.iml" beforeDir="false" />
+      <change afterPath="$PROJECT_DIR$/.github/workflows/stress_test_cicd.yml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/module-common/src/main/java/com/team6/module/common/global/stressTest/StressTestController.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/stress-test/scripts/test1.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/api-server/src/main/resources/application.yml" beforeDir="false" afterPath="$PROJECT_DIR$/backend/api-server/src/main/resources/application.yml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -53,41 +38,69 @@
       </state>
     </system>
   </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Class" />
+        <option value="GitHub Workflow" />
+      </list>
+    </option>
+  </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
+  <component name="GithubPullRequestsUISettings"><![CDATA[{
+  "selectedUrlAndAccountId": {
+    "url": "https://github.com/changhyunmoon/LocalGuest.git",
+    "accountId": "ab2dd1a0-5e0b-4833-8ecb-19fd2fed9f7e"
+  }
+}]]></component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 6
 }</component>
   <component name="ProjectId" id="3CUUfaDPnzSfpshZ55xkgJA2fum" />
+  <component name="ProjectLevelVcsManager">
+    <ConfirmationsSetting value="2" id="Add" />
+  </component>
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;Gradle.Build backend.executor&quot;: &quot;Run&quot;,
-    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
-    &quot;RequestMappingsPanelOrder0&quot;: &quot;0&quot;,
-    &quot;RequestMappingsPanelOrder1&quot;: &quot;1&quot;,
-    &quot;RequestMappingsPanelWidth0&quot;: &quot;75&quot;,
-    &quot;RequestMappingsPanelWidth1&quot;: &quot;75&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
-    &quot;Spring Boot.ApiServerApplication.executor&quot;: &quot;Run&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;Feat/be#305&quot;,
-    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;C:/Team6LocalGuest_4&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "Gradle.Build backend.executor": "Run",
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RequestMappingsPanelOrder0": "0",
+    "RequestMappingsPanelOrder1": "1",
+    "RequestMappingsPanelWidth0": "75",
+    "RequestMappingsPanelWidth1": "75",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
+    "Spring Boot.ApiServerApplication.executor": "Run",
+    "git-widget-placeholder": "Feat/be#320",
+    "kotlin-language-version-configured": "true",
+    "last_opened_file_path": "C:/mch/programmers/LocalGuest",
+    "node.js.detected.package.eslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "vue.rearranger.settings.migration": "true"
   }
-}</component>
+}]]></component>
   <component name="RunManager">
+    <configuration default="true" type="JetRunConfigurationType">
+      <module name="backend.module-ai.main" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration default="true" type="KotlinStandaloneScriptRunConfigurationType">
+      <module name="backend.module-ai.main" />
+      <option name="filePath" />
+      <method v="2" />
+    </configuration>
     <configuration name="ApiServerApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" nameIsGenerated="true">
       <module name="backend.api-server.main" />
       <option name="SPRING_BOOT_MAIN_CLASS" value="com.team6.apiserver.ApiServerApplication" />
