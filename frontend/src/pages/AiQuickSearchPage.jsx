@@ -208,15 +208,20 @@ export function AiQuickSearchPage() {
       setFallbackGuides(restoredFallback)
       setExpandedGuides(Boolean(snap.expandedGuides))
       setHasSearched(Boolean(snap.hasSearched))
-      setPanelOpen(Boolean(snap.panelOpen))
-      // narrative는 result 기반으로 다시 생성해 타이핑 효과를 복원한다.
+      // 뒤로가기 복원에서는 로딩/타이핑 없이 즉시 결과를 보여준다.
+      setPanelOpen(false)
       const narrative = buildNarrative(restoredResult)
-      startTypewriter(narrative)
+      setStreamText(narrative)
+      setShowGuides(true)
+      setShowSpots(true)
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => setPanelOpen(true))
+      })
       sessionStorage.removeItem(LS_AI_SEARCH_SNAPSHOT)
     } catch {
       /* ignore */
     }
-  }, [startTypewriter])
+  }, [])
 
   const persistSnapshotForBack = useCallback(() => {
     try {
