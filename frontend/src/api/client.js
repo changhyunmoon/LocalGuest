@@ -99,7 +99,7 @@ export async function apiRequest(path, options = {}) {
   const normalizedPath = path.startsWith('/') ? path : `/${path}`
   if (res.ok && method === 'POST' && normalizedPath === '/guides') {
     try {
-      sessionStorage.setItem('localguest_login_return_override', '/guide/mypage/profile')
+      sessionStorage.setItem('localguest_login_return_override', '/guide/mypage/fees')
     } catch {
       /* ignore */
     }

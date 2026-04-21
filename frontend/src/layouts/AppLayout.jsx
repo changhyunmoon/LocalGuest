@@ -26,7 +26,6 @@ function AppLayoutInner() {
   const { isAuthenticated, email, isGuide, logout } = useAuth()
   const { pendingCount } = useGuidePendingRequests()
   const guideMypageActive = isGuide && pathname.startsWith('/guide/mypage')
-  const guestItineraryActive = !isGuide && (pathname.startsWith('/mypage/itinerary') || pathname.startsWith('/upcoming-trips'))
   const matchComplete = isGuidesMatchCompletePath(pathname)
   const baseTitleRef = useRef(typeof document !== 'undefined' ? document.title : 'LocalGuest')
 
@@ -72,11 +71,9 @@ function AppLayoutInner() {
             메시지
           </NavLink>
           <NavLink
-            to={isGuide ? '/guide/mypage/profile' : '/mypage'}
+            to={isGuide ? '/guide/mypage/fees' : '/mypage'}
             className={({ isActive }) => {
-              const on = isGuide
-                ? guideMypageActive || matchComplete
-                : (isActive || matchComplete) && !guestItineraryActive
+              const on = isGuide ? guideMypageActive || matchComplete : isActive || matchComplete
               const parts = ['shell-pill-link', 'shell-pill-link--cta']
               if (on) {
                 parts.push('is-on')
@@ -86,11 +83,6 @@ function AppLayoutInner() {
           >
             {isGuide ? '가이드 마이페이지' : '마이페이지'}
           </NavLink>
-          {!isGuide && (
-            <NavLink to="/upcoming-trips" className={pillClass('shell-pill-link--cta')}>
-              앞으로의 여행 일정
-            </NavLink>
-          )}
           {isGuide && (
             <NavLink
               to="/guide/inbox"

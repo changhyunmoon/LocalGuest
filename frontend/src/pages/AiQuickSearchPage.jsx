@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 
 import { apiRequest } from '../api/client'
 
@@ -12,7 +12,6 @@ const PLACEHOLDER =
   '- 이동은 렌트카, 오전 10시~저녁 9시 선호\n' +
   '- 한국어 가능 가이드면 좋아요'
 const LS_AI_SEARCH_SNAPSHOT = 'localguest_ai_search_snapshot_v1'
-const LS_AI_MATCH_DRAFT = 'localguest_ai_match_draft_v1'
 const AI_GUIDE_DEFAULT_SHOW = 3
 const AI_GUIDE_EXPANDED_SHOW = 5
 
@@ -128,7 +127,8 @@ function pickFallbackGuides(promptText, keywords, allGuides) {
 }
 
 export function AiQuickSearchPage() {
-  const [prompt, setPrompt] = useState('')
+  const location = useLocation()
+  const [prompt, setPrompt] = useState(() => String(location.state?.initialPrompt ?? ''))
   const [hasSearched, setHasSearched] = useState(false)
   const [panelOpen, setPanelOpen] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -246,34 +246,6 @@ export function AiQuickSearchPage() {
       /* ignore */
     }
   }, [expandedGuides, fallbackGuides, hasSearched, prompt, result])
-
-  const persistMatchDraftForGuide = useCallback(
-    (guideId) => {
-      try {
-        const draft = result?.matchRequestDraft ?? null
-        if (!draft || !guideId) return
-        sessionStorage.setItem(
-          LS_AI_MATCH_DRAFT,
-          JSON.stringify({
-            guideId: String(guideId),
-            savedAt: Date.now(),
-            matchRequestDraft: draft,
-          }),
-        )
-      } catch {
-        /* ignore */
-      }
-    },
-    [result],
-  )
-
-  const onClickGuideDetail = useCallback(
-    (guideId) => {
-      persistMatchDraftForGuide(guideId)
-      persistSnapshotForBack()
-    },
-    [persistMatchDraftForGuide, persistSnapshotForBack],
-  )
 
   useEffect(() => {
     const recs = result?.recommendations
@@ -508,7 +480,7 @@ export function AiQuickSearchPage() {
                                     to={`/guides/${g.guideId}#match-request`}
                                     className="ais-feed-thumb"
                                     title={f.content ? String(f.content).slice(0, 80) : '가이드 상세보기'}
-                                    onClick={() => onClickGuideDetail(g.guideId)}
+                                    onClick={persistSnapshotForBack}
                                   >
                                     <span
                                       className="ais-feed-thumb-img"
@@ -522,7 +494,7 @@ export function AiQuickSearchPage() {
                                   to={`/guides/${g.guideId}#match-request`}
                                   className="ais-feed-empty"
                                   title="가이드 상세보기"
-                                  onClick={() => onClickGuideDetail(g.guideId)}
+                                  onClick={persistSnapshotForBack}
                                 >
                                   <span
                                     className="ais-feed-thumb-img"
@@ -555,7 +527,7 @@ export function AiQuickSearchPage() {
                               <Link
                                 to={`/guides/${g.guideId}#match-request`}
                                 className="ais-profile-btn ais-profile-btn--primary"
-                                onClick={() => onClickGuideDetail(g.guideId)}
+                                onClick={persistSnapshotForBack}
                               >
                                 가이드 상세보기
                               </Link>

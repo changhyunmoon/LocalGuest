@@ -619,21 +619,21 @@
 }
 
 .signup-complete-btn--ghost {
-  background: #f3f4f6;
-  color: #374151;
-  border: 1px solid #e5e7eb;
+  background: transparent;
+  color: #1f2328;
+  border: 1.5px solid #1f2328;
 }
 
 .signup-complete-btn--ghost:hover {
-  background: #e5e7eb;
+  background: #f3f4f6;
 }
 
 .signup-complete-btn--dark {
-  background: #1f2328;
+  background: #1a1a2e;
   color: #fff;
-  border: 1px solid #1f2328;
+  border: 1px solid #1a1a2e;
 }
 
 .signup-complete-btn--dark:hover {
-  background: #111418;
+  background: #121220;
 }

@@ -61,22 +61,6 @@ public class MatchRequest extends BaseTimeEntity {
     @Column(name = "desired_budget")
     private Integer desiredBudget;      // 희망 예산(원)
 
-    /**
-     * 희망 예산 범위(원). 가이드가 “N~M원” 형태로 더 디테일하게 계획을 잡을 수 있도록 보존한다.
-     *
-     * DDL 적용 방법: Flyway/Liquibase 마이그레이션 또는 DBA가 직접 아래 DDL 실행
-     * <pre>
-     * ALTER TABLE match_request
-     *   ADD COLUMN budget_min_won INT NULL AFTER desired_budget,
-     *   ADD COLUMN budget_max_won INT NULL AFTER budget_min_won;
-     * </pre>
-     */
-    @Column(name = "budget_min_won")
-    private Integer budgetMinWon;
-
-    @Column(name = "budget_max_won")
-    private Integer budgetMaxWon;
-
     @Column(name = "proposed_schedule", columnDefinition = "TEXT")
     private String proposedSchedule;    // 가이드 제시 일정(간략)
 
@@ -109,9 +93,7 @@ public class MatchRequest extends BaseTimeEntity {
             String concept,
             String conceptSummary,
             LocalDate desiredDate,
-            Integer desiredBudget,
-            Integer budgetMinWon,
-            Integer budgetMaxWon
+            Integer desiredBudget
     ) {
         return MatchRequest.builder()
                 .guestId(guestId)
@@ -122,8 +104,6 @@ public class MatchRequest extends BaseTimeEntity {
                 .conceptSummary(conceptSummary)
                 .desiredDate(desiredDate)
                 .desiredBudget(desiredBudget)
-                .budgetMinWon(budgetMinWon)
-                .budgetMaxWon(budgetMaxWon)
                 .build();
     }
 
