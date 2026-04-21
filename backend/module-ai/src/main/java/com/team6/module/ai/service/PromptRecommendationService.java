@@ -367,10 +367,20 @@ public class PromptRecommendationService {
     private static GuideRecommendResponse.MatchRequestDraft matchRequestDraftFrom(GuideRecommendRequest request) {
         // AI 추천 응답을 바로 매칭 요청 생성 화면으로 연결하기 위한 초안 데이터다.
         // matching 모듈을 직접 호출하는 건 아니고, 프론트가 이 draft를 읽어 요청 폼 기본값으로 쓴다.
+        Integer desiredBudget = null;
+        Integer min = request.getBudgetMinWon();
+        Integer max = request.getBudgetMaxWon();
+        if (min != null && max != null && min >= 0 && max >= 0) {
+            long sum = (long) min + (long) max;
+            desiredBudget = (int) Math.round(sum / 2.0d);
+        }
         return GuideRecommendResponse.MatchRequestDraft.builder()
                 .destination(request.getRegion())
                 .concept(ConceptSummaryGenerator.generateMatchRequestConcept(request))
                 .conceptSummary(ConceptSummaryGenerator.generate(request))
+                .desiredBudget(desiredBudget)
+                .budgetMinWon(min)
+                .budgetMaxWon(max)
                 .budgetHint(request.getBudgetLevel())
                 .headcount(request.getHeadcount())
                 .durationDays(request.getDurationDays())

@@ -53,7 +53,9 @@ public class MatchRequestService {
                 request.getConcept(),
                 conceptSummary,
                 request.getDesiredDate(),
-                request.getDesiredBudget()
+                request.getDesiredBudget(),
+                request.getBudgetMinWon(),
+                request.getBudgetMaxWon()
         );
 
         MatchRequest saved = matchRequestRepository.save(matchRequest);
