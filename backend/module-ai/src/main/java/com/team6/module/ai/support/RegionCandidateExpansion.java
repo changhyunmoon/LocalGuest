@@ -89,6 +89,17 @@ public final class RegionCandidateExpansion {
         if (left == null || right == null) {
             return false;
         }
-        return left.trim().equalsIgnoreCase(right.trim());
+        String l = left.trim().toLowerCase();
+        String r = right.trim().toLowerCase();
+        if (l.isEmpty() || r.isEmpty()) {
+            return false;
+        }
+        if (l.equals(r)) {
+            return true;
+        }
+        // 상세 표기(예: "제주특별자치도 제주시")와 canonical(예: "제주")를 같은 지역으로 취급한다.
+        // - DB/폼 입력값이 상이해도, 프롬프트 파서의 canonical 지역과 매칭 후보 풀이 과도하게 축소되지 않도록 완화한다.
+        // - 단순 부분 포함이므로, 지역명이 겹치는 케이스는 추후 alias/정규화로 확장 가능하다.
+        return l.contains(r) || r.contains(l);
     }
 }
