@@ -166,7 +166,7 @@ export function HomePage() {
                     <div className="f02-expert-top">
                       <div className="f02-expert-avatar" style={g.profileImage ? { backgroundImage: `url(${g.profileImage})` } : undefined} />
                       <div className="f02-expert-meta">
-                        <p className="f02-expert-rating">⭐ {rating}</p>
+                        <p className="f02-expert-rating">🌟 {rating}</p>
                         <strong className="f02-expert-name">{g.nickname ?? '가이드'}</strong>
                         <span className="f02-expert-region">{g.region ?? '지역 미등록'}</span>
                       </div>

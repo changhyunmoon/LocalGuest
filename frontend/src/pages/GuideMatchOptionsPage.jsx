@@ -217,7 +217,6 @@ export function GuideMatchOptionsPage() {
       ? Number(profile.averageRating).toFixed(1)
       : '—'
   const rc = profile?.reviewCount != null ? profile.reviewCount : 0
-  const likes = useMemo(() => Math.max(Math.round(rc * 2.8) + 40, 12), [rc])
 
   const quote = useMemo(() => {
     const b = profile?.bio?.trim()
@@ -494,13 +493,10 @@ export function GuideMatchOptionsPage() {
         <div className="gmo-hero-body">
           <h1 className="gmo-hero-name">{profile.nickname ?? '가이드'}</h1>
           <p className="gmo-hero-meta">
-            📍 {profile.region ?? ''} · ⭐ {rating} ({rc} 리뷰)
+            {profile.region ?? ''} · 평점 {rating} ({rc} 리뷰)
           </p>
           <p className="gmo-hero-quote">{quote}</p>
           <p className="gmo-hero-hint">클릭하면 소개·피드·후기를 볼 수 있어요</p>
-        </div>
-        <div className="gmo-likes" aria-hidden>
-          <span>♡</span> {likes}
         </div>
       </header>
 
@@ -544,7 +540,7 @@ export function GuideMatchOptionsPage() {
             <div ref={previewMapRef} className="gmo-map-canvas" />
             <div className="gmo-map-overlay">
               <div className="gmo-lock" aria-hidden>
-                🔒
+                <span className="gmo-lock-glyph" />
               </div>
               <p className="gmo-map-title">매칭 후 상세 코스가 공개됩니다</p>
               <p className="gmo-map-sub">결제 및 매칭을 완료하고 나만의 비밀 지도를 확인하세요.</p>
@@ -634,7 +630,7 @@ export function GuideMatchOptionsPage() {
               </button>
             </div>
             <p className="gmo-profile-dialog-meta">
-              📍 {profile.region ?? ''} · ⭐ {rating} ({rc} 리뷰)
+              {profile.region ?? ''} · 평점 {rating} ({rc} 리뷰)
             </p>
             {modalTags.length > 0 && (
               <div className="gmo-profile-dialog-tags">
@@ -712,7 +708,7 @@ export function GuideMatchOptionsPage() {
                       <div className="gmo-profile-dialog-review-head">
                         <span className="gmo-profile-dialog-review-name">{r.writeNickname ?? '여행자'}</span>
                         <span className="gmo-profile-dialog-review-stars">
-                          {'⭐'.repeat(Math.min(5, Math.max(0, Number(r.rating) || 0)))}
+                          {'🌟'.repeat(Math.min(5, Math.max(0, Number(r.rating) || 0)))}
                         </span>
                       </div>
                       {r.content && String(r.content).trim() ? (

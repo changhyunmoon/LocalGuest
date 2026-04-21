@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 
 import { apiRequest } from '../api/client'
@@ -6,11 +6,11 @@ import { apiRequest } from '../api/client'
 import './AiQuickSearchPage.css'
 
 const PLACEHOLDER =
-  '예시) 제주 2박3일 · 2명(커플) / 예산 하루 10~15만원(총 30~45만원)\n' +
-  '- 맛집 투어 + 야경 좋은 곳 위주로 가고 싶어요\n' +
-  '- 걷는 코스는 적게(부모님 동행) / 술집은 빼고\n' +
-  '- 이동은 렌트카, 오전 10시~저녁 9시 선호\n' +
-  '- 한국어 가능 가이드면 좋아요'
+  '예시) 부산 2박3일 / 3명(부모님+성인) / 총예산 40~60만원\n' +
+  '- 희망 시간: 오전 10시 시작, 저녁 8시 전 종료\n' +
+  '- 하고 싶은 것: 바다뷰 카페, 로컬 맛집, 야경 산책\n' +
+  '- 제약사항: 계단 많은 코스/장거리 도보는 피하고 싶어요\n' +
+  '- 언어: 한국어 가능한 가이드 희망 (영어 가능하면 더 좋아요)'
 const LS_AI_SEARCH_SNAPSHOT = 'localguest_ai_search_snapshot_v1'
 const LS_AI_MATCH_DRAFT = 'localguest_ai_match_draft_v1'
 const AI_GUIDE_DEFAULT_SHOW = 3
@@ -52,7 +52,23 @@ function pickSpots(prompt, keywords) {
   return DEFAULT_SPOTS
 }
 
-function tagsForGuide(rec, keywords) {
+function styleTags(styleRaw) {
+  if (!styleRaw) return []
+  return [...new Set(
+    String(styleRaw)
+      .split(/[,/|]+/g)
+      .map((s) => s.trim())
+      .filter(Boolean),
+  )]
+    .slice(0, 3)
+    .map((t) => (t.startsWith('#') ? t : `#${t}`))
+}
+
+function tagsForGuide(rec, keywords, styleRaw) {
+  const fromStyle = styleTags(styleRaw)
+  if (fromStyle.length > 0) {
+    return fromStyle
+  }
   const fromMatch = rec?.matched?.tags
   if (Array.isArray(fromMatch) && fromMatch.length > 0) {
     return fromMatch.slice(0, 3).map((t) => (String(t).startsWith('#') ? String(t) : `#${t}`))
@@ -61,7 +77,7 @@ function tagsForGuide(rec, keywords) {
   if (Array.isArray(acts) && acts.length > 0) {
     return acts.slice(0, 3).map((t) => `#${t}`)
   }
-  return ['#로컬투어', '#맞춤동행', '#현지인']
+  return []
 }
 
 function normalizeFallbackGuide(g, reasonText) {
@@ -71,6 +87,7 @@ function normalizeFallbackGuide(g, reasonText) {
     representativeImageUrl: g?.profileImage ?? null,
     publicFeedThumbnailUrls: [],
     region: g?.region ?? '',
+    guideStyle: g?.guideStyle ?? '',
     averageRating: g?.averageRating ?? 0,
     reviewCount: g?.reviewCount ?? 0,
     reason:
@@ -142,7 +159,13 @@ export function AiQuickSearchPage() {
   const [expandedGuides, setExpandedGuides] = useState(false)
   /** @type {Record<string, Array<{ feedId: number, imageUrl?: string, content?: string }>>} */
   const [guideFeedsById, setGuideFeedsById] = useState({})
+  /** @type {Record<string, string>} */
+  const [guideStyleById, setGuideStyleById] = useState({})
   const typeTimerRef = useRef(null)
+  const recommendations = useMemo(() => {
+    if (!Array.isArray(result?.recommendations)) return []
+    return result.recommendations
+  }, [result?.recommendations])
 
   const openPanelSoon = useCallback(() => {
     setPanelOpen(false)
@@ -277,13 +300,43 @@ export function AiQuickSearchPage() {
   )
 
   useEffect(() => {
-    const recs = result?.recommendations
-    if (!Array.isArray(recs) || recs.length === 0) {
+    const idsSource = recommendations.length > 0 ? recommendations : fallbackGuides
+    const ids = [...new Set(idsSource.map((r) => r?.guideId).filter((id) => id != null))].map(String)
+    if (ids.length === 0) {
+      setGuideStyleById({})
+      return
+    }
+    let cancelled = false
+    ;(async () => {
+      const next = {}
+      await Promise.all(
+        ids.map(async (id) => {
+          try {
+            const res = await apiRequest(`/guides/${id}`, { method: 'GET', skipAuth: true })
+            const text = await res.text()
+            if (!res.ok) return
+            const row = text ? JSON.parse(text) : null
+            const style = String(row?.guideStyle ?? '').trim()
+            if (style) next[id] = style
+          } catch {
+            /* ignore */
+          }
+        }),
+      )
+      if (!cancelled) setGuideStyleById(next)
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [recommendations, fallbackGuides])
+
+  useEffect(() => {
+    if (recommendations.length === 0) {
       setGuideFeedsById({})
       return
     }
     const showMax = expandedGuides ? AI_GUIDE_EXPANDED_SHOW : AI_GUIDE_DEFAULT_SHOW
-    const ids = [...new Set(recs.slice(0, showMax).map((r) => r?.guideId).filter((id) => id != null))].map(String)
+    const ids = [...new Set(recommendations.slice(0, showMax).map((r) => r?.guideId).filter((id) => id != null))].map(String)
     if (ids.length === 0) return
 
     let cancelled = false
@@ -309,7 +362,7 @@ export function AiQuickSearchPage() {
     return () => {
       cancelled = true
     }
-  }, [result])
+  }, [recommendations, expandedGuides])
 
   const runSearch = async (e, options = {}) => {
     e?.preventDefault()
@@ -383,9 +436,8 @@ export function AiQuickSearchPage() {
     }
   }
 
-  const recs = result?.recommendations && Array.isArray(result.recommendations) ? result.recommendations : []
   const showMax = expandedGuides ? AI_GUIDE_EXPANDED_SHOW : AI_GUIDE_DEFAULT_SHOW
-  const topGuides = recs.length > 0 ? recs.slice(0, showMax) : fallbackGuides.slice(0, showMax)
+  const topGuides = recommendations.length > 0 ? recommendations.slice(0, showMax) : fallbackGuides.slice(0, showMax)
   const keywords = result?.keywords
   const spots = pickSpots(prompt, keywords)
   const activityHint =
@@ -403,7 +455,7 @@ export function AiQuickSearchPage() {
           <textarea
             id="ais-input"
             className="ais-input"
-            rows={hasSearched ? 2 : 1}
+            rows={5}
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
             onKeyDown={onPromptKeyDown}
@@ -494,7 +546,7 @@ export function AiQuickSearchPage() {
                           g.representativeImageUrl ||
                           (Array.isArray(g.publicFeedThumbnailUrls) && g.publicFeedThumbnailUrls[0]) ||
                           null
-                        const tags = tagsForGuide(g, keywords)
+                        const tags = tagsForGuide(g, keywords, (gid ? guideStyleById[gid] : '') || g.guideStyle)
                         return (
                           <li key={g.guideId ?? idx} className="ais-guide-card">
                             <div className="ais-rank" aria-label={`추천 순위 ${idx + 1}위`}>
@@ -541,17 +593,19 @@ export function AiQuickSearchPage() {
                               <div className="ais-guide-main">
                                 <p className="ais-guide-name">{g.guideName ?? '가이드'}</p>
                                 <p className="ais-guide-rating">
-                                  ⭐ {rating} <span className="ais-guide-rc">({rc})</span>
+                                  🌟 {rating} <span className="ais-guide-rc">({rc})</span>
                                 </p>
                                 <p className="ais-guide-region">{g.region ?? ''}</p>
                                 <p className="ais-guide-reason">{g.reason ? String(g.reason).slice(0, 120) : ''}</p>
-                                <div className="ais-guide-tags">
-                                  {tags.map((t) => (
-                                    <span key={t} className="ais-chip">
-                                      {t}
-                                    </span>
-                                  ))}
-                                </div>
+                                {tags.length > 0 && (
+                                  <div className="ais-guide-tags">
+                                    {tags.map((t) => (
+                                      <span key={t} className="ais-chip">
+                                        {t}
+                                      </span>
+                                    ))}
+                                  </div>
+                                )}
                               </div>
                               <Link
                                 to={`/guides/${g.guideId}#match-request`}
@@ -566,7 +620,7 @@ export function AiQuickSearchPage() {
                       })}
                     </ul>
                   )}
-                  {!loading && !expandedGuides && recs.length > AI_GUIDE_DEFAULT_SHOW && (
+                  {!loading && !expandedGuides && recommendations.length > AI_GUIDE_DEFAULT_SHOW && (
                     <button
                       type="button"
                       className="ais-more"

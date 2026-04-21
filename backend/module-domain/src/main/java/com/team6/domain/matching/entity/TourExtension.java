@@ -86,7 +86,8 @@ public class TourExtension extends BaseTimeEntity {
 
     // 연장 결제 완료
     public void completePayByGuestSelection() {
-        if (this.status != TourExtensionStatus.REQUESTED) {
+        if (this.status != TourExtensionStatus.REQUESTED
+                && this.status != TourExtensionStatus.GUIDE_APPROVED) {
             throw new MatchingException(MatchingErrorCode.MATCH_REQUEST_INVALID_STATUS);
         }
         this.status = TourExtensionStatus.PAID;

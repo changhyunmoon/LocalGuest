@@ -48,6 +48,7 @@ export function PaymentKakaoStubPage() {
     const t = String(paymentType).toUpperCase()
     if (t === 'CHAT') return '정보만 받기 (채팅)'
     if (t === 'ACCOMPANY') return '직접 만나기 (동행)'
+    if (t === 'EXTENSION') return '투어 하루 연장'
     return 'LocalGuest 결제'
   }, [paymentType])
 

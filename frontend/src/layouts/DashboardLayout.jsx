@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, NavLink, Outlet } from 'react-router-dom'
 
 import { useAuth } from '../context/useAuth.js'
-import { getGuestDisplayName } from '../lib/guestMypagePrefs.js'
+import { getGuestDisplayName, loadTravelTags } from '../lib/guestMypagePrefs.js'
 
 import './DashboardLayout.css'
 
@@ -12,7 +12,7 @@ const guestItems = [
   { to: '/mypage/payments', label: '💳 결제 내역' },
   { to: '/mypage/privacy', label: '⚙️ 개인정보 설정' },
   { to: '/mypage/tour', label: '🔁 투어 연장/환불 관리' },
-  { to: '/mypage/reviews', label: '⭐ 내 리뷰' },
+  { to: '/mypage/reviews', label: '🌟 내 리뷰' },
 ]
 
 export function DashboardLayout() {
@@ -26,6 +26,7 @@ export function DashboardLayout() {
   }, [])
 
   const displayName = useMemo(() => getGuestDisplayName(email), [email, prefsTick])
+  const travelTags = useMemo(() => loadTravelTags(), [prefsTick])
 
   return (
     <div className="dash">
@@ -34,9 +35,19 @@ export function DashboardLayout() {
           <div className="dash-avatar" aria-hidden />
           <strong className="dash-name">{displayName}</strong>
           <span className="dash-email">{email ?? ''}</span>
-          <p className="dash-local-note" role="note">
-            닉네임·알림 등은 서버 프로필이 없을 때 <strong>이 브라우저에만</strong> 저장됩니다.
-          </p>
+          <div className="dash-local-note" role="note" aria-label="여행 성향 태그">
+            {travelTags.length > 0 ? (
+              <div className="dash-tag-list">
+                {travelTags.map((tag) => (
+                  <span key={tag} className="dash-tag-chip">
+                    #{tag}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <span className="dash-tag-empty">성향 태그 없음</span>
+            )}
+          </div>
         </div>
 
         <nav className="dash-nav" aria-label="마이페이지 메뉴">

@@ -4,6 +4,7 @@ import { Link, useParams, useLocation, useNavigate } from 'react-router-dom'
 import { PageEmpty, PageError, PageLoading } from '../components/PageStates.jsx'
 import { apiRequest } from '../api/client'
 import { useAuth } from '../context/useAuth.js'
+import { buildTravelDnaPreview, loadTravelDna } from '../lib/travelDna.js'
 
 import './GuideDetailPage.css'
 
@@ -109,16 +110,16 @@ function compareScheduleTime(a, b) {
 }
 
 /**
- * @param {unknown} keywords
+ * @param {unknown} guideStyle
  * @returns {string[]}
  */
-function parseProfileTags(keywords) {
-  if (keywords == null || keywords === '') return []
-  return String(keywords)
-    .split(/[,#\s]+/)
+function parseGuideStyleTags(guideStyle) {
+  if (guideStyle == null || guideStyle === '') return []
+  return String(guideStyle)
+    .split(/[,/|]+/)
     .map((s) => s.trim())
     .filter(Boolean)
-    .slice(0, 10)
+    .slice(0, 3)
     .map((t) => (t.startsWith('#') ? t : `#${t}`))
 }
 
@@ -170,11 +171,21 @@ function feedPrimaryImage(feed) {
   return ''
 }
 
+function parseNonNegativeInt(raw) {
+  if (raw == null || raw === '') return null
+  const n = Number(raw)
+  if (!Number.isFinite(n) || n < 0) return null
+  return Math.round(n)
+}
+
 export function GuideDetailPage() {
   const { guideId } = useParams()
   const location = useLocation()
   const navigate = useNavigate()
   const { isAuthenticated, isGuide } = useAuth()
+  const fromMatchedCourse = location.state?.fromMatchedCourse === true
+  const hideMatchRequest = location.state?.hideMatchRequest === true
+  const returnTo = typeof location.state?.returnTo === 'string' ? location.state.returnTo : ''
 
   const [aiConceptSummary, setAiConceptSummary] = useState(null)
   const [aiDesiredBudget, setAiDesiredBudget] = useState(null)
@@ -195,6 +206,8 @@ export function GuideDetailPage() {
     return new Date(now.getFullYear(), now.getMonth(), 1)
   })
   const [destination, setDestination] = useState('')
+  const [budgetMinWonInput, setBudgetMinWonInput] = useState('')
+  const [budgetMaxWonInput, setBudgetMaxWonInput] = useState('')
   const [concept, setConcept] = useState('')
   const [submitErr, setSubmitErr] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -215,6 +228,8 @@ export function GuideDetailPage() {
       if (draft?.desiredBudget != null && draft.desiredBudget !== '') setAiDesiredBudget(Number(draft.desiredBudget))
       if (draft?.budgetMinWon != null && draft.budgetMinWon !== '') setAiBudgetMinWon(Number(draft.budgetMinWon))
       if (draft?.budgetMaxWon != null && draft.budgetMaxWon !== '') setAiBudgetMaxWon(Number(draft.budgetMaxWon))
+      if (draft?.budgetMinWon != null && draft.budgetMinWon !== '') setBudgetMinWonInput(String(Number(draft.budgetMinWon)))
+      if (draft?.budgetMaxWon != null && draft.budgetMaxWon !== '') setBudgetMaxWonInput(String(Number(draft.budgetMaxWon)))
       if (draft?.concept) setAiHiddenConcept(String(draft.concept))
 
       // 목적지는 사용자가 비워둔 경우에만 보조로 채운다.
@@ -303,7 +318,7 @@ export function GuideDetailPage() {
     }
   }, [loading, detail, location.hash])
 
-  const tags = useMemo(() => parseProfileTags(detail?.profile?.keywords), [detail])
+  const tags = useMemo(() => parseGuideStyleTags(detail?.profile?.guideStyle), [detail])
 
   const ratingLine = useMemo(() => {
     const p = detail?.profile
@@ -317,7 +332,7 @@ export function GuideDetailPage() {
     const label = Number.isFinite(stars) ? stars.toFixed(1) : String(avg)
     return (
       <>
-        ⭐ <strong>{label}</strong>
+        🌟 <strong>{label}</strong>
         {cnt > 0 ? <span> · 리뷰 {cnt}건</span> : null}
       </>
     )
@@ -472,7 +487,27 @@ export function GuideDetailPage() {
       ? null
       : schedules.find((s) => Number(s.scheduleId) === Number(selectedScheduleId))
     const desiredDate = selectedDateKey || (sch?.availableDate != null ? formatScheduleDate(sch.availableDate) : undefined)
-    const conceptText = concept.trim() || (aiHiddenConcept ? String(aiHiddenConcept).trim() : '')
+    const dnaPreview = buildTravelDnaPreview(loadTravelDna())
+    const conceptText = concept.trim() || (aiHiddenConcept ? String(aiHiddenConcept).trim() : '') || dnaPreview
+    const manualMin = parseNonNegativeInt(budgetMinWonInput)
+    const manualMax = parseNonNegativeInt(budgetMaxWonInput)
+    let budgetMinWon = manualMin
+    let budgetMaxWon = manualMax
+    if (budgetMinWon == null && budgetMaxWon == null) {
+      budgetMinWon = parseNonNegativeInt(aiBudgetMinWon)
+      budgetMaxWon = parseNonNegativeInt(aiBudgetMaxWon)
+    }
+    if (budgetMinWon != null && budgetMaxWon == null) budgetMaxWon = budgetMinWon
+    if (budgetMaxWon != null && budgetMinWon == null) budgetMinWon = budgetMaxWon
+    if (budgetMinWon != null && budgetMaxWon != null && budgetMinWon > budgetMaxWon) {
+      setSubmitErr('예산 범위는 최소 금액이 최대 금액보다 클 수 없습니다.')
+      return
+    }
+    let desiredBudgetValue =
+      aiDesiredBudget != null && !Number.isNaN(Number(aiDesiredBudget)) ? Number(aiDesiredBudget) : undefined
+    if (budgetMinWon != null && budgetMaxWon != null) {
+      desiredBudgetValue = Math.round((budgetMinWon + budgetMaxWon) / 2)
+    }
 
     setConfirmModal({
       destination: dest,
@@ -483,13 +518,10 @@ export function GuideDetailPage() {
         scheduleId: selectedScheduleId != null ? Number(selectedScheduleId) : undefined,
         destination: dest,
         concept: conceptText || undefined,
-        conceptSummary: aiConceptSummary ? String(aiConceptSummary).trim() : undefined,
-        desiredBudget:
-          aiDesiredBudget != null && !Number.isNaN(Number(aiDesiredBudget)) ? Number(aiDesiredBudget) : undefined,
-        budgetMinWon:
-          aiBudgetMinWon != null && !Number.isNaN(Number(aiBudgetMinWon)) ? Number(aiBudgetMinWon) : undefined,
-        budgetMaxWon:
-          aiBudgetMaxWon != null && !Number.isNaN(Number(aiBudgetMaxWon)) ? Number(aiBudgetMaxWon) : undefined,
+        conceptSummary: (aiConceptSummary ? String(aiConceptSummary).trim() : '') || dnaPreview || undefined,
+        desiredBudget: desiredBudgetValue,
+        budgetMinWon: budgetMinWon ?? undefined,
+        budgetMaxWon: budgetMaxWon ?? undefined,
         desiredDate: desiredDate || undefined,
       },
     })
@@ -541,7 +573,27 @@ export function GuideDetailPage() {
   return (
     <div className="gdp">
       <p className="gdp-back">
-        <Link to="/guides">← 목록</Link>
+        {fromMatchedCourse ? (
+          <button
+            type="button"
+            className="gdp-back-btn"
+            onClick={() => {
+              if (window.history.length > 1) {
+                navigate(-1)
+                return
+              }
+              if (returnTo) {
+                navigate(returnTo)
+                return
+              }
+              navigate('/guides')
+            }}
+          >
+            ← 상세 코스로 돌아가기
+          </button>
+        ) : (
+          <Link to="/guides">← 목록</Link>
+        )}
       </p>
 
       <header className="gdp-hero">
@@ -672,7 +724,7 @@ export function GuideDetailPage() {
                 <div className="gdp-review-head">
                   <span className="gdp-review-name">{r.writeNickname ?? '여행자'}</span>
                   <span className="gdp-review-stars">
-                    {'⭐'.repeat(Math.min(5, Math.max(0, Number(r.rating) || 0)))}
+                    {'🌟'.repeat(Math.min(5, Math.max(0, Number(r.rating) || 0)))}
                   </span>
                 </div>
                 {r.content && String(r.content).trim() ? (
@@ -684,34 +736,35 @@ export function GuideDetailPage() {
         )}
       </section>
 
-      <section className="gdp-match" id="match-request">
-        <h2>매칭 요청하기</h2>
-        <p style={{ color: '#4b5563', fontSize: '0.95rem', lineHeight: 1.5 }}>
-          날짜를 고르고 목적지를 적으면 가이드에게 매칭 요청이 전달됩니다. 기본은 모든 날짜 요청 가능이며, 가이드가 막은 날짜만 선택할 수 없어요.
-        </p>
-
-        {!isAuthenticated && (
-          <p>
-            <Link
-              to="/auth/login"
-              state={{
-                returnTo: `/guides/${guideId}#match-request`,
-                hint: '로그인 후 이 가이드에게 매칭 요청을 보낼 수 있어요.',
-              }}
-            >
-              로그인하고 요청하기
-            </Link>
+      {!hideMatchRequest && (
+        <section className="gdp-match" id="match-request">
+          <h2>매칭 요청하기</h2>
+          <p className="gdp-match-intro">
+            날짜를 먼저 선택한 뒤 여행 지역과 원하는 여행 스타일을 적어 주세요. 입력한 정보가 가이드에게 그대로 전달됩니다.
           </p>
-        )}
 
-        {isAuthenticated && isGuide && (
-          <p style={{ color: '#b45309' }}>가이드 계정으로는 게스트 매칭 요청을 보낼 수 없습니다. 여행자로 로그인해 주세요.</p>
-        )}
+          {!isAuthenticated && (
+            <p className="gdp-match-login">
+              <Link
+                to="/auth/login"
+                state={{
+                  returnTo: `/guides/${guideId}#match-request`,
+                  hint: '로그인 후 이 가이드에게 매칭 요청을 보낼 수 있어요.',
+                }}
+              >
+                로그인하고 요청하기
+              </Link>
+            </p>
+          )}
 
-        {isAuthenticated && !isGuide && (
-          <form onSubmit={(e) => void onSubmitMatch(e)} style={{ display: 'grid', gap: '0.85rem', maxWidth: 480 }}>
-            <label style={{ display: 'grid', gap: 6 }}>
-              <span>예약 날짜 선택</span>
+          {isAuthenticated && isGuide && (
+            <p className="gdp-match-guide-warn">가이드 계정에서는 요청을 보낼 수 없어요. 여행자 계정으로 로그인해 주세요.</p>
+          )}
+
+          {isAuthenticated && !isGuide && (
+            <form onSubmit={(e) => void onSubmitMatch(e)} className="gdp-match-form">
+            <label className="gdp-match-field">
+              <span className="gdp-match-label">예약 날짜</span>
               <div className="gdp-match-cal">
                 <div className="gdp-match-cal-head">
                   <button
@@ -769,7 +822,9 @@ export function GuideDetailPage() {
                     )
                   })}
                 </div>
-                <p className="gdp-match-cal-hint">지난 날짜와 예약된 날짜는 선택할 수 없어요. 기본은 예약 가능이며, 가이드가 막은 날짜도 비활성화됩니다.</p>
+                <p className="gdp-match-cal-hint">
+                  지난 날짜와 이미 예약된 날짜는 선택할 수 없습니다. 가이드가 비활성화한 날짜도 자동으로 제외돼요.
+                </p>
 
                 {selectedDateSchedules.length > 0 ? (
                   <div className="gdp-match-times" role="radiogroup" aria-label="시간 선택">
@@ -793,45 +848,66 @@ export function GuideDetailPage() {
                 )}
               </div>
             </label>
-            <label style={{ display: 'grid', gap: 6 }}>
-              <span>여행 목적지 · 지역</span>
+            <label className="gdp-match-field">
+              <span className="gdp-match-label">여행 지역</span>
               <input
+                className="gdp-match-input"
                 type="text"
                 value={destination}
                 onChange={(ev) => setDestination(ev.target.value)}
-                placeholder="예: 구미, 경북 구미시"
+                placeholder="예: 구미 / 경북 구미시 / 제주 제주시"
                 required
               />
             </label>
-            <label style={{ display: 'grid', gap: 6 }}>
-              <span>하고 싶은 일 (선택)</span>
+            <label className="gdp-match-field">
+              <span className="gdp-match-label">예산 범위 (선택)</span>
+              <div className="gdp-match-budget-row">
+                <input
+                  className="gdp-match-input"
+                  type="number"
+                  min="0"
+                  inputMode="numeric"
+                  value={budgetMinWonInput}
+                  onChange={(ev) => setBudgetMinWonInput(ev.target.value)}
+                  placeholder="최소 예산(원)"
+                />
+                <span className="gdp-match-budget-sep">~</span>
+                <input
+                  className="gdp-match-input"
+                  type="number"
+                  min="0"
+                  inputMode="numeric"
+                  value={budgetMaxWonInput}
+                  onChange={(ev) => setBudgetMaxWonInput(ev.target.value)}
+                  placeholder="최대 예산(원)"
+                />
+              </div>
+              <p className="gdp-match-budget-hint">한쪽만 입력하면 단일 금액으로 처리됩니다.</p>
+            </label>
+            <label className="gdp-match-field">
+              <span className="gdp-match-label">원하는 여행 스타일 (선택)</span>
               <textarea
+                className="gdp-match-textarea"
                 rows={3}
                 value={concept}
                 onChange={(ev) => setConcept(ev.target.value)}
-                placeholder="예: 동네 맛집과 산책 코스를 함께하고 싶어요."
+                placeholder="예: 현지 맛집 + 산책 위주로 여유 있게, 걷는 코스는 짧게 원해요."
               />
             </label>
-            {submitErr && <p style={{ color: '#b91c1c', margin: 0 }}>{submitErr}</p>}
-            <div>
+            {submitErr && <p className="gdp-match-error">{submitErr}</p>}
+            <div className="gdp-match-actions">
               <button
                 type="submit"
+                className="gdp-match-submit"
                 disabled={submitting || !selectedDateKey || blockedDateSet.has(selectedDateKey) || reservedDateSet.has(selectedDateKey)}
-                style={{
-                  padding: '0.6rem 1.2rem',
-                  borderRadius: 8,
-                  border: 'none',
-                  background: '#111',
-                  color: '#fff',
-                  cursor: schedules.length === 0 ? 'not-allowed' : 'pointer',
-                }}
               >
-                {submitting ? '전송 중…' : '매칭 요청 보내기'}
+                {submitting ? '요청 전송 중…' : '매칭 요청 보내기'}
               </button>
             </div>
-          </form>
-        )}
-      </section>
+            </form>
+          )}
+        </section>
+      )}
 
       {confirmModal && (
         <div

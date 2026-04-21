@@ -37,10 +37,10 @@
   margin: 0 0 0.8rem;
   padding: 0.62rem 0.85rem;
   border-radius: 12px;
-  background: #eff6ff;
-  border: 1px solid #bfdbfe;
+  background: #fff4f8;
+  border: 1px solid #efbfd0;
   font-size: 0.79rem;
-  color: #1e3a8a;
+  color: #7a5f78;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -52,10 +52,10 @@
 }
 
 .gmo-watch-btn {
-  border: 1px solid #93c5fd;
+  border: 1px solid #efbfd0;
   border-radius: 8px;
   background: #fff;
-  color: #1d4ed8;
+  color: #8f4664;
   font-size: 0.76rem;
   font-weight: 700;
   padding: 0.34rem 0.62rem;
@@ -72,11 +72,11 @@
   margin: 0 0 0.8rem;
   padding: 0.68rem 0.9rem;
   border-radius: 12px;
-  background: #ecfdf3;
-  border: 1px solid #86efac;
+  background: #fdeaf1;
+  border: 1px solid #efbfd0;
   font-size: 0.82rem;
   font-weight: 700;
-  color: #166534;
+  color: #8f4664;
   animation: gmoArrivedPop 0.35s ease-out;
 }
 
@@ -97,7 +97,7 @@
   align-items: flex-start;
   padding: 1.1rem 1.15rem;
   background: #fff;
-  border: 1px solid #e8eaed;
+  border: 1px solid #f0dce4;
   border-radius: 18px;
   margin-bottom: 1.25rem;
   box-shadow: 0 8px 28px rgba(15, 23, 42, 0.05);
@@ -112,19 +112,19 @@
 }
 
 .gmo-hero--clickable:hover {
-  border-color: #d1d5db;
-  box-shadow: 0 10px 32px rgba(15, 23, 42, 0.08);
+  border-color: #efbfd0;
+  box-shadow: 0 10px 32px rgba(143, 70, 100, 0.12);
 }
 
 .gmo-hero--clickable:focus-visible {
-  outline: 2px solid #2563eb;
+  outline: 2px solid #efbfd0;
   outline-offset: 3px;
 }
 
 .gmo-hero-hint {
   margin: 0.45rem 0 0;
   font-size: 0.72rem;
-  color: #64748b;
+  color: #9f90a7;
   font-weight: 500;
 }
 
@@ -147,39 +147,20 @@
   margin: 0 0 0.35rem;
   font-size: 1.1rem;
   font-weight: 800;
-  color: #111827;
+  color: #4a3c56;
 }
 
 .gmo-hero-meta {
   margin: 0 0 0.5rem;
   font-size: 0.84rem;
-  color: #6b7280;
+  color: #8d7890;
 }
 
 .gmo-hero-quote {
   margin: 0;
   font-size: 0.88rem;
   line-height: 1.55;
-  color: #374151;
-}
-
-.gmo-likes {
-  position: absolute;
-  top: 1rem;
-  right: 1rem;
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-  font-size: 0.82rem;
-  font-weight: 700;
-  color: #ec4899;
-}
-
-@media (max-width: 520px) {
-  .gmo-likes {
-    position: static;
-    margin-top: 0.5rem;
-  }
+  color: #5a3c56;
 }
 
 /* 세로 흐름: 가격 → 지도 (가이드는 상단 히어로, 일정은 하단 코스 블록) */
@@ -192,7 +173,7 @@
 
 .gmo-preview {
   background: #fff;
-  border: 1px solid #e8eaed;
+  border: 1px solid #f0dce4;
   border-radius: 16px;
   padding: 1rem 1.05rem;
   display: flex;
@@ -211,7 +192,7 @@
   min-height: 220px;
   flex: 1;
   border-radius: 12px;
-  background: linear-gradient(160deg, #f3f4f6, #e5e7eb);
+  background: linear-gradient(160deg, #fff4f8, #f7e8ee);
   overflow: hidden;
 }
 
@@ -229,7 +210,7 @@
   justify-content: center;
   text-align: center;
   padding: 1.25rem;
-  background: rgba(243, 244, 246, 0.68);
+  background: rgba(255, 247, 250, 0.74);
   backdrop-filter: blur(1px);
 }
 
@@ -237,26 +218,46 @@
   width: 3rem;
   height: 3rem;
   border-radius: 50%;
-  background: #1f2328;
-  color: #fff;
-  font-size: 1.25rem;
+  background: #f6d8e6;
+  border: 1px solid #efbfd0;
   display: flex;
   align-items: center;
   justify-content: center;
   margin-bottom: 0.65rem;
 }
 
+.gmo-lock-glyph {
+  width: 0.9rem;
+  height: 0.75rem;
+  border: 2px solid #8f4664;
+  border-radius: 3px;
+  position: relative;
+}
+
+.gmo-lock-glyph::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: -0.48rem;
+  width: 0.62rem;
+  height: 0.46rem;
+  transform: translateX(-50%);
+  border: 2px solid #8f4664;
+  border-bottom: none;
+  border-radius: 8px 8px 0 0;
+}
+
 .gmo-map-title {
   margin: 0 0 0.35rem;
   font-size: 0.88rem;
   font-weight: 800;
-  color: #374151;
+  color: #5a3c56;
 }
 
 .gmo-map-sub {
   margin: 0;
   font-size: 0.78rem;
-  color: #6b7280;
+  color: #8d7890;
   line-height: 1.45;
   max-width: 16rem;
 }
@@ -438,10 +439,8 @@
   margin-bottom: 0.4rem;
   padding: 0.95rem 1rem;
   border-radius: 14px;
-  border: 1px solid #dbeafe;
-  background: linear-gradient(120deg, #eff6ff 0%, #f8faff 55%, #eff6ff 100%);
-  background-size: 210% 100%;
-  animation: gmoPendingWave 2.4s ease-in-out infinite;
+  border: 1px solid #efbfd0;
+  background: linear-gradient(120deg, #fff4f8 0%, #fff8fb 55%, #fff4f8 100%);
 }
 
 .gmo-course-pending-dot {
@@ -449,55 +448,27 @@
   width: 0.58rem;
   height: 0.58rem;
   border-radius: 50%;
-  background: #2563eb;
-  box-shadow: 0 0 0 rgba(37, 99, 235, 0.35);
-  animation: gmoPulse 1.25s ease-out infinite;
+  background: #d17a9b;
+  box-shadow: none;
 }
 
 .gmo-course-pending-title {
   margin: 0.25rem 0 0;
   font-size: 0.9rem;
   font-weight: 800;
-  color: #1e3a8a;
+  color: #8f4664;
 }
 
 .gmo-course-pending-sub {
   margin: 0.25rem 0 0;
   font-size: 0.8rem;
   line-height: 1.5;
-  color: #334155;
-}
-
-@keyframes gmoPulse {
-  0% {
-    transform: scale(1);
-    box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.35);
-  }
-  70% {
-    transform: scale(1.05);
-    box-shadow: 0 0 0 8px rgba(37, 99, 235, 0);
-  }
-  100% {
-    transform: scale(1);
-    box-shadow: 0 0 0 0 rgba(37, 99, 235, 0);
-  }
-}
-
-@keyframes gmoPendingWave {
-  0% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
-  100% {
-    background-position: 0% 50%;
-  }
+  color: #7a6a80;
 }
 
 .gmo-price-panel {
   background: #fff;
-  border: 1px solid #e8eaed;
+  border: 1px solid #f0dce4;
   border-radius: 16px;
   padding: 1rem 1.05rem;
   display: flex;
@@ -508,14 +479,14 @@
   margin: 0 0 0.5rem;
   font-size: 0.95rem;
   font-weight: 800;
-  color: #111827;
+  color: #4a3c56;
 }
 
 .gmo-price-lead {
   margin: 0 0 0.85rem;
   font-size: 0.78rem;
   line-height: 1.5;
-  color: #64748b;
+  color: #8d7890;
 }
 
 .gmo-price-highlight {
@@ -525,21 +496,21 @@
   gap: 0.75rem;
   padding: 0.85rem 0.95rem;
   border-radius: 12px;
-  border: 2px solid #1f2328;
-  background: #fafafa;
+  border: 1px solid #efbfd0;
+  background: #fff8fb;
   margin-bottom: 0.65rem;
 }
 
 .gmo-price-label {
   font-size: 0.8rem;
   font-weight: 700;
-  color: #374151;
+  color: #7a5f78;
 }
 
 .gmo-price-value {
   font-size: 1rem;
   font-weight: 800;
-  color: #111827;
+  color: #6d3f58;
   white-space: nowrap;
 }
 
@@ -549,10 +520,10 @@
   align-items: center;
   padding-top: 0.65rem;
   margin-bottom: 0.85rem;
-  border-top: 1px solid #eef0f3;
+  border-top: 1px solid #f3dbe5;
   font-size: 0.88rem;
   font-weight: 700;
-  color: #374151;
+  color: #7a5f78;
 }
 
 .gmo-total--single {
@@ -561,28 +532,31 @@
 
 .gmo-total strong {
   font-size: 1.05rem;
-  color: #111827;
+  color: #6d3f58;
 }
 
 .gmo-pay {
   width: 100%;
   padding: 0.7rem 1rem;
   border-radius: 12px;
-  border: none;
-  background: #1f2328;
-  color: #fff;
+  border: 1px solid #efbfd0;
+  background: #f6d8e6;
+  color: #6d3f58;
   font-size: 0.88rem;
   font-weight: 800;
   cursor: pointer;
 }
 
 .gmo-pay:disabled {
-  opacity: 0.45;
+  opacity: 1;
+  background: #e3dfe3;
+  border-color: #d7d1d8;
+  color: #8f8b91;
   cursor: not-allowed;
 }
 
 .gmo-pay:not(:disabled):hover {
-  background: #111418;
+  background: #f2cddd;
 }
 
 .gmo-course-gate {

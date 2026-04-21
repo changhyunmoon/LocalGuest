@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 
-import { MypageDevHint } from '../components/MypageDevHint.jsx'
 import { PageEmpty, PageError, PageLoading } from '../components/PageStates.jsx'
 import { apiRequest } from '../api/client.js'
 
@@ -18,7 +17,7 @@ function formatDt(iso) {
 
 function stars(rating) {
   const n = Math.max(1, Math.min(5, Math.round(Number(rating ?? 0))))
-  return '★'.repeat(n)
+  return '🌟'.repeat(n)
 }
 
 function parseApiErrorMessage(text) {
@@ -86,14 +85,11 @@ export function MypageReviewsPage() {
 
   return (
     <div className="mp-member">
-      <h1>⭐ 내 리뷰</h1>
+      <h1>🌟 내 리뷰</h1>
       <p className="sub">
         내가 작성한 리뷰만 모아 보여 줍니다. 팀 정책상 <strong>작성 후 수정은 불가</strong>이며, 잘못 올린 경우{' '}
-        <strong>삭제</strong>만 가능합니다. 후기는 <strong>완료된 매칭(COMPLETED)</strong>에서만 작성할 수 있어요.
+        <strong>삭제</strong>만 가능합니다. 후기는 <strong>나의 여행 기록(스크랩북)</strong>에서만 작성할 수 있어요.
       </p>
-      <MypageDevHint>
-        <code>GET /reviews/me</code> (로그인 필요)
-      </MypageDevHint>
 
       {actionErr && <p className="err">{actionErr}</p>}
       {loading && <PageLoading />}
@@ -101,7 +97,7 @@ export function MypageReviewsPage() {
 
       {!loading && !error && rows.length === 0 && (
         <PageEmpty title="작성한 리뷰가 없습니다">
-          가이드 매칭이 <strong>완료(COMPLETED)</strong>된 뒤 매칭·결제 화면에서 후기를 남기면 여기에 표시됩니다.
+          나의 여행 기록(스크랩북)에서 후기를 남기면 여기에 표시됩니다.
         </PageEmpty>
       )}
 
@@ -118,20 +114,14 @@ export function MypageReviewsPage() {
                 </p>
                 <p className="mp-trip-detail" style={{ fontSize: '0.8rem', color: '#6b7280' }}>
                   작성: {formatDt(r.createdAt)}
-                  {r.guideId != null ? (
-                    <>
-                      {' · '}
-                      <Link to={`/guides/${r.guideId}`}>가이드 프로필</Link>
-                      {' · '}
-                      <Link
-                        to={`/guides/${r.guideId}/match`}
-                        state={r.matchRequestId != null ? { requestId: r.matchRequestId } : undefined}
-                      >
-                        매칭·결제
-                      </Link>
-                    </>
-                  ) : null}
                 </p>
+                {r.matchRequestId != null ? (
+                  <p className="mp-trip-detail" style={{ marginTop: '0.25rem' }}>
+                    <Link to={`/mypage/scrapbook/${r.matchRequestId}`} className="mp-review-scrap-link">
+                      작성한 스크랩북으로 이동
+                    </Link>
+                  </p>
+                ) : null}
               </div>
               <div className="mp-trip-actions" style={{ alignSelf: 'stretch' }}>
                 <button
@@ -148,7 +138,7 @@ export function MypageReviewsPage() {
         </div>
       ) : null}
 
-      {!error && (
+      {!error && rows.length > 0 && (!first || !last) && (
         <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem', flexWrap: 'wrap' }}>
           <button type="button" className="mp-btn mp-btn--line" disabled={first || loading} onClick={() => setPage((p) => Math.max(0, p - 1))}>
             이전

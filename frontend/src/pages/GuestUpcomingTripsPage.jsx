@@ -39,6 +39,18 @@ function ddayLabel(days, status) {
   return `${Math.abs(days)}일 지남`
 }
 
+function statusText(status) {
+  const s = String(status ?? '').toUpperCase()
+  if (s === 'PENDING') return '요청 대기'
+  if (s === 'ACCEPTED') return '결제 전'
+  if (s === 'PAID') return '결제 완료'
+  if (s === 'IN_PROGRESS') return '진행 중'
+  if (s === 'COMPLETED') return '여행 완료'
+  if (s === 'CANCELLED') return '취소됨'
+  if (s === 'REJECTED') return '거절됨'
+  return '상태 확인 필요'
+}
+
 function groupRows(rows) {
   const paymentPending = []
   const inProgress = []
@@ -59,11 +71,11 @@ function groupRows(rows) {
   }
 
   return [
-    { key: 'payment', title: '결제하고 확정 필요', rows: paymentPending },
-    { key: 'inprogress', title: '지금 진행 중', rows: inProgress },
+    { key: 'payment', title: '결제 전 (확정 필요)', rows: paymentPending },
+    { key: 'inprogress', title: '진행 중인 여행', rows: inProgress },
     { key: 'dday', title: '오늘 출발 (D-Day)', rows: dday },
     { key: 'd1', title: '내일 출발 (D-1)', rows: d1 },
-    { key: 'upcoming', title: '다가오는 일정', rows: upcoming },
+    { key: 'upcoming', title: '다가오는 여행 일정', rows: upcoming },
   ].filter((section) => section.rows.length > 0)
 }
 
@@ -142,8 +154,8 @@ export function GuestUpcomingTripsPage() {
   return (
     <div className="gut-page">
       <header className="gut-hero">
-        <h1>📆 앞으로의 여행 일정</h1>
-        <p>다가오는 투어를 D-Day 기준으로 빠르게 확인하고, 바로 매칭 상세로 이동할 수 있어요.</p>
+        <h1>📆 내 여행 일정 한눈에 보기</h1>
+        <p>가까운 일정부터 D-Day 순서로 확인하고, 필요한 일정은 바로 눌러 상세/매칭 화면으로 이동해 보세요.</p>
       </header>
 
       {loading && <PageLoading />}
@@ -175,11 +187,11 @@ export function GuestUpcomingTripsPage() {
                         <h3>{nick}</h3>
                         <p>{row.destination ?? '로컬 투어'} · {row.desiredDate ?? '—'}</p>
                         <p>
-                          상태: {row.status} · 예산: {formatBudgetRangeKrw(row.budgetMinWon, row.budgetMaxWon, row.desiredBudget)}
+                          상태: {statusText(row.status)} · 예산: {formatBudgetRangeKrw(row.budgetMinWon, row.budgetMaxWon, row.desiredBudget)}
                         </p>
                       </div>
                       <button type="button" className="gut-open" onClick={() => openMatchScreen(row)}>
-                        상세 보기
+                        일정 확인하기
                       </button>
                     </article>
                   )

@@ -9,6 +9,7 @@ import { MypagePrivacyPage } from '../pages/MypagePrivacyPage'
 import { MypageProfilePage } from '../pages/MypageProfilePage'
 import { MypageReviewsPage } from '../pages/MypageReviewsPage'
 import { MypageScrapbookPage } from '../pages/MypageScrapbookPage'
+import { MypageScrapbookTicketDetailPage } from '../pages/MypageScrapbookTicketDetailPage'
 import { MypageTourPage } from '../pages/MypageTourPage'
 
 export const mypageRoutes = [
@@ -33,6 +34,10 @@ export const mypageRoutes = [
       {
         path: 'scrapbook',
         element: <MypageScrapbookPage />,
+      },
+      {
+        path: 'scrapbook/:requestId',
+        element: <MypageScrapbookTicketDetailPage />,
       },
       {
         path: 'itinerary',

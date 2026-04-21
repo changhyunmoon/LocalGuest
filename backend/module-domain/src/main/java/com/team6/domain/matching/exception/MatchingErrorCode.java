@@ -30,6 +30,10 @@ public enum MatchingErrorCode {
 
     // TourExtension 관련
     TOUR_EXTENSION_NOT_FOUND(404, "연장 신청을 찾을 수 없습니다"),
+    TOUR_EXTENSION_GUIDE_UNAVAILABLE_NEXT_DAY(400, "가이드가 다음날 예약이 있어 연장이 불가합니다"),
+    TOUR_EXTENSION_GUIDE_NEXT_DAY_BOOKED(400, "가이드가 다음날 예약되어 있어 연장이 불가합니다"),
+    TOUR_EXTENSION_GUIDE_NEXT_DAY_BLOCKED(400, "가이드가 다음날 예약 불가로 설정되어 연장이 불가합니다"),
+    TOUR_EXTENSION_ALREADY_DECIDED(400, "이미 연장 여부가 확정된 투어입니다"),
     TOUR_EXTENSION_DEADLINE_EXCEEDED(400, "연장 선택 기한이 지났습니다"),
     TOUR_EXTENSION_ALREADY_REQUESTED(400, "이미 연장 신청된 투어입니다"),
     TOUR_EXTENSION_CANNOT_APPROVE(400, "현재 상태에서는 승인할 수 없습니다"),

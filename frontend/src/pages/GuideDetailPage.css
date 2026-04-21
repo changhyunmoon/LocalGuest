@@ -16,6 +16,22 @@
   font-size: 0.95rem;
 }
 
+.gdp-back-btn {
+  border: 1px solid #efbfd0;
+  background: linear-gradient(180deg, #fff6fb, #fff);
+  color: #7a5f78;
+  border-radius: 999px;
+  padding: 0.42rem 0.78rem;
+  font-size: 0.86rem;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.gdp-back-btn:hover {
+  background: #fff8fb;
+}
+
 .gdp-back a:hover {
   text-decoration: underline;
 }
@@ -283,22 +299,66 @@
 
 .gdp-match {
   margin-top: 2.25rem;
-  padding: 1.25rem;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  background: #fafafa;
+  padding: 1.3rem;
+  border: 1px solid #f0dce4;
+  border-radius: 16px;
+  background: #fffbfd;
 }
 
 .gdp-match h2 {
-  margin-top: 0;
-  font-size: 1.15rem;
+  margin: 0;
+  font-size: 1.16rem;
+  color: #4a3c56;
+  letter-spacing: -0.01em;
+}
+
+.gdp-match-intro {
+  margin: 0.55rem 0 0;
+  color: #7a6a80;
+  font-size: 0.92rem;
+  line-height: 1.55;
+}
+
+.gdp-match-login {
+  margin: 0.7rem 0 0;
+  font-size: 0.88rem;
+}
+
+.gdp-match-login a {
+  color: #8f4664;
+  font-weight: 700;
+}
+
+.gdp-match-guide-warn {
+  margin: 0.7rem 0 0;
+  color: #b15e81;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.gdp-match-form {
+  margin-top: 0.95rem;
+  display: grid;
+  gap: 0.9rem;
+  max-width: 640px;
+}
+
+.gdp-match-field {
+  display: grid;
+  gap: 0.38rem;
+}
+
+.gdp-match-label {
+  color: #5a3c56;
+  font-size: 0.88rem;
+  font-weight: 700;
 }
 
 .gdp-match-cal {
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
+  border: 1px solid #f0dce4;
+  border-radius: 14px;
   background: #fff;
-  padding: 0.75rem;
+  padding: 0.82rem;
 }
 
 .gdp-match-cal-head {
@@ -306,15 +366,17 @@
   align-items: center;
   justify-content: space-between;
   margin-bottom: 0.55rem;
+  color: #5a3c56;
 }
 
 .gdp-match-nav {
-  border: 1px solid #d1d5db;
-  background: #fff;
-  border-radius: 8px;
+  border: 1px solid #efbfd0;
+  background: #fff7fa;
+  border-radius: 10px;
   width: 1.9rem;
   height: 1.9rem;
   cursor: pointer;
+  color: #8f4664;
 }
 
 .gdp-match-week {
@@ -326,8 +388,9 @@
 
 .gdp-match-week span {
   font-size: 0.66rem;
-  color: #9ca3af;
+  color: #b397ae;
   text-align: center;
+  font-weight: 700;
 }
 
 .gdp-match-days {
@@ -338,18 +401,18 @@
 
 .gdp-match-day {
   position: relative;
-  border: 1px solid #e5e7eb;
+  border: 1px solid #efbfd0;
   border-radius: 8px;
   height: 2rem;
-  background: #f9fafb;
+  background: #fff7fa;
   font-size: 0.82rem;
-  color: #6b7280;
+  color: #8f4664;
 }
 
 .gdp-match-day.is-on {
-  background: #eff6ff;
-  border-color: #bfdbfe;
-  color: #1d4ed8;
+  background: #fdeaf1;
+  border-color: #efbfd0;
+  color: #8f4664;
   cursor: pointer;
 }
 
@@ -366,9 +429,9 @@
 }
 
 .gdp-match-day.is-selected {
-  background: #2563eb;
-  border-color: #2563eb;
-  color: #fff;
+  background: #f6d8e6;
+  border-color: #efbfd0;
+  color: #6d3f58;
   font-weight: 700;
 }
 
@@ -379,8 +442,9 @@
 
 .gdp-match-cal-hint {
   margin: 0.55rem 0 0;
-  font-size: 0.74rem;
-  color: #6b7280;
+  font-size: 0.76rem;
+  color: #8d7890;
+  line-height: 1.5;
 }
 
 .gdp-match-x {
@@ -399,25 +463,100 @@
 }
 
 .gdp-match-time {
-  border: 1px solid #d1d5db;
+  border: 1px solid #efbfd0;
   border-radius: 999px;
-  background: #fff;
-  color: #374151;
+  background: #fff8fb;
+  color: #7a5f78;
   font-size: 0.76rem;
   padding: 0.25rem 0.65rem;
   cursor: pointer;
 }
 
 .gdp-match-time.is-selected {
-  border-color: #1f2937;
-  background: #1f2937;
-  color: #fff;
+  border-color: #efbfd0;
+  background: #f6d8e6;
+  color: #6d3f58;
 }
 
 .gdp-match-default-slot {
   margin: 0.55rem 0 0;
   font-size: 0.78rem;
-  color: #4b5563;
+  color: #7f6b82;
+}
+
+.gdp-match-input,
+.gdp-match-textarea {
+  width: 100%;
+  border: 1px solid #efbfd0;
+  background: #fffdfd;
+  border-radius: 10px;
+  padding: 0.62rem 0.72rem;
+  font: inherit;
+  font-size: 0.9rem;
+  color: #5a3c56;
+  box-sizing: border-box;
+}
+
+.gdp-match-input::placeholder,
+.gdp-match-textarea::placeholder {
+  color: #b397ae;
+}
+
+.gdp-match-budget-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 0.45rem;
+  align-items: center;
+}
+
+.gdp-match-budget-sep {
+  color: #9f90a7;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.gdp-match-budget-hint {
+  margin: 0;
+  font-size: 0.74rem;
+  color: #9f90a7;
+}
+
+.gdp-match-textarea {
+  resize: vertical;
+  min-height: 5.8rem;
+  line-height: 1.5;
+}
+
+.gdp-match-error {
+  margin: 0;
+  color: #b15e81;
+  font-size: 0.84rem;
+  font-weight: 600;
+}
+
+.gdp-match-actions {
+  display: flex;
+}
+
+.gdp-match-submit {
+  border: 1px solid #efbfd0;
+  border-radius: 999px;
+  background: #f6d8e6;
+  color: #6d3f58;
+  font-size: 0.88rem;
+  font-weight: 800;
+  padding: 0.62rem 1.2rem;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.gdp-match-submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.gdp-match-submit:hover:not(:disabled) {
+  background: #f2cddd;
 }
 
 .gdp-confirm-overlay {

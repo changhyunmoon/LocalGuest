@@ -345,10 +345,11 @@
   width: 26px;
   height: 26px;
   border-radius: 50%;
-  background: #111;
-  color: #fff;
+  background: linear-gradient(145deg, #f7d7e5, #edc0d3);
+  border: 1px solid #efbfd0;
+  color: #7a4f68;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -438,8 +439,9 @@
 }
 
 .gcp-btn--primary {
-  background: #111;
-  color: #fff;
+  background: linear-gradient(135deg, #f6d8e6 0%, #edbfd3 100%);
+  border: 1px solid #efbfd0;
+  color: #6d3f58;
 }
 
 .gcp-btn--ghost {
@@ -450,5 +452,7 @@
   padding-right: 20px;
 }
 
-.gcp-btn--primary:hover:not(:disabled) { opacity: 0.85; }
+.gcp-btn--primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #f2cddd 0%, #e7adc5 100%);
+}
 .gcp-btn--ghost:hover { background: #e5e7eb; }

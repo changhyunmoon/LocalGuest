@@ -70,8 +70,8 @@
   padding: 0.55rem 1.1rem;
   border-radius: 999px;
   border: none;
-  background: #1f2328;
-  color: #fff;
+  background: #f6d8e6;
+  color: #6d3f58;
   font-weight: 700;
   font-size: 0.86rem;
   cursor: pointer;
@@ -84,14 +84,15 @@
 }
 
 .gm-btn--ghost {
-  background: #fff;
-  color: #1f2328;
-  border: 1px solid #d1d5db;
+  background: #fff8fb;
+  color: #7a5f78;
+  border: 1px solid #efbfd0;
 }
 
 .gm-btn--danger {
-  background: #b91c1c;
-  color: #fff;
+  background: #fff4f8;
+  color: #b45e83;
+  border: 1px solid #efbfd0;
 }
 
 .gm-split {
@@ -155,6 +156,84 @@
   cursor: not-allowed;
 }
 
+.gm-confirm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  background: rgba(15, 23, 42, 0.42);
+  backdrop-filter: blur(2px);
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+}
+
+.gm-confirm {
+  width: min(100%, 380px);
+  border-radius: 16px;
+  border: 1px solid #efbfd0;
+  background: linear-gradient(180deg, #fff, #fff8fb);
+  box-shadow: 0 20px 46px rgba(15, 23, 42, 0.2);
+  padding: 1rem 1rem 0.95rem;
+}
+
+.gm-confirm-kicker {
+  margin: 0 0 0.35rem;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  border: 1px solid #efbfd0;
+  background: #fff6fb;
+  color: #8f4664;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.14rem 0.48rem;
+}
+
+.gm-confirm h3 {
+  margin: 0;
+  color: #4a3c56;
+  font-size: 1.02rem;
+}
+
+.gm-confirm p {
+  margin: 0.45rem 0 0;
+  color: #7a5f78;
+  font-size: 0.86rem;
+}
+
+.gm-confirm-actions {
+  margin-top: 0.95rem;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.45rem;
+}
+
+.gm-confirm-btn {
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 0.45rem 0.85rem;
+  cursor: pointer;
+}
+
+.gm-confirm-btn--line {
+  border: 1px solid #d1d5db;
+  background: #fff;
+  color: #4b5563;
+}
+
+.gm-confirm-btn--danger {
+  border: 1px solid #efbfd0;
+  background: #f6d8e6;
+  color: #6d3f58;
+}
+
+.gm-confirm-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* guide feed/schedule split tab (F06-03/04) */
 .gfs-tabs {
   display: inline-flex;
@@ -179,8 +258,8 @@
 }
 
 .gfs-tab.is-on {
-  background: #1f2328;
-  color: #fff;
+  background: #f8dce7;
+  color: #6d3f58;
 }
 
 .gfs-feed {
@@ -256,8 +335,8 @@
 }
 
 .gfi-mode-tab.is-on {
-  background: #1f2328;
-  color: #fff;
+  background: #f8dce7;
+  color: #6d3f58;
 }
 
 .gfi-mode-tab--disabled {
@@ -518,8 +597,8 @@
 .gfs-upload-btn {
   border: none;
   border-radius: 999px;
-  background: #2f95ee;
-  color: #fff;
+  background: #f6d8e6;
+  color: #6d3f58;
   font-family: inherit;
   font-weight: 800;
   font-size: 0.9rem;
@@ -1322,9 +1401,9 @@
 }
 
 .gi-card .gi-chip.is-on {
-  background: #1f2328;
-  border-color: #1f2328;
-  color: #fff !important;
+  background: linear-gradient(180deg, #f6d8e6, #f2ccdd);
+  border-color: #efbfd0;
+  color: #6d3f58 !important;
 }
 
 .gpv-tag-list {
@@ -1365,8 +1444,8 @@
   width: 100%;
   border: none;
   border-radius: 12px;
-  background: #1f2328;
-  color: #fff;
+  background: #f6d8e6;
+  color: #6d3f58;
   font-size: 0.95rem;
   font-weight: 800;
   padding: 0.8rem 1rem;
@@ -1426,22 +1505,53 @@
 }
 
 .gi-chip {
-  border: 1px solid #d1d5db;
+  border: 1px solid #efbfd0;
   border-radius: 999px;
-  background: #fff;
-  color: #4b5563;
+  background: #fff8fb;
+  color: #7a5f78;
   font-size: 0.8rem;
-  font-weight: 600;
+  font-weight: 700;
   padding: 0.35rem 0.75rem;
   cursor: pointer;
   font-family: inherit;
-  transition: background 0.1s, color 0.1s, border-color 0.1s;
+  transition: background 0.1s, color 0.1s, border-color 0.1s, transform 0.1s;
+}
+
+.gi-chip:hover {
+  background: #fdeaf1;
+  border-color: #e7a8c2;
+  transform: translateY(-1px);
 }
 
 .gi-chip.is-on {
-  background: #1f2328;
-  color: #fff;
-  border-color: #1f2328;
+  background: linear-gradient(180deg, #f6d8e6, #f2ccdd);
+  color: #6d3f58;
+  border-color: #efbfd0;
+  box-shadow: 0 6px 12px rgba(143, 70, 100, 0.12);
+}
+
+.gi-years-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.gi-years-input {
+  width: 7rem;
+  border: 1px solid #efbfd0;
+  border-radius: 10px;
+  background: #fff8fb;
+  padding: 0.5rem 0.65rem;
+  font: inherit;
+  font-size: 0.86rem;
+  color: #5a3c56;
+  box-sizing: border-box;
+}
+
+.gi-years-suffix {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #8f4664;
 }
 
 .gi-custom-input {
@@ -1524,9 +1634,9 @@
   margin-top: 8px;
   padding: 6px 14px;
   border-radius: 8px;
-  border: 1.5px solid #111;
+  border: 1.5px solid #efbfd0;
   background: transparent;
-  color: #111;
+  color: #6d3f58;
   font-size: 13px;
   font-weight: 600;
   font-family: inherit;
@@ -1535,8 +1645,8 @@
 }
 
 .gss-course-btn:hover {
-  background: #111;
-  color: #fff;
+  background: #fdeaf1;
+  color: #8f4664;
 }
 
 /* 코스 작성 완료된 카드는 좌측 테두리 강조 */
@@ -2085,8 +2195,8 @@
 
 .gss3-dact:disabled { opacity: 0.45; cursor: not-allowed; }
 
-.gss3-dact--primary { background: #1f2328; color: #fff; border-color: #1f2328; }
-.gss3-dact--primary:hover:not(:disabled) { background: #374151; }
+.gss3-dact--primary { background: #f6d8e6; color: #6d3f58; border-color: #efbfd0; }
+.gss3-dact--primary:hover:not(:disabled) { background: #f2cddd; }
 .gss3-dact--success { background: #15803d; color: #fff; border-color: #15803d; }
 .gss3-dact--success:hover:not(:disabled) { background: #166534; }
 .gss3-dact--warn    { background: #d97706; color: #fff; border-color: #d97706; }
@@ -2161,8 +2271,8 @@
   padding: 11px 16px;
   border: none;
   border-radius: 6px;
-  background: #0f172a;
-  color: #fff;
+  background: #f6d8e6;
+  color: #6d3f58;
   font-size: 0.82rem;
   font-weight: 700;
   font-family: inherit;
@@ -2172,7 +2282,7 @@
 }
 
 .gss3-apply:hover:not(:disabled) {
-  background: #1e293b;
+  background: #f2cddd;
 }
 
 .gss3-apply:disabled {
@@ -2355,8 +2465,8 @@
 
 .gss3-bact:hover { background: #f3f4f6; }
 
-.gss3-bact--primary { background: #1f2328; color: #fff; border-color: #1f2328; }
-.gss3-bact--primary:hover { background: #374151; }
+.gss3-bact--primary { background: #f6d8e6; color: #6d3f58; border-color: #efbfd0; }
+.gss3-bact--primary:hover { background: #f2cddd; }
 .gss3-bact--warn    { background: #d97706; color: #fff; border-color: #d97706; }
 .gss3-bact--warn:hover    { background: #b45309; }
 

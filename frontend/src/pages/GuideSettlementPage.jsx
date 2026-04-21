@@ -44,6 +44,27 @@ function buildMonthlyBars(amount) {
   }))
 }
 
+function sanitizeSettlementDescription(raw) {
+  const text = String(raw ?? '').trim()
+  if (!text) return ''
+  return text
+    .replace(/\(COMPLETED\)/gi, '')
+    .replace(/COMPLETED/gi, '')
+    .replace(/\(플랫폼\s*수수료·정산\s*규칙\s*적용\s*전\)/g, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim()
+}
+
+function statusText(status) {
+  const s = String(status ?? '').toUpperCase()
+  if (s === 'PAID') return '결제 완료'
+  if (s === 'IN_PROGRESS') return '투어 진행 중'
+  if (s === 'COMPLETED') return '여행 완료'
+  if (s === 'ACCEPTED') return '예약 확정'
+  if (s === 'PENDING') return '요청 대기'
+  return s || '상태 확인중'
+}
+
 export function GuideSettlementPage() {
   const [data, setData] = useState(null)
   const [guideRequests, setGuideRequests] = useState([])
@@ -133,7 +154,7 @@ export function GuideSettlementPage() {
                 <div>
                   <p className="gst-title">{row.destination ?? '로컬 투어'}</p>
                   <p className="gst-meta">
-                    {formatDate(row.desiredDate)} · {row.status}
+                    {formatDate(row.desiredDate)} · {statusText(row.status)}
                   </p>
                 </div>
                 <strong className="gst-plus">+ {formatMoney(row.desiredBudget ?? 0)}</strong>
@@ -141,7 +162,7 @@ export function GuideSettlementPage() {
             ))}
           </section>
 
-          {data.description && <p className="g-hint">{data.description}</p>}
+          {data.description && <p className="g-hint">{sanitizeSettlementDescription(data.description)}</p>}
         </section>
       )}
     </div>
