@@ -301,6 +301,33 @@
   border: 1px solid #e8eaed;
   border-radius: 14px;
   box-shadow: 0 4px 16px rgba(31, 35, 40, 0.04);
+  position: relative;
+}
+
+.ais-rank {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.ais-rank-badge {
+  width: 1.65rem;
+  height: 1.65rem;
+  border-radius: 999px;
+  background: #1f2328;
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.82rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+.ais-rank-text {
+  font-size: 0.76rem;
+  font-weight: 800;
+  color: #111827;
 }
 
 .ais-guide-feeds {
@@ -446,6 +473,23 @@
   background: #1f2328;
   color: #fff !important;
   border-color: #1f2328;
+}
+
+.ais-more {
+  margin-top: 0.75rem;
+  width: 100%;
+  padding: 0.6rem 1rem;
+  border-radius: 999px;
+  border: 1px solid #d1d5db;
+  background: #fff;
+  color: #111827;
+  font-size: 0.82rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.ais-more:hover {
+  background: #f9fafb;
 }
 
 .ais-spot-grid {

@@ -6,6 +6,9 @@ import { apiRequest } from '../api/client'
 import './AiQuickSearchPage.css'
 
 const PLACEHOLDER = '제주도에서 조용히 사진 찍기 좋은 오름 추천해줘'
+const LS_AI_SEARCH_SNAPSHOT = 'localguest_ai_search_snapshot_v1'
+const AI_GUIDE_DEFAULT_SHOW = 3
+const AI_GUIDE_EXPANDED_SHOW = 5
 
 const JEJU_OREUM_SPOTS = [
   { title: '아부오름', caption: '완만한 능선, 소풍 명소', tape: 'g' },
@@ -129,6 +132,7 @@ export function AiQuickSearchPage() {
   const [showGuides, setShowGuides] = useState(false)
   const [showSpots, setShowSpots] = useState(false)
   const [fallbackGuides, setFallbackGuides] = useState([])
+  const [expandedGuides, setExpandedGuides] = useState(false)
   /** @type {Record<string, Array<{ feedId: number, imageUrl?: string, content?: string }>>} */
   const [guideFeedsById, setGuideFeedsById] = useState({})
   const typeTimerRef = useRef(null)
@@ -190,12 +194,61 @@ export function AiQuickSearchPage() {
   )
 
   useEffect(() => {
+    // 상세 화면으로 이동했다가 돌아왔을 때, 직전 AI 검색 패널을 복원한다.
+    try {
+      const raw = sessionStorage.getItem(LS_AI_SEARCH_SNAPSHOT)
+      if (!raw) return
+      const snap = JSON.parse(raw)
+      if (!snap || typeof snap !== 'object') return
+      const restoredPrompt = typeof snap.prompt === 'string' ? snap.prompt : ''
+      const restoredResult = snap.result ?? null
+      const restoredFallback = Array.isArray(snap.fallbackGuides) ? snap.fallbackGuides : []
+      setPrompt(restoredPrompt)
+      setResult(restoredResult)
+      setFallbackGuides(restoredFallback)
+      setExpandedGuides(Boolean(snap.expandedGuides))
+      setHasSearched(Boolean(snap.hasSearched))
+      // 뒤로가기 복원에서는 로딩/타이핑 없이 즉시 결과를 보여준다.
+      setPanelOpen(false)
+      const narrative = buildNarrative(restoredResult)
+      setStreamText(narrative)
+      setShowGuides(true)
+      setShowSpots(true)
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => setPanelOpen(true))
+      })
+      sessionStorage.removeItem(LS_AI_SEARCH_SNAPSHOT)
+    } catch {
+      /* ignore */
+    }
+  }, [])
+
+  const persistSnapshotForBack = useCallback(() => {
+    try {
+      sessionStorage.setItem(
+        LS_AI_SEARCH_SNAPSHOT,
+        JSON.stringify({
+          prompt,
+          hasSearched,
+          panelOpen: true,
+          result,
+          fallbackGuides,
+          expandedGuides,
+        }),
+      )
+    } catch {
+      /* ignore */
+    }
+  }, [expandedGuides, fallbackGuides, hasSearched, prompt, result])
+
+  useEffect(() => {
     const recs = result?.recommendations
     if (!Array.isArray(recs) || recs.length === 0) {
       setGuideFeedsById({})
       return
     }
-    const ids = [...new Set(recs.slice(0, 3).map((r) => r?.guideId).filter((id) => id != null))].map(String)
+    const showMax = expandedGuides ? AI_GUIDE_EXPANDED_SHOW : AI_GUIDE_DEFAULT_SHOW
+    const ids = [...new Set(recs.slice(0, showMax).map((r) => r?.guideId).filter((id) => id != null))].map(String)
     if (ids.length === 0) return
 
     let cancelled = false
@@ -223,22 +276,24 @@ export function AiQuickSearchPage() {
     }
   }, [result])
 
-  const runSearch = async (e) => {
+  const runSearch = async (e, options = {}) => {
     e?.preventDefault()
     const q = prompt.trim()
     if (!q || loading) return
+    const topN = Number(options?.topN ?? AI_GUIDE_DEFAULT_SHOW)
 
     setError('')
     setResult(null)
     setFallbackGuides([])
     setHasSearched(true)
+    setExpandedGuides(topN > AI_GUIDE_DEFAULT_SHOW)
     setLoading(true)
     openPanelSoon()
 
     try {
       const res = await apiRequest('/ai/recommend', {
         method: 'POST',
-        json: { prompt: q, topN: 5 },
+        json: { prompt: q, topN },
       })
       const text = await res.text()
       if (res.status === 401 || res.status === 403 || res.status === 302) {
@@ -268,7 +323,7 @@ export function AiQuickSearchPage() {
           if (guideRes.ok) {
             const all = guideText ? JSON.parse(guideText) : []
             const picked = pickFallbackGuides(q, data?.keywords, Array.isArray(all) ? all : [])
-            setFallbackGuides(picked.slice(0, 2))
+            setFallbackGuides(picked.slice(0, topN))
           }
         } catch {
           setFallbackGuides([])
@@ -294,7 +349,8 @@ export function AiQuickSearchPage() {
   }
 
   const recs = result?.recommendations && Array.isArray(result.recommendations) ? result.recommendations : []
-  const topGuides = recs.length > 0 ? recs.slice(0, 2) : fallbackGuides.slice(0, 2)
+  const showMax = expandedGuides ? AI_GUIDE_EXPANDED_SHOW : AI_GUIDE_DEFAULT_SHOW
+  const topGuides = recs.length > 0 ? recs.slice(0, showMax) : fallbackGuides.slice(0, showMax)
   const keywords = result?.keywords
   const spots = pickSpots(prompt, keywords)
   const activityHint =
@@ -406,6 +462,10 @@ export function AiQuickSearchPage() {
                         const tags = tagsForGuide(g, keywords)
                         return (
                           <li key={g.guideId ?? idx} className="ais-guide-card">
+                            <div className="ais-rank" aria-label={`추천 순위 ${idx + 1}위`}>
+                              <span className="ais-rank-badge">{idx + 1}</span>
+                              <span className="ais-rank-text">추천 {idx + 1}위</span>
+                            </div>
                             <div className="ais-guide-feeds" aria-label="가이드 피드">
                               {feeds.length > 0 ? (
                                 feeds.slice(0, 6).map((f) => (
@@ -413,7 +473,8 @@ export function AiQuickSearchPage() {
                                     key={f.feedId}
                                     to={`/guides/${g.guideId}#match-request`}
                                     className="ais-feed-thumb"
-                                    title={f.content ? String(f.content).slice(0, 80) : 'AI 추천 코스 상세보기'}
+                                    title={f.content ? String(f.content).slice(0, 80) : '가이드 상세보기'}
+                                    onClick={persistSnapshotForBack}
                                   >
                                     <span
                                       className="ais-feed-thumb-img"
@@ -426,7 +487,8 @@ export function AiQuickSearchPage() {
                                 <Link
                                   to={`/guides/${g.guideId}#match-request`}
                                   className="ais-feed-empty"
-                                  title="AI 추천 코스 상세보기"
+                                  title="가이드 상세보기"
+                                  onClick={persistSnapshotForBack}
                                 >
                                   <span
                                     className="ais-feed-thumb-img"
@@ -458,15 +520,25 @@ export function AiQuickSearchPage() {
                               </div>
                               <Link
                                 to={`/guides/${g.guideId}#match-request`}
-                                className={`ais-profile-btn ${idx === 0 ? 'ais-profile-btn--primary' : ''}`}
+                                className="ais-profile-btn ais-profile-btn--primary"
+                                onClick={persistSnapshotForBack}
                               >
-                                AI 추천 코스 상세보기
+                                가이드 상세보기
                               </Link>
                             </div>
                           </li>
                         )
                       })}
                     </ul>
+                  )}
+                  {!loading && !expandedGuides && recs.length > AI_GUIDE_DEFAULT_SHOW && (
+                    <button
+                      type="button"
+                      className="ais-more"
+                      onClick={() => void runSearch(null, { topN: AI_GUIDE_EXPANDED_SHOW })}
+                    >
+                      추천 가이드 더 보기
+                    </button>
                   )}
                 </section>
 
