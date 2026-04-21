@@ -6,6 +6,7 @@ import { apiRequest } from '../api/client'
 import './AiQuickSearchPage.css'
 
 const PLACEHOLDER = '제주도에서 조용히 사진 찍기 좋은 오름 추천해줘'
+const LS_AI_SEARCH_SNAPSHOT = 'localguest_ai_search_snapshot_v1'
 
 const JEJU_OREUM_SPOTS = [
   { title: '아부오름', caption: '완만한 능선, 소풍 명소', tape: 'g' },
@@ -188,6 +189,47 @@ export function AiQuickSearchPage() {
     },
     [stopTypewriter],
   )
+
+  useEffect(() => {
+    // 상세 화면으로 이동했다가 돌아왔을 때, 직전 AI 검색 패널을 복원한다.
+    try {
+      const raw = sessionStorage.getItem(LS_AI_SEARCH_SNAPSHOT)
+      if (!raw) return
+      const snap = JSON.parse(raw)
+      if (!snap || typeof snap !== 'object') return
+      const restoredPrompt = typeof snap.prompt === 'string' ? snap.prompt : ''
+      const restoredResult = snap.result ?? null
+      const restoredFallback = Array.isArray(snap.fallbackGuides) ? snap.fallbackGuides : []
+      setPrompt(restoredPrompt)
+      setResult(restoredResult)
+      setFallbackGuides(restoredFallback)
+      setHasSearched(Boolean(snap.hasSearched))
+      setPanelOpen(Boolean(snap.panelOpen))
+      // narrative는 result 기반으로 다시 생성해 타이핑 효과를 복원한다.
+      const narrative = buildNarrative(restoredResult)
+      startTypewriter(narrative)
+      sessionStorage.removeItem(LS_AI_SEARCH_SNAPSHOT)
+    } catch {
+      /* ignore */
+    }
+  }, [startTypewriter])
+
+  const persistSnapshotForBack = useCallback(() => {
+    try {
+      sessionStorage.setItem(
+        LS_AI_SEARCH_SNAPSHOT,
+        JSON.stringify({
+          prompt,
+          hasSearched,
+          panelOpen: true,
+          result,
+          fallbackGuides,
+        }),
+      )
+    } catch {
+      /* ignore */
+    }
+  }, [fallbackGuides, hasSearched, prompt, result])
 
   useEffect(() => {
     const recs = result?.recommendations
@@ -406,6 +448,10 @@ export function AiQuickSearchPage() {
                         const tags = tagsForGuide(g, keywords)
                         return (
                           <li key={g.guideId ?? idx} className="ais-guide-card">
+                            <div className="ais-rank" aria-label={`추천 순위 ${idx + 1}위`}>
+                              <span className="ais-rank-badge">{idx + 1}</span>
+                              <span className="ais-rank-text">추천 {idx + 1}위</span>
+                            </div>
                             <div className="ais-guide-feeds" aria-label="가이드 피드">
                               {feeds.length > 0 ? (
                                 feeds.slice(0, 6).map((f) => (
@@ -413,7 +459,8 @@ export function AiQuickSearchPage() {
                                     key={f.feedId}
                                     to={`/guides/${g.guideId}#match-request`}
                                     className="ais-feed-thumb"
-                                    title={f.content ? String(f.content).slice(0, 80) : 'AI 추천 코스 상세보기'}
+                                    title={f.content ? String(f.content).slice(0, 80) : '가이드 상세보기'}
+                                    onClick={persistSnapshotForBack}
                                   >
                                     <span
                                       className="ais-feed-thumb-img"
@@ -426,7 +473,8 @@ export function AiQuickSearchPage() {
                                 <Link
                                   to={`/guides/${g.guideId}#match-request`}
                                   className="ais-feed-empty"
-                                  title="AI 추천 코스 상세보기"
+                                  title="가이드 상세보기"
+                                  onClick={persistSnapshotForBack}
                                 >
                                   <span
                                     className="ais-feed-thumb-img"
@@ -458,9 +506,10 @@ export function AiQuickSearchPage() {
                               </div>
                               <Link
                                 to={`/guides/${g.guideId}#match-request`}
-                                className={`ais-profile-btn ${idx === 0 ? 'ais-profile-btn--primary' : ''}`}
+                                className="ais-profile-btn ais-profile-btn--primary"
+                                onClick={persistSnapshotForBack}
                               >
-                                AI 추천 코스 상세보기
+                                가이드 상세보기
                               </Link>
                             </div>
                           </li>
