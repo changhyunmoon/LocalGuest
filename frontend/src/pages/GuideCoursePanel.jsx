@@ -63,11 +63,21 @@ export function parseCourseDetail(text) {
  *   guideId: number,
  *   schedule: { scheduleId: number, availableDate: string, startTime: string, endTime: string, destination?: string },
  *   initialForm?: { meetingPoint?: string, guideMessage?: string, courseDetail?: string, isPaid?: boolean } | null,
+ *   standalone?: boolean,
+ *   hideHeader?: boolean,
  *   onClose: () => void,
  *   onSaved: (savedForm?: { meetingPoint?: string, guideMessage?: string, courseDetail?: string, isPaid?: boolean }) => void,
  * }} props
  */
-export function GuideCoursePanel({ guideId, schedule, initialForm = null, onClose, onSaved }) {
+export function GuideCoursePanel({
+  guideId,
+  schedule,
+  initialForm = null,
+  standalone = false,
+  hideHeader = false,
+  onClose,
+  onSaved,
+}) {
   const mapRef = useRef(null)
   const mapInstanceRef = useRef(null)
   const overlaysRef = useRef([])
@@ -383,23 +393,31 @@ export function GuideCoursePanel({ guideId, schedule, initialForm = null, onClos
     }
   }
 
-  return (
-    <div className="gcp-backdrop" onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <aside className="gcp-panel" role="dialog" aria-modal="true" aria-label="코스 작성">
-        {/* 헤더 */}
-        <header className="gcp-header">
-          <div className="gcp-header-left">
-            <span className="gcp-header-label">코스 작성</span>
-            <h2 className="gcp-header-title">
-              {schedule.availableDate}
-              {schedule.destination ? ` · ${schedule.destination}` : ''}
-            </h2>
-            <p className="gcp-header-meta">
-              {schedule.startTime} ~ {schedule.endTime}
-            </p>
-          </div>
-          <button type="button" className="gcp-close" onClick={onClose} aria-label="닫기">✕</button>
-        </header>
+  const panel = (
+    <aside
+      className={`gcp-panel${standalone ? ' gcp-panel--page' : ''}${standalone && hideHeader ? ' gcp-panel--no-header' : ''}`}
+      role={standalone ? undefined : 'dialog'}
+      aria-modal={standalone ? undefined : 'true'}
+      aria-label="코스 작성"
+    >
+        {/* 헤더 — 전용 페이지에서는 상단 히어로로 대체 가능 */}
+        {!hideHeader && (
+          <header className="gcp-header">
+            <div className="gcp-header-left">
+              <span className="gcp-header-label">코스 작성</span>
+              <h2 className="gcp-header-title">
+                {schedule.availableDate}
+                {schedule.destination ? ` · ${schedule.destination}` : ''}
+              </h2>
+              <p className="gcp-header-meta">
+                {schedule.startTime} ~ {schedule.endTime}
+              </p>
+            </div>
+            <button type="button" className="gcp-close" onClick={onClose} aria-label={standalone ? '목록으로' : '닫기'}>
+              {standalone ? '←' : '✕'}
+            </button>
+          </header>
+        )}
 
         {loading ? (
           <div className="gcp-loading">불러오는 중…</div>
@@ -546,6 +564,15 @@ export function GuideCoursePanel({ guideId, schedule, initialForm = null, onClos
           </div>
         )}
       </aside>
+  )
+
+  if (standalone) {
+    return <div className="gcp-page-wrap">{panel}</div>
+  }
+
+  return (
+    <div className="gcp-backdrop" onClick={(e) => e.target === e.currentTarget && onClose()}>
+      {panel}
     </div>
   )
 }

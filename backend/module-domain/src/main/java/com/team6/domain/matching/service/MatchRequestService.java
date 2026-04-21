@@ -1,6 +1,10 @@
 package com.team6.domain.matching.service;
 
 import com.team6.domain.guide.repository.GuideProfileRepository;
+import com.team6.domain.guide.repository.GuideScheduleRepository;
+import com.team6.domain.guide.entity.GuideProfile;
+import com.team6.domain.guide.entity.GuideSchedule;
+import com.team6.domain.guide.entity.enums.GuideScheduleStatus;
 import com.team6.domain.matching.client.GuideScheduleSyncClient;
 import com.team6.domain.matching.dto.request.MatchRequestCreateRequest;
 import com.team6.domain.matching.dto.request.MatchRequestDeclineRequest;
@@ -17,9 +21,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.text.NumberFormat;
 import java.util.List;
 import java.util.Locale;
+import java.util.Comparator;
 
 @Slf4j
 @Service
@@ -30,17 +36,19 @@ public class MatchRequestService {
     private final MatchRequestRepository matchRequestRepository;
     private final GuideScheduleSyncClient guideScheduleSyncClient;
     private final GuideProfileRepository guideProfileRepository;
+    private final GuideScheduleRepository guideScheduleRepository;
 
     // 매칭 요청 생성
     public MatchRequestCreateResponse createMatchRequest(Long guestId, MatchRequestCreateRequest request) {
         Long guideMemberId = resolveGuideMemberId(request.getGuideId());
         validateCreateRequest(guestId, guideMemberId);
+        Long guideScheduleId = resolveOrCreateScheduleId(request.getGuideId(), request);
 
         String conceptSummary = resolveConceptSummary(request);
         MatchRequest matchRequest = MatchRequest.create(
                 guestId,
                 request.getGuideId(),
-                request.getGuideScheduleId(),
+                guideScheduleId,
                 request.getDestination(),
                 request.getConcept(),
                 conceptSummary,
@@ -229,6 +237,57 @@ public class MatchRequestService {
         return guideProfileRepository.findById(guideProfileId)
                 .map(guideProfile -> guideProfile.getMemberId())
                 .orElseThrow(() -> new MatchingException(MatchingErrorCode.MATCH_REQUEST_UNAUTHORIZED));
+    }
+
+    /**
+     * 기본 정책: 가이드가 날짜를 별도로 막지 않았다면 요청 가능.
+     * - scheduleId가 오면 그대로 사용
+     * - scheduleId가 없고 desiredDate가 오면
+     *   1) BLOCKED면 거부
+     *   2) AVAILABLE 슬롯이 있으면 그 슬롯 사용
+     *   3) 슬롯이 없으면 종일 AVAILABLE(00:00~23:59) 슬롯을 생성해 사용
+     */
+    private Long resolveOrCreateScheduleId(Long guideId, MatchRequestCreateRequest request) {
+        if (request.getGuideScheduleId() != null) {
+            return request.getGuideScheduleId();
+        }
+
+        LocalDate desiredDate = request.getDesiredDate();
+        if (desiredDate == null) {
+            throw new MatchingException(MatchingErrorCode.INVALID_REQUEST);
+        }
+
+        List<GuideSchedule> daySchedules = guideScheduleRepository.findByGuideProfile_IdAndAvailableDate(guideId, desiredDate);
+        boolean blocked = daySchedules.stream()
+                .anyMatch(s -> s.getStatus() == GuideScheduleStatus.BLOCKED);
+        if (blocked) {
+            throw new MatchingException(MatchingErrorCode.MATCH_REQUEST_INVALID_STATUS);
+        }
+
+        GuideSchedule available = daySchedules.stream()
+                .filter(s -> s.getStatus() == GuideScheduleStatus.AVAILABLE)
+                .min(Comparator.comparing(GuideSchedule::getStartTime))
+                .orElse(null);
+        if (available != null) {
+            return available.getId();
+        }
+
+        boolean pendingOrBooked = daySchedules.stream()
+                .anyMatch(s -> s.getStatus() == GuideScheduleStatus.PENDING || s.getStatus() == GuideScheduleStatus.BOOKED);
+        if (pendingOrBooked) {
+            throw new MatchingException(MatchingErrorCode.MATCH_REQUEST_INVALID_STATUS);
+        }
+
+        GuideProfile profile = guideProfileRepository.findById(guideId)
+                .orElseThrow(() -> new MatchingException(MatchingErrorCode.INVALID_REQUEST));
+        GuideSchedule generated = GuideSchedule.builder()
+                .guideProfile(profile)
+                .availableDate(desiredDate)
+                .startTime(LocalTime.of(0, 0))
+                .endTime(LocalTime.of(23, 59))
+                .status(GuideScheduleStatus.AVAILABLE)
+                .build();
+        return guideScheduleRepository.save(generated).getId();
     }
 
     private void syncTourProgress(MatchRequest request, LocalDate today) {
