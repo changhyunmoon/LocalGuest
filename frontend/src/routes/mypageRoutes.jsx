@@ -2,6 +2,7 @@ import { Navigate } from 'react-router-dom'
 
 import { ProtectedRoute } from '../components/ProtectedRoute'
 import { MypageShell } from '../layouts/MypageShell'
+import { GuestUpcomingTripsPage } from '../pages/GuestUpcomingTripsPage'
 import { MypageItineraryPage } from '../pages/MypageItineraryPage'
 import { MypagePaymentsPage } from '../pages/MypagePaymentsPage'
 import { MypagePrivacyPage } from '../pages/MypagePrivacyPage'
@@ -11,6 +12,14 @@ import { MypageScrapbookPage } from '../pages/MypageScrapbookPage'
 import { MypageTourPage } from '../pages/MypageTourPage'
 
 export const mypageRoutes = [
+  {
+    path: 'upcoming-trips',
+    element: (
+      <ProtectedRoute>
+        <GuestUpcomingTripsPage />
+      </ProtectedRoute>
+    ),
+  },
   {
     path: 'mypage',
     element: (

@@ -1,0 +1,119 @@
+.gut-page {
+  width: 100%;
+  max-width: min(1080px, 100%);
+  margin: 0 auto;
+}
+
+.gut-hero {
+  margin-bottom: 1rem;
+}
+
+.gut-hero h1 {
+  margin: 0 0 0.3rem;
+  font-size: clamp(1.2rem, 4vw, 1.6rem);
+  color: #111827;
+}
+
+.gut-hero p {
+  margin: 0;
+  color: #4b5563;
+  font-size: 0.9rem;
+}
+
+.gut-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.gut-section {
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  background: #fff;
+  padding: 0.85rem;
+}
+
+.gut-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.65rem;
+}
+
+.gut-section-head h2 {
+  margin: 0;
+  font-size: 0.98rem;
+  color: #111827;
+}
+
+.gut-section-head span {
+  font-size: 0.76rem;
+  color: #374151;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  border-radius: 999px;
+  padding: 0.18rem 0.55rem;
+}
+
+.gut-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 0.65rem;
+}
+
+.gut-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #fafafa;
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.gut-meta h3 {
+  margin: 0.35rem 0 0.35rem;
+  font-size: 0.95rem;
+  color: #111827;
+}
+
+.gut-meta p {
+  margin: 0.2rem 0 0;
+  font-size: 0.82rem;
+  color: #4b5563;
+  line-height: 1.45;
+}
+
+.gut-dday {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 800;
+  padding: 0.2rem 0.55rem;
+  color: #1d4ed8;
+  background: #dbeafe;
+}
+
+.gut-dday.is-today {
+  color: #b91c1c;
+  background: #fee2e2;
+}
+
+.gut-dday.is-soon {
+  color: #92400e;
+  background: #fef3c7;
+}
+
+.gut-open {
+  border: 1px solid #111827;
+  border-radius: 999px;
+  background: #111827;
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0.4rem 0.7rem;
+  cursor: pointer;
+  font-family: inherit;
+}
+

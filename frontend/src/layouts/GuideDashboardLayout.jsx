@@ -1,4 +1,4 @@
-import { Link, Navigate, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { Link, Navigate, NavLink, Outlet, useLocation } from 'react-router-dom'
 
 import { useGuidePendingRequests } from '../context/GuidePendingRequestsProvider.jsx'
 import { useAuth } from '../context/useAuth.js'
@@ -19,7 +19,6 @@ const NAV = [
 export function GuideDashboardLayout() {
   const { email, logout, isGuide } = useAuth()
   const { pendingCount } = useGuidePendingRequests()
-  const navigate = useNavigate()
   const { pathname, search } = useLocation()
   const displayName = email ? email.split('@')[0] : '홍길동'
 
@@ -34,9 +33,6 @@ export function GuideDashboardLayout() {
           <div className="g-dash-avatar" aria-hidden />
           <strong className="g-dash-name">{displayName}</strong>
           <span className="g-dash-email">{email ?? ''}</span>
-          <button type="button" className="g-dash-profile-btn" onClick={() => navigate('/guide/mypage/profile')}>
-            프로필 수정
-          </button>
         </div>
         <nav className="g-dash-nav" aria-label="가이드 메뉴">
           {NAV.map((item) => {
