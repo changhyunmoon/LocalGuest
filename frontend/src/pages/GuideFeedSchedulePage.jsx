@@ -109,6 +109,7 @@ export function GuideFeedSchedulePage() {
   const [showLocationInput, setShowLocationInput] = useState(false)
   const [locationInput, setLocationInput] = useState('')
   const [courseTarget, setCourseTarget] = useState(null)
+  const [savedCourseForms, setSavedCourseForms] = useState({})
   const { toasts, addToast } = useToast()
   const [blockedDates, setBlockedDates] = useState(() => new Set())
   const [busy, setBusy] = useState(false)
@@ -683,8 +684,29 @@ export function GuideFeedSchedulePage() {
         <GuideCoursePanel
           guideId={guideId}
           schedule={courseTarget}
+          initialForm={savedCourseForms[courseTarget.scheduleId] ?? null}
           onClose={() => setCourseTarget(null)}
-          onSaved={() => { setCourseTarget(null); void reloadScheduleData(guideId) }}
+          onSaved={(savedForm) => {
+            if (courseTarget?.scheduleId != null && savedForm) {
+              const sid = courseTarget.scheduleId
+              setSavedCourseForms((prev) => ({
+                ...prev,
+                [sid]: {
+                  ...prev[sid],
+                  ...savedForm,
+                },
+              }))
+              setSchedules((prev) =>
+                prev.map((row) => (
+                  row.scheduleId === sid
+                    ? { ...row, hasCourse: true }
+                    : row
+                )),
+              )
+            }
+            setCourseTarget(null)
+            void reloadScheduleData(guideId)
+          }}
         />
       )}
     </div>

@@ -5,15 +5,10 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="84d1b3de-8103-452e-83cf-38ecd34993e7" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/module-domain/src/main/java/com/team6/domain/guide/service/GuideScheduleService.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/module-domain/src/main/java/com/team6/domain/guide/service/GuideScheduleService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/layouts/AppLayout.css" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/layouts/AppLayout.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/layouts/AppLayout.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/layouts/AppLayout.jsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/layouts/GuideDashboardLayout.css" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/layouts/GuideDashboardLayout.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/layouts/GuideDashboardLayout.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/layouts/GuideDashboardLayout.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/pages/GuideCoursePanel.css" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/GuideCoursePanel.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/pages/GuideCoursePanel.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/GuideCoursePanel.jsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend/src/pages/GuideFeedSchedulePage.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/GuideFeedSchedulePage.jsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/pages/GuideInboxPage.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/GuideInboxPage.jsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/pages/GuideMypagePages.css" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/GuideMypagePages.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/pages/GuideMatchedCoursePage.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/GuideMatchedCoursePage.jsx" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -65,10 +60,10 @@
     &quot;accountId&quot;: &quot;183f6da5-454f-4b08-95a4-31032f49ef56&quot;
   }
 }</component>
-  <component name="KubernetesApiPersistence"><![CDATA[{}]]></component>
-  <component name="KubernetesApiProvider"><![CDATA[{
-  "isMigrated": true
-}]]></component>
+  <component name="KubernetesApiPersistence">{}</component>
+  <component name="KubernetesApiProvider">{
+  &quot;isMigrated&quot;: true
+}</component>
   <component name="McpProjectServerCommands">
     <commands />
     <urls />

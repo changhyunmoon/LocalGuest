@@ -3,19 +3,13 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 
 import { PageError, PageLoading } from '../components/PageStates.jsx'
 import { apiRequest } from '../api/client'
+import { DEFAULT_KOREA_CENTER, getUserLatLng, resolveLatLng } from '../lib/kakaoGeocode.js'
 import { parseCourseDetail } from './GuideCoursePanel.jsx'
 
 import './GuideMatchedCoursePage.css'
 
 // ── 상수 ──────────────────────────────────────────────────────────────────
 const KAKAO_APP_KEY = import.meta.env.VITE_KAKAO_MAP_APP_KEY
-
-const REGION_BASE = {
-  제주: { lat: 33.4996, lng: 126.5312 },
-  부산: { lat: 35.1796, lng: 129.0756 },
-  강릉: { lat: 37.7519, lng: 128.8761 },
-  여수: { lat: 34.7604, lng: 127.6622 },
-}
 
 // ── 유틸 (기존 GuideMatchedCoursePage와 동일) ─────────────────────────────
 function loadKakaoSdk(appKey) {
@@ -38,19 +32,8 @@ function loadKakaoSdk(appKey) {
   })
 }
 
-function geocodeAddress(kakao, query) {
-  return new Promise((resolve) => {
-    const geocoder = new kakao.maps.services.Geocoder()
-    geocoder.addressSearch(query, (result, status) => {
-      if (status !== kakao.maps.services.Status.OK || !result?.length) { resolve(null); return }
-      resolve({ lat: Number(result[0].y), lng: Number(result[0].x) })
-    })
-  })
-}
-
-function fallbackLatLng(region, idx) {
-  const hit = Object.entries(REGION_BASE).find(([key]) => String(region ?? '').includes(key))
-  const base = hit?.[1] ?? { lat: 33.4996, lng: 126.5312 }
+function fallbackLatLng(idx) {
+  const base = DEFAULT_KOREA_CENTER
   return { lat: base.lat + idx * 0.007, lng: base.lng + (idx % 2 === 0 ? 0.009 : -0.006) }
 }
 
@@ -168,16 +151,27 @@ export function GuideMatchedCoursePage() {
         const kakao = await loadKakaoSdk(KAKAO_APP_KEY)
         if (cancelled || !mapRef.current) return
 
-        const center = fallbackLatLng(profile?.region, 0)
+        let center = DEFAULT_KOREA_CENTER
+        const userPos = await getUserLatLng()
+        if (userPos) {
+          center = userPos
+        } else if (meetingPoint.trim()) {
+          const byMeeting = await resolveLatLng(kakao, meetingPoint.trim(), { regionHint: String(profile?.region ?? '').trim() })
+          if (byMeeting) center = byMeeting
+        } else if (spots[0]?.name) {
+          const firstSpot = await resolveLatLng(kakao, spots[0].name, { regionHint: String(profile?.region ?? '').trim() })
+          if (firstSpot) center = firstSpot
+        }
         const map = new kakao.maps.Map(mapRef.current, {
           center: new kakao.maps.LatLng(center.lat, center.lng),
           level: 8,
         })
 
+        const regionHint = String(profile?.region ?? '').trim()
         const resolved = await Promise.all(
           spots.map(async (spot, idx) => {
-            const point = await geocodeAddress(kakao, `${spot.name} ${profile?.region ?? ''}`.trim())
-            return point ?? fallbackLatLng(profile?.region, idx)
+            const point = await resolveLatLng(kakao, spot.name, { regionHint })
+            return point ?? fallbackLatLng(idx)
           }),
         )
         if (cancelled) return
@@ -202,7 +196,7 @@ export function GuideMatchedCoursePage() {
 
     void draw()
     return () => { cancelled = true }
-  }, [spots, isPaid, profile?.region])
+  }, [spots, isPaid, profile?.region, meetingPoint])
 
   const handleOpenMatchChat = async () => {
     setChatBusy(true)

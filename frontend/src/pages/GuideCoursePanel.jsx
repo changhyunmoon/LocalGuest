@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { apiRequest } from '../api/client.js'
+import { DEFAULT_KOREA_CENTER, geocodeAddressOnly, getUserLatLng, resolveLatLng } from '../lib/kakaoGeocode.js'
 import './GuideCoursePanel.css'
 
 const KAKAO_APP_KEY = import.meta.env.VITE_KAKAO_MAP_APP_KEY
@@ -23,25 +24,6 @@ function loadKakaoSdk(appKey) {
     script.onerror = () => reject(new Error('SDK 로드 실패'))
     document.head.appendChild(script)
   })
-}
-
-function geocodeAddress(kakao, query) {
-  return new Promise((resolve) => {
-    const geocoder = new kakao.maps.services.Geocoder()
-    geocoder.addressSearch(query, (result, status) => {
-      if (status !== kakao.maps.services.Status.OK || !result?.length) {
-        resolve(null)
-        return
-      }
-      resolve({ lat: Number(result[0].y), lng: Number(result[0].x) })
-    })
-  })
-}
-
-const FALLBACK_BASE = { lat: 33.4996, lng: 126.5312 }
-
-function fallbackLatLng(idx) {
-  return { lat: FALLBACK_BASE.lat + idx * 0.007, lng: FALLBACK_BASE.lng + (idx % 2 === 0 ? 0.009 : -0.006) }
 }
 
 function createPinOverlay(kakao, map, latlng, idx, name) {
@@ -80,11 +62,12 @@ export function parseCourseDetail(text) {
  * @param {{
  *   guideId: number,
  *   schedule: { scheduleId: number, availableDate: string, startTime: string, endTime: string, destination?: string },
+ *   initialForm?: { meetingPoint?: string, guideMessage?: string, courseDetail?: string, isPaid?: boolean } | null,
  *   onClose: () => void,
  *   onSaved: (savedForm?: { meetingPoint?: string, guideMessage?: string, courseDetail?: string, isPaid?: boolean }) => void,
  * }} props
  */
-export function GuideCoursePanel({ guideId, schedule, onClose, onSaved }) {
+export function GuideCoursePanel({ guideId, schedule, initialForm = null, onClose, onSaved }) {
   const mapRef = useRef(null)
   const mapInstanceRef = useRef(null)
   const overlaysRef = useRef([])
@@ -120,12 +103,27 @@ export function GuideCoursePanel({ guideId, schedule, onClose, onSaved }) {
         if (!res.ok) {
           // 404면 빈 폼으로 시작 (아직 작성 안 한 케이스)
           if (res.status !== 404) throw new Error(text || '불러오기 실패')
+          if (!cancelled && initialForm) {
+            const mergedDetail = String(initialForm.courseDetail ?? '').trim()
+            const parsed = parseCourseDetail(mergedDetail)
+            setMeetingPoint(initialForm.meetingPoint ?? '')
+            setGuideMessage(initialForm.guideMessage ?? '')
+            setSpots(parsed.length ? parsed : [{ name: '', time: '', desc: '' }])
+            setGeoStatus(parsed.map((s) => (s.name ? 'ok' : 'idle')))
+          }
         } else {
           const data = text ? JSON.parse(text) : {}
+          const merged = {
+            ...data,
+            // 결제 전 마스킹으로 courseDetail이 비어오는 경우를 대비해, 직전에 저장한 로컬 값을 우선 표시한다.
+            meetingPoint: data?.meetingPoint ?? initialForm?.meetingPoint ?? '',
+            guideMessage: data?.guideMessage ?? initialForm?.guideMessage ?? '',
+            courseDetail: data?.courseDetail ?? initialForm?.courseDetail ?? '',
+          }
           if (!cancelled) {
-            setMeetingPoint(data.meetingPoint ?? '')
-            setGuideMessage(data.guideMessage ?? '')
-            const parsed = parseCourseDetail(data.courseDetail)
+            setMeetingPoint(merged.meetingPoint)
+            setGuideMessage(merged.guideMessage)
+            const parsed = parseCourseDetail(merged.courseDetail)
             setSpots(parsed.length ? parsed : [{ name: '', time: '', desc: '' }])
             setGeoStatus(parsed.map((s) => (s.name ? 'ok' : 'idle')))
           }
@@ -137,30 +135,9 @@ export function GuideCoursePanel({ guideId, schedule, onClose, onSaved }) {
       }
     })()
     return () => { cancelled = true }
-  }, [guideId, schedule?.scheduleId])
+  }, [guideId, schedule?.scheduleId, initialForm])
 
   useEffect(() => { spotsRef.current = spots }, [spots])
-
-  // ── 카카오맵 초기화 ───────────────────────────────────────────────────
-  useEffect(() => {
-    if (!mapRef.current) return
-    let cancelled = false
-    ;(async () => {
-      try {
-        setMapErr('')
-        const kakao = await loadKakaoSdk(KAKAO_APP_KEY)
-        if (cancelled || !mapRef.current) return
-        const map = new kakao.maps.Map(mapRef.current, {
-          center: new kakao.maps.LatLng(FALLBACK_BASE.lat, FALLBACK_BASE.lng),
-          level: 8,
-        })
-        mapInstanceRef.current = map
-      } catch (e) {
-        if (!cancelled) setMapErr(e instanceof Error ? e.message : '지도 오류')
-      }
-    })()
-    return () => { cancelled = true }
-  }, [])
 
   // ── 지도 마커/경로 업데이트 ───────────────────────────────────────────
   const updateMap = useCallback(async (currentSpots) => {
@@ -178,9 +155,11 @@ export function GuideCoursePanel({ guideId, schedule, onClose, onSaved }) {
       .filter(({ spot }) => spot.name.trim())
     if (namedEntries.length === 0) return
 
+    const regionHint = schedule?.destination?.trim() ?? ''
+
     const results = await Promise.all(
       namedEntries.map(async ({ spot, origIdx }) => ({
-        point: await geocodeAddress(kakao, spot.name),
+        point: await resolveLatLng(kakao, spot.name, { regionHint }),
         origIdx,
         name: spot.name,
       })),
@@ -214,13 +193,67 @@ export function GuideCoursePanel({ guideId, schedule, onClose, onSaved }) {
       )
     }
     if (path.length > 0) map.setBounds(bounds)
-  }, [])
+  }, [schedule?.destination])
+
+  // ── 카카오맵 초기화 (폼 로딩 후에만 #gcp-map DOM이 생김) ─────────────────
+  useEffect(() => {
+    if (loading) return
+    if (!mapRef.current) return
+    let cancelled = false
+
+    overlaysRef.current.forEach((o) => o.setMap(null))
+    overlaysRef.current = []
+    polylineRef.current.forEach((p) => p.setMap(null))
+    polylineRef.current = []
+    mapInstanceRef.current = null
+    if (mapRef.current) mapRef.current.innerHTML = ''
+
+    ;(async () => {
+      try {
+        setMapErr('')
+        const kakao = await loadKakaoSdk(KAKAO_APP_KEY)
+        if (cancelled || !mapRef.current) return
+
+        let initial = { ...DEFAULT_KOREA_CENTER }
+        const userPos = await getUserLatLng()
+        if (userPos) {
+          initial = userPos
+        } else if (schedule?.destination?.trim()) {
+          const g = await geocodeAddressOnly(kakao, schedule.destination.trim())
+          if (g) initial = g
+          else {
+            const k = await resolveLatLng(kakao, schedule.destination.trim())
+            if (k) initial = k
+          }
+        }
+
+        const map = new kakao.maps.Map(mapRef.current, {
+          center: new kakao.maps.LatLng(initial.lat, initial.lng),
+          level: 8,
+        })
+        mapInstanceRef.current = map
+        await updateMap(spotsRef.current)
+      } catch (e) {
+        if (!cancelled) setMapErr(e instanceof Error ? e.message : '지도 오류')
+      }
+    })()
+
+    return () => {
+      cancelled = true
+      overlaysRef.current.forEach((o) => o.setMap(null))
+      overlaysRef.current = []
+      polylineRef.current.forEach((p) => p.setMap(null))
+      polylineRef.current = []
+      mapInstanceRef.current = null
+    }
+  }, [loading, schedule?.scheduleId, schedule?.destination, updateMap])
 
   // ── 스팟 필드 업데이트 + name 변경 시 300ms 디바운스 geocoding ────────
   const updateSpot = (idx, field, value) => {
     setSpots((prev) => {
       const next = [...prev]
       next[idx] = { ...next[idx], [field]: value }
+      spotsRef.current = next
       return next
     })
     if (field === 'name') {
@@ -244,13 +277,18 @@ export function GuideCoursePanel({ guideId, schedule, onClose, onSaved }) {
   }
 
   const addSpot = () => {
-    setSpots((prev) => [...prev, { name: '', time: '', desc: '' }])
+    setSpots((prev) => {
+      const next = [...prev, { name: '', time: '', desc: '' }]
+      spotsRef.current = next
+      return next
+    })
     setGeoStatus((prev) => [...prev, 'idle'])
   }
 
   const removeSpot = (idx) => {
     if (spots.length <= 1) return
     const newSpots = spots.filter((_, i) => i !== idx)
+    spotsRef.current = newSpots
     setSpots(newSpots)
     setGeoStatus((prev) => prev.filter((_, i) => i !== idx))
     void updateMap(newSpots)
@@ -265,6 +303,7 @@ export function GuideCoursePanel({ guideId, schedule, onClose, onSaved }) {
       const next = [...prev]
       const [moved] = next.splice(from, 1)
       next.splice(dropIdx, 0, moved)
+      spotsRef.current = next
       return next
     })
     setGeoStatus((prev) => {
@@ -381,6 +420,11 @@ export function GuideCoursePanel({ guideId, schedule, onClose, onSaved }) {
                 <div className="gcp-map-empty">
                   <span>장소명을 입력하면 지도에 표시됩니다</span>
                 </div>
+              )}
+              {!mapErr && (
+                <p className="gcp-map-loc-hint">
+                  지도는 브라우저 위치 권한(선택)과 일정 목적지·장소명 검색을 반영합니다. 제주 고정이 아니라 검색 결과에 맞춰 이동해요.
+                </p>
               )}
             </div>
 
