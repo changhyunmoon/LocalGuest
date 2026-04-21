@@ -1112,11 +1112,12 @@
   font-size: clamp(1.2rem, 3vw, 1.7rem);
   font-weight: 900;
   letter-spacing: -0.03em;
+  color: #111;
 }
 
 .gpv-head p {
   margin: 0;
-  color: #6b7280;
+  color: #111;
   font-size: 0.86rem;
 }
 
@@ -1147,7 +1148,48 @@
   border-radius: 10px;
   padding: 0.35rem 0.75rem;
   font-size: 0.74rem;
-  color: #4b5563;
+  color: #111;
+  white-space: nowrap;
+  font-weight: 700;
+}
+
+.gpv-region-row {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.gpv-region-row input {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.gpv-region-btn {
+  flex: 0 0 auto;
+  min-width: 88px;
+  border-color: #93c5fd;
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.gpv-region-btn:hover:not(:disabled) {
+  background: #dbeafe;
+  border-color: #60a5fa;
+}
+
+.gpv-region-btn:disabled {
+  opacity: 0.65;
+}
+
+.gpv-region-hint {
+  margin-top: 0.35rem;
+  display: inline-block;
+  padding: 0.28rem 0.55rem;
+  border-radius: 999px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1e3a8a;
+  font-size: 0.74rem;
 }
 
 .gpv-photo-input {
@@ -1166,7 +1208,7 @@
 
 .gpv-photo-url-box summary {
   font-size: 0.72rem;
-  color: #9ca3af;
+  color: #111;
   cursor: pointer;
   list-style: none;
 }
@@ -1201,7 +1243,88 @@
   padding: 0.6rem 0.7rem;
   font: inherit;
   font-size: 0.86rem;
+  color: #111;
   box-sizing: border-box;
+}
+
+.gpv-field input::placeholder,
+.gpv-photo-input::placeholder {
+  color: #111;
+  opacity: 0.75;
+}
+
+/* intro/schedule text contrast boost */
+.gi-card-title,
+.gi-range-val,
+.gi-chip,
+.gi-tag,
+.gi-tag-input,
+.gi-custom-input,
+.gi-card p,
+.gi-card label,
+.gi-card small {
+  color: #111;
+}
+
+.gi-tag-input::placeholder,
+.gi-custom-input::placeholder {
+  color: #111;
+  opacity: 0.75;
+}
+
+.gss-head h2,
+.gss-head p,
+.gss-banner,
+.gss-banner strong,
+.gss-cal-top strong,
+.gss-week span,
+.gss-legend,
+.gss-day,
+.gss-day small,
+.gss3-sum-label,
+.gss3-cal-title,
+.gss3-weekday,
+.gss3-cal-hint,
+.gss3-leg,
+.gss3-empty,
+.gss3-mgmt-title,
+.gss3-drawer-date,
+.gss3-drawer-desc,
+.gss3-pick__label,
+.gss3-pick__hint,
+.gss3-dk,
+.gss3-dv,
+.gss3-bcard-dest,
+.gss3-bcard-meta {
+  color: #111;
+}
+
+/* intro card hard override (ensure no white text) */
+.gi-card,
+.gi-card label,
+.gi-card p,
+.gi-card .gm-hint,
+.gi-card .gi-card-title,
+.gi-card .gi-range-val,
+.gi-card .gi-chip,
+.gi-card .gi-tag,
+.gi-card .gi-tag-del,
+.gi-card input,
+.gi-card select,
+.gi-card textarea {
+  color: #111 !important;
+}
+
+.gi-card input::placeholder,
+.gi-card textarea::placeholder {
+  color: #111 !important;
+  opacity: 0.75;
+}
+
+.gi-card .gi-chip.is-on {
+  background: #1f2328;
+  border-color: #1f2328;
+  color: #fff !important;
 }
 
 .gpv-tag-list {
