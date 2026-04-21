@@ -21,6 +21,18 @@ class RegionCandidateExpansionTest {
     }
 
     @Test
+    void apply_should_treat_detailed_region_as_exact_match() {
+        List<GuideRecommendRequest.GuideCandidateDto> pool = List.of(
+                g(1L, "제주특별자치도 제주시"),
+                g(2L, "제주")
+        );
+        RegionCandidateExpansion.Result r = RegionCandidateExpansion.apply(pool, "제주");
+        assertThat(r.candidates()).hasSize(2);
+        assertThat(r.expansionUsed()).isFalse();
+        assertThat(r.exactCount()).isEqualTo(2);
+    }
+
+    @Test
     void apply_should_expand_to_adjacent_when_exact_sparse() {
         List<GuideRecommendRequest.GuideCandidateDto> pool = List.of(
                 g(1L, "강릉"),
