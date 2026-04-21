@@ -200,6 +200,12 @@ public class PromptParser {
                 return null;
             }
         }
+
+        // "예산 하루 10만원" 같이 단일 금액 표현도 범위(min=max)로 보존한다.
+        Integer single = extractBudgetAmount(prompt);
+        if (single != null && single >= 0) {
+            return new BudgetRange(single, single);
+        }
         return null;
     }
 

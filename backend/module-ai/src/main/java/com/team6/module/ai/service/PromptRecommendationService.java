@@ -379,6 +379,8 @@ public class PromptRecommendationService {
                 .concept(ConceptSummaryGenerator.generateMatchRequestConcept(request))
                 .conceptSummary(ConceptSummaryGenerator.generate(request))
                 .desiredBudget(desiredBudget)
+                .budgetMinWon(min)
+                .budgetMaxWon(max)
                 .budgetHint(request.getBudgetLevel())
                 .headcount(request.getHeadcount())
                 .durationDays(request.getDurationDays())

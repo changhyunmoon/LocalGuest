@@ -23,6 +23,8 @@ public class MatchRequestCreateResponse {
     private String conceptSummary;
     private LocalDate desiredDate;
     private Integer desiredBudget;
+    private Integer budgetMinWon;
+    private Integer budgetMaxWon;
     private String proposedSchedule;
     private String proposeMessage;
     private String status;
@@ -44,6 +46,8 @@ public class MatchRequestCreateResponse {
                 .conceptSummary(entity.getConceptSummary())
                 .desiredDate(entity.getDesiredDate())
                 .desiredBudget(entity.getDesiredBudget())
+                .budgetMinWon(entity.getBudgetMinWon())
+                .budgetMaxWon(entity.getBudgetMaxWon())
                 .proposedSchedule(entity.getProposedSchedule())
                 .proposeMessage(entity.getProposeMessage())
                 .status(entity.getStatus().name())
