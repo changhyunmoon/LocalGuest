@@ -1,0 +1,295 @@
+/* Guest guide “product detail” — keep separate from guide dashboard CSS */
+
+.gdp {
+  max-width: 920px;
+  margin: 0 auto;
+  padding: 1rem 1rem 2.5rem;
+}
+
+.gdp-back {
+  margin-bottom: 0.75rem;
+}
+
+.gdp-back a {
+  color: #374151;
+  text-decoration: none;
+  font-size: 0.95rem;
+}
+
+.gdp-back a:hover {
+  text-decoration: underline;
+}
+
+.gdp-hero {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 1.25rem;
+  align-items: start;
+  padding: 1.25rem 0 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+@media (max-width: 560px) {
+  .gdp-hero {
+    grid-template-columns: 1fr;
+  }
+}
+
+.gdp-hero-avatar {
+  width: 120px;
+  height: 120px;
+  border-radius: 16px;
+  background: linear-gradient(145deg, #f3f4f6, #e5e7eb);
+  background-size: cover;
+  background-position: center;
+  flex-shrink: 0;
+}
+
+.gdp-hero-body h1 {
+  margin: 0 0 0.35rem;
+  font-size: 1.65rem;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+.gdp-hero-meta {
+  margin: 0;
+  color: #4b5563;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.gdp-hero-rating {
+  margin: 0.5rem 0 0;
+  font-size: 0.9rem;
+  color: #111827;
+}
+
+.gdp-hero-rating span {
+  color: #6b7280;
+  font-weight: 400;
+}
+
+.gdp-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.65rem;
+}
+
+.gdp-tag {
+  display: inline-block;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  background: #f3f4f6;
+  color: #374151;
+  font-size: 0.8rem;
+}
+
+.gdp-section {
+  margin-top: 2rem;
+}
+
+.gdp-section-title {
+  margin: 0 0 0.75rem;
+  font-size: 1.05rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  color: #111827;
+}
+
+.gdp-prose {
+  margin: 0;
+  color: #374151;
+  line-height: 1.65;
+  white-space: pre-wrap;
+}
+
+.gdp-dl {
+  margin: 0;
+  display: grid;
+  gap: 0.85rem;
+}
+
+.gdp-dl > div {
+  padding: 0.75rem 0.9rem;
+  border-radius: 10px;
+  background: #f9fafb;
+  border: 1px solid #f3f4f6;
+}
+
+.gdp-dl dt {
+  margin: 0 0 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #6b7280;
+}
+
+.gdp-dl dd {
+  margin: 0;
+  font-size: 0.92rem;
+  color: #1f2937;
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+
+.gdp-careers {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.65rem;
+}
+
+.gdp-career {
+  padding: 0.85rem 1rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.gdp-career-title {
+  font-weight: 600;
+  color: #111827;
+}
+
+.gdp-career-date {
+  font-size: 0.8rem;
+  color: #6b7280;
+  margin-top: 0.2rem;
+}
+
+.gdp-career-desc {
+  margin: 0.45rem 0 0;
+  font-size: 0.9rem;
+  color: #4b5563;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.gdp-gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 0.65rem;
+}
+
+.gdp-gallery-item {
+  aspect-ratio: 1;
+  border-radius: 10px;
+  background: #f3f4f6 center / cover no-repeat;
+  border: 1px solid #e5e7eb;
+}
+
+.gdp-feeds {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+.gdp-feed-card {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #fff;
+  text-decoration: none;
+  color: inherit;
+  transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.gdp-feed-card:hover {
+  border-color: #d1d5db;
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.06);
+}
+
+.gdp-feed-card-img {
+  height: 120px;
+  background: #f3f4f6 center / cover no-repeat;
+}
+
+.gdp-feed-card-body {
+  padding: 0.75rem 0.85rem 0.9rem;
+}
+
+.gdp-feed-card-title {
+  font-weight: 600;
+  font-size: 0.92rem;
+  margin: 0 0 0.35rem;
+  line-height: 1.35;
+  color: #111827;
+}
+
+.gdp-feed-card-snippet {
+  margin: 0;
+  font-size: 0.82rem;
+  color: #6b7280;
+  line-height: 1.45;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.gdp-reviews {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.gdp-review {
+  padding: 0.85rem 1rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #fafafa;
+}
+
+.gdp-review-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.35rem;
+}
+
+.gdp-review-name {
+  font-weight: 600;
+  font-size: 0.88rem;
+  color: #111827;
+}
+
+.gdp-review-stars {
+  font-size: 0.85rem;
+  letter-spacing: 0.02em;
+}
+
+.gdp-review-text {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #374151;
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+
+.gdp-muted {
+  margin: 0;
+  color: #6b7280;
+  font-size: 0.9rem;
+}
+
+.gdp-match {
+  margin-top: 2.25rem;
+  padding: 1.25rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #fafafa;
+}
+
+.gdp-match h2 {
+  margin-top: 0;
+  font-size: 1.15rem;
+}
