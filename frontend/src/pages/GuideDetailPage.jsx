@@ -176,6 +176,9 @@ export function GuideDetailPage() {
   const navigate = useNavigate()
   const { isAuthenticated, isGuide } = useAuth()
 
+  const [aiConceptSummary, setAiConceptSummary] = useState(null)
+  const [aiDesiredBudget, setAiDesiredBudget] = useState(null)
+
   const [detail, setDetail] = useState(null)
   const [schedules, setSchedules] = useState([])
   const [reviews, setReviews] = useState([])
@@ -192,6 +195,31 @@ export function GuideDetailPage() {
   const [concept, setConcept] = useState('')
   const [submitErr, setSubmitErr] = useState('')
   const [submitting, setSubmitting] = useState(false)
+
+  useEffect(() => {
+    // AI 검색 결과에서 넘어온 matchRequestDraft를 읽어, 매칭 요청 생성 시 함께 전달한다.
+    try {
+      const raw = sessionStorage.getItem('localguest_ai_match_draft_v1')
+      if (!raw) return
+      const snap = JSON.parse(raw)
+      const snapGuideId = snap?.guideId != null ? String(snap.guideId) : ''
+      if (!snapGuideId || snapGuideId !== String(guideId)) return
+      const draft = snap?.matchRequestDraft ?? null
+      if (!draft || typeof draft !== 'object') return
+
+      if (draft?.conceptSummary) setAiConceptSummary(String(draft.conceptSummary))
+      if (draft?.desiredBudget != null && draft.desiredBudget !== '') setAiDesiredBudget(Number(draft.desiredBudget))
+
+      // 폼 기본값은 사용자가 이미 입력/수정했다면 덮어쓰지 않는다.
+      if (!destination.trim() && draft?.destination) setDestination(String(draft.destination).trim())
+      if (!concept.trim() && draft?.concept) setConcept(String(draft.concept).trim())
+
+      sessionStorage.removeItem('localguest_ai_match_draft_v1')
+    } catch {
+      /* ignore */
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [guideId])
 
   useEffect(() => {
     let cancelled = false
@@ -397,6 +425,9 @@ export function GuideDetailPage() {
           scheduleId: selectedScheduleId != null ? Number(selectedScheduleId) : undefined,
           destination: dest,
           concept: concept.trim() || undefined,
+          conceptSummary: aiConceptSummary ? String(aiConceptSummary).trim() : undefined,
+          desiredBudget:
+            aiDesiredBudget != null && !Number.isNaN(Number(aiDesiredBudget)) ? Number(aiDesiredBudget) : undefined,
           desiredDate: desiredDate || undefined,
         },
       })
