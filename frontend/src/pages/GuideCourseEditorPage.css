@@ -134,20 +134,38 @@
 }
 
 .gce-concept {
-  margin: 0.65rem 0 0;
-  padding-top: 0.65rem;
-  border-top: 1px solid #eef0f3;
+  margin: 0;
   font-size: 0.8125rem;
   line-height: 1.5;
   color: #3c434d;
 }
 
 .gce-concept-detail {
-  margin: 0.5rem 0 0;
+  margin: 0;
   font-size: 0.78rem;
   line-height: 1.55;
   color: #6b7280;
   white-space: pre-wrap;
+}
+
+.gce-concept-box {
+  margin: 0.65rem 0 0;
+  padding-top: 0.65rem;
+  border-top: 1px solid #eef0f3;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.gce-concept-block {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.gce-concept-title {
+  margin: 0;
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: #111827;
 }
 
 .gce-editor {

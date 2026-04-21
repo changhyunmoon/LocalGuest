@@ -287,13 +287,23 @@ export function GuideCourseEditorPage() {
               <span className="gce-value">{formatRequestedAt(matchRow.createdAt)}</span>
             </div>
           </div>
-          {matchRow.conceptSummary?.trim() && (
-            <p className="gce-concept">{matchRow.conceptSummary.trim()}</p>
+          {(matchRow.conceptSummary?.trim() || matchRow.concept?.trim()) && (
+            <div className="gce-concept-box" aria-label="여행 컨셉">
+              {matchRow.conceptSummary?.trim() && (
+                <div className="gce-concept-block">
+                  <p className="gce-concept-title">요약</p>
+                  <p className="gce-concept">{matchRow.conceptSummary.trim()}</p>
+                </div>
+              )}
+              {matchRow.concept?.trim() &&
+                matchRow.concept.trim() !== String(matchRow.conceptSummary ?? '').trim() && (
+                  <div className="gce-concept-block">
+                    <p className="gce-concept-title">상세</p>
+                    <p className="gce-concept-detail">{matchRow.concept.trim()}</p>
+                  </div>
+                )}
+            </div>
           )}
-          {matchRow.concept?.trim() &&
-            matchRow.concept.trim() !== String(matchRow.conceptSummary ?? '').trim() && (
-              <p className="gce-concept-detail">{matchRow.concept.trim()}</p>
-            )}
         </section>
       )}
 

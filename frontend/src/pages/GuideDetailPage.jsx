@@ -178,6 +178,7 @@ export function GuideDetailPage() {
 
   const [aiConceptSummary, setAiConceptSummary] = useState(null)
   const [aiDesiredBudget, setAiDesiredBudget] = useState(null)
+  const [aiHiddenConcept, setAiHiddenConcept] = useState(null)
 
   const [detail, setDetail] = useState(null)
   const [schedules, setSchedules] = useState([])
@@ -197,7 +198,7 @@ export function GuideDetailPage() {
   const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
-    // AI 검색 결과에서 넘어온 matchRequestDraft를 읽어, 매칭 요청 생성 시 함께 전달한다.
+    // AI 검색 결과에서 넘어온 matchRequestDraft는 게스트에게 노출하지 않고, 전송 시에만 활용한다.
     try {
       const raw = sessionStorage.getItem('localguest_ai_match_draft_v1')
       if (!raw) return
@@ -209,10 +210,10 @@ export function GuideDetailPage() {
 
       if (draft?.conceptSummary) setAiConceptSummary(String(draft.conceptSummary))
       if (draft?.desiredBudget != null && draft.desiredBudget !== '') setAiDesiredBudget(Number(draft.desiredBudget))
+      if (draft?.concept) setAiHiddenConcept(String(draft.concept))
 
-      // 폼 기본값은 사용자가 이미 입력/수정했다면 덮어쓰지 않는다.
+      // 목적지는 사용자가 비워둔 경우에만 보조로 채운다.
       if (!destination.trim() && draft?.destination) setDestination(String(draft.destination).trim())
-      if (!concept.trim() && draft?.concept) setConcept(String(draft.concept).trim())
 
       sessionStorage.removeItem('localguest_ai_match_draft_v1')
     } catch {
@@ -416,6 +417,8 @@ export function GuideDetailPage() {
       : schedules.find((s) => Number(s.scheduleId) === Number(selectedScheduleId))
     const desiredDate = selectedDateKey || (sch?.availableDate != null ? formatScheduleDate(sch.availableDate) : undefined)
 
+    const conceptText = concept.trim() || (aiHiddenConcept ? String(aiHiddenConcept).trim() : '')
+
     setSubmitting(true)
     try {
       const res = await apiRequest('/matching/requests', {
@@ -424,7 +427,7 @@ export function GuideDetailPage() {
           guideId: Number(guideId),
           scheduleId: selectedScheduleId != null ? Number(selectedScheduleId) : undefined,
           destination: dest,
-          concept: concept.trim() || undefined,
+          concept: conceptText || undefined,
           conceptSummary: aiConceptSummary ? String(aiConceptSummary).trim() : undefined,
           desiredBudget:
             aiDesiredBudget != null && !Number.isNaN(Number(aiDesiredBudget)) ? Number(aiDesiredBudget) : undefined,
