@@ -81,6 +81,10 @@ public class GuideRecommendResponse {
         private String conceptSummary;
         @Schema(description = "희망 예산(원). 프롬프트 예산 범위가 있으면 평균값으로 채운다(선택)")
         private Integer desiredBudget;
+        @Schema(description = "희망 예산 하한(원). 프롬프트 예산 범위가 있으면 채운다(선택)")
+        private Integer budgetMinWon;
+        @Schema(description = "희망 예산 상한(원). 프롬프트 예산 범위가 있으면 채운다(선택)")
+        private Integer budgetMaxWon;
         @Schema(description = "예산 힌트(낮음/중간/높음)")
         private String budgetHint;
         private Integer headcount;

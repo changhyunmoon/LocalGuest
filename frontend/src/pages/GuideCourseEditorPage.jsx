@@ -30,6 +30,17 @@ function formatBudgetKrw(n) {
   return `${Number(n).toLocaleString('ko-KR')}원`
 }
 
+function formatBudgetRange(minWon, maxWon) {
+  const min = minWon != null && minWon !== '' && !Number.isNaN(Number(minWon)) ? Number(minWon) : null
+  const max = maxWon != null && maxWon !== '' && !Number.isNaN(Number(maxWon)) ? Number(maxWon) : null
+  if (min == null && max == null) return null
+  if (min != null && max != null) {
+    return `${min.toLocaleString('ko-KR')}~${max.toLocaleString('ko-KR')}원`
+  }
+  const only = min ?? max
+  return `${Number(only).toLocaleString('ko-KR')}원`
+}
+
 function formatDesiredDate(d) {
   if (d == null || d === '') return '—'
   return String(d)
@@ -276,7 +287,9 @@ export function GuideCourseEditorPage() {
             </div>
             <div className="gce-guest-item">
               <span className="gce-label">예산</span>
-              <span className="gce-value">{formatBudgetKrw(matchRow.desiredBudget)}</span>
+              <span className="gce-value">
+                {formatBudgetRange(matchRow.budgetMinWon, matchRow.budgetMaxWon) ?? formatBudgetKrw(matchRow.desiredBudget)}
+              </span>
             </div>
             <div className="gce-guest-item">
               <span className="gce-label">요청 상태</span>

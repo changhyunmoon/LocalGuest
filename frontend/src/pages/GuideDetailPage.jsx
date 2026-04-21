@@ -178,6 +178,8 @@ export function GuideDetailPage() {
 
   const [aiConceptSummary, setAiConceptSummary] = useState(null)
   const [aiDesiredBudget, setAiDesiredBudget] = useState(null)
+  const [aiBudgetMinWon, setAiBudgetMinWon] = useState(null)
+  const [aiBudgetMaxWon, setAiBudgetMaxWon] = useState(null)
   const [aiHiddenConcept, setAiHiddenConcept] = useState(null)
 
   const [detail, setDetail] = useState(null)
@@ -210,6 +212,8 @@ export function GuideDetailPage() {
 
       if (draft?.conceptSummary) setAiConceptSummary(String(draft.conceptSummary))
       if (draft?.desiredBudget != null && draft.desiredBudget !== '') setAiDesiredBudget(Number(draft.desiredBudget))
+      if (draft?.budgetMinWon != null && draft.budgetMinWon !== '') setAiBudgetMinWon(Number(draft.budgetMinWon))
+      if (draft?.budgetMaxWon != null && draft.budgetMaxWon !== '') setAiBudgetMaxWon(Number(draft.budgetMaxWon))
       if (draft?.concept) setAiHiddenConcept(String(draft.concept))
 
       // 목적지는 사용자가 비워둔 경우에만 보조로 채운다.
@@ -431,6 +435,10 @@ export function GuideDetailPage() {
           conceptSummary: aiConceptSummary ? String(aiConceptSummary).trim() : undefined,
           desiredBudget:
             aiDesiredBudget != null && !Number.isNaN(Number(aiDesiredBudget)) ? Number(aiDesiredBudget) : undefined,
+          budgetMinWon:
+            aiBudgetMinWon != null && !Number.isNaN(Number(aiBudgetMinWon)) ? Number(aiBudgetMinWon) : undefined,
+          budgetMaxWon:
+            aiBudgetMaxWon != null && !Number.isNaN(Number(aiBudgetMaxWon)) ? Number(aiBudgetMaxWon) : undefined,
           desiredDate: desiredDate || undefined,
         },
       })

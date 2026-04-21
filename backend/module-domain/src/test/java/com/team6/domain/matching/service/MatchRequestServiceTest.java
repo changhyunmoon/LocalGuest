@@ -97,6 +97,8 @@ class MatchRequestServiceTest {
         setField(request, "concept", "food");
         setField(request, "desiredDate", LocalDate.of(2026, 4, 20));
         setField(request, "desiredBudget", 50000);
+        setField(request, "budgetMinWon", 40000);
+        setField(request, "budgetMaxWon", 60000);
         return request;
     }
 
