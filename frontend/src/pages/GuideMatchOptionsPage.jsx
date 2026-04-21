@@ -7,8 +7,8 @@ import { fetchGuestPayments, pickLatestCompletedPaymentIdForRequest } from '../l
 
 import './GuideMatchOptionsPage.css'
 
-const PRICE_CHAT = 10000
-const PRICE_ACCOMPANY = 50000
+/** 가이드 마이페이지 「종일 패키지」와 동일: 서버 `pricePerHour` × 8 (`GuideFeesPage`와 맞춤) */
+const FULL_DAY_HOURS = 8
 const KAKAO_APP_KEY = import.meta.env.VITE_KAKAO_MAP_APP_KEY
 
 function loadKakaoSdk(appKey) {
@@ -88,19 +88,19 @@ export function GuideMatchOptionsPage() {
   const [profile, setProfile] = useState(null)
   const [requestId, setRequestId] = useState(stateRequestId != null ? Number(stateRequestId) : null)
   const [activeRequest, setActiveRequest] = useState(null)
-  const [paymentType, setPaymentType] = useState(/** @type {'CHAT' | 'ACCOMPANY'} */ ('CHAT'))
-  const [reviews, setReviews] = useState([])
   const [paying, setPaying] = useState(false)
   const [payErr, setPayErr] = useState('')
-  const [payFocus, setPayFocus] = useState(false)
   const [proposalArrivedNotice, setProposalArrivedNotice] = useState(false)
   const [checkingProposal, setCheckingProposal] = useState(false)
-  const matchingOptionsRef = useRef(null)
   const previewMapRef = useRef(null)
   const hasProposalRef = useRef(false)
   const initializedProposalRef = useRef(false)
 
-  const amount = paymentType === 'CHAT' ? PRICE_CHAT : PRICE_ACCOMPANY
+  const accompanyPackageWon = useMemo(() => {
+    const hourly = profile?.pricePerHour != null ? Number(profile.pricePerHour) : 0
+    if (!Number.isFinite(hourly) || hourly <= 0) return 0
+    return Math.round(hourly * FULL_DAY_HOURS)
+  }, [profile])
 
   const load = useCallback(async (options = {}) => {
     const silent = Boolean(options?.silent)
@@ -153,16 +153,6 @@ export function GuideMatchOptionsPage() {
       }
 
       setRequestId(activeRid)
-
-      const revRes = await apiRequest(`/reviews/guide/${guideId}?size=12&sort=createdAt,desc`, { method: 'GET', skipAuth: true })
-      const revText = await revRes.text()
-      if (revRes.ok) {
-        const page = revText ? JSON.parse(revText) : {}
-        const raw = page?.content
-        setReviews(Array.isArray(raw) ? raw : [])
-      } else {
-        setReviews([])
-      }
     } catch (e) {
       if (!silent) {
         setError(e instanceof Error ? e.message : '오류')
@@ -204,12 +194,6 @@ export function GuideMatchOptionsPage() {
   const previewFirstSpot = previewSpots[0] ?? ''
   const previewLockedSpots = previewSpots.slice(1)
   const hasLockedPreview = previewLockedSpots.length > 0 || !!previewHint
-
-  useEffect(() => {
-    if (!payFocus) return
-    const timer = setTimeout(() => setPayFocus(false), 1400)
-    return () => clearTimeout(timer)
-  }, [payFocus])
 
   useEffect(() => {
     if (!proposalArrivedNotice) return
@@ -255,11 +239,6 @@ export function GuideMatchOptionsPage() {
     }
   }
 
-  const moveToPaymentOptions = () => {
-    matchingOptionsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-    setPayFocus(true)
-  }
-
   useEffect(() => {
     if (!previewMapRef.current) return
     let cancelled = false
@@ -297,14 +276,18 @@ export function GuideMatchOptionsPage() {
       setPayErr('가이드가 코스를 작성한 뒤 결제를 진행할 수 있어요.')
       return
     }
+    if (accompanyPackageWon <= 0) {
+      setPayErr('가이드가 종일 패키지 요금을 설정해야 결제할 수 있어요. 가이드 마이페이지에서 비용을 저장한 뒤 다시 시도해 주세요.')
+      return
+    }
     setPaying(true)
     try {
       const res = await apiRequest('/matching/payments', {
         method: 'POST',
         json: {
           matchRequestId: requestId,
-          amount,
-          paymentType,
+          amount: accompanyPackageWon,
+          paymentType: 'ACCOMPANY',
         },
       })
       const t = await res.text()
@@ -387,7 +370,40 @@ export function GuideMatchOptionsPage() {
         </div>
       </header>
 
-      <div className="gmo-grid">
+      <div className="gmo-main-flow">
+        <section className="gmo-price-panel" aria-labelledby="gmo-price-title">
+          <h2 id="gmo-price-title">직접 만나기 (동행)</h2>
+          <p className="gmo-price-lead">
+            가이드가 마이페이지에서 설정한 <strong>종일 패키지</strong> 요금입니다. (시간당 요금 × {FULL_DAY_HOURS}시간)
+          </p>
+          <div className="gmo-price-highlight">
+            <span className="gmo-price-label">동행 패키지</span>
+            <strong className="gmo-price-value">
+              {accompanyPackageWon > 0 ? formatKrw(accompanyPackageWon) : '요금 미설정'}
+            </strong>
+          </div>
+          <div className="gmo-total gmo-total--single">
+            <span>결제 금액</span>
+            <strong>{accompanyPackageWon > 0 ? formatKrw(accompanyPackageWon) : '—'}</strong>
+          </div>
+
+          <button
+            type="button"
+            className="gmo-pay"
+            disabled={paying || requestId == null || !courseReadyForPayment || accompanyPackageWon <= 0}
+            onClick={() => void onPay()}
+          >
+            {paying ? '처리 중…' : !courseReadyForPayment ? '가이드 코스 작성 대기중' : accompanyPackageWon <= 0 ? '요금 설정 대기' : '결제하고 코스 열기'}
+          </button>
+          {!courseReadyForPayment && (
+            <p className="gmo-course-gate">가이드가 코스를 작성하면 결제 버튼이 활성화됩니다.</p>
+          )}
+          {courseReadyForPayment && accompanyPackageWon <= 0 && (
+            <p className="gmo-course-gate">가이드가 가이드 비용(종일 패키지)을 저장해야 결제할 수 있어요.</p>
+          )}
+          {payErr && <p className="gmo-err">{payErr}</p>}
+        </section>
+
         <section className="gmo-preview" aria-labelledby="gmo-preview-title">
           <h2 id="gmo-preview-title">추천 코스 미리보기</h2>
           <div className="gmo-map">
@@ -401,64 +417,6 @@ export function GuideMatchOptionsPage() {
             </div>
           </div>
         </section>
-
-        <aside
-          ref={matchingOptionsRef}
-          className={`gmo-side${payFocus ? ' gmo-side--focus' : ''}`}
-          aria-labelledby="gmo-side-title"
-        >
-          <h2 id="gmo-side-title">가이드 매칭 옵션</h2>
-
-          <label className="gmo-opt">
-            <input
-              type="radio"
-              name="payType"
-              checked={paymentType === 'CHAT'}
-              onChange={() => setPaymentType('CHAT')}
-            />
-            <span className="gmo-opt-inner">
-              <span className="gmo-opt-text">
-                <span className="gmo-opt-title">정보만 받기 (채팅)</span>
-                <span className="gmo-opt-desc">채팅으로 코스·팁을 받아요</span>
-              </span>
-              <span className="gmo-opt-price">{formatKrw(PRICE_CHAT)}</span>
-            </span>
-          </label>
-
-          <label className="gmo-opt">
-            <input
-              type="radio"
-              name="payType"
-              checked={paymentType === 'ACCOMPANY'}
-              onChange={() => setPaymentType('ACCOMPANY')}
-            />
-            <span className="gmo-opt-inner">
-              <span className="gmo-opt-text">
-                <span className="gmo-opt-title">직접 만나기 (동행)</span>
-                <span className="gmo-opt-desc">현지에서 함께 동행해요</span>
-              </span>
-              <span className="gmo-opt-price">{formatKrw(PRICE_ACCOMPANY)}</span>
-            </span>
-          </label>
-
-          <div className="gmo-total">
-            <span>Total</span>
-            <strong>{formatKrw(amount)}</strong>
-          </div>
-
-          <button
-            type="button"
-            className="gmo-pay"
-            disabled={paying || requestId == null || !courseReadyForPayment}
-            onClick={() => void onPay()}
-          >
-            {paying ? '처리 중…' : !courseReadyForPayment ? '가이드 코스 작성 대기중' : '결제하고 코스 열기'}
-          </button>
-          {!courseReadyForPayment && (
-            <p className="gmo-course-gate">가이드가 코스를 작성하면 결제 버튼이 활성화됩니다.</p>
-          )}
-          {payErr && <p className="gmo-err">{payErr}</p>}
-        </aside>
       </div>
 
       {previewSpots.length > 0 && (
@@ -488,9 +446,9 @@ export function GuideMatchOptionsPage() {
               <div className="gmo-locked-overlay">
                 <div className="gmo-pay-hint-card">
                   <p className="gmo-pay-hint-title">아직 공개되지 않은 코스가 있어요</p>
-                  <p className="gmo-pay-hint-sub">결제하기를 누르면 위 매칭 옵션에서 바로 진행할 수 있어요.</p>
-                  <button type="button" className="gmo-pay-hint-btn" onClick={moveToPaymentOptions}>
-                    결제하기로 이동
+                  <p className="gmo-pay-hint-sub">아래 버튼을 누르면 바로 결제 단계로 이동합니다.</p>
+                  <button type="button" className="gmo-pay-hint-btn" onClick={() => void onPay()}>
+                    결제 진행하기
                   </button>
                 </div>
               </div>
@@ -503,8 +461,8 @@ export function GuideMatchOptionsPage() {
           )}
           {!hasLockedPreview && (
             <div className="gmo-pay-hint-inline">
-              <button type="button" className="gmo-pay-hint-btn" onClick={moveToPaymentOptions}>
-                결제하기로 이동
+              <button type="button" className="gmo-pay-hint-btn" onClick={() => void onPay()}>
+                결제 진행하기
               </button>
             </div>
           )}
@@ -517,32 +475,6 @@ export function GuideMatchOptionsPage() {
           <p className="gmo-course-pending-sub">조금만 기다려 주세요. 작성이 완료되면 일부 코스가 여기에 먼저 공개됩니다.</p>
         </section>
       )}
-
-      <section className="gmo-reviews" aria-labelledby="gmo-rev-title">
-        <h2 id="gmo-rev-title">여행자들의 후기 ({rc})</h2>
-        <p className="gmo-reviews-readonly">후기는 투어가 완료된 뒤 작성할 수 있어요. 지금은 기존 후기만 확인할 수 있습니다.</p>
-        <ul className="gmo-review-list">
-          {reviews.length === 0 ? (
-            <li className="gmo-review-item">
-              <div className="gmo-review-av" />
-              <div>
-                <p className="gmo-review-name">LocalGuest</p>
-                <p className="gmo-review-text">아직 등록된 후기가 없어요. 매칭 후 첫 후기를 남겨 보세요!</p>
-              </div>
-            </li>
-          ) : (
-            reviews.slice(0, 6).map((r) => (
-              <li key={r.id} className="gmo-review-item">
-                <div className="gmo-review-av" />
-                <div>
-                  <p className="gmo-review-name">{r.writeNickname ?? '여행자'}</p>
-                  <p className="gmo-review-text">{r.content}</p>
-                </div>
-              </li>
-            ))
-          )}
-        </ul>
-      </section>
     </div>
   )
 }

@@ -158,17 +158,12 @@
   }
 }
 
-.gmo-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+/* 세로 흐름: 가격 → 지도 (가이드는 상단 히어로, 일정은 하단 코스 블록) */
+.gmo-main-flow {
+  display: flex;
+  flex-direction: column;
   gap: 1rem;
-  align-items: stretch;
-}
-
-@media (max-width: 800px) {
-  .gmo-grid {
-    grid-template-columns: 1fr;
-  }
+  margin-bottom: 0.25rem;
 }
 
 .gmo-preview {
@@ -476,7 +471,7 @@
   }
 }
 
-.gmo-side {
+.gmo-price-panel {
   background: #fff;
   border: 1px solid #e8eaed;
   border-radius: 16px;
@@ -485,73 +480,40 @@
   flex-direction: column;
 }
 
-.gmo-side--focus {
-  border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2), 0 8px 24px rgba(37, 99, 235, 0.15);
-  transition: box-shadow 0.22s ease, border-color 0.22s ease;
-}
-
-.gmo-side h2 {
-  margin: 0 0 0.85rem;
+.gmo-price-panel h2 {
+  margin: 0 0 0.5rem;
   font-size: 0.95rem;
   font-weight: 800;
   color: #111827;
 }
 
-.gmo-opt {
-  display: block;
-  margin-bottom: 0.55rem;
-  cursor: pointer;
+.gmo-price-lead {
+  margin: 0 0 0.85rem;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: #64748b;
 }
 
-.gmo-opt input {
-  position: absolute;
-  opacity: 0;
-  pointer-events: none;
-}
-
-.gmo-opt-inner {
+.gmo-price-highlight {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
-  padding: 0.75rem 0.85rem;
+  padding: 0.85rem 0.95rem;
   border-radius: 12px;
-  border: 2px solid #e5e7eb;
-  transition:
-    border-color 0.15s ease,
-    background 0.15s ease;
-}
-
-.gmo-opt input:focus-visible + .gmo-opt-inner {
-  outline: 2px solid #111827;
-  outline-offset: 2px;
-}
-
-.gmo-opt input:checked + .gmo-opt-inner {
-  border-color: #1f2328;
+  border: 2px solid #1f2328;
   background: #fafafa;
+  margin-bottom: 0.65rem;
 }
 
-.gmo-opt-text {
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-}
-
-.gmo-opt-title {
-  font-size: 0.86rem;
+.gmo-price-label {
+  font-size: 0.8rem;
   font-weight: 700;
-  color: #111827;
+  color: #374151;
 }
 
-.gmo-opt-desc {
-  font-size: 0.72rem;
-  color: #6b7280;
-}
-
-.gmo-opt-price {
-  font-size: 0.88rem;
+.gmo-price-value {
+  font-size: 1rem;
   font-weight: 800;
   color: #111827;
   white-space: nowrap;
@@ -561,13 +523,16 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: auto;
-  padding-top: 1rem;
+  padding-top: 0.65rem;
   margin-bottom: 0.85rem;
   border-top: 1px solid #eef0f3;
   font-size: 0.88rem;
   font-weight: 700;
   color: #374151;
+}
+
+.gmo-total--single {
+  margin-top: 0;
 }
 
 .gmo-total strong {
@@ -609,95 +574,3 @@
   color: #b91c1c;
 }
 
-.gmo-reviews {
-  margin-top: 1.75rem;
-}
-
-.gmo-reviews h2 {
-  margin: 0 0 0.75rem;
-  font-size: 1rem;
-  font-weight: 800;
-  color: #111827;
-}
-
-.gmo-reviews-readonly {
-  margin: 0 0 0.9rem;
-  font-size: 0.82rem;
-  line-height: 1.45;
-  color: #64748b;
-}
-
-.gmo-review-form {
-  display: flex;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
-  align-items: stretch;
-}
-
-.gmo-review-input {
-  flex: 1;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  padding: 0.55rem 0.75rem;
-  font: inherit;
-  font-size: 0.86rem;
-  resize: vertical;
-  min-height: 2.75rem;
-}
-
-.gmo-review-submit {
-  flex-shrink: 0;
-  padding: 0 1rem;
-  border-radius: 12px;
-  border: none;
-  background: #1f2328;
-  color: #fff;
-  font-weight: 700;
-  font-size: 0.82rem;
-  cursor: pointer;
-}
-
-.gmo-review-submit:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
-.gmo-review-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.65rem;
-}
-
-.gmo-review-item {
-  display: flex;
-  gap: 0.65rem;
-  padding: 0.75rem 0.85rem;
-  border: 1px solid #e8eaed;
-  border-radius: 14px;
-  background: #fff;
-}
-
-.gmo-review-av {
-  width: 2.25rem;
-  height: 2.25rem;
-  border-radius: 50%;
-  background: #e5e7eb;
-  flex-shrink: 0;
-}
-
-.gmo-review-name {
-  margin: 0 0 0.25rem;
-  font-size: 0.82rem;
-  font-weight: 700;
-  color: #111827;
-}
-
-.gmo-review-text {
-  margin: 0;
-  font-size: 0.82rem;
-  line-height: 1.5;
-  color: #4b5563;
-}
