@@ -7,6 +7,7 @@ import './AiQuickSearchPage.css'
 
 const PLACEHOLDER = '제주도에서 조용히 사진 찍기 좋은 오름 추천해줘'
 const LS_AI_SEARCH_SNAPSHOT = 'localguest_ai_search_snapshot_v1'
+const AI_GUIDE_SHOW_MAX = 5
 
 const JEJU_OREUM_SPOTS = [
   { title: '아부오름', caption: '완만한 능선, 소풍 명소', tape: 'g' },
@@ -237,7 +238,7 @@ export function AiQuickSearchPage() {
       setGuideFeedsById({})
       return
     }
-    const ids = [...new Set(recs.slice(0, 3).map((r) => r?.guideId).filter((id) => id != null))].map(String)
+    const ids = [...new Set(recs.slice(0, AI_GUIDE_SHOW_MAX).map((r) => r?.guideId).filter((id) => id != null))].map(String)
     if (ids.length === 0) return
 
     let cancelled = false
@@ -310,7 +311,7 @@ export function AiQuickSearchPage() {
           if (guideRes.ok) {
             const all = guideText ? JSON.parse(guideText) : []
             const picked = pickFallbackGuides(q, data?.keywords, Array.isArray(all) ? all : [])
-            setFallbackGuides(picked.slice(0, 2))
+            setFallbackGuides(picked.slice(0, AI_GUIDE_SHOW_MAX))
           }
         } catch {
           setFallbackGuides([])
@@ -336,7 +337,7 @@ export function AiQuickSearchPage() {
   }
 
   const recs = result?.recommendations && Array.isArray(result.recommendations) ? result.recommendations : []
-  const topGuides = recs.length > 0 ? recs.slice(0, 2) : fallbackGuides.slice(0, 2)
+  const topGuides = recs.length > 0 ? recs.slice(0, AI_GUIDE_SHOW_MAX) : fallbackGuides.slice(0, AI_GUIDE_SHOW_MAX)
   const keywords = result?.keywords
   const spots = pickSpots(prompt, keywords)
   const activityHint =
