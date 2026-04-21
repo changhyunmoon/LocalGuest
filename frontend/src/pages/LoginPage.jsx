@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 
 import { beginGoogleOAuth } from '../api/client'
 import { useAuth } from '../context/useAuth.js'
@@ -77,7 +77,6 @@ export function LoginPage() {
   return (
     <div className="form-page">
       <h1>로그인</h1>
-      <p className="form-hint">F01-02 · 이메일 / 비밀번호 (백엔드 JWT)</p>
 
       {flash && (
         <div className="form-success" style={{ marginBottom: '1rem' }}>
@@ -86,13 +85,26 @@ export function LoginPage() {
       )}
 
       <form className="form-card" onSubmit={(e) => void handleSubmit(e)}>
-        <label className="field">
-          <span>로그인 유형</span>
-          <select value={role} onChange={(ev) => setRole(ev.target.value)}>
-            <option value="GUEST">여행자 (GUEST)</option>
-            <option value="GUIDE">가이드 (GUIDE)</option>
-          </select>
-        </label>
+        <div className="form-role-switch" role="tablist" aria-label="로그인 유형">
+          <button
+            type="button"
+            className={`form-role-btn${role === 'GUEST' ? ' is-on' : ''}`}
+            onClick={() => setRole('GUEST')}
+            role="tab"
+            aria-selected={role === 'GUEST'}
+          >
+            여행자
+          </button>
+          <button
+            type="button"
+            className={`form-role-btn${role === 'GUIDE' ? ' is-on' : ''}`}
+            onClick={() => setRole('GUIDE')}
+            role="tab"
+            aria-selected={role === 'GUIDE'}
+          >
+            가이드
+          </button>
+        </div>
         <label className="field">
           <span>이메일</span>
           <input
@@ -114,28 +126,26 @@ export function LoginPage() {
           />
         </label>
 
+        <div className="form-social form-social--inside">
+          <button
+            type="button"
+            className="submit ghost form-google-login"
+            onClick={() => beginGoogleOAuth(role, returnTo)}
+            title="Google OAuth2 로그인"
+          >
+            <span className="form-google-login__icon" aria-hidden="true">
+              G
+            </span>
+            <span>구글로 로그인</span>
+          </button>
+        </div>
+
         {error && <p className="form-error">{error}</p>}
 
-        <button type="submit" className="submit" disabled={loading}>
+        <button type="submit" className="submit form-login-submit" disabled={loading}>
           {loading ? '처리 중…' : '로그인'}
         </button>
       </form>
-
-      <div className="form-social">
-        <p>소셜 로그인</p>
-        <button
-          type="button"
-          className="submit ghost"
-          onClick={() => beginGoogleOAuth(role, returnTo)}
-          title="Google OAuth2 로그인"
-        >
-          Google 로그인
-        </button>
-      </div>
-
-      <p className="form-footer">
-        계정이 없나요? <Link to="/auth/signup">회원가입</Link>
-      </p>
 
       {roleMismatch && (
         <div

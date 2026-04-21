@@ -54,7 +54,49 @@ function formatBudgetRange(minWon, maxWon) {
 }
 
 function formatBudget(value) {
-  return value ? `₩${Number(value).toLocaleString('ko-KR')}` : '—'
+  if (value == null || value === '' || Number.isNaN(Number(value))) return '—'
+  return `₩${Number(value).toLocaleString('ko-KR')}`
+}
+
+function compactDnaSummary(value) {
+  if (value == null) return '—'
+  const text = String(value).replace(/\s+/g, ' ').trim()
+  return text || '—'
+}
+
+async function tryFetchExtension(requestId) {
+  if (requestId == null) return null
+  try {
+    const res = await apiRequest(`/matching/extensions/${requestId}`, { method: 'GET' })
+    const text = await res.text()
+    if (!res.ok) return null
+    return text ? JSON.parse(text) : null
+  } catch {
+    return null
+  }
+}
+
+function extensionStatusLabel(status) {
+  const map = {
+    REQUESTED: '연장 요청',
+    GUIDE_APPROVED: '연장 결제 대기',
+    PAID: '연장 결제 완료',
+  }
+  return (
+    <span
+      style={{
+        fontSize: '0.76rem',
+        fontWeight: 700,
+        padding: '0.2rem 0.55rem',
+        borderRadius: 999,
+        background: '#ede9fe',
+        color: '#5b21b6',
+        whiteSpace: 'nowrap',
+      }}
+    >
+      {map[String(status)] ?? '연장'}
+    </span>
+  )
 }
 
 const STATUS_SECTIONS = [
@@ -71,6 +113,7 @@ export function GuideInboxPage() {
   const { refresh: refreshPendingBadge } = useGuidePendingRequests()
   const { guideId } = useResolvedGuideId()
   const [rows, setRows] = useState([])
+  const [extensionsByRequestId, setExtensionsByRequestId] = useState({})
   const [schedulesById, setSchedulesById] = useState({})
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
@@ -156,19 +199,59 @@ export function GuideInboxPage() {
     void loadSchedules()
   }, [loadSchedules])
 
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      if (!isGuide || rows.length === 0) {
+        if (!cancelled) setExtensionsByRequestId({})
+        return
+      }
+      const entries = await Promise.all(
+        rows.map(async (r) => {
+          const ext = await tryFetchExtension(r.requestId)
+          if (!ext) return null
+          return [r.requestId, ext]
+        }),
+      )
+      if (cancelled) return
+      const m = {}
+      for (const e of entries) {
+        if (e) m[e[0]] = e[1]
+      }
+      setExtensionsByRequestId(m)
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [isGuide, rows])
+
   const groupedRows = useMemo(() => {
+    const extensionRows = rows.filter((row) => {
+      const extension = extensionsByRequestId[row.requestId]
+      return extension && (extension.status === 'REQUESTED' || extension.status === 'GUIDE_APPROVED')
+    })
+    const extensionRequestIds = new Set(extensionRows.map((row) => Number(row.requestId)))
     const sections = STATUS_SECTIONS.map((section) => ({
       ...section,
-      rows: rows.filter((row) => section.statuses.includes(String(row.status ?? ''))),
+      rows: rows.filter((row) => {
+        if (extensionRequestIds.has(Number(row.requestId))) return false
+        return section.statuses.includes(String(row.status ?? ''))
+      }),
     }))
     const included = new Set(STATUS_SECTIONS.flatMap((section) => section.statuses))
-    const others = rows.filter((row) => !included.has(String(row.status ?? '')))
+    const others = rows.filter((row) => {
+      if (extensionRequestIds.has(Number(row.requestId))) return false
+      return !included.has(String(row.status ?? ''))
+    })
     const rejectedSection = sections.find((section) => section.key === 'REJECTED')
     const mainSections = sections.filter((section) => section.key !== 'REJECTED' && section.rows.length > 0)
+    if (extensionRows.length > 0) {
+      mainSections.unshift({ key: 'EXTENSION', label: '연장 요청', statuses: [], rows: extensionRows })
+    }
     if (others.length > 0) mainSections.push({ key: 'OTHER', label: '기타', statuses: [], rows: others })
     if (rejectedSection?.rows.length) mainSections.push(rejectedSection)
     return mainSections
-  }, [rows])
+  }, [rows, extensionsByRequestId])
 
   const openCourseWriter = async (r) => {
     if (guideId == null) {
@@ -255,7 +338,7 @@ export function GuideInboxPage() {
           {groupedRows.map((section) => (
             <section
               key={section.key}
-              className={`inbox-status-section${section.key === 'IN_PROGRESS' ? ' inbox-status-section--inprogress' : ''}${section.key === 'PENDING' ? ' inbox-status-section--pending' : ''}`}
+              className={`inbox-status-section${section.key === 'IN_PROGRESS' ? ' inbox-status-section--inprogress' : ''}${section.key === 'PENDING' ? ' inbox-status-section--pending' : ''}${section.key === 'EXTENSION' ? ' inbox-status-section--extension' : ''}`}
               aria-label={`${section.label} 요청`}
             >
               <header className="inbox-status-head">
@@ -272,36 +355,43 @@ export function GuideInboxPage() {
                       <th>목적지</th>
                       <th>희망일</th>
                       <th>예산</th>
+                      <th>여행 성향</th>
                       <th>동작</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {section.rows.map((r) => (
-                      <tr key={r.requestId}>
-                        <td>{statusLabel(r.status)}</td>
-                        <td>{`게스트 #${r.guestId}`}</td>
-                        <td>{r.destination ?? '—'}</td>
-                        <td>{r.desiredDate ?? '—'}</td>
-                        <td>{formatBudgetRange(r.budgetMinWon, r.budgetMaxWon) ?? formatBudget(r.desiredBudget)}</td>
-                        <td className="inbox-actions">
-                          {r.status === 'PENDING' && (
-                            <>
-                              <button type="button" className="inbox-btn" onClick={() => openCourseWriter(r)} disabled={busyId != null}>
-                                코스 작성하기
-                              </button>
-                              <button
-                                type="button"
-                                className="inbox-btn inbox-btn--danger"
-                                onClick={() => void reject(r.requestId)}
-                                disabled={busyId != null}
-                              >
-                                거절
-                              </button>
-                            </>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
+                    {section.rows.map((r) => {
+                      const dnaSummary = compactDnaSummary(r.conceptSummary)
+                      return (
+                        <tr key={r.requestId}>
+                          <td>{section.key === 'EXTENSION' ? extensionStatusLabel(extensionsByRequestId[r.requestId]?.status) : statusLabel(r.status)}</td>
+                          <td>{`게스트 #${r.guestId}`}</td>
+                          <td>{r.destination ?? '—'}</td>
+                          <td>{r.desiredDate ?? '—'}</td>
+                          <td>{formatBudgetRange(r.budgetMinWon, r.budgetMaxWon) ?? formatBudget(r.desiredBudget)}</td>
+                          <td className="inbox-dna-cell" title={dnaSummary !== '—' ? dnaSummary : undefined}>
+                            <span className="inbox-dna-text">{dnaSummary}</span>
+                          </td>
+                          <td className="inbox-actions">
+                            {r.status === 'PENDING' && (
+                              <>
+                                <button type="button" className="inbox-btn" onClick={() => openCourseWriter(r)} disabled={busyId != null}>
+                                  코스 작성하기
+                                </button>
+                                <button
+                                  type="button"
+                                  className="inbox-btn inbox-btn--danger"
+                                  onClick={() => void reject(r.requestId)}
+                                  disabled={busyId != null}
+                                >
+                                  거절
+                                </button>
+                              </>
+                            )}
+                          </td>
+                        </tr>
+                      )
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -315,7 +405,7 @@ export function GuideInboxPage() {
                   >
                     <header className="inbox-card-head">
                       <span className="inbox-card-id">#{r.requestId}</span>
-                      {statusLabel(r.status)}
+                      {section.key === 'EXTENSION' ? extensionStatusLabel(extensionsByRequestId[r.requestId]?.status) : statusLabel(r.status)}
                     </header>
                     <p className="inbox-card-line">👤 <strong>게스트</strong> {`게스트 #${r.guestId}`}</p>
                     <p className="inbox-card-line">📍 <strong>목적지</strong> {r.destination ?? '—'}</p>
@@ -328,6 +418,9 @@ export function GuideInboxPage() {
                     )}
                     {r.createdAt && (
                       <p className="inbox-card-line">🕐 <strong>요청일</strong> {new Date(r.createdAt).toLocaleDateString('ko-KR')}</p>
+                    )}
+                    {section.key === 'EXTENSION' && (
+                      <p className="inbox-proposed-hint">🔔 게스트가 투어 연장을 요청했습니다. 결제 상태를 확인해 주세요.</p>
                     )}
                     {r.status === 'ACCEPTED' && (
                       <p className="inbox-proposed-hint">✉️ 제시안을 전송했습니다. 게스트가 수락하면 결제로 진행됩니다.</p>

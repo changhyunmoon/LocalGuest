@@ -14,11 +14,10 @@
 }
 
 .dash-side {
-  background: #fff;
-  border: 1px solid #e8eaed;
+  background: #fffdfd;
+  border: 1px solid #f0dce4;
   border-radius: 14px;
   padding: 1.1rem 0.85rem;
-  box-shadow: 0 4px 20px rgba(31, 35, 40, 0.04);
 }
 
 .dash-profile {
@@ -35,33 +34,61 @@
   width: 4.25rem;
   height: 4.25rem;
   border-radius: 50%;
-  background: linear-gradient(145deg, #e8eaed, #d8dde3);
+  background: #f9e8ee;
   margin-bottom: 0.65rem;
 }
 
 .dash-name {
   font-size: 1rem;
-  color: #1f2328;
+  color: #4a3c56;
 }
 
 .dash-email {
   font-size: 0.78rem;
-  color: #7a828d;
+  color: #9f90a7;
   margin-top: 0.2rem;
   word-break: break-all;
 }
 
 .dash-local-note {
   margin: 0.55rem 0 0;
-  padding: 0.45rem 0.5rem;
+  padding: 0.4rem 0.3rem 0.1rem;
   max-width: 100%;
   font-size: 0.72rem;
   line-height: 1.45;
-  color: #5c6370;
+  color: #7f6b82;
   text-align: center;
-  background: #f8fafc;
-  border: 1px solid #e8eaed;
+}
+
+.dash-local-note--in-nav {
+  margin: 0.15rem 0 0.35rem;
+  padding: 0.4rem 0.35rem 0.25rem;
   border-radius: 10px;
+  background: #fff2f7;
+  border: 1px solid #f0dce4;
+}
+
+.dash-tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.35rem;
+}
+
+.dash-tag-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid #efbfd0;
+  background: #fff7fb;
+  color: #7a4f68;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.dash-tag-empty {
+  color: #9f90a7;
 }
 
 .dash-nav {
@@ -73,7 +100,7 @@
 .dash-nav-link {
   padding: 0.55rem 0.65rem;
   border-radius: 10px;
-  color: #3c434d;
+  color: #7f6b82;
   text-decoration: none;
   font-size: 0.84rem;
   line-height: 1.35;
@@ -81,14 +108,14 @@
 }
 
 .dash-nav-link:hover {
-  background: #f8f9fb;
+  background: #fdeaf1;
 }
 
 .dash-nav-link.is-active {
-  background: #f3f4f6;
+  background: #f8dce7;
   font-weight: 700;
-  color: #1f2328;
-  border-left-color: #2563eb;
+  color: #5a3c56;
+  border-left-color: #d17a9b;
 }
 
 .dash-footer {
@@ -104,18 +131,20 @@
   padding: 0.5rem 0.65rem;
   border-radius: 10px;
   font-size: 0.84rem;
-  color: #1f2328;
+  color: #5a3c56;
   text-decoration: none;
 }
 
 .dash-extra:hover {
-  background: #f8f9fb;
+  background: #fdeaf1;
 }
 
 .dash-extra--cta {
   font-weight: 700;
-  border: 1px solid #cfd4da;
+  border: 1px solid #efbfd0;
   border-radius: 10px;
+  background: #f6d8e6;
+  color: #6d3f58;
   text-align: center;
   justify-content: center;
 }
@@ -127,21 +156,20 @@
   background: none;
   border-radius: 10px;
   font-size: 0.84rem;
-  color: #c62828;
+  color: #b25f7f;
   cursor: pointer;
   font-family: inherit;
 }
 
 .dash-logout:hover {
-  background: #fff5f5;
+  background: #fdeaf1;
 }
 
 .dash-content {
-  background: #fff;
-  border: 1px solid #e8eaed;
+  background: #fffdfd;
+  border: 1px solid #f0dce4;
   border-radius: 14px;
   padding: clamp(1rem, 3vw, 1.35rem) clamp(0.85rem, 3vw, 1.5rem);
   min-height: min(320px, 50vh);
-  box-shadow: 0 4px 20px rgba(31, 35, 40, 0.04);
   min-width: 0;
 }

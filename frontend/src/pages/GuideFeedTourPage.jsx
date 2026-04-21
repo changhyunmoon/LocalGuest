@@ -183,7 +183,7 @@ export function GuideFeedTourPage() {
         <article className="gft-card">
           <h1 className="gft-title">{tourTitle}</h1>
           <p className="gft-rating">
-            ⭐ {rating}{' '}
+            🌟 {rating}{' '}
             <span className="gft-rc">({rc}개의 리뷰)</span>
           </p>
           <div className="gft-tags">
@@ -225,7 +225,7 @@ export function GuideFeedTourPage() {
                   <li key={r.id} className="gft-review">
                     <div className="gft-review-head">
                       <span className="gft-review-name">{r.writeNickname ?? '여행자'}</span>
-                      <span className="gft-review-stars">{'⭐'.repeat(Math.min(5, Math.max(0, Number(r.rating) || 0)))}</span>
+                      <span className="gft-review-stars">{'🌟'.repeat(Math.min(5, Math.max(0, Number(r.rating) || 0)))}</span>
                     </div>
                     <p className="gft-review-text">{r.content}</p>
                   </li>

@@ -9,6 +9,8 @@ import {
   sendSignupEmailVerification,
   toUserErrorMessage,
 } from '../api/client'
+import { useAuth } from '../context/useAuth.js'
+import { extractTravelDnaTags } from '../lib/travelDna.js'
 
 import './SignupPage.css'
 
@@ -99,6 +101,7 @@ function Stepper({ step }) {
 }
 
 export function SignupPage() {
+  const { login } = useAuth()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const [step, setStep] = useState(1)
@@ -123,12 +126,13 @@ export function SignupPage() {
   const [error, setError] = useState('')
   const [idCheckMessage, setIdCheckMessage] = useState('')
   const [loading, setLoading] = useState(false)
+  const [postSignupBusy, setPostSignupBusy] = useState(false)
   const [doneId, setDoneId] = useState(null)
   const [dupBusy, setDupBusy] = useState(false)
   const [emailSendBusy, setEmailSendBusy] = useState(false)
   const [emailConfirmBusy, setEmailConfirmBusy] = useState(false)
 
-  const [dnaModalOpen, setDnaModalOpen] = useState(false)
+  const [loginConfirmOpen, setLoginConfirmOpen] = useState(false)
   const [dnaMoments, setDnaMoments] = useState([])
   const [dnaPace, setDnaPace] = useState('')
   const [dnaWith, setDnaWith] = useState('')
@@ -136,11 +140,6 @@ export function SignupPage() {
 
   const nickname = userId.trim()
   const isPopNavRef = useRef(false)
-
-  // Step 3 진입 시 DNA 모달 자동 오픈
-  useEffect(() => {
-    if (step === 3) setDnaModalOpen(true)
-  }, [step])
 
   // 스텝 진입 시 history entry 추가 (step 1은 초기 상태이므로 skip)
   useEffect(() => {
@@ -154,7 +153,7 @@ export function SignupPage() {
     const onPop = (e) => {
       const target = typeof e.state?.signupStep === 'number' ? e.state.signupStep : 1
       isPopNavRef.current = true
-      setStep(target >= 1 && target <= 3 ? target : 1)
+      setStep(target >= 1 && target <= 4 ? target : 1)
     }
     window.addEventListener('popstate', onPop)
     return () => window.removeEventListener('popstate', onPop)
@@ -190,7 +189,7 @@ export function SignupPage() {
     setError('')
     setIdCheckMessage('')
     if (!idPatternOk(nickname)) {
-      setIdCheckMessage('아이디는 영문·숫자 2~16자여야 합니다.')
+      setIdCheckMessage('닉네임은 영문, 숫자 2~16자여야 합니다.')
       setIdFormatChecked(false)
       return
     }
@@ -199,12 +198,12 @@ export function SignupPage() {
     try {
       const available = await fetchNicknameAvailable(nickname)
       if (!available) {
-        setIdCheckMessage('이미 사용 중인 아이디(닉네임)입니다.')
+        setIdCheckMessage('이미 사용 중인 닉네임입니다.')
         setIdFormatChecked(false)
         return
       }
       setIdFormatChecked(true)
-      setIdCheckMessage('사용 가능한 아이디입니다. (최종 가입 시 서버에서 한 번 더 확인합니다.)')
+      setIdCheckMessage('사용 가능한 닉네임입니다.')
     } catch (err) {
       setError(err instanceof Error ? err.message : '중복 확인에 실패했습니다.')
       setIdFormatChecked(false)
@@ -232,11 +231,11 @@ export function SignupPage() {
       return
     }
     if (!idPatternOk(nickname)) {
-      setError('아이디는 영문·숫자 2~16자여야 합니다.')
+      setError('닉네임은 영문, 숫자 2~16자여야 합니다.')
       return
     }
     if (!idFormatChecked) {
-      setError('아이디 중복 확인(형식 검사)을 눌러 주세요.')
+      setError('닉네임 중복 확인(형식 검사)을 눌러 주세요.')
       return
     }
     if (!passwordPolicyOk(password)) {
@@ -345,52 +344,73 @@ export function SignupPage() {
         ? '00:00'
         : '03:00'
 
+  const dnaPreview = buildDnaPreview(dnaMoments, dnaPace, dnaWith, dnaExpect)
+  const dnaTotalSelected = dnaMoments.length + (dnaPace ? 1 : 0) + (dnaWith ? 1 : 0) + (dnaExpect ? 1 : 0)
+
+  const handleDnaNext = () => {
+    void finishSignupAndGoHome(true)
+  }
+
+  const toggleDnaMoment = (val) =>
+    setDnaMoments((prev) => (prev.includes(val) ? prev.filter((v) => v !== val) : [...prev, val]))
+
+  const finishSignupAndGoHome = async (saveDna) => {
+    setError('')
+    setPostSignupBusy(true)
+    try {
+      if (saveDna) {
+        const dna = { moments: dnaMoments, pace: dnaPace, travelWith: dnaWith, expect: dnaExpect }
+        localStorage.setItem(
+          'localguest_travel_dna',
+          JSON.stringify(dna),
+        )
+        localStorage.setItem('localguest_mypage_travel_tags', JSON.stringify(extractTravelDnaTags(dna)))
+      }
+      await login(email.trim(), password, 'GUEST')
+      sessionStorage.removeItem('prefill_login_email')
+      navigate('/', { replace: true })
+    } catch (err) {
+      const message = err instanceof Error ? err.message : '자동 로그인에 실패했습니다. 로그인 화면으로 이동해 주세요.'
+      setError(message)
+      navigate('/auth/login', {
+        replace: true,
+        state: { returnTo: '/', hint: message },
+      })
+    } finally {
+      setPostSignupBusy(false)
+    }
+  }
+
+  const loginConfirmModal = loginConfirmOpen ? (
+    <div className="signup-confirm-overlay" role="dialog" aria-modal="true" aria-labelledby="signup-login-confirm-title">
+      <div className="signup-confirm-modal">
+        <div className="signup-confirm-badge" aria-hidden>
+          ⚠
+        </div>
+        <h3 id="signup-login-confirm-title">정말 로그인하러 가실까요?</h3>
+        <p>
+          지금 이동하면 회원가입 작성 내용이 초기화되어 처음부터 다시 진행해야 해요.
+        </p>
+        <div className="signup-confirm-actions">
+          <button type="button" className="signup-confirm-btn signup-confirm-btn--ghost" onClick={() => setLoginConfirmOpen(false)}>
+            계속 가입하기
+          </button>
+          <button
+            type="button"
+            className="signup-confirm-btn signup-confirm-btn--primary"
+            onClick={() => navigate('/auth/login')}
+          >
+            로그인하러 가기
+          </button>
+        </div>
+      </div>
+    </div>
+  ) : null
+
   if (step === 3) {
-    const dnaPreview = buildDnaPreview(dnaMoments, dnaPace, dnaWith, dnaExpect)
-    const dnaTotalSelected = dnaMoments.length + (dnaPace ? 1 : 0) + (dnaWith ? 1 : 0) + (dnaExpect ? 1 : 0)
-
-    const handleDnaNext = () => {
-      localStorage.setItem('localguest_travel_dna', JSON.stringify({ moments: dnaMoments, pace: dnaPace, travelWith: dnaWith, expect: dnaExpect }))
-      navigate('/ai-search', { state: { initialPrompt: buildDnaPrompt(dnaMoments, dnaPace, dnaWith, dnaExpect) } })
-    }
-
-    const toggleDnaMoment = (val) =>
-      setDnaMoments((prev) => (prev.includes(val) ? prev.filter((v) => v !== val) : [...prev, val]))
-
-    /* ── inline style tokens ── */
-    const S = {
-      overlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.52)', zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem', overflowY: 'auto' },
-      modal: { background: '#fff', borderRadius: 16, padding: '1.75rem 1.5rem 1.5rem', maxWidth: 560, width: '100%', maxHeight: '88vh', overflowY: 'auto', boxShadow: '0 24px 64px rgba(0,0,0,0.22)', colorScheme: 'light' },
-      banner: { display: 'flex', alignItems: 'flex-start', gap: 10, padding: '12px 14px', borderRadius: 10, background: '#ecfdf5', border: '1px solid #a7f3d0', marginBottom: '1.25rem' },
-      bannerTitle: { fontSize: '0.82rem', fontWeight: 600, color: '#065f46' },
-      bannerSub: { fontSize: '0.75rem', color: '#059669', marginTop: 2, lineHeight: 1.45 },
-      kicker: { fontSize: '0.7rem', fontWeight: 600, letterSpacing: '0.12em', color: '#9aa0a6', margin: '0 0 0.3rem' },
-      title: { fontSize: '1.25rem', fontWeight: 800, letterSpacing: '-0.03em', color: '#1f2328', margin: '0 0 0.4rem', lineHeight: 1.3 },
-      lead: { fontSize: '0.85rem', color: '#6b7280', lineHeight: 1.55, margin: '0 0 1.25rem' },
-      qBlock: { marginBottom: '1.25rem' },
-      qTitle: { fontSize: '0.85rem', fontWeight: 700, color: '#1f2328', marginBottom: '0.18rem' },
-      qDesc: { fontSize: '0.72rem', color: '#9aa0a6', marginBottom: '0.6rem' },
-      cardGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(140px,1fr))', gap: 8 },
-      card: (on) => ({ background: on ? '#fff' : '#f4f5f7', border: on ? '1.5px solid #1f2328' : '1px solid #e8eaed', borderRadius: 12, padding: '11px 11px 9px', cursor: 'pointer', position: 'relative', userSelect: 'none', transition: 'border-color .15s, background .15s' }),
-      cardIcon: { fontSize: '1.25rem', marginBottom: 6, lineHeight: 1 },
-      cardName: { fontSize: '0.8rem', fontWeight: 600, color: '#1f2328', marginBottom: 2 },
-      cardHint: { fontSize: '0.68rem', color: '#9aa0a6', lineHeight: 1.4 },
-      check: (on) => ({ position: 'absolute', top: 8, right: 8, width: 18, height: 18, borderRadius: '50%', background: '#1f2328', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: on ? 1 : 0, transform: on ? 'scale(1)' : 'scale(0.6)', transition: 'opacity .18s, transform .18s' }),
-      divider: { height: 1, background: '#e8eaed', margin: '0 0 1.25rem' },
-      pillRow: { display: 'flex', flexWrap: 'wrap', gap: 7 },
-      pill: (on) => ({ padding: '7px 13px', borderRadius: 999, border: on ? '1px solid #1f2328' : '1px solid #e8eaed', background: on ? '#1f2328' : '#f4f5f7', fontSize: '0.82rem', color: on ? '#fff' : '#4b5563', cursor: 'pointer', transition: 'all .15s', userSelect: 'none' }),
-      preview: { background: '#f4f5f7', borderRadius: 12, padding: '11px 13px', marginTop: '1.1rem', minHeight: 50, border: '1px solid #e8eaed' },
-      previewLabel: { fontSize: '0.65rem', fontWeight: 600, letterSpacing: '0.06em', color: '#9aa0a6', textTransform: 'uppercase', marginBottom: 4 },
-      previewText: (filled) => ({ fontSize: '0.82rem', color: filled ? '#1f2328' : '#9aa0a6', fontStyle: filled ? 'normal' : 'italic', lineHeight: 1.55 }),
-      counter: { fontSize: '0.7rem', color: '#9aa0a6', marginTop: '0.4rem', textAlign: 'right' },
-      btnRow: { display: 'flex', gap: 8, marginTop: '1.4rem' },
-      btnSkip: { flex: 1, padding: '0.72rem', borderRadius: 12, border: '1px solid #e8eaed', background: 'transparent', fontSize: '0.82rem', color: '#9aa0a6', cursor: 'pointer', fontFamily: 'inherit' },
-      btnNext: { flex: 2.5, padding: '0.72rem', borderRadius: 12, border: 'none', background: '#1f2328', color: '#fff', fontSize: '0.88rem', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' },
-    }
-
     return (
       <>
-        <div className="signup-wrap">
+        <div key="signup-step-3" className="signup-wrap signup-step-transition">
           <Stepper step={3} />
 
           <div className="signup-complete">
@@ -407,128 +427,166 @@ export function SignupPage() {
             <p className="signup-complete-line">
               <strong>LocalGuest</strong> 가입이 완료되었습니다.
             </p>
-            <p className="signup-complete-sub">여행 스타일을 알려주시면 AI가 딱 맞는 가이드를 추천해드릴게요.</p>
-            {doneId != null && <p className="signup-complete-id">회원 ID: {doneId}</p>}
 
             <div className="signup-complete-actions">
-              <button type="button" className="signup-complete-btn signup-complete-btn--ghost" onClick={() => setDnaModalOpen(true)}>
-                내 여행 스타일 설정하기
-              </button>
-              <Link
-                to="/auth/login"
-                className="signup-complete-btn signup-complete-btn--dark"
-                state={{ fromSignup: true, hint: '로그인 후 상단「AI 검색」또는 /api/ai/recommend 를 이용할 수 있습니다. (현재 해당 API는 인증 필요)' }}
+              <button
+                type="button"
+                className="signup-complete-btn signup-complete-btn--ghost"
+                onClick={() => void finishSignupAndGoHome(false)}
+                disabled={postSignupBusy}
               >
-                ✨ AI 가이드 추천받기
-              </Link>
+                {postSignupBusy ? '이동 중…' : '성향 건너뛰기'}
+              </button>
+              <button
+                type="button"
+                className="signup-complete-btn signup-complete-btn--dark"
+                onClick={() => setStep(4)}
+                disabled={postSignupBusy}
+              >
+                여행 성향 입력하기
+              </button>
             </div>
           </div>
-
-          <p className="signup-footer-note">
-            <Link to="/auth/login">로그인</Link>
-          </p>
         </div>
+      </>
+    )
+  }
 
-        {dnaModalOpen && (
-          <div style={S.overlay} onClick={(e) => { if (e.target === e.currentTarget) setDnaModalOpen(false) }}>
-            <div style={S.modal}>
-              <div style={S.banner}>
-                <span style={{ fontSize: '1.1rem', lineHeight: 1.4, flexShrink: 0 }}>🎉</span>
-                <div>
-                  <div style={S.bannerTitle}>가입이 완료됐어요!</div>
-                  <div style={S.bannerSub}>마지막으로 여행 스타일만 알려주시면 AI가 바로 가이드를 찾아드려요.</div>
-                </div>
-              </div>
+  if (step === 4) {
+    const S = {
+      modal: {
+        background: '#fff',
+        borderRadius: 16,
+        padding: '1.75rem 1.5rem 1.5rem',
+        width: '100%',
+        border: '1px solid #e8eaed',
+        boxShadow: '0 12px 40px rgba(31, 35, 40, 0.08)',
+        colorScheme: 'light',
+      },
+      kicker: { fontSize: '0.7rem', fontWeight: 600, letterSpacing: '0.12em', color: '#9aa0a6', margin: '0 0 0.3rem' },
+      title: { fontSize: '1.25rem', fontWeight: 800, letterSpacing: '-0.03em', color: '#1f2328', margin: '0 0 0.4rem', lineHeight: 1.3 },
+      lead: { fontSize: '0.85rem', color: '#6b7280', lineHeight: 1.55, margin: '0 0 1.25rem' },
+      qBlock: { marginBottom: '1.25rem' },
+      qTitle: { fontSize: '0.85rem', fontWeight: 700, color: '#1f2328', marginBottom: '0.18rem' },
+      qDesc: { fontSize: '0.72rem', color: '#9aa0a6', marginBottom: '0.6rem' },
+      cardGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(160px,1fr))', gap: 10 },
+      card: (on) => ({ background: on ? '#fff8fb' : '#f4f5f7', border: on ? '1.5px solid #efbfd0' : '1px solid #e8eaed', borderRadius: 12, padding: '11px 11px 9px', cursor: 'pointer', position: 'relative', userSelect: 'none', transition: 'border-color .15s, background .15s' }),
+      cardIcon: { fontSize: '1.25rem', marginBottom: 6, lineHeight: 1 },
+      cardName: { fontSize: '0.8rem', fontWeight: 600, color: '#1f2328', marginBottom: 2 },
+      cardHint: { fontSize: '0.68rem', color: '#9aa0a6', lineHeight: 1.4 },
+      check: (on) => ({ position: 'absolute', top: 8, right: 8, width: 18, height: 18, borderRadius: '50%', background: '#cf6f95', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: on ? 1 : 0, transform: on ? 'scale(1)' : 'scale(0.6)', transition: 'opacity .18s, transform .18s' }),
+      divider: { height: 1, background: '#e8eaed', margin: '0 0 1.25rem' },
+      pillRow: { display: 'flex', flexWrap: 'wrap', gap: 7 },
+      pill: (on) => ({ padding: '7px 13px', borderRadius: 999, border: on ? '1px solid #efbfd0' : '1px solid #e8eaed', background: on ? '#f6d8e6' : '#f4f5f7', fontSize: '0.82rem', color: on ? '#6d3f58' : '#4b5563', cursor: 'pointer', transition: 'all .15s', userSelect: 'none' }),
+      preview: { background: '#f4f5f7', borderRadius: 12, padding: '11px 13px', marginTop: '1.1rem', minHeight: 50, border: '1px solid #e8eaed' },
+      previewLabel: { fontSize: '0.65rem', fontWeight: 600, letterSpacing: '0.06em', color: '#9aa0a6', textTransform: 'uppercase', marginBottom: 4 },
+      previewText: (filled) => ({ fontSize: '0.82rem', color: filled ? '#1f2328' : '#9aa0a6', fontStyle: filled ? 'normal' : 'italic', lineHeight: 1.55 }),
+      counter: { fontSize: '0.7rem', color: '#9aa0a6', marginTop: '0.4rem', textAlign: 'right' },
+      btnRow: { display: 'flex', gap: 8, marginTop: '1.4rem' },
+      btnSkip: { flex: 1, padding: '0.72rem', borderRadius: 12, border: '1px solid #e8eaed', background: 'transparent', fontSize: '0.82rem', color: '#9aa0a6', cursor: 'pointer', fontFamily: 'inherit' },
+      btnNext: { flex: 2.5, padding: '0.72rem', borderRadius: 12, border: 'none', background: '#f6d8e6', color: '#6d3f58', fontSize: '0.88rem', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' },
+    }
 
-              <p style={S.kicker}>STEP 4 · TRAVEL DNA</p>
-              <h2 style={S.title}>당신만의 여행 DNA를<br />알려주세요</h2>
-              <p style={S.lead}>선택하신 스타일로 AI가 딱 맞는 로컬 가이드를 연결해 드려요.<br />정답은 없어요, 솔직하게 골라주세요.</p>
+    return (
+      <div key="signup-step-4" className="signup-wrap signup-wrap--wide signup-step-transition">
+        <Stepper step={4} />
+        <div style={S.modal}>
+          <p style={S.kicker}>STEP 4 · TRAVEL DNA</p>
+          <h2 style={S.title}>당신만의 여행 성향을 알려주세요</h2>
+          <p style={S.lead}>선택하신 성향으로 AI가 더 잘 맞는 가이드를 추천해드려요.</p>
 
-              <div style={S.qBlock}>
-                <div style={S.qTitle}>어떤 순간을 원하나요?</div>
-                <div style={S.qDesc}>여러 개 선택할수록 추천이 정확해져요</div>
-                <div style={S.cardGrid}>
-                  {DNA_MOMENT_OPTIONS.map((opt) => {
-                    const on = dnaMoments.includes(opt.val)
-                    return (
-                      <div key={opt.val} style={S.card(on)} onClick={() => toggleDnaMoment(opt.val)}>
-                        <div style={S.check(on)}>
-                          <svg viewBox="0 0 10 8" width="9" height="9" stroke="#fff" fill="none" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                            <polyline points="1,4 3.5,7 9,1" />
-                          </svg>
-                        </div>
-                        <div style={S.cardIcon}>{opt.icon}</div>
-                        <div style={S.cardName}>{opt.name}</div>
-                        <div style={S.cardHint}>{opt.hint}</div>
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-
-              <div style={S.divider} />
-
-              <div style={S.qBlock}>
-                <div style={S.qTitle}>여행 페이스는요?</div>
-                <div style={S.pillRow}>
-                  {DNA_PACE_OPTIONS.map((opt) => (
-                    <div key={opt.val} style={S.pill(dnaPace === opt.val)} onClick={() => setDnaPace(opt.val)}>{opt.label}</div>
-                  ))}
-                </div>
-              </div>
-
-              <div style={S.qBlock}>
-                <div style={S.qTitle}>함께하는 사람은요?</div>
-                <div style={S.pillRow}>
-                  {DNA_WITH_OPTIONS.map((opt) => (
-                    <div key={opt} style={S.pill(dnaWith === opt)} onClick={() => setDnaWith(opt)}>{opt}</div>
-                  ))}
-                </div>
-              </div>
-
-              <div style={S.qBlock}>
-                <div style={S.qTitle}>가이드에게 기대하는 건요?</div>
-                <div style={S.pillRow}>
-                  {DNA_EXPECT_OPTIONS.map((opt) => (
-                    <div key={opt} style={S.pill(dnaExpect === opt)} onClick={() => setDnaExpect(opt)}>{opt}</div>
-                  ))}
-                </div>
-              </div>
-
-              <div style={S.preview}>
-                <div style={S.previewLabel}>내 여행 스타일 미리보기</div>
-                <div style={S.previewText(!!dnaPreview)}>{dnaPreview || '선택할수록 나만의 여행 프로필이 완성돼요.'}</div>
-              </div>
-              <div style={S.counter}>{dnaTotalSelected > 0 ? `총 ${dnaTotalSelected}가지 선택됨` : '아직 선택 전이에요'}</div>
-
-              <div style={S.btnRow}>
-                <button style={S.btnSkip} onClick={() => setDnaModalOpen(false)}>나중에 할게요</button>
-                <button style={S.btnNext} onClick={handleDnaNext}>내 가이드 찾으러 가기 →</button>
-              </div>
+          <div style={S.qBlock}>
+            <div style={S.qTitle}>어떤 순간을 원하나요?</div>
+            <div style={S.qDesc}>여러 개 선택할수록 추천이 정확해져요</div>
+            <div style={S.cardGrid}>
+              {DNA_MOMENT_OPTIONS.map((opt) => {
+                const on = dnaMoments.includes(opt.val)
+                return (
+                  <div key={opt.val} style={S.card(on)} onClick={() => toggleDnaMoment(opt.val)}>
+                    <div style={S.check(on)}>
+                      <svg viewBox="0 0 10 8" width="9" height="9" stroke="#fff" fill="none" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="1,4 3.5,7 9,1" />
+                      </svg>
+                    </div>
+                    <div style={S.cardIcon}>{opt.icon}</div>
+                    <div style={S.cardName}>{opt.name}</div>
+                    <div style={S.cardHint}>{opt.hint}</div>
+                  </div>
+                )
+              })}
             </div>
           </div>
-        )}
-      </>
+
+          <div style={S.divider} />
+
+          <div style={S.qBlock}>
+            <div style={S.qTitle}>여행 페이스는요?</div>
+            <div style={S.pillRow}>
+              {DNA_PACE_OPTIONS.map((opt) => (
+                <div key={opt.val} style={S.pill(dnaPace === opt.val)} onClick={() => setDnaPace(opt.val)}>{opt.label}</div>
+              ))}
+            </div>
+          </div>
+
+          <div style={S.qBlock}>
+            <div style={S.qTitle}>함께하는 사람은요?</div>
+            <div style={S.pillRow}>
+              {DNA_WITH_OPTIONS.map((opt) => (
+                <div key={opt} style={S.pill(dnaWith === opt)} onClick={() => setDnaWith(opt)}>{opt}</div>
+              ))}
+            </div>
+          </div>
+
+          <div style={S.qBlock}>
+            <div style={S.qTitle}>가이드에게 기대하는 건요?</div>
+            <div style={S.pillRow}>
+              {DNA_EXPECT_OPTIONS.map((opt) => (
+                <div key={opt} style={S.pill(dnaExpect === opt)} onClick={() => setDnaExpect(opt)}>{opt}</div>
+              ))}
+            </div>
+          </div>
+
+          <div style={S.preview}>
+            <div style={S.previewLabel}>내 여행 성향 미리보기</div>
+            <div style={S.previewText(!!dnaPreview)}>{dnaPreview || '선택할수록 나만의 여행 성향이 완성돼요.'}</div>
+          </div>
+          <div style={S.counter}>{dnaTotalSelected > 0 ? `총 ${dnaTotalSelected}가지 선택됨` : '아직 선택 전이에요'}</div>
+
+          <div style={S.btnRow}>
+            <button style={S.btnSkip} onClick={() => void finishSignupAndGoHome(false)} disabled={postSignupBusy}>
+              {postSignupBusy ? '이동 중…' : '성향 건너뛰고 시작하기'}
+            </button>
+            <button style={S.btnNext} onClick={handleDnaNext} disabled={postSignupBusy}>
+              {postSignupBusy ? '이동 중…' : '여행 성향 저장하고 시작하기'}
+            </button>
+          </div>
+        </div>
+      </div>
     )
   }
 
   if (step === 2) {
     return (
-      <div className="signup-wrap">
+      <div key="signup-step-2" className="signup-wrap signup-step-transition">
         <Stepper step={2} />
 
-        <div className="signup-card">
+        <div className="signup-card signup-card--verify">
           <span className="signup-card-accent signup-card-accent--lime" aria-hidden />
+          <button
+            type="button"
+            className="signup-back-icon"
+            onClick={() => setStep(1)}
+            aria-label="이전 단계로 이동"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M14.75 5.75L8.5 12l6.25 6.25" />
+            </svg>
+          </button>
           <p className="signup-kicker">STEP 2. VERIFICATION</p>
-          <h1 className="signup-title">이메일 인증을 완료해주세요 🔒</h1>
+          <h1 className="signup-title">이메일 인증을 완료해주세요</h1>
           <p className="signup-lead">
-            안전한 서비스 이용을 위해 가입하신 이메일로 본인 인증이 필요합니다.
+            계정 보호와 원활한 이용을 위해 이메일 인증이 필요합니다.
           </p>
-
-          <div className="signup-info-box">
-            💡 <strong>왜 인증이 필요한가요?</strong> 가이드와 여행자 간의 신뢰할 수 있는 매칭을 위해 필수적인 절차입니다.
-            <span className="signup-info-sub">서버에서 인증번호를 발송·검증합니다. (백엔드 API가 준비되어 있어야 합니다.)</span>
-          </div>
 
           <div className="signup-field">
             <div className="signup-label-row">
@@ -547,7 +605,9 @@ export function SignupPage() {
                 {emailSendBusy ? '발송 중…' : codeSent ? '발송완료' : '인증번호 발송'}
               </button>
             </div>
-            <p className="signup-hint">입력하신 이메일로 6자리 인증번호가 발송됩니다.</p>
+            <p className={`signup-hint${codeSent ? ' signup-hint--sent' : ''}`}>
+              {codeSent ? '인증번호가 발송되었습니다.' : '입력하신 이메일로 6자리 인증번호가 발송됩니다.'}
+            </p>
           </div>
 
           <div className="signup-field">
@@ -600,22 +660,22 @@ export function SignupPage() {
             {loading ? '처리 중…' : '✓ 인증 완료 → 가입 완료'}
           </button>
 
-          <p className="signup-demo-note">
-            <button type="button" className="signup-linkish" onClick={() => setStep(1)}>
-              ← 이전 단계 (계정 정보)
-            </button>
-          </p>
         </div>
 
         <p className="signup-footer-note">
-          이미 계정이 있나요? <Link to="/auth/login">로그인</Link>
+          <span>이미 계정이 있으신가요?</span>
+          <button type="button" className="signup-footer-login-link" onClick={() => setLoginConfirmOpen(true)}>
+            로그인하러 가기
+          </button>
         </p>
+
+        {loginConfirmModal}
       </div>
     )
   }
 
   return (
-    <div className="signup-wrap">
+    <div key="signup-step-1" className="signup-wrap signup-step-transition">
       <Stepper step={1} />
 
       <form className="signup-card" onSubmit={(e) => void goStep2(e)}>
@@ -636,7 +696,7 @@ export function SignupPage() {
         <div className="signup-field">
           <div className="signup-label-row">
             <label className="signup-label" htmlFor="su-email">
-              이메일<span className="req">*</span>
+              이메일(아이디)<span className="req">*</span>
             </label>
           </div>
           <input
@@ -660,7 +720,6 @@ export function SignupPage() {
               이름<span className="req">*</span>
             </label>
           </div>
-          <p className="signup-hint">백엔드 회원가입 API 필수 항목입니다.</p>
           <input
             id="su-name"
             className="signup-input"
@@ -675,17 +734,17 @@ export function SignupPage() {
         <div className="signup-field">
           <div className="signup-label-row">
             <label className="signup-label" htmlFor="su-id">
-              아이디<span className="req">*</span>
+              닉네임<span className="req">*</span>
             </label>
           </div>
-          <p className="signup-hint">영문, 숫자 2~16자 · 서비스 닉네임으로 저장됩니다.</p>
+          <p className="signup-hint">영문, 숫자 2~16자</p>
           <div className="signup-input-row">
             <input
               id="su-id"
               className="signup-input"
               type="text"
               autoComplete="username"
-              placeholder="아이디를 입력해주세요"
+              placeholder="닉네임을 입력해주세요"
               value={userId}
               onChange={(ev) => {
                 setUserId(ev.target.value)
@@ -773,8 +832,13 @@ export function SignupPage() {
       </form>
 
       <p className="signup-footer-note">
-        이미 계정이 있나요? <Link to="/auth/login">로그인</Link>
+        <span>이미 계정이 있으신가요?</span>
+        <button type="button" className="signup-footer-login-link" onClick={() => setLoginConfirmOpen(true)}>
+          로그인하러 가기
+        </button>
       </p>
+
+      {loginConfirmModal}
     </div>
   )
 }

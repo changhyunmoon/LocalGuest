@@ -27,6 +27,31 @@
   background: #fff;
 }
 
+.form-role-switch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.form-role-btn {
+  padding: 0.62rem 0.8rem;
+  border-radius: 10px;
+  border: 1px solid #efbfd0;
+  background: #fff8fb;
+  color: #7a5f78;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+}
+
+.form-role-btn.is-on {
+  background: #f6d8e6;
+  border-color: #efbfd0;
+  color: #6d3f58;
+}
+
 .field {
   display: flex;
   flex-direction: column;
@@ -104,6 +129,50 @@
   background: #f5f5f5;
   color: #333;
   border: 1px solid #ddd;
+}
+
+.form-login-submit {
+  border: 1px solid #efbfd0;
+  background: #f6d8e6;
+  color: #6d3f58;
+  font-weight: 700;
+}
+
+.form-login-submit:hover:not(:disabled) {
+  background: #f2cddd;
+}
+
+.form-social--inside {
+  margin-top: 0.1rem;
+  padding-top: 0.25rem;
+}
+
+.form-google-login {
+  width: 100%;
+  margin-top: 0.2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.52rem;
+  border-color: #efbfd0 !important;
+  background: #fff8fb !important;
+  color: #8f4664 !important;
+  font-weight: 700;
+}
+
+.form-google-login__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.4rem;
+  height: 1.4rem;
+  border-radius: 999px;
+  border: 1px solid #efbfd0;
+  background: #fff;
+  color: #8f4664;
+  font-size: 0.86rem;
+  font-weight: 800;
+  line-height: 1;
 }
 
 .form-social {

@@ -5,19 +5,32 @@
 }
 
 .gut-hero {
+  text-align: center;
+  background: #fffdfd;
+  border: 1px solid #f0dce4;
+  border-radius: 16px;
+  padding: clamp(1rem, 3vw, 1.35rem) clamp(0.9rem, 3vw, 1.25rem);
   margin-bottom: 1rem;
 }
 
 .gut-hero h1 {
   margin: 0 0 0.3rem;
   font-size: clamp(1.2rem, 4vw, 1.6rem);
-  color: #111827;
+  color: #4a3c56;
+  font-family: var(--heading);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.3;
 }
 
 .gut-hero p {
   margin: 0;
-  color: #4b5563;
-  font-size: 0.9rem;
+  color: #7a6a80;
+  font-family: var(--sans);
+  font-size: 0.92rem;
+  line-height: 1.55;
+  max-width: 42rem;
+  margin-inline: auto;
 }
 
 .gut-sections {
@@ -42,8 +55,10 @@
 
 .gut-section-head h2 {
   margin: 0;
-  font-size: 0.98rem;
-  color: #111827;
+  font-size: 1.02rem;
+  color: #5a3c56;
+  font-weight: 800;
+  letter-spacing: -0.01em;
 }
 
 .gut-section-head span {
@@ -106,14 +121,21 @@
 }
 
 .gut-open {
-  border: 1px solid #111827;
+  border: 1px solid #efbfd0;
   border-radius: 999px;
-  background: #111827;
-  color: #fff;
+  background: linear-gradient(135deg, #f6d8e6 0%, #edbfd3 100%);
+  color: #6d3f58;
   font-size: 0.78rem;
   font-weight: 700;
   padding: 0.4rem 0.7rem;
   cursor: pointer;
   font-family: inherit;
+  transition: background 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
+}
+
+.gut-open:hover {
+  background: linear-gradient(135deg, #f2cddd 0%, #e7adc5 100%);
+  border-color: #e8a8bf;
+  transform: translateY(-1px);
 }
 

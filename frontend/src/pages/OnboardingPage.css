@@ -40,16 +40,16 @@
 }
 
 .onb-step-circle.done {
-  background: #1f2328;
-  border-color: #1f2328;
-  color: #fff;
+  background: #f6d8e6;
+  border-color: #efbfd0;
+  color: #6d3f58;
   font-size: 0.95rem;
 }
 
 .onb-step-circle.current {
-  background: #1f2328;
-  border-color: #1f2328;
-  color: #fff;
+  background: #f8dce7;
+  border-color: #efbfd0;
+  color: #6d3f58;
 }
 
 .onb-step-label {

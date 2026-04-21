@@ -1,9 +1,11 @@
+import { extractTravelDnaTags, loadTravelDna } from './travelDna.js'
+
 const LS_NICK = 'localguest_mypage_nickname'
 const LS_BOOK = 'localguest_mypage_notify_booking'
 const LS_MSG = 'localguest_mypage_notify_guide_msg'
 const LS_TAGS = 'localguest_mypage_travel_tags'
 
-export const DEFAULT_TRAVEL_TAGS = ['로컬맛집', '사진맛집', '여유로운', '전시관람']
+export const DEFAULT_TRAVEL_TAGS = []
 
 function loadBool(key, fallback) {
   const v = localStorage.getItem(key)
@@ -20,12 +22,19 @@ function loadString(key) {
 export function loadTravelTags() {
   try {
     const raw = localStorage.getItem(LS_TAGS)
-    if (!raw) return [...DEFAULT_TRAVEL_TAGS]
+    if (!raw) {
+      const fromDna = extractTravelDnaTags(loadTravelDna())
+      return fromDna.length > 0 ? fromDna : [...DEFAULT_TRAVEL_TAGS]
+    }
     const p = JSON.parse(raw)
-    if (!Array.isArray(p) || p.length === 0) return [...DEFAULT_TRAVEL_TAGS]
+    if (!Array.isArray(p) || p.length === 0) {
+      const fromDna = extractTravelDnaTags(loadTravelDna())
+      return fromDna.length > 0 ? fromDna : [...DEFAULT_TRAVEL_TAGS]
+    }
     return p.map((t) => String(t).trim()).filter(Boolean)
   } catch {
-    return [...DEFAULT_TRAVEL_TAGS]
+    const fromDna = extractTravelDnaTags(loadTravelDna())
+    return fromDna.length > 0 ? fromDna : [...DEFAULT_TRAVEL_TAGS]
   }
 }
 

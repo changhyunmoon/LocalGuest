@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 
 import { PageError, PageLoading } from '../components/PageStates.jsx'
 import { apiRequest } from '../api/client'
@@ -40,7 +40,7 @@ function fallbackLatLng(idx) {
 function createSpotOverlay(kakao, map, latlng, idx, name) {
   const root = document.createElement('div')
   root.className = 'gmc-pin'
-  root.innerHTML = `<span class="gmc-pin-badge">${idx + 1}</span><span class="gmc-pin-label">${name}</span>`
+  root.innerHTML = `<span class="gmc-pin-badge"><span class="gmc-pin-badge-inner">${idx + 1}</span></span><span class="gmc-pin-label">${name}</span>`
   return new kakao.maps.CustomOverlay({ map, position: latlng, yAnchor: 1.25, content: root })
 }
 
@@ -58,6 +58,7 @@ function findLatestRequest(list, guideId, requestId) {
 export function GuideMatchedCoursePage() {
   const { guideId } = useParams()
   const [searchParams] = useSearchParams()
+  const location = useLocation()
   const navigate = useNavigate()
   const mapRef = useRef(null)
 
@@ -222,7 +223,6 @@ export function GuideMatchedCoursePage() {
   const rating = profile?.averageRating != null && profile?.averageRating !== ''
     ? Number(profile.averageRating).toFixed(1) : '—'
   const rc = profile?.reviewCount != null ? profile.reviewCount : 0
-  const likes = useMemo(() => Math.max(Math.round(rc * 2.8) + 40, 12), [rc])
 
   if (loading) return <div className="gmc"><PageLoading /></div>
   if (error || !profile) {
@@ -244,6 +244,11 @@ export function GuideMatchedCoursePage() {
       {/* 가이드 프로필 헤더 (기존 유지) */}
       <Link
         to={`/guides/${guideId}`}
+        state={{
+          fromMatchedCourse: true,
+          hideMatchRequest: true,
+          returnTo: `${location.pathname}${location.search}`,
+        }}
         className="gmc-hero gmc-hero--link"
         aria-label={`${profile.nickname ?? '가이드'} 프로필 및 피드 보기`}
       >
@@ -253,11 +258,10 @@ export function GuideMatchedCoursePage() {
         />
         <div className="gmc-hero-body">
           <h1 className="gmc-name">{profile.nickname ?? '가이드'}</h1>
-          <p className="gmc-meta">📍 {profile.region ?? ''} · ⭐ {rating} ({rc} 리뷰)</p>
+          <p className="gmc-meta">{profile.region ?? ''} · 평점 {rating} ({rc} 리뷰)</p>
           <p className="gmc-quote">"{profile.bio?.slice(0, 120) || '관광객은 모르는 사진 찍기 좋은 조용한 루트를 안내합니다.'}"</p>
           <p className="gmc-hero-cta">프로필·피드 보기 →</p>
         </div>
-        <div className="gmc-likes">♥ {likes}</div>
       </Link>
 
       {/* 코스 섹션 */}
@@ -291,7 +295,7 @@ export function GuideMatchedCoursePage() {
             {/* 결제 전 지도 잠금 오버레이 */}
             {!isPaid && (
               <div className="gmc-map-lock">
-                <span className="gmc-lock-icon">🔒</span>
+                <span className="gmc-lock-icon"><span className="gmc-lock-glyph" /></span>
                 <p className="gmc-lock-title">결제 완료 후 코스 공개</p>
                 <p className="gmc-lock-desc">상세 코스와 지도는 결제 후 확인할 수 있어요</p>
               </div>

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { MypageDevHint } from '../components/MypageDevHint.jsx'
+import { useNavigate } from 'react-router-dom'
 import { PageEmpty, PageError, PageLoading } from '../components/PageStates.jsx'
 import { apiRequest } from '../api/client.js'
 import { daysUntil, fetchGuestMatchRequests } from '../lib/matchingGuest.js'
@@ -26,16 +26,28 @@ async function loadGuideNicknames(apiRequest, guideIds) {
   return map
 }
 
+function parseRouteStops(proposedSchedule) {
+  const raw = String(proposedSchedule ?? '').trim()
+  if (!raw) return []
+  return raw
+    .split(/->|→|\r?\n|,/g)
+    .map((s) => s.trim())
+    .filter(Boolean)
+}
+
 export function MypageScrapbookPage() {
+  const navigate = useNavigate()
   const [rows, setRows] = useState([])
   const [names, setNames] = useState({})
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
+  const [tearingRequestId, setTearingRequestId] = useState(null)
 
   const loadScrapbook = useCallback(async () => {
     const all = await fetchGuestMatchRequests(apiRequest)
-    const completed = (Array.isArray(all) ? all : []).filter((r) => r.status === 'COMPLETED')
-    completed.sort((a, b) => String(b.desiredDate).localeCompare(String(a.desiredDate)))
+    const completed = (Array.isArray(all) ? all : [])
+      .filter((r) => r.status === 'COMPLETED')
+      .sort((a, b) => String(b.desiredDate).localeCompare(String(a.desiredDate)))
     setRows(completed)
     const gids = completed.map((r) => r.guideId)
     const nm = await loadGuideNicknames(apiRequest, gids)
@@ -75,24 +87,14 @@ export function MypageScrapbookPage() {
   const count = rows.length
 
   const subtitle = useMemo(() => {
-    if (count === 0) return '아직 완료된 로컬 투어 기록이 없습니다.'
+    if (count === 0) return '아직 완료된 로컬 투어 기록이 없어요!'
     return `총 ${count}번의 로컬 여행을 다녀왔어요 ✈️`
   }, [count])
 
   return (
     <div className="mp-member">
       <h1>📒 나의 여행 기록 (스크랩북)</h1>
-      <p className="sub">
-        투어가 <strong>완료</strong>된 매칭만 시간 순으로 모아 보여 줍니다. 가이드 이름은 공개 프로필에서 가져옵니다.
-      </p>
-      <MypageDevHint>
-        <code>GET /api/matching/requests/guest/list</code> 중 <strong>COMPLETED</strong> 만 표시 · 가이드 닉네임은{' '}
-        <code>GET /api/guides/&#123;guideId&#125;</code> 로 보강
-      </MypageDevHint>
-      <p className="sub mp-data-note">
-        <strong>데이터 안내:</strong> 요약 화면의 기록 카드는 <strong>스크랩북(서버 저장)</strong> 기준이라, 이 목록과 개수가
-        다를 수 있어요.
-      </p>
+      <p className="sub">투어가 완료된 매칭을 시간 순으로 모아 보여 줍니다.</p>
       {loading && <PageLoading />}
       {!loading && error && <PageError message={error} onRetry={() => void refetch()} />}
 
@@ -106,27 +108,53 @@ export function MypageScrapbookPage() {
           </div>
 
           {rows.length === 0 && (
-            <PageEmpty title="완료된 투어 기록이 없습니다">투어가 완료되면 여기에 쌓입니다.</PageEmpty>
+            <PageEmpty title="완료된 투어 기록이 아직 없어요!" className="mp-scrap-empty">
+              첫 로컬 투어가 끝나면, 추억이 이곳에 예쁘게 쌓여요.
+            </PageEmpty>
           )}
 
           {rows.length > 0 && (
             <div className="mp-cards">
-              {rows.map((r) => {
+              {rows.map((r, idx) => {
                 const d = daysUntil(r.desiredDate)
                 const nick = names[r.guideId] ?? `가이드 #${r.guideId}`
+                const tripTitle = `여행기 #${idx + 1}`
+                const routeStops = parseRouteStops(r.proposedSchedule)
+                const previewText = routeStops.slice(0, 2).join(' → ') || '등록된 확정 루트가 없습니다.'
+                const detailPreview = String(r.proposedSchedule ?? '').trim().split(/\r?\n/).filter(Boolean)[0] ?? ''
                 return (
-                  <article key={r.requestId} className="mp-trip-card mp-trip-card--past">
-                    <div className="mp-trip-card__meta">
+                  <article key={r.requestId} className="mp-scrap-ticket">
+                    <div className="mp-scrap-ticket-left">
                       <span className="mp-dday" style={{ color: d != null && d < 0 ? '#6b7280' : '#dc2626' }}>
                         {r.desiredDate} · {nick}
                       </span>
-                      <h2 className="mp-trip-title">{r.destination}</h2>
+                      <h2 className="mp-trip-title">{tripTitle}</h2>
+                      <p className="mp-trip-detail">{nick}님과 함께했어요!</p>
+                      <p className="mp-trip-detail"><strong>여행지:</strong> {r.destination}</p>
                       <p className="mp-trip-detail">{r.conceptSummary ?? r.concept ?? '—'}</p>
-                      <p className="mp-trip-detail">제시 일정: {r.proposedSchedule ?? '—'}</p>
+                      <p className="mp-trip-detail">
+                        <strong>확정 루트 미리보기:</strong> {previewText}
+                      </p>
+                      {detailPreview && (
+                        <p className="mp-trip-detail">
+                          <strong>상세 코스:</strong> {detailPreview}
+                        </p>
+                      )}
                     </div>
-                    <div className="mp-thumb" aria-hidden>
-                      Trip
-                    </div>
+                    <button
+                      type="button"
+                      className={`mp-scrap-ticket-right mp-ticket-tear-zone${Number(tearingRequestId) === Number(r.requestId) ? ' is-tearing' : ''}`}
+                      disabled={tearingRequestId != null}
+                      onClick={() => {
+                        setTearingRequestId(Number(r.requestId))
+                        window.setTimeout(() => {
+                          navigate(`/mypage/scrapbook/${r.requestId}`)
+                        }, 430)
+                      }}
+                      aria-label={`여행 기록 #${r.requestId} 상세 보기`}
+                    >
+                      <span className="mp-ticket-tear-zone-label">티켓 뜯기</span>
+                    </button>
                   </article>
                 )
               })}

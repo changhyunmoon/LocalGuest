@@ -2,6 +2,8 @@ package com.team6.domain.matching.controller;
 
 import com.team6.domain.matching.dto.request.TourExtensionSelectRequest;
 import com.team6.domain.matching.dto.response.TourExtensionResponseDto;
+import com.team6.domain.matching.exception.MatchingErrorCode;
+import com.team6.domain.matching.exception.MatchingException;
 import com.team6.domain.matching.service.TourExtensionService;
 import com.team6.domain.matching.support.MatchingAuthenticationSupport;
 import jakarta.validation.Valid;
@@ -27,7 +29,36 @@ public class TourExtensionController {
             @PathVariable Long requestId
     ) {
         Long actorId = matchingAuthenticationSupport.resolveTourExtensionActorId();
-        return ResponseEntity.ok(tourExtensionService.getByRequestId(requestId, actorId));
+        try {
+            return ResponseEntity.ok(tourExtensionService.getByRequestId(requestId, actorId));
+        } catch (MatchingException e) {
+            if (e.getErrorCode() == MatchingErrorCode.TOUR_EXTENSION_GUIDE_NEXT_DAY_BOOKED) {
+                return ResponseEntity.noContent()
+                        .header("X-Extension-Reason", "GUIDE_NEXT_DAY_BOOKED")
+                        .build();
+            }
+            if (e.getErrorCode() == MatchingErrorCode.TOUR_EXTENSION_GUIDE_NEXT_DAY_BLOCKED) {
+                return ResponseEntity.noContent()
+                        .header("X-Extension-Reason", "GUIDE_NEXT_DAY_BLOCKED")
+                        .build();
+            }
+            if (e.getErrorCode() == MatchingErrorCode.TOUR_EXTENSION_GUIDE_UNAVAILABLE_NEXT_DAY) {
+                return ResponseEntity.noContent()
+                        .header("X-Extension-Reason", "GUIDE_NEXT_DAY_UNAVAILABLE")
+                        .build();
+            }
+            if (e.getErrorCode() == MatchingErrorCode.TOUR_EXTENSION_ALREADY_DECIDED) {
+                return ResponseEntity.noContent()
+                        .header("X-Extension-Reason", "ALREADY_DECIDED")
+                        .build();
+            }
+            if (e.getErrorCode() == MatchingErrorCode.TOUR_EXTENSION_NOT_FOUND) {
+                // 연장 대상이 아닌 경우(정상 시나리오)는 404 대신 204로 응답해
+                // 클라이언트에서 "오류"로 보이지 않도록 한다.
+                return ResponseEntity.noContent().build();
+            }
+            throw e;
+        }
     }
 
     // 게스트 전용 연장 선택 API

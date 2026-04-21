@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
-import { MypageDevHint } from '../components/MypageDevHint.jsx'
 import { apiRequest } from '../api/client.js'
 import { useAuth } from '../context/useAuth.js'
 import { loadGuestPrivacyForm, persistGuestPrivacyForm } from '../lib/guestMypagePrefs.js'
+import { buildTravelDnaPreview, loadTravelDna } from '../lib/travelDna.js'
 
 import './MypageMemberPages.css'
 import './MypagePrivacyPage.css'
@@ -40,6 +40,8 @@ export function MypagePrivacyPage() {
     setGuideMessageNotify(f.guideMessageNotify)
     setTags(f.tags)
   }, [email])
+
+  const dnaSummary = useMemo(() => buildTravelDnaPreview(loadTravelDna()), [])
 
   const handleSave = () => {
     setSaving(true)
@@ -95,12 +97,7 @@ export function MypagePrivacyPage() {
       <h1 className="mp-privacy-title">
         회원 정보 및 여행 설정 <span aria-hidden>⚙️</span>
       </h1>
-      <p className="mp-privacy-hint">
-        회원 닉네임·알림·여행 성향은 전용 서버 연동 전까지 이 브라우저에만 저장됩니다.
-      </p>
-      <MypageDevHint className="mp-privacy-hint">
-        백엔드에 <code>PATCH /members/me</code> 등이 추가되면 연동 예정입니다.
-      </MypageDevHint>
+      <p className="mp-privacy-hint">여행 성향 태그를 관리하고 알림 설정을 조정할 수 있어요.</p>
       {savedFlash && <p className="mp-privacy-banner">설정이 저장되었습니다.</p>}
 
       <section className="mp-privacy-section">
@@ -155,6 +152,9 @@ export function MypagePrivacyPage() {
 
       <section className="mp-privacy-section">
         <h2>나의 여행 성향 관리</h2>
+        <p className="mp-privacy-dna-summary">
+          {dnaSummary || '선택한 태그를 기반으로 나의 여행 성향이 요약됩니다.'}
+        </p>
         <div className="mp-privacy-tags-wrap">
           <div className="mp-privacy-tags">
             {tags.map((t) => (
@@ -213,9 +213,6 @@ export function MypagePrivacyPage() {
         <p className="mp-privacy-danger-hint">
           탈퇴 시 서비스 이용이 종료되며 복구가 어려울 수 있습니다. 로컬에만 있는 닉네임·알림 설정도 더 이상 쓰이지 않습니다.
         </p>
-        <MypageDevHint className="mp-privacy-hint">
-          API: <code>DELETE /api/members/me?role=GUEST</code>
-        </MypageDevHint>
         {withdrawErr && <p className="err">{withdrawErr}</p>}
         <button type="button" className="mp-btn mp-btn--danger" disabled={withdrawBusy} onClick={() => void onWithdraw()}>
           {withdrawBusy ? '처리 중…' : '회원 탈퇴'}

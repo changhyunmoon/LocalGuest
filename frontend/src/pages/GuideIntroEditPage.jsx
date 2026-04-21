@@ -50,12 +50,13 @@ export function GuideIntroEditPage() {
   const [residenceYears, setResidenceYears] = useState('0')
   const [language, setLanguage] = useState('')
   const [guideStyle, setGuideStyle] = useState('')
-  const [keywords, setKeywords] = useState([])
   const [defaultCourse, setDefaultCourse] = useState('')
-  const [tagInput, setTagInput] = useState('')
   const [loadError, setLoadError] = useState('')
   const [saving, setSaving] = useState(false)
   const { toasts, addToast } = useToast()
+
+  const parsedResidenceYears = Number.parseInt(String(residenceYears || '').replace(/[^\d]/g, ''), 10)
+  const residenceYearsPreview = Number.isFinite(parsedResidenceYears) ? parsedResidenceYears : 0
 
   const load = useCallback(async (id) => {
     setLoadError('')
@@ -72,11 +73,6 @@ export function GuideIntroEditPage() {
       setResidenceYears(p?.residenceYears != null ? String(p.residenceYears) : '0')
       setLanguage(p?.language ?? '')
       setGuideStyle(p?.guideStyle ?? '')
-      setKeywords(
-        p?.keywords
-          ? String(p.keywords).split(',').map((s) => s.trim()).filter(Boolean)
-          : []
-      )
       setDefaultCourse(p?.defaultCourse ?? '')
     } catch (e) {
       setLoadError(e instanceof Error ? e.message : '불러오기 실패')
@@ -87,24 +83,6 @@ export function GuideIntroEditPage() {
     if (!guideId) return
     void load(guideId)
   }, [guideId, load])
-
-  const addKeyword = (raw) => {
-    const tag = raw.trim()
-    if (!tag || keywords.includes(tag) || keywords.length >= 5) return
-    setKeywords((prev) => [...prev, tag])
-    setTagInput('')
-  }
-
-  const handleKeywordKeyDown = (e) => {
-    if (e.key === 'Enter' || e.key === ',') {
-      e.preventDefault()
-      addKeyword(tagInput)
-    }
-  }
-
-  const removeKeyword = (tag) => {
-    setKeywords((prev) => prev.filter((k) => k !== tag))
-  }
 
   const handleSave = async () => {
     if (!guideId || !profile) return
@@ -117,7 +95,6 @@ export function GuideIntroEditPage() {
         residenceYears: residenceYears !== '' ? Number(residenceYears) : undefined,
         language,
         guideStyle: guideStyle,
-        keywords: keywords.join(','),
         defaultCourse,
       }
       const body = buildGuidePutBody(merged)
@@ -134,11 +111,6 @@ export function GuideIntroEditPage() {
       setResidenceYears(p?.residenceYears != null ? String(p.residenceYears) : '0')
       setLanguage(p?.language ?? '')
       setGuideStyle(p?.guideStyle ?? '')
-      setKeywords(
-        p?.keywords
-          ? String(p.keywords).split(',').map((s) => s.trim()).filter(Boolean)
-          : []
-      )
       setDefaultCourse(p?.defaultCourse ?? '')
       addToast('저장되었습니다.')
     } catch {
@@ -209,17 +181,29 @@ export function GuideIntroEditPage() {
 
           <div className="gm-field">
             <label htmlFor="gi-years">
-              거주 연수 <span className="gi-range-val">{residenceYears}년</span>
+              거주 연수 <span className="gi-range-val">{residenceYearsPreview}년</span>
             </label>
-            <input
-              id="gi-years"
-              type="range"
-              min={0}
-              max={50}
-              value={residenceYears}
-              onChange={(e) => setResidenceYears(e.target.value)}
-              className="gi-range"
-            />
+            <div className="gi-years-row">
+              <input
+                id="gi-years"
+                type="number"
+                min={0}
+                max={80}
+                inputMode="numeric"
+                value={residenceYears}
+                onChange={(e) => {
+                  const next = e.target.value.replace(/[^\d]/g, '')
+                  if (next === '') {
+                    setResidenceYears('')
+                    return
+                  }
+                  setResidenceYears(String(Math.min(80, Number(next))))
+                }}
+                className="gi-years-input"
+                placeholder="거주 연수"
+              />
+              <span className="gi-years-suffix">년</span>
+            </div>
           </div>
 
           <div className="gm-field">
@@ -263,44 +247,6 @@ export function GuideIntroEditPage() {
                 onChange={(e) => setGuideStyle(e.target.value)}
                 placeholder="직접 입력 (선택 옵션 외)"
               />
-            </div>
-          </div>
-
-          <div className="gm-field">
-            <label>관심 키워드 <span className="gi-range-val">{keywords.length}/5</span></label>
-            <div className="gi-tag-row">
-              <input
-                className="gi-tag-input"
-                value={tagInput}
-                onChange={(e) => {
-                  const val = e.target.value
-                  if (val.endsWith(',')) {
-                    addKeyword(val.slice(0, -1))
-                  } else {
-                    setTagInput(val)
-                  }
-                }}
-                onKeyDown={handleKeywordKeyDown}
-                placeholder={keywords.length >= 5 ? '최대 5개까지 입력 가능합니다' : '키워드 입력 후 Enter 또는 콤마'}
-                disabled={keywords.length >= 5}
-              />
-              {keywords.length > 0 && (
-                <div className="gi-tag-list">
-                  {keywords.map((k) => (
-                    <span key={k} className="gi-tag">
-                      {k}
-                      <button
-                        type="button"
-                        className="gi-tag-del"
-                        onClick={() => removeKeyword(k)}
-                        aria-label={`${k} 삭제`}
-                      >
-                        ×
-                      </button>
-                    </span>
-                  ))}
-                </div>
-              )}
             </div>
           </div>
 
