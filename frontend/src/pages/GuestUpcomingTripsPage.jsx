@@ -15,6 +15,22 @@ import './GuestUpcomingTripsPage.css'
 
 const UPCOMING = new Set(['PENDING', 'ACCEPTED', 'PAID', 'IN_PROGRESS'])
 
+function formatBudgetRangeKrw(minWon, maxWon, fallbackSingleWon) {
+  const min = minWon != null && minWon !== '' && !Number.isNaN(Number(minWon)) ? Number(minWon) : null
+  const max = maxWon != null && maxWon !== '' && !Number.isNaN(Number(maxWon)) ? Number(maxWon) : null
+  if (min != null && max != null) {
+    return `₩${min.toLocaleString('ko-KR')}~${max.toLocaleString('ko-KR')}`
+  }
+  if (min != null || max != null) {
+    const only = min ?? max
+    return `₩${Number(only).toLocaleString('ko-KR')}`
+  }
+  if (fallbackSingleWon != null && fallbackSingleWon !== '' && !Number.isNaN(Number(fallbackSingleWon))) {
+    return `₩${Number(fallbackSingleWon).toLocaleString('ko-KR')}`
+  }
+  return '—'
+}
+
 function ddayLabel(days, status) {
   if (status === 'IN_PROGRESS') return '진행중'
   if (days == null) return '일정 미정'
@@ -158,7 +174,9 @@ export function GuestUpcomingTripsPage() {
                         </span>
                         <h3>{nick}</h3>
                         <p>{row.destination ?? '로컬 투어'} · {row.desiredDate ?? '—'}</p>
-                        <p>상태: {row.status} · 예산: {row.desiredBudget != null ? `₩${Number(row.desiredBudget).toLocaleString('ko-KR')}` : '—'}</p>
+                        <p>
+                          상태: {row.status} · 예산: {formatBudgetRangeKrw(row.budgetMinWon, row.budgetMaxWon, row.desiredBudget)}
+                        </p>
                       </div>
                       <button type="button" className="gut-open" onClick={() => openMatchScreen(row)}>
                         상세 보기

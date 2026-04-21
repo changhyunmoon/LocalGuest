@@ -17,6 +17,22 @@ import './MypageMemberPages.css'
 
 const UPCOMING = new Set(['PENDING', 'ACCEPTED', 'PAID', 'IN_PROGRESS'])
 
+function formatBudgetRangeKrw(minWon, maxWon, fallbackSingleWon) {
+  const min = minWon != null && minWon !== '' && !Number.isNaN(Number(minWon)) ? Number(minWon) : null
+  const max = maxWon != null && maxWon !== '' && !Number.isNaN(Number(maxWon)) ? Number(maxWon) : null
+  if (min != null && max != null) {
+    return `₩${min.toLocaleString('ko-KR')}~${max.toLocaleString('ko-KR')}`
+  }
+  if (min != null || max != null) {
+    const only = min ?? max
+    return `₩${Number(only).toLocaleString('ko-KR')}`
+  }
+  if (fallbackSingleWon != null && fallbackSingleWon !== '' && !Number.isNaN(Number(fallbackSingleWon))) {
+    return `₩${Number(fallbackSingleWon).toLocaleString('ko-KR')}`
+  }
+  return '—'
+}
+
 export function MypageItineraryPage() {
   const navigate = useNavigate()
   const [rows, setRows] = useState([])
@@ -181,7 +197,9 @@ export function MypageItineraryPage() {
                     {r.desiredDate ?? '—'} | 제시: {r.proposedSchedule ?? '—'}
                   </p>
                   <p className="mp-trip-detail">상태: {r.status}</p>
-                  <p className="mp-trip-detail">예산: {r.desiredBudget != null ? `₩${Number(r.desiredBudget).toLocaleString()}` : '—'}</p>
+                  <p className="mp-trip-detail">
+                    예산: {formatBudgetRangeKrw(r.budgetMinWon, r.budgetMaxWon, r.desiredBudget)}
+                  </p>
                 </div>
                 <div className="mp-trip-actions">
                   <button type="button" className="mp-thumb mp-thumb--match" style={{ minHeight: '4.5rem' }} onClick={() => openMatchScreen(r)}>
