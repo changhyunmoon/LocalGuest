@@ -34,21 +34,7 @@ class PromptParserTest {
 
         assertThat(request.getRegion()).isEqualTo("제주");
         assertThat(request.getBudgetLevel()).isEqualTo("중간");
-        assertThat(request.getBudgetMinWon()).isEqualTo(200_000);
-        assertThat(request.getBudgetMaxWon()).isEqualTo(200_000);
         assertThat(request.getActivityTags()).contains("카페");
-    }
-
-    @Test
-    void parse_should_preserve_single_budget_amount_as_range() {
-        GuideRecommendRequest request = promptParser.parse(
-                "제주도 맛집 투어랑 야경이 예쁜곳에 가고싶어요 예산은 하루 10만원",
-                3,
-                List.of()
-        );
-        assertThat(request.getRegion()).isEqualTo("제주");
-        assertThat(request.getBudgetMinWon()).isEqualTo(100_000);
-        assertThat(request.getBudgetMaxWon()).isEqualTo(100_000);
     }
 
     @Test

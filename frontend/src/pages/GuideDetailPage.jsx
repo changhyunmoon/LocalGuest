@@ -176,12 +176,6 @@ export function GuideDetailPage() {
   const navigate = useNavigate()
   const { isAuthenticated, isGuide } = useAuth()
 
-  const [aiConceptSummary, setAiConceptSummary] = useState(null)
-  const [aiDesiredBudget, setAiDesiredBudget] = useState(null)
-  const [aiBudgetMinWon, setAiBudgetMinWon] = useState(null)
-  const [aiBudgetMaxWon, setAiBudgetMaxWon] = useState(null)
-  const [aiHiddenConcept, setAiHiddenConcept] = useState(null)
-
   const [detail, setDetail] = useState(null)
   const [schedules, setSchedules] = useState([])
   const [reviews, setReviews] = useState([])
@@ -198,34 +192,6 @@ export function GuideDetailPage() {
   const [concept, setConcept] = useState('')
   const [submitErr, setSubmitErr] = useState('')
   const [submitting, setSubmitting] = useState(false)
-  const [confirmModal, setConfirmModal] = useState(null)
-
-  useEffect(() => {
-    // AI 검색 결과에서 넘어온 matchRequestDraft는 게스트에게 노출하지 않고, 전송 시에만 활용한다.
-    try {
-      const raw = sessionStorage.getItem('localguest_ai_match_draft_v1')
-      if (!raw) return
-      const snap = JSON.parse(raw)
-      const snapGuideId = snap?.guideId != null ? String(snap.guideId) : ''
-      if (!snapGuideId || snapGuideId !== String(guideId)) return
-      const draft = snap?.matchRequestDraft ?? null
-      if (!draft || typeof draft !== 'object') return
-
-      if (draft?.conceptSummary) setAiConceptSummary(String(draft.conceptSummary))
-      if (draft?.desiredBudget != null && draft.desiredBudget !== '') setAiDesiredBudget(Number(draft.desiredBudget))
-      if (draft?.budgetMinWon != null && draft.budgetMinWon !== '') setAiBudgetMinWon(Number(draft.budgetMinWon))
-      if (draft?.budgetMaxWon != null && draft.budgetMaxWon !== '') setAiBudgetMaxWon(Number(draft.budgetMaxWon))
-      if (draft?.concept) setAiHiddenConcept(String(draft.concept))
-
-      // 목적지는 사용자가 비워둔 경우에만 보조로 채운다.
-      if (!destination.trim() && draft?.destination) setDestination(String(draft.destination).trim())
-
-      sessionStorage.removeItem('localguest_ai_match_draft_v1')
-    } catch {
-      /* ignore */
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [guideId])
 
   useEffect(() => {
     let cancelled = false
@@ -333,16 +299,6 @@ export function GuideDetailPage() {
     return set
   }, [schedules])
 
-  const reservedDateSet = useMemo(() => {
-    const set = new Set()
-    for (const schedule of schedules) {
-      const key = formatScheduleDate(schedule?.availableDate)
-      const status = String(schedule?.status ?? '').toUpperCase()
-      if (key && (status === 'BOOKED' || status === 'PENDING')) set.add(key)
-    }
-    return set
-  }, [schedules])
-
   const availableByDate = useMemo(() => {
     /** @type {Map<string, any[]>} */
     const map = new Map()
@@ -398,12 +354,51 @@ export function GuideDetailPage() {
     return cells
   }, [calendarMonth])
 
-  const sendMatchRequest = async (payload) => {
+  const onSubmitMatch = async (e) => {
+    e.preventDefault()
+    setSubmitErr('')
+    if (!isAuthenticated) {
+      setSubmitErr('로그인이 필요합니다.')
+      return
+    }
+    if (isGuide) {
+      setSubmitErr('여행자(GUEST) 계정으로 로그인한 뒤 요청해 주세요.')
+      return
+    }
+    if (!selectedDateKey) {
+      setSubmitErr('예약 날짜를 선택해 주세요.')
+      return
+    }
+    if (isPastDateKey(selectedDateKey)) {
+      setSubmitErr('지난 날짜에는 요청할 수 없습니다.')
+      return
+    }
+    if (blockedDateSet.has(selectedDateKey)) {
+      setSubmitErr('해당 날짜는 가이드가 예약을 받지 않습니다. 다른 날짜를 선택해 주세요.')
+      return
+    }
+    const dest = destination.trim()
+    if (!dest) {
+      setSubmitErr('여행 목적지(지역)를 입력해 주세요.')
+      return
+    }
+
+    const sch = selectedScheduleId == null
+      ? null
+      : schedules.find((s) => Number(s.scheduleId) === Number(selectedScheduleId))
+    const desiredDate = selectedDateKey || (sch?.availableDate != null ? formatScheduleDate(sch.availableDate) : undefined)
+
     setSubmitting(true)
     try {
       const res = await apiRequest('/matching/requests', {
         method: 'POST',
-        json: payload,
+        json: {
+          guideId: Number(guideId),
+          scheduleId: selectedScheduleId != null ? Number(selectedScheduleId) : undefined,
+          destination: dest,
+          concept: concept.trim() || undefined,
+          desiredDate: desiredDate || undefined,
+        },
       })
       const t = await res.text()
       if (res.status === 401 || res.status === 403) {
@@ -432,67 +427,6 @@ export function GuideDetailPage() {
     } finally {
       setSubmitting(false)
     }
-  }
-
-  const onSubmitMatch = async (e) => {
-    e.preventDefault()
-    if (submitting) return
-    setSubmitErr('')
-    if (!isAuthenticated) {
-      setSubmitErr('로그인이 필요합니다.')
-      return
-    }
-    if (isGuide) {
-      setSubmitErr('여행자(GUEST) 계정으로 로그인한 뒤 요청해 주세요.')
-      return
-    }
-    if (!selectedDateKey) {
-      setSubmitErr('예약 날짜를 선택해 주세요.')
-      return
-    }
-    if (isPastDateKey(selectedDateKey)) {
-      setSubmitErr('지난 날짜에는 요청할 수 없습니다.')
-      return
-    }
-    if (blockedDateSet.has(selectedDateKey)) {
-      setSubmitErr('해당 날짜는 가이드가 예약을 받지 않습니다. 다른 날짜를 선택해 주세요.')
-      return
-    }
-    if (reservedDateSet.has(selectedDateKey)) {
-      setSubmitErr('해당 날짜는 이미 예약이 잡혀 요청할 수 없습니다. 다른 날짜를 선택해 주세요.')
-      return
-    }
-    const dest = destination.trim()
-    if (!dest) {
-      setSubmitErr('여행 목적지(지역)를 입력해 주세요.')
-      return
-    }
-
-    const sch = selectedScheduleId == null
-      ? null
-      : schedules.find((s) => Number(s.scheduleId) === Number(selectedScheduleId))
-    const desiredDate = selectedDateKey || (sch?.availableDate != null ? formatScheduleDate(sch.availableDate) : undefined)
-    const conceptText = concept.trim() || (aiHiddenConcept ? String(aiHiddenConcept).trim() : '')
-
-    setConfirmModal({
-      destination: dest,
-      desiredDate: desiredDate || '',
-      concept: conceptText,
-      payload: {
-        guideId: Number(guideId),
-        scheduleId: selectedScheduleId != null ? Number(selectedScheduleId) : undefined,
-        destination: dest,
-        concept: conceptText || undefined,
-        conceptSummary: aiConceptSummary ? String(aiConceptSummary).trim() : undefined,
-        desiredBudget:
-          aiDesiredBudget != null && !Number.isNaN(Number(aiDesiredBudget)) ? Number(aiDesiredBudget) : undefined,
-        budgetMinWon:
-          aiBudgetMinWon != null && !Number.isNaN(Number(aiBudgetMinWon)) ? Number(aiBudgetMinWon) : undefined,
-        budgetMaxWon:
-          aiBudgetMaxWon != null && !Number.isNaN(Number(aiBudgetMaxWon)) ? Number(aiBudgetMaxWon) : undefined,
-        desiredDate: desiredDate || undefined,
-      },
-    })
   }
 
   if (loading) {
@@ -745,15 +679,14 @@ export function GuideDetailPage() {
                     const inMonth = cell.inMonth
                     const isPast = isPastDateKey(key)
                     const isBlocked = blockedDateSet.has(key)
-                    const isReserved = reservedDateSet.has(key)
                     const hasSchedule = availableByDate.has(key)
-                    const selectable = inMonth && !isPast && !isBlocked && !isReserved
+                    const selectable = inMonth && !isPast && !isBlocked
                     const selected = selectable && key === selectedDateKey
                     return (
                       <button
                         key={cell.key}
                         type="button"
-                        className={`gdp-match-day${!inMonth ? ' is-out' : ''}${isPast ? ' is-past' : ''}${selectable ? ' is-on' : ''}${isBlocked ? ' is-blocked' : ''}${isReserved ? ' is-reserved' : ''}${selected ? ' is-selected' : ''}`}
+                        className={`gdp-match-day${!inMonth ? ' is-out' : ''}${isPast ? ' is-past' : ''}${selectable ? ' is-on' : ''}${isBlocked ? ' is-blocked' : ''}${selected ? ' is-selected' : ''}`}
                         disabled={!selectable}
                         onClick={() => {
                           setSelectedDateKey(key)
@@ -764,12 +697,12 @@ export function GuideDetailPage() {
                       >
                         {cell.date.getDate()}
                         {isBlocked && <span className="gdp-match-x">×</span>}
-                        {isReserved && <span className="gdp-match-x">×</span>}
+                        {hasSchedule && <span className="gdp-match-dot" />}
                       </button>
                     )
                   })}
                 </div>
-                <p className="gdp-match-cal-hint">지난 날짜와 예약된 날짜는 선택할 수 없어요. 기본은 예약 가능이며, 가이드가 막은 날짜도 비활성화됩니다.</p>
+                <p className="gdp-match-cal-hint">지난 날짜는 선택할 수 없어요. 기본은 예약 가능이며, 가이드가 막은 날짜만 선택할 수 없습니다.</p>
 
                 {selectedDateSchedules.length > 0 ? (
                   <div className="gdp-match-times" role="radiogroup" aria-label="시간 선택">
@@ -816,7 +749,7 @@ export function GuideDetailPage() {
             <div>
               <button
                 type="submit"
-                disabled={submitting || !selectedDateKey || blockedDateSet.has(selectedDateKey) || reservedDateSet.has(selectedDateKey)}
+                disabled={submitting || !selectedDateKey || blockedDateSet.has(selectedDateKey)}
                 style={{
                   padding: '0.6rem 1.2rem',
                   borderRadius: 8,
@@ -832,66 +765,6 @@ export function GuideDetailPage() {
           </form>
         )}
       </section>
-
-      {confirmModal && (
-        <div
-          className="gdp-confirm-overlay"
-          role="dialog"
-          aria-modal="true"
-          aria-label="매칭 요청 확인"
-          onClick={(e) => {
-            if (e.target === e.currentTarget && !submitting) setConfirmModal(null)
-          }}
-        >
-          <div className="gdp-confirm">
-            <p className="gdp-confirm-kicker">Final Check</p>
-            <h3>{p.nickname} 가이드에게 매칭 요청을 보낼까요?</h3>
-            <p className="gdp-confirm-sub">아래 정보가 그대로 전달됩니다. 맞으면 전송해 주세요.</p>
-            <dl className="gdp-confirm-list">
-              <div>
-                <dt>목적지</dt>
-                <dd>{confirmModal.destination}</dd>
-              </div>
-              <div>
-                <dt>날짜</dt>
-                <dd>{confirmModal.desiredDate || '미정'}</dd>
-              </div>
-              <div>
-                <dt>하고 싶은 일</dt>
-                <dd>{confirmModal.concept || '입력 없음'}</dd>
-              </div>
-              {confirmModal.payload?.desiredBudget != null && (
-                <div>
-                  <dt>예산</dt>
-                  <dd>{Number(confirmModal.payload.desiredBudget).toLocaleString('ko-KR')}원</dd>
-                </div>
-              )}
-            </dl>
-            <div className="gdp-confirm-actions">
-              <button
-                type="button"
-                className="gdp-confirm-btn gdp-confirm-btn--line"
-                onClick={() => setConfirmModal(null)}
-                disabled={submitting}
-              >
-                수정할게요
-              </button>
-              <button
-                type="button"
-                className="gdp-confirm-btn gdp-confirm-btn--solid"
-                disabled={submitting}
-                onClick={() => {
-                  const payload = confirmModal.payload
-                  setConfirmModal(null)
-                  void sendMatchRequest(payload)
-                }}
-              >
-                {submitting ? '전송 중…' : '요청 전송'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

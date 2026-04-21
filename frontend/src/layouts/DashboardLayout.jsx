@@ -8,7 +8,7 @@ import './DashboardLayout.css'
 
 const guestItems = [
   { to: '/mypage/scrapbook', label: '📒 나의 여행 기록(스크랩북)' },
-  { to: '/upcoming-trips', label: '📆 앞으로의 여행 일정' },
+  { to: '/mypage/itinerary', label: '📆 앞으로의 여행 일정' },
   { to: '/mypage/payments', label: '💳 결제 내역' },
   { to: '/mypage/privacy', label: '⚙️ 개인정보 설정' },
   { to: '/mypage/tour', label: '🔁 투어 연장/환불 관리' },

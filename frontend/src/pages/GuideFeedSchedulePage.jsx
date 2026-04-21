@@ -448,6 +448,23 @@ export function GuideFeedSchedulePage() {
 
   return (
     <div className="g-panel">
+      <h1>💼 피드 및 스케줄 관리</h1>
+      <div className="gfs-tabs" role="tablist" aria-label="피드·스케줄 탭">
+        <button
+          type="button"
+          className={`gfs-tab ${currentTab === 'feed' ? 'is-on' : ''}`}
+          onClick={() => setSearchParams({ tab: 'feed' })}
+        >
+          피드 등록
+        </button>
+        <button
+          type="button"
+          className={`gfs-tab ${currentTab === 'schedule' ? 'is-on' : ''}`}
+          onClick={() => setSearchParams({ tab: 'schedule' })}
+        >
+          스케줄 관리
+        </button>
+      </div>
       {loadError && <p className="g-error">{loadError}</p>}
       <Toast toasts={toasts} />
       {currentTab === 'feed' ? (

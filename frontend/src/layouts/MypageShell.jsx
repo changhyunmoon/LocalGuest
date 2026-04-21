@@ -10,7 +10,7 @@ import { DashboardLayout } from './DashboardLayout.jsx'
 export function MypageShell() {
   const { isGuide } = useAuth()
   if (isGuide) {
-    return <Navigate to="/guide/mypage/profile" replace />
+    return <Navigate to="/guide/mypage/fees" replace />
   }
   return (
     <DashboardLayout>

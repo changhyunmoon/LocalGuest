@@ -5,6 +5,7 @@ import { GuideDashboardLayout } from '../layouts/GuideDashboardLayout'
 import { GuideApplyPage } from '../pages/GuideApplyPage'
 import { GuideCourseEditorPage } from '../pages/GuideCourseEditorPage'
 import { GuideFeedSchedulePage } from '../pages/GuideFeedSchedulePage'
+import { GuideFeesPage } from '../pages/GuideFeesPage'
 import { GuideInboxPage } from '../pages/GuideInboxPage'
 import { GuideIntroEditPage } from '../pages/GuideIntroEditPage'
 import { GuideProfileEditPage } from '../pages/GuideProfileEditPage'
@@ -62,8 +63,8 @@ export const guideRoutes = [
       </ProtectedRoute>
     ),
     children: [
-      { index: true, element: <Navigate to="profile" replace /> },
-      { path: 'fees', element: <Navigate to="../settings" replace /> },
+      { index: true, element: <Navigate to="fees" replace /> },
+      { path: 'fees', element: <GuideFeesPage /> },
       { path: 'settlement', element: <GuideSettlementPage /> },
       {
         path: 'profile',

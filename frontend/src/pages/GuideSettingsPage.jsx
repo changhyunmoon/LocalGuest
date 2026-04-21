@@ -40,17 +40,6 @@ async function readJsonError(res, text) {
   }
 }
 
-const HOURS = 8
-const LS_PUSH = 'guide_pref_push_notif'
-const LS_EMAIL = 'guide_pref_email_notif'
-
-function loadBool(key, fallback) {
-  const v = localStorage.getItem(key)
-  if (v === '1') return true
-  if (v === '0') return false
-  return fallback
-}
-
 export function GuideSettingsPage() {
   const { guideId, loading: idLoading, error: idError } = useResolvedGuideId()
   const navigate = useNavigate()
@@ -60,10 +49,6 @@ export function GuideSettingsPage() {
   const [loadError, setLoadError] = useState('')
   const [busy, setBusy] = useState(false)
   const [withdrawing, setWithdrawing] = useState(false)
-  const [saving, setSaving] = useState(false)
-  const [pushOn, setPushOn] = useState(() => loadBool(LS_PUSH, true))
-  const [emailOn, setEmailOn] = useState(() => loadBool(LS_EMAIL, false))
-  const [packageWon, setPackageWon] = useState('')
 
   const load = useCallback(async (id) => {
     setLoadError('')
@@ -82,9 +67,6 @@ export function GuideSettingsPage() {
       }
       setProfile(pt ? JSON.parse(pt) : null)
       setSummary(st ? JSON.parse(st) : null)
-      const loadedProfile = pt ? JSON.parse(pt) : null
-      const hourly = loadedProfile?.pricePerHour != null ? Number(loadedProfile.pricePerHour) : 0
-      setPackageWon(hourly > 0 ? String(Math.round(hourly * HOURS)) : '')
     } catch (e) {
       setLoadError(e instanceof Error ? e.message : '불러오기 실패')
     }
@@ -132,51 +114,6 @@ export function GuideSettingsPage() {
     }
   }
 
-  const savePrefs = () => {
-    localStorage.setItem(LS_PUSH, pushOn ? '1' : '0')
-    localStorage.setItem(LS_EMAIL, emailOn ? '1' : '0')
-  }
-
-  const handleSaveFees = async () => {
-    if (!guideId || !profile) return
-    setSaving(true)
-    savePrefs()
-    try {
-      const pkg = Number(packageWon.replace(/[^\d]/g, ''))
-      if (!Number.isFinite(pkg) || pkg <= 0) {
-        addToast('종일 패키지 금액을 올바르게 입력해 주세요.', 'error')
-        return
-      }
-      const hourly = Math.max(1, Math.round(pkg / HOURS))
-      const body = {
-        nickname: profile.nickname,
-        profileImage: profile.profileImage ?? undefined,
-        bio: profile.bio ?? undefined,
-        region: profile.region,
-        language: profile.language,
-        pricePerHour: hourly,
-        isActive: profile?.isActive ?? true,
-        residenceYears: profile.residenceYears ?? undefined,
-        localStory: profile.localStory ?? undefined,
-        keywords: profile.keywords ?? undefined,
-        defaultCourse: profile.defaultCourse ?? undefined,
-        guideStyle: profile.guideStyle ?? undefined,
-      }
-      const res = await apiRequest(`/guides/${guideId}`, { method: 'PUT', json: body })
-      const text = await res.text()
-      if (!res.ok) {
-        addToast(await readJsonError(res, text), 'error')
-        return
-      }
-      setProfile(text ? JSON.parse(text) : profile)
-      addToast('비용/알림 설정이 저장되었습니다.')
-    } catch {
-      addToast('네트워크 오류가 발생했습니다.', 'error')
-    } finally {
-      setSaving(false)
-    }
-  }
-
   if (idLoading) {
     return (
         <div className="g-panel">
@@ -204,49 +141,12 @@ export function GuideSettingsPage() {
   return (
       <div className="g-panel">
         <h1>🔧 가이드 설정</h1>
-        <p className="g-hint">가이드 운영에 필요한 노출/비용/알림/리뷰/계정 설정을 한 곳에서 관리합니다.</p>
+        <p className="g-hint">
+          노출·요금은 <Link to="/guide/mypage/fees">가이드 비용</Link>, 프로필 필드는{' '}
+          <Link to="/guide/mypage/profile">프로필 등록</Link>에서 수정합니다. 여기서는 서버에 있는 토글·승인·리뷰 요약만
+          다룹니다.
+        </p>
         <div className="gm-stack" style={{ marginTop: '1rem', maxWidth: '32rem' }}>
-
-          <section className="gm-card">
-            <h2>가이드 비용 및 알림</h2>
-            <p className="gm-hint">종일 패키지 금액(8시간 기준)과 로컬 알림 옵션을 함께 저장합니다.</p>
-            <div className="g-row">
-              <div>
-                <strong>새로운 예약 요청 알림 (Push)</strong>
-                <p>푸시 알림 API 연동 전 — 이 기기에만 저장됩니다.</p>
-              </div>
-              <label className="g-toggle">
-                <input type="checkbox" checked={pushOn} onChange={(e) => setPushOn(e.target.checked)} />
-                <span className="g-toggle-ui" />
-              </label>
-            </div>
-            <div className="g-row">
-              <div>
-                <strong>메시지 수신 알림 (Email)</strong>
-                <p>이메일 알림 API 연동 전 — 이 기기에만 저장됩니다.</p>
-              </div>
-              <label className="g-toggle">
-                <input type="checkbox" checked={emailOn} onChange={(e) => setEmailOn(e.target.checked)} />
-                <span className="g-toggle-ui" />
-              </label>
-            </div>
-            <div className="g-price-row" style={{ marginTop: '0.85rem' }}>
-              <label htmlFor="pkg-won">종일 패키지</label>
-              <input
-                id="pkg-won"
-                inputMode="numeric"
-                value={packageWon}
-                onChange={(e) => setPackageWon(e.target.value.replace(/[^\d]/g, ''))}
-                placeholder="140000"
-              />
-              <span style={{ fontWeight: 600, color: '#374151' }}>원</span>
-            </div>
-            <div className="g-save-row" style={{ marginTop: '0.9rem' }}>
-              <button type="button" className="g-save" onClick={() => void handleSaveFees()} disabled={saving}>
-                {saving ? '저장 중…' : '비용/알림 저장'}
-              </button>
-            </div>
-          </section>
 
           {/* 활성화 섹션 */}
           <section className="gm-card">
@@ -313,9 +213,6 @@ export function GuideSettingsPage() {
             <p className="gm-hint" style={{ marginTop: '0.5rem' }}>
               승인 API는 관리자용 <code>PATCH /guides/&#123;id&#125;/approve</code> 입니다. 일반 가이드 계정에서는 호출하지
               않습니다.
-            </p>
-            <p className="gm-hint" style={{ marginTop: '0.5rem' }}>
-              프로필 텍스트/이미지는 <Link to="/guide/mypage/profile">프로필 등록</Link>에서 수정할 수 있습니다.
             </p>
           </section>
 
