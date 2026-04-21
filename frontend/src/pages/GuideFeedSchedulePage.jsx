@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 
 import { apiRequest } from '../api/client.js'
 import { useResolvedGuideId } from '../hooks/useResolvedGuideId.js'
@@ -7,7 +7,6 @@ import { fetchGuideMatchRequests } from '../lib/matchingGuest.js'
 
 import '../layouts/GuideDashboardLayout.css'
 import './GuideMypagePages.css'
-import { GuideCoursePanel } from './GuideCoursePanel.jsx'
 import { GuideScheduleSection } from './GuideScheduleSection.jsx'
 
 function parseFeedHeading(content) {
@@ -93,6 +92,7 @@ function hasWholeDayAvailableSlot(list, dateStr) {
 }
 
 export function GuideFeedSchedulePage() {
+  const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const { guideId, loading: idLoading, error: idError, reload: reloadId } = useResolvedGuideId()
   const [feeds, setFeeds] = useState([])
@@ -108,8 +108,6 @@ export function GuideFeedSchedulePage() {
   const [feedLocationTags, setFeedLocationTags] = useState([])
   const [showLocationInput, setShowLocationInput] = useState(false)
   const [locationInput, setLocationInput] = useState('')
-  const [courseTarget, setCourseTarget] = useState(null)
-  const [savedCourseForms, setSavedCourseForms] = useState({})
   const { toasts, addToast } = useToast()
   const [blockedDates, setBlockedDates] = useState(() => new Set())
   const [busy, setBusy] = useState(false)
@@ -358,36 +356,6 @@ export function GuideFeedSchedulePage() {
     }
   }
 
-  /** 종일(00:00~23:59) 예약 받기 슬롯만 삭제 → 중립. 시간대별 일정은 유지 */
-  const clearOpenDay = async (dateStr) => {
-    if (!guideId || scheduleOpLockRef.current || busy) return
-    const markers = schedules.filter((s) => s.availableDate === dateStr && isWholeDayOpenSlot(s))
-    if (markers.length === 0) {
-      addToast('종일로 켠 "예약 받기"만 여기서 끌 수 있어요. 다른 시간대는 목록에서 삭제해 주세요.', 'error')
-      return
-    }
-    if (!window.confirm('이 날짜의 종일 예약 받기 설정을 지울까요? (예약을 막지는 않아요)')) return
-    scheduleOpLockRef.current = true
-    setBusy(true)
-    try {
-      for (const s of markers) {
-        const res = await apiRequest(`/guides/${guideId}/schedules/${s.scheduleId}`, { method: 'DELETE' })
-        if (!res.ok) {
-          const t = await res.text()
-          addToast(await readJsonError(res, t), 'error')
-          return
-        }
-      }
-      addToast('이 날을 비었습니다.')
-      await reloadScheduleData(guideId)
-    } catch {
-      addToast('삭제에 실패했어요', 'error')
-    } finally {
-      scheduleOpLockRef.current = false
-      setBusy(false)
-    }
-  }
-
   const onPickFiles = async (e) => {
     const files = Array.from(e.target.files ?? [])
     e.target.value = ''
@@ -436,6 +404,28 @@ export function GuideFeedSchedulePage() {
   const removeLocationTag = (tag) => {
     setFeedLocationTags((prev) => prev.filter((t) => t !== tag))
   }
+
+  const moveToCourseEditor = useCallback((tour) => {
+    const sid = Number(tour?.scheduleId)
+    if (!Number.isFinite(sid)) return
+    const rid = Number(tour?.requestId)
+    const hasRid = Number.isFinite(rid) && rid > 0
+    const path = hasRid
+      ? `/guide/requests/${rid}/course-editor`
+      : `/guide/schedules/${sid}/course-editor`
+    const params = new URLSearchParams()
+    params.set('scheduleId', String(sid))
+    if (tour?.availableDate) params.set('date', String(tour.availableDate))
+    if (tour?.startTime) params.set('startTime', String(tour.startTime))
+    if (tour?.endTime) params.set('endTime', String(tour.endTime))
+    if (tour?.destination) params.set('destination', String(tour.destination))
+    navigate(`${path}?${params.toString()}`, {
+      state: {
+        schedule: tour,
+        initialForm: null,
+      },
+    })
+  }, [navigate])
 
   if (idLoading) {
     return (
@@ -664,7 +654,7 @@ export function GuideFeedSchedulePage() {
           <div className="gss-banner gss-banner--schedule">
             <span className="gss-banner__icon" aria-hidden="true">💡</span>
             <span>
-              달력은 기본이 <strong>비어 있음</strong>이에요. 예약 요청을 받을 날만 날짜를 눌러 <strong>예약 받기</strong>를 켜 주세요. (월을 바꿔도 자동으로 켜지지 않아요.)
+              달력은 기본이 <strong>예약 가능</strong>이에요. 요청을 받지 않을 날짜만 눌러 <strong>예약 안 받기</strong>로 바꿔 주세요.
             </span>
           </div>
           <GuideScheduleSection
@@ -674,40 +664,10 @@ export function GuideFeedSchedulePage() {
             busy={busy}
             onActivateReceiving={activateReceiving}
             onSetBlocked={setDayBlocked}
-            onClearOpenDay={clearOpenDay}
-            onOpenCourse={(tour) => setCourseTarget(tour)}
+            onOpenCourse={moveToCourseEditor}
             requestsByScheduleId={requestsByScheduleId}
           />
         </>
-      )}
-      {courseTarget && (
-        <GuideCoursePanel
-          guideId={guideId}
-          schedule={courseTarget}
-          initialForm={savedCourseForms[courseTarget.scheduleId] ?? null}
-          onClose={() => setCourseTarget(null)}
-          onSaved={(savedForm) => {
-            if (courseTarget?.scheduleId != null && savedForm) {
-              const sid = courseTarget.scheduleId
-              setSavedCourseForms((prev) => ({
-                ...prev,
-                [sid]: {
-                  ...prev[sid],
-                  ...savedForm,
-                },
-              }))
-              setSchedules((prev) =>
-                prev.map((row) => (
-                  row.scheduleId === sid
-                    ? { ...row, hasCourse: true }
-                    : row
-                )),
-              )
-            }
-            setCourseTarget(null)
-            void reloadScheduleData(guideId)
-          }}
-        />
       )}
     </div>
   )

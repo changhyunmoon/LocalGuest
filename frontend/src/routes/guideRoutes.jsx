@@ -3,6 +3,7 @@ import { Navigate } from 'react-router-dom'
 import { ProtectedRoute } from '../components/ProtectedRoute'
 import { GuideDashboardLayout } from '../layouts/GuideDashboardLayout'
 import { GuideApplyPage } from '../pages/GuideApplyPage'
+import { GuideCourseEditorPage } from '../pages/GuideCourseEditorPage'
 import { GuideFeedSchedulePage } from '../pages/GuideFeedSchedulePage'
 import { GuideFeesPage } from '../pages/GuideFeesPage'
 import { GuideInboxPage } from '../pages/GuideInboxPage'
@@ -35,6 +36,22 @@ export const guideRoutes = [
     element: (
       <ProtectedRoute>
         <GuideInboxPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: 'guide/requests/:requestId/course-editor',
+    element: (
+      <ProtectedRoute>
+        <GuideCourseEditorPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: 'guide/schedules/:scheduleId/course-editor',
+    element: (
+      <ProtectedRoute>
+        <GuideCourseEditorPage />
       </ProtectedRoute>
     ),
   },

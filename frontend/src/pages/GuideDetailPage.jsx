@@ -7,6 +7,8 @@ import { useAuth } from '../context/useAuth.js'
 
 import './GuideDetailPage.css'
 
+const WEEKDAYS_SHORT = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT']
+
 /**
  * @param {unknown} raw
  * @returns {string}
@@ -15,6 +17,28 @@ function formatScheduleDate(raw) {
   if (raw == null) return ''
   const s = String(raw)
   return s.length >= 10 ? s.slice(0, 10) : s
+}
+
+function parseDateOnly(raw) {
+  const key = formatScheduleDate(raw)
+  if (!key) return null
+  const d = new Date(`${key}T00:00:00`)
+  return Number.isNaN(d.getTime()) ? null : d
+}
+
+function ymd(date) {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
+
+function isPastDateKey(dateKey) {
+  const d = parseDateOnly(dateKey)
+  if (!d) return true
+  const now = new Date()
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  return d < today
 }
 
 /**
@@ -76,6 +100,12 @@ function normalizeSchedule(schedule) {
     ...schedule,
     scheduleId,
   }
+}
+
+function compareScheduleTime(a, b) {
+  const ad = `${formatScheduleDate(a?.availableDate)} ${formatLocalTime(a?.startTime)}`
+  const bd = `${formatScheduleDate(b?.availableDate)} ${formatLocalTime(b?.startTime)}`
+  return ad.localeCompare(bd)
 }
 
 /**
@@ -153,6 +183,11 @@ export function GuideDetailPage() {
   const [loading, setLoading] = useState(true)
 
   const [selectedScheduleId, setSelectedScheduleId] = useState(null)
+  const [selectedDateKey, setSelectedDateKey] = useState(null)
+  const [calendarMonth, setCalendarMonth] = useState(() => {
+    const now = new Date()
+    return new Date(now.getFullYear(), now.getMonth(), 1)
+  })
   const [destination, setDestination] = useState('')
   const [concept, setConcept] = useState('')
   const [submitErr, setSubmitErr] = useState('')
@@ -184,15 +219,24 @@ export function GuideDetailPage() {
         if (schRes.ok) {
           const parsed = schText ? JSON.parse(schText) : []
           const list = toScheduleList(parsed)
-          const avail = list.filter((s) => isBookableSchedule(s)).map((s) => normalizeSchedule(s))
+          const avail = list
+            .map((s) => normalizeSchedule(s))
+            .filter((s) => {
+              const key = formatScheduleDate(s.availableDate)
+              return key && !isPastDateKey(key)
+            })
+            .sort(compareScheduleTime)
           if (!cancelled) {
             setSchedules(avail)
-            if (avail.length > 0 && avail[0]?.scheduleId != null) {
-              setSelectedScheduleId(Number(avail[0].scheduleId))
-            }
+            const today = ymd(new Date())
+            setSelectedDateKey(today)
+            setSelectedScheduleId(null)
+            setCalendarMonth(new Date(new Date().getFullYear(), new Date().getMonth(), 1))
           }
         } else if (!cancelled) {
           setSchedules([])
+          setSelectedScheduleId(null)
+          setSelectedDateKey(ymd(new Date()))
         }
 
         let revList = []
@@ -245,6 +289,71 @@ export function GuideDetailPage() {
     )
   }, [detail])
 
+  const blockedDateSet = useMemo(() => {
+    const set = new Set()
+    for (const schedule of schedules) {
+      const key = formatScheduleDate(schedule?.availableDate)
+      const status = String(schedule?.status ?? '').toUpperCase()
+      if (key && status === 'BLOCKED') set.add(key)
+    }
+    return set
+  }, [schedules])
+
+  const availableByDate = useMemo(() => {
+    /** @type {Map<string, any[]>} */
+    const map = new Map()
+    for (const schedule of schedules) {
+      const key = formatScheduleDate(schedule?.availableDate)
+      if (!key || isPastDateKey(key)) continue
+      if (!isBookableSchedule(schedule)) continue
+      if (!map.has(key)) map.set(key, [])
+      map.get(key).push(schedule)
+    }
+    for (const [key, list] of map.entries()) {
+      list.sort(compareScheduleTime)
+      map.set(key, list)
+    }
+    return map
+  }, [schedules])
+
+  const selectedDateSchedules = useMemo(() => {
+    if (!selectedDateKey) return []
+    return availableByDate.get(selectedDateKey) ?? []
+  }, [availableByDate, selectedDateKey])
+
+  useEffect(() => {
+    if (!selectedDateKey) return
+    if (selectedDateSchedules.length === 0) {
+      if (selectedScheduleId != null) setSelectedScheduleId(null)
+      return
+    }
+    const hasSelected = selectedDateSchedules.some((s) => Number(s.scheduleId) === Number(selectedScheduleId))
+    if (!hasSelected) {
+      setSelectedScheduleId(Number(selectedDateSchedules[0].scheduleId))
+    }
+  }, [selectedDateSchedules, selectedDateKey, selectedScheduleId])
+
+  const calendarCells = useMemo(() => {
+    const y = calendarMonth.getFullYear()
+    const m = calendarMonth.getMonth()
+    const first = new Date(y, m, 1).getDay()
+    const daysInMonth = new Date(y, m + 1, 0).getDate()
+    const prevDays = new Date(y, m, 0).getDate()
+    const cells = []
+    for (let i = 0; i < first; i += 1) {
+      const day = prevDays - first + i + 1
+      cells.push({ date: new Date(y, m - 1, day), inMonth: false, key: `p-${y}-${m}-${day}` })
+    }
+    for (let day = 1; day <= daysInMonth; day += 1) {
+      cells.push({ date: new Date(y, m, day), inMonth: true, key: `c-${y}-${m + 1}-${day}` })
+    }
+    while (cells.length < 42) {
+      const day = cells.length - (first + daysInMonth) + 1
+      cells.push({ date: new Date(y, m + 1, day), inMonth: false, key: `n-${y}-${m + 2}-${day}` })
+    }
+    return cells
+  }, [calendarMonth])
+
   const onSubmitMatch = async (e) => {
     e.preventDefault()
     setSubmitErr('')
@@ -256,8 +365,16 @@ export function GuideDetailPage() {
       setSubmitErr('여행자(GUEST) 계정으로 로그인한 뒤 요청해 주세요.')
       return
     }
-    if (selectedScheduleId == null || Number.isNaN(Number(selectedScheduleId))) {
-      setSubmitErr('예약 가능한 일정을 선택해 주세요. (가이드가 일정을 등록해야 합니다.)')
+    if (!selectedDateKey) {
+      setSubmitErr('예약 날짜를 선택해 주세요.')
+      return
+    }
+    if (isPastDateKey(selectedDateKey)) {
+      setSubmitErr('지난 날짜에는 요청할 수 없습니다.')
+      return
+    }
+    if (blockedDateSet.has(selectedDateKey)) {
+      setSubmitErr('해당 날짜는 가이드가 예약을 받지 않습니다. 다른 날짜를 선택해 주세요.')
       return
     }
     const dest = destination.trim()
@@ -266,8 +383,10 @@ export function GuideDetailPage() {
       return
     }
 
-    const sch = schedules.find((s) => Number(s.scheduleId) === Number(selectedScheduleId))
-    const desiredDate = sch?.availableDate != null ? formatScheduleDate(sch.availableDate) : undefined
+    const sch = selectedScheduleId == null
+      ? null
+      : schedules.find((s) => Number(s.scheduleId) === Number(selectedScheduleId))
+    const desiredDate = selectedDateKey || (sch?.availableDate != null ? formatScheduleDate(sch.availableDate) : undefined)
 
     setSubmitting(true)
     try {
@@ -275,7 +394,7 @@ export function GuideDetailPage() {
         method: 'POST',
         json: {
           guideId: Number(guideId),
-          scheduleId: Number(selectedScheduleId),
+          scheduleId: selectedScheduleId != null ? Number(selectedScheduleId) : undefined,
           destination: dest,
           concept: concept.trim() || undefined,
           desiredDate: desiredDate || undefined,
@@ -502,8 +621,7 @@ export function GuideDetailPage() {
       <section className="gdp-match" id="match-request">
         <h2>매칭 요청하기</h2>
         <p style={{ color: '#4b5563', fontSize: '0.95rem', lineHeight: 1.5 }}>
-          예약 가능한 일정을 고르고 목적지를 적으면 가이드에게 매칭 요청이 전달됩니다. (가이드가 일정을 아직 등록하지 않았다면
-          요청할 수 없어요.)
+          날짜를 고르고 목적지를 적으면 가이드에게 매칭 요청이 전달됩니다. 기본은 모든 날짜 요청 가능이며, 가이드가 막은 날짜만 선택할 수 없어요.
         </p>
 
         {!isAuthenticated && (
@@ -527,22 +645,86 @@ export function GuideDetailPage() {
         {isAuthenticated && !isGuide && (
           <form onSubmit={(e) => void onSubmitMatch(e)} style={{ display: 'grid', gap: '0.85rem', maxWidth: 480 }}>
             <label style={{ display: 'grid', gap: 6 }}>
-              <span>예약 가능 일정</span>
-              {schedules.length === 0 ? (
-                <span style={{ color: '#6b7280' }}>등록된 예약 가능 일정이 없습니다. 가이드에게 일정 등록을 요청해 주세요.</span>
-              ) : (
-                <select
-                  value={selectedScheduleId ?? ''}
-                  onChange={(ev) => setSelectedScheduleId(ev.target.value ? Number(ev.target.value) : null)}
-                  required
-                >
-                  {schedules.map((s) => (
-                    <option key={s.scheduleId} value={s.scheduleId}>
-                      {formatScheduleDate(s.availableDate)} {formatLocalTime(s.startTime)} ~ {formatLocalTime(s.endTime)}
-                    </option>
+              <span>예약 날짜 선택</span>
+              <div className="gdp-match-cal">
+                <div className="gdp-match-cal-head">
+                  <button
+                    type="button"
+                    className="gdp-match-nav"
+                    onClick={() => setCalendarMonth((p) => new Date(p.getFullYear(), p.getMonth() - 1, 1))}
+                    aria-label="이전 달"
+                  >
+                    ‹
+                  </button>
+                  <strong>
+                    {calendarMonth.getFullYear()}년 {calendarMonth.getMonth() + 1}월
+                  </strong>
+                  <button
+                    type="button"
+                    className="gdp-match-nav"
+                    onClick={() => setCalendarMonth((p) => new Date(p.getFullYear(), p.getMonth() + 1, 1))}
+                    aria-label="다음 달"
+                  >
+                    ›
+                  </button>
+                </div>
+                <div className="gdp-match-week">
+                  {WEEKDAYS_SHORT.map((w) => (
+                    <span key={w}>{w}</span>
                   ))}
-                </select>
-              )}
+                </div>
+                <div className="gdp-match-days">
+                  {calendarCells.map((cell) => {
+                    const key = ymd(cell.date)
+                    const inMonth = cell.inMonth
+                    const isPast = isPastDateKey(key)
+                    const isBlocked = blockedDateSet.has(key)
+                    const hasSchedule = availableByDate.has(key)
+                    const selectable = inMonth && !isPast && !isBlocked
+                    const selected = selectable && key === selectedDateKey
+                    return (
+                      <button
+                        key={cell.key}
+                        type="button"
+                        className={`gdp-match-day${!inMonth ? ' is-out' : ''}${isPast ? ' is-past' : ''}${selectable ? ' is-on' : ''}${isBlocked ? ' is-blocked' : ''}${selected ? ' is-selected' : ''}`}
+                        disabled={!selectable}
+                        onClick={() => {
+                          setSelectedDateKey(key)
+                          const picks = availableByDate.get(key) ?? []
+                          if (picks.length > 0) setSelectedScheduleId(Number(picks[0].scheduleId))
+                          else setSelectedScheduleId(null)
+                        }}
+                      >
+                        {cell.date.getDate()}
+                        {isBlocked && <span className="gdp-match-x">×</span>}
+                        {hasSchedule && <span className="gdp-match-dot" />}
+                      </button>
+                    )
+                  })}
+                </div>
+                <p className="gdp-match-cal-hint">지난 날짜는 선택할 수 없어요. 기본은 예약 가능이며, 가이드가 막은 날짜만 선택할 수 없습니다.</p>
+
+                {selectedDateSchedules.length > 0 ? (
+                  <div className="gdp-match-times" role="radiogroup" aria-label="시간 선택">
+                    {selectedDateSchedules.map((s) => {
+                      const sid = Number(s.scheduleId)
+                      const on = sid === Number(selectedScheduleId)
+                      return (
+                        <button
+                          key={sid}
+                          type="button"
+                          className={`gdp-match-time${on ? ' is-selected' : ''}`}
+                          onClick={() => setSelectedScheduleId(sid)}
+                        >
+                          {formatLocalTime(s.startTime)} ~ {formatLocalTime(s.endTime)}
+                        </button>
+                      )
+                    })}
+                  </div>
+                ) : (
+                  <p className="gdp-match-default-slot">기본 예약 모드로 요청됩니다. (가이드가 이 날짜를 차단하지 않았다면 요청 가능)</p>
+                )}
+              </div>
             </label>
             <label style={{ display: 'grid', gap: 6 }}>
               <span>여행 목적지 · 지역</span>
@@ -567,7 +749,7 @@ export function GuideDetailPage() {
             <div>
               <button
                 type="submit"
-                disabled={submitting || schedules.length === 0}
+                disabled={submitting || !selectedDateKey || blockedDateSet.has(selectedDateKey)}
                 style={{
                   padding: '0.6rem 1.2rem',
                   borderRadius: 8,

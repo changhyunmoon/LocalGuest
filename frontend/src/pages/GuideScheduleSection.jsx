@@ -39,7 +39,7 @@ function getDayStatus(dayKey, scheduleByDate, blockedDates) {
   if (daySchedules.some((s) => s.status === 'BOOKED')) return 'booked'
   if (daySchedules.some((s) => s.status === 'PENDING')) return 'pending'
   if (daySchedules.some((s) => s.status === 'AVAILABLE')) return 'receiving'
-  return 'neutral'
+  return 'receiving'
 }
 
 function mergeSchedules(schedules, pendingSchedules) {
@@ -61,7 +61,6 @@ function ScheduleDrawer({
   requestsByScheduleId,
   onActivateReceiving,
   onSetBlocked,
-  onClearOpenDay,
   onOpenCourse,
   busy,
 }) {
@@ -69,7 +68,7 @@ function ScheduleDrawer({
   /** 'receive' | 'block' — 적용 전 선택만 반영 */
   const [pick, setPick] = useState('receive')
 
-  const status = selectedKey ? getDayStatus(selectedKey, scheduleByDate, blockedDates) : 'neutral'
+  const status = selectedKey ? getDayStatus(selectedKey, scheduleByDate, blockedDates) : 'receiving'
   const daySchedules = selectedKey ? (scheduleByDate.get(selectedKey) ?? []) : []
 
   useEffect(() => {
@@ -86,7 +85,6 @@ function ScheduleDrawer({
     : selectedKey
 
   const badgeClass = {
-    neutral: 'gss3-badge--neutral',
     receiving: 'gss3-badge--available',
     booked: 'gss3-badge--booked',
     pending: 'gss3-badge--pending',
@@ -94,7 +92,6 @@ function ScheduleDrawer({
   }[status]
 
   const badgeLabel = {
-    neutral: '설정 없음',
     receiving: '예약 받는 중',
     booked: '예약 확정',
     pending: '수락 대기',
@@ -115,13 +112,11 @@ function ScheduleDrawer({
       <p className="gss3-drawer-date">{dateLabel}</p>
       <span className={`gss3-badge ${badgeClass}`}>{badgeLabel}</span>
 
-      {(status === 'neutral' || status === 'receiving' || status === 'blocked') && (
+      {(status === 'receiving' || status === 'blocked') && (
         <div className="gss3-drawer-avail">
           <p className="gss3-drawer-desc">
-            {status === 'neutral' &&
-              '원하는 옵션을 고른 뒤 하단의 적용하기를 누르세요. (월을 넘겨도 자동으로 켜지지 않아요.)'}
             {status === 'receiving' &&
-              '이 날에는 예약 가능 일정이 있어 게스트가 요청할 수 있어요. 막거나, 종일 받기만 끄려면 아래 링크를 사용하세요.'}
+              '기본값으로 이 날은 예약을 받는 상태예요. 필요하면 아래에서 이 날짜만 예약 안 받기로 바꿀 수 있어요.'}
             {status === 'blocked' && '이 날은 요청이 막혀 있어요. 다시 받으려면 옵션을 바꾼 뒤 적용하기를 눌러 주세요.'}
           </p>
 
@@ -146,17 +141,6 @@ function ScheduleDrawer({
             {busy ? '적용 중…' : '적용하기'}
           </button>
 
-          {status === 'receiving' && (
-            <div className="gss3-clear-slot">
-              <div className="gss3-clear-slot__copy">
-                <span className="gss3-clear-slot__title">종일 예약 받기 끄기</span>
-                <span className="gss3-clear-slot__sub">00:00~23:59 슬롯만 삭제 · &quot;예약 안 받기&quot;와는 달라요</span>
-              </div>
-              <button type="button" className="gss3-clear-slot__btn" disabled={busy} onClick={() => onClearOpenDay(selectedKey)}>
-                예약 받기 취소
-              </button>
-            </div>
-          )}
           <p className="gss3-drawer-footnote">
             &quot;예약 받기&quot;는 종일(00:00~23:59) 예약 가능 슬롯을 만들어요. 매일 투어가 있는 뜻은 아니에요.
           </p>
@@ -219,6 +203,7 @@ function ScheduleDrawer({
                       className={`gss3-dact ${s.hasCourse ? 'gss3-dact--primary' : 'gss3-dact--warn'}`}
                       onClick={() =>
                         onOpenCourse({
+                          requestId: s.matchRequestId ?? req?.requestId ?? null,
                           scheduleId: s.scheduleId,
                           availableDate: s.availableDate,
                           startTime: formatTime(s.startTime),
@@ -293,6 +278,7 @@ function BookingCard({ dateKey, info, req, isSelected, onClickCard, onOpenCourse
               className={`gss3-bact ${hasCourse ? 'gss3-bact--primary' : 'gss3-bact--warn'}`}
               onClick={() =>
                 onOpenCourse({
+                  requestId: info.matchRequestId ?? req?.requestId ?? null,
                   scheduleId: info.scheduleId,
                   availableDate: info.availableDate,
                   startTime: formatTime(info.startTime),
@@ -322,7 +308,6 @@ export function GuideScheduleSection({
   busy = false,
   onActivateReceiving,
   onSetBlocked,
-  onClearOpenDay,
   onOpenCourse,
   requestsByScheduleId = new Map(),
 }) {
@@ -475,7 +460,7 @@ export function GuideScheduleSection({
             const key = cell.inMonth ? ymd(cell.date) : null
             const past = isPast(cell.date)
             const isToday = key === todayKey
-            const status = key ? getDayStatus(key, scheduleByDate, blockedDates) : 'neutral'
+            const status = key ? getDayStatus(key, scheduleByDate, blockedDates) : 'receiving'
             const isSelected = key === selectedKey
             const daySchedules = key ? (scheduleByDate.get(key) ?? []) : []
             const hasUnwrittenCourse = daySchedules.some((s) => s.status === 'BOOKED' && !s.hasCourse)
@@ -537,10 +522,6 @@ export function GuideScheduleSection({
             오늘
           </span>
           <span className="gss3-leg">
-            <span className="gss3-leg-neutral" />
-            설정 없음
-          </span>
-          <span className="gss3-leg">
             <span className="gss3-leg-open" />
             예약 받는 날
           </span>
@@ -561,7 +542,7 @@ export function GuideScheduleSection({
             코스 미작성
           </span>
         </div>
-        <p className="gss3-cal-hint">지난 날짜는 선택할 수 없어요 · 비어 있는 날은 직접 &quot;예약 받기&quot;를 켜야 해요</p>
+        <p className="gss3-cal-hint">지난 날짜는 선택할 수 없어요 · 기본은 예약 가능이며, 원하지 않는 날짜만 &quot;예약 안 받기&quot;로 바꾸면 됩니다</p>
 
         <div className={`gss3-drawer-wrap${selectedKey ? ' gss3-drawer-wrap--open' : ''}`}>
           {selectedKey && (
@@ -572,7 +553,6 @@ export function GuideScheduleSection({
               requestsByScheduleId={requestsByScheduleId}
               onActivateReceiving={onActivateReceiving}
               onSetBlocked={onSetBlocked}
-              onClearOpenDay={onClearOpenDay}
               onOpenCourse={onOpenCourse}
               busy={busy}
             />

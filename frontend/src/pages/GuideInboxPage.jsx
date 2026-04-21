@@ -1,12 +1,11 @@
-import { useCallback, useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 
 import { apiRequest } from '../api/client.js'
 import { useGuidePendingRequests } from '../context/GuidePendingRequestsProvider.jsx'
 import { useAuth } from '../context/useAuth.js'
 import { useResolvedGuideId } from '../hooks/useResolvedGuideId.js'
 import { fetchGuideMatchRequests } from '../lib/matchingGuest.js'
-import { GuideCoursePanel, parseCourseDetail } from './GuideCoursePanel.jsx'
 
 import './GuideInboxPage.css'
 
@@ -37,7 +36,26 @@ function statusLabel(status) {
   )
 }
 
+function formatScheduleTime(t) {
+  if (t == null) return '00:00'
+  if (typeof t === 'string') return t.length >= 5 ? t.slice(0, 5) : t
+  return String(t)
+}
+
+function formatBudget(value) {
+  return value ? `₩${Number(value).toLocaleString('ko-KR')}` : '—'
+}
+
+const STATUS_SECTIONS = [
+  { key: 'PENDING', label: '대기중', statuses: ['PENDING'] },
+  { key: 'IN_PROGRESS', label: '투어 진행중', statuses: ['IN_PROGRESS'] },
+  { key: 'ACCEPTED', label: '제시안 전송', statuses: ['ACCEPTED'] },
+  { key: 'PAID', label: '결제완료', statuses: ['PAID'] },
+  { key: 'REJECTED', label: '거절', statuses: ['REJECTED', 'CANCELLED'] },
+]
+
 export function GuideInboxPage() {
+  const navigate = useNavigate()
   const { isGuide } = useAuth()
   const { refresh: refreshPendingBadge } = useGuidePendingRequests()
   const { guideId } = useResolvedGuideId()
@@ -47,7 +65,6 @@ export function GuideInboxPage() {
   const [loading, setLoading] = useState(true)
   const [busyId, setBusyId] = useState(null)
   const [toast, setToast] = useState('')
-  const [courseTarget, setCourseTarget] = useState(null)
 
   const fetchList = useCallback(async () => {
     setError('')
@@ -128,6 +145,20 @@ export function GuideInboxPage() {
     void loadSchedules()
   }, [loadSchedules])
 
+  const groupedRows = useMemo(() => {
+    const sections = STATUS_SECTIONS.map((section) => ({
+      ...section,
+      rows: rows.filter((row) => section.statuses.includes(String(row.status ?? ''))),
+    }))
+    const included = new Set(STATUS_SECTIONS.flatMap((section) => section.statuses))
+    const others = rows.filter((row) => !included.has(String(row.status ?? '')))
+    const rejectedSection = sections.find((section) => section.key === 'REJECTED')
+    const mainSections = sections.filter((section) => section.key !== 'REJECTED' && section.rows.length > 0)
+    if (others.length > 0) mainSections.push({ key: 'OTHER', label: '기타', statuses: [], rows: others })
+    if (rejectedSection?.rows.length) mainSections.push(rejectedSection)
+    return mainSections
+  }, [rows])
+
   const openCourseWriter = async (r) => {
     if (guideId == null) {
       setToast('가이드 프로필 정보를 불러오는 중입니다. 잠시 후 다시 시도해 주세요.')
@@ -158,50 +189,23 @@ export function GuideInboxPage() {
         setBusyId(null)
       }
     }
-    setCourseTarget({
-      requestId: r.requestId,
+    const schedulePayload = {
       scheduleId: sid,
       availableDate: linkedSchedule?.availableDate ?? r.desiredDate ?? '',
-      startTime: linkedSchedule?.startTime ?? '00:00',
-      endTime: linkedSchedule?.endTime ?? '23:59',
+      startTime: formatScheduleTime(linkedSchedule?.startTime ?? '00:00'),
+      endTime: formatScheduleTime(linkedSchedule?.endTime ?? '23:59'),
       destination: r.destination ?? '',
+    }
+    const params = new URLSearchParams()
+    params.set('scheduleId', String(sid))
+    params.set('propose', '1')
+    if (schedulePayload.availableDate) params.set('date', String(schedulePayload.availableDate))
+    params.set('startTime', schedulePayload.startTime)
+    params.set('endTime', schedulePayload.endTime)
+    if (schedulePayload.destination) params.set('destination', String(schedulePayload.destination))
+    navigate(`/guide/requests/${r.requestId}/course-editor?${params.toString()}`, {
+      state: { schedule: schedulePayload, proposeAfterSave: true },
     })
-  }
-
-  const buildProposedSchedule = (courseDetail) => {
-    const spots = parseCourseDetail(courseDetail).filter((spot) => String(spot.name ?? '').trim())
-    if (spots.length === 0) return ''
-    return spots.map((spot) => spot.name.trim()).join(' -> ')
-  }
-
-  const submitProposalFromForm = async (requestId, savedForm) => {
-    const proposedSchedule = buildProposedSchedule(savedForm?.courseDetail ?? '')
-    const proposeMessage = String(savedForm?.guideMessage ?? '').trim()
-    const body = {
-      proposedSchedule,
-      proposeMessage: proposeMessage || undefined,
-    }
-    if (!proposedSchedule) {
-      setToast('코스 스팟을 1개 이상 작성해야 제시안을 보낼 수 있습니다.')
-      return
-    }
-    setBusyId(requestId)
-    setToast('')
-    try {
-      const res = await apiRequest(`/matching/requests/${requestId}/propose`, { method: 'PATCH', json: body })
-      const text = await res.text()
-      if (!res.ok) {
-        setToast(await readJsonError(res, text))
-        return
-      }
-      await fetchList()
-      await loadSchedules()
-      setCourseTarget(null)
-    } catch {
-      setToast('제시안 전송 실패')
-    } finally {
-      setBusyId(null)
-    }
   }
 
   if (!isGuide) {
@@ -236,103 +240,108 @@ export function GuideInboxPage() {
       )}
 
       {!loading && !error && rows.length > 0 && (
-        <>
-          <div className="inbox-table-wrap">
-            <table className="inbox-table">
-              <thead>
-                <tr>
-                  <th>상태</th>
-                  <th>게스트</th>
-                  <th>목적지</th>
-                  <th>희망일</th>
-                  <th>예산</th>
-                  <th>동작</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((r) => (
-                  <tr key={r.requestId}>
-                    <td>{statusLabel(r.status)}</td>
-                    <td>{`게스트 #${r.guestId}`}</td>
-                    <td>{r.destination}</td>
-                    <td>{r.desiredDate ?? '—'}</td>
-                    <td>{r.desiredBudget ? '₩' + Number(r.desiredBudget).toLocaleString('ko-KR') : '—'}</td>
-                    <td className="inbox-actions">
-                      {r.status === 'PENDING' && (
-                        <>
-                          <button type="button" className="inbox-btn" onClick={() => openCourseWriter(r)} disabled={busyId != null}>
-                            코스 작성하기
-                          </button>
-                          <button
-                            type="button"
-                            className="inbox-btn inbox-btn--danger"
-                            onClick={() => void reject(r.requestId)}
-                            disabled={busyId != null}
-                          >
-                            거절
-                          </button>
-                        </>
-                      )}
-                    </td>
-                  </tr>
+        <div className="inbox-status-sections">
+          {groupedRows.map((section) => (
+            <section
+              key={section.key}
+              className={`inbox-status-section${section.key === 'IN_PROGRESS' ? ' inbox-status-section--inprogress' : ''}${section.key === 'PENDING' ? ' inbox-status-section--pending' : ''}`}
+              aria-label={`${section.label} 요청`}
+            >
+              <header className="inbox-status-head">
+                <h2 className="inbox-section-title">{section.label}</h2>
+                <span className="inbox-status-count">{section.rows.length}건</span>
+              </header>
+
+              <div className="inbox-table-wrap">
+                <table className="inbox-table">
+                  <thead>
+                    <tr>
+                      <th>상태</th>
+                      <th>게스트</th>
+                      <th>목적지</th>
+                      <th>희망일</th>
+                      <th>예산</th>
+                      <th>동작</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {section.rows.map((r) => (
+                      <tr key={r.requestId}>
+                        <td>{statusLabel(r.status)}</td>
+                        <td>{`게스트 #${r.guestId}`}</td>
+                        <td>{r.destination ?? '—'}</td>
+                        <td>{r.desiredDate ?? '—'}</td>
+                        <td>{formatBudget(r.desiredBudget)}</td>
+                        <td className="inbox-actions">
+                          {r.status === 'PENDING' && (
+                            <>
+                              <button type="button" className="inbox-btn" onClick={() => openCourseWriter(r)} disabled={busyId != null}>
+                                코스 작성하기
+                              </button>
+                              <button
+                                type="button"
+                                className="inbox-btn inbox-btn--danger"
+                                onClick={() => void reject(r.requestId)}
+                                disabled={busyId != null}
+                              >
+                                거절
+                              </button>
+                            </>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="inbox-cards" aria-label={`${section.label} 카드 목록`}>
+                {section.rows.map((r) => (
+                  <article
+                    key={`card-${r.requestId}`}
+                    className="inbox-card"
+                    style={['REJECTED', 'CANCELLED', 'COMPLETED'].includes(r.status) ? { opacity: 0.55 } : undefined}
+                  >
+                    <header className="inbox-card-head">
+                      <span className="inbox-card-id">#{r.requestId}</span>
+                      {statusLabel(r.status)}
+                    </header>
+                    <p className="inbox-card-line">👤 <strong>게스트</strong> {`게스트 #${r.guestId}`}</p>
+                    <p className="inbox-card-line">📍 <strong>목적지</strong> {r.destination ?? '—'}</p>
+                    <p className="inbox-card-line">📅 <strong>희망일</strong> {r.desiredDate ?? '—'}</p>
+                    <p className="inbox-card-line">💰 <strong>예산</strong> {formatBudget(r.desiredBudget)}</p>
+                    {r.conceptSummary && (
+                      <p className="inbox-card-line">🗺️ <strong>여행 컨셉</strong> {r.conceptSummary}</p>
+                    )}
+                    {r.createdAt && (
+                      <p className="inbox-card-line">🕐 <strong>요청일</strong> {new Date(r.createdAt).toLocaleDateString('ko-KR')}</p>
+                    )}
+                    {r.status === 'ACCEPTED' && (
+                      <p className="inbox-proposed-hint">✉️ 제시안을 전송했습니다. 게스트가 수락하면 결제로 진행됩니다.</p>
+                    )}
+                    {r.status === 'PENDING' && (
+                      <div className="inbox-card-actions">
+                        <button type="button" className="inbox-btn" onClick={() => openCourseWriter(r)} disabled={busyId != null}>
+                          코스 작성하기
+                        </button>
+                        <button
+                          type="button"
+                          className="inbox-btn inbox-btn--danger"
+                          onClick={() => void reject(r.requestId)}
+                          disabled={busyId != null}
+                        >
+                          거절
+                        </button>
+                      </div>
+                    )}
+                  </article>
                 ))}
-              </tbody>
-            </table>
-          </div>
-
-          <div className="inbox-cards" aria-label="예약 요청 카드 목록">
-            {rows.map((r) => (
-              <article
-                key={`card-${r.requestId}`}
-                className="inbox-card"
-                style={['REJECTED', 'CANCELLED', 'COMPLETED'].includes(r.status) ? { opacity: 0.55 } : undefined}
-              >
-                <header className="inbox-card-head">
-                  <span className="inbox-card-id">#{r.requestId}</span>
-                  {statusLabel(r.status)}
-                </header>
-                <p className="inbox-card-line">👤 <strong>게스트</strong> {`게스트 #${r.guestId}`}</p>
-                <p className="inbox-card-line">📍 <strong>목적지</strong> {r.destination ?? '—'}</p>
-                <p className="inbox-card-line">📅 <strong>희망일</strong> {r.desiredDate ?? '—'}</p>
-                <p className="inbox-card-line">💰 <strong>예산</strong> {r.desiredBudget ? '₩' + Number(r.desiredBudget).toLocaleString('ko-KR') : '—'}</p>
-                {r.conceptSummary && (
-                  <p className="inbox-card-line">🗺️ <strong>여행 컨셉</strong> {r.conceptSummary}</p>
-                )}
-                {r.createdAt && (
-                  <p className="inbox-card-line">🕐 <strong>요청일</strong> {new Date(r.createdAt).toLocaleDateString('ko-KR')}</p>
-                )}
-                {r.status === 'ACCEPTED' && (
-                  <p className="inbox-proposed-hint">✉️ 제시안을 전송했습니다. 게스트가 수락하면 결제로 진행됩니다.</p>
-                )}
-                {r.status === 'PENDING' && (
-                  <div className="inbox-card-actions">
-                    <button type="button" className="inbox-btn" onClick={() => openCourseWriter(r)} disabled={busyId != null}>
-                      코스 작성하기
-                    </button>
-                    <button
-                      type="button"
-                      className="inbox-btn inbox-btn--danger"
-                      onClick={() => void reject(r.requestId)}
-                      disabled={busyId != null}
-                    >
-                      거절
-                    </button>
-                  </div>
-                )}
-              </article>
-            ))}
-          </div>
-        </>
+              </div>
+            </section>
+          ))}
+        </div>
       )}
 
-      {courseTarget && guideId != null && (
-        <GuideCoursePanel
-          guideId={guideId}
-          schedule={courseTarget}
-          onClose={() => setCourseTarget(null)}
-          onSaved={(savedForm) => void submitProposalFromForm(courseTarget.requestId, savedForm)}
-        />
-      )}
     </div>
   )
 }

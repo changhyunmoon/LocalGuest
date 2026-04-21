@@ -293,3 +293,134 @@
   margin-top: 0;
   font-size: 1.15rem;
 }
+
+.gdp-match-cal {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #fff;
+  padding: 0.75rem;
+}
+
+.gdp-match-cal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.55rem;
+}
+
+.gdp-match-nav {
+  border: 1px solid #d1d5db;
+  background: #fff;
+  border-radius: 8px;
+  width: 1.9rem;
+  height: 1.9rem;
+  cursor: pointer;
+}
+
+.gdp-match-week {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.25rem;
+  margin-bottom: 0.3rem;
+}
+
+.gdp-match-week span {
+  font-size: 0.66rem;
+  color: #9ca3af;
+  text-align: center;
+}
+
+.gdp-match-days {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.3rem;
+}
+
+.gdp-match-day {
+  position: relative;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  height: 2rem;
+  background: #f9fafb;
+  font-size: 0.82rem;
+  color: #6b7280;
+}
+
+.gdp-match-day.is-on {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  color: #1d4ed8;
+  cursor: pointer;
+}
+
+.gdp-match-day.is-blocked {
+  background: #f8fafc;
+  border-color: #e5e7eb;
+  color: #9ca3af;
+}
+
+.gdp-match-day.is-selected {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #fff;
+  font-weight: 700;
+}
+
+.gdp-match-day.is-out,
+.gdp-match-day.is-past {
+  opacity: 0.45;
+}
+
+.gdp-match-cal-hint {
+  margin: 0.55rem 0 0;
+  font-size: 0.74rem;
+  color: #6b7280;
+}
+
+.gdp-match-x {
+  position: absolute;
+  right: 0.35rem;
+  top: 0.15rem;
+  font-size: 0.72rem;
+  color: #9ca3af;
+}
+
+.gdp-match-dot {
+  position: absolute;
+  left: 50%;
+  bottom: 0.2rem;
+  width: 4px;
+  height: 4px;
+  margin-left: -2px;
+  border-radius: 999px;
+  background: #2563eb;
+}
+
+.gdp-match-times {
+  margin-top: 0.65rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.gdp-match-time {
+  border: 1px solid #d1d5db;
+  border-radius: 999px;
+  background: #fff;
+  color: #374151;
+  font-size: 0.76rem;
+  padding: 0.25rem 0.65rem;
+  cursor: pointer;
+}
+
+.gdp-match-time.is-selected {
+  border-color: #1f2937;
+  background: #1f2937;
+  color: #fff;
+}
+
+.gdp-match-default-slot {
+  margin: 0.55rem 0 0;
+  font-size: 0.78rem;
+  color: #4b5563;
+}

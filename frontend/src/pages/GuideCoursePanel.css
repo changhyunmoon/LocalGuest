@@ -21,6 +21,30 @@
   animation: gcp-slide-in 0.22s ease;
 }
 
+.gcp-page-wrap {
+  width: 100%;
+}
+
+.gcp-panel--page {
+  width: 100%;
+  max-width: min(760px, 100%);
+  height: auto;
+  min-height: min(520px, 70dvh);
+  margin: 0 auto;
+  border-radius: 16px;
+  border: 1px solid #e8eaed;
+  box-shadow: 0 6px 24px rgba(31, 35, 40, 0.05);
+  animation: none;
+}
+
+.gcp-panel--page.gcp-panel--no-header {
+  border-radius: 18px;
+}
+
+.gcp-panel--no-header .gcp-body {
+  padding-top: 1.25rem;
+}
+
 @keyframes gcp-slide-in {
   from { transform: translateX(100%); }
   to   { transform: translateX(0); }
