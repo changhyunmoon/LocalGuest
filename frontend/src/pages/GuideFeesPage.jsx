@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 
 import { apiRequest } from '../api/client'
 import { resolveGuideId } from '../lib/guideId.js'
@@ -17,14 +18,32 @@ function useToast() {
 
 function Toast({ toasts }) {
   if (toasts.length === 0) return null
-  return (
-    <div style={{ position: 'fixed', bottom: '1.5rem', right: '1.5rem', zIndex: 9999, display: 'flex', flexDirection: 'column', gap: '0.5rem', pointerEvents: 'none' }}>
+  if (typeof document === 'undefined') return null
+  return createPortal(
+    <div style={{ position: 'fixed', top: '1.1rem', left: '50%', transform: 'translateX(-50%)', zIndex: 9999, display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'center', pointerEvents: 'none' }}>
       {toasts.map((t) => (
-        <div key={t.id} style={{ padding: '0.7rem 1.2rem', borderRadius: 10, background: t.type === 'success' ? '#15803d' : '#b91c1c', color: '#fff', fontSize: '0.88rem', fontWeight: 600, boxShadow: '0 4px 16px rgba(0,0,0,0.18)', minWidth: 180, maxWidth: 320 }}>
+        <div
+          key={t.id}
+          style={{
+            padding: '0.74rem 0.98rem',
+            borderRadius: 12,
+            border: t.type === 'success' ? '1px solid #e7a8c2' : '1px solid #f7b4c1',
+            background: t.type === 'success' ? 'linear-gradient(180deg, #f7d9e8, #efbfd0)' : 'linear-gradient(180deg, #ffe8ee, #ffd8e1)',
+            color: t.type === 'success' ? '#5a2f45' : '#9f274c',
+            fontSize: '0.86rem',
+            fontWeight: 700,
+            boxShadow: '0 14px 28px rgba(15, 23, 42, 0.16)',
+            textAlign: 'center',
+            letterSpacing: '-0.01em',
+            minWidth: 240,
+            maxWidth: 420,
+          }}
+        >
           {t.message}
         </div>
       ))}
-    </div>
+    </div>,
+    document.body,
   )
 }
 
@@ -159,7 +178,7 @@ export function GuideFeesPage() {
       }
       const updated = text ? JSON.parse(text) : null
       setProfile(updated)
-      addToast('저장되었습니다.')
+      addToast('변경사항이 반영됐어요.')
     } catch {
       addToast('네트워크 오류가 발생했습니다.', 'error')
     } finally {

@@ -5,54 +5,12 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="84d1b3de-8103-452e-83cf-38ecd34993e7" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/module-domain/src/main/java/com/team6/domain/matching/controller/TourExtensionController.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/module-domain/src/main/java/com/team6/domain/matching/controller/TourExtensionController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/module-domain/src/main/java/com/team6/domain/matching/entity/TourExtension.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/module-domain/src/main/java/com/team6/domain/matching/entity/TourExtension.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/module-domain/src/main/java/com/team6/domain/matching/exception/MatchingErrorCode.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/module-domain/src/main/java/com/team6/domain/matching/exception/MatchingErrorCode.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/module-domain/src/main/java/com/team6/domain/matching/service/PaymentService.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/module-domain/src/main/java/com/team6/domain/matching/service/PaymentService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/module-domain/src/main/java/com/team6/domain/matching/service/TourExtensionService.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/module-domain/src/main/java/com/team6/domain/matching/service/TourExtensionService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/package-lock.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/components/SiteFooter.css" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/components/SiteFooter.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/index.css" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/index.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/layouts/AppLayout.css" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/layouts/AppLayout.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/layouts/AppLayout.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/layouts/AppLayout.jsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/layouts/DashboardLayout.css" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/layouts/DashboardLayout.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/layouts/DashboardLayout.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/layouts/DashboardLayout.jsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/layouts/GuideDashboardLayout.css" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/layouts/GuideDashboardLayout.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/layouts/GuideDashboardLayout.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/layouts/GuideDashboardLayout.jsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/lib/guestMypagePrefs.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/lib/guestMypagePrefs.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/pages/AiQuickSearchPage.css" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/AiQuickSearchPage.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/pages/AiQuickSearchPage.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/AiQuickSearchPage.jsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/pages/FormPage.css" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/FormPage.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/pages/GuestUpcomingTripsPage.css" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/GuestUpcomingTripsPage.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/pages/GuestUpcomingTripsPage.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/GuestUpcomingTripsPage.jsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/pages/GuideDetailPage.css" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/GuideDetailPage.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/pages/GuideDetailPage.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/GuideDetailPage.jsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/pages/GuideFeedTourPage.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/GuideFeedTourPage.jsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/pages/GuideInboxPage.css" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/GuideInboxPage.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/pages/GuideInboxPage.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/GuideInboxPage.jsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/pages/GuideMatchOptionsPage.css" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/GuideMatchOptionsPage.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/pages/GuideMatchOptionsPage.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/GuideMatchOptionsPage.jsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/pages/GuideMatchedCoursePage.css" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/GuideMatchedCoursePage.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/pages/GuideMatchedCoursePage.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/GuideMatchedCoursePage.jsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/pages/GuideMypagePages.css" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/GuideMypagePages.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/pages/GuideProposalPage.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/GuideProposalPage.jsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/pages/GuideReviewsManagePage.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/GuideReviewsManagePage.jsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/pages/HomePage.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/HomePage.jsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/pages/LoginPage.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/LoginPage.jsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/pages/MypageMemberPages.css" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/MypageMemberPages.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/pages/MypagePrivacyPage.css" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/MypagePrivacyPage.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/pages/GuideFeedSchedulePage.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/GuideFeedSchedulePage.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/pages/GuideFeesPage.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/GuideFeesPage.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/pages/GuideIntroEditPage.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/GuideIntroEditPage.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/pages/GuideProfileEditPage.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/GuideProfileEditPage.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/pages/GuideSettingsPage.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/GuideSettingsPage.jsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend/src/pages/MypagePrivacyPage.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/MypagePrivacyPage.jsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/pages/MypageProfilePage.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/MypageProfilePage.jsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/pages/MypageReviewsPage.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/MypageReviewsPage.jsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/pages/MypageScrapbookPage.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/MypageScrapbookPage.jsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/pages/MypageTourPage.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/MypageTourPage.jsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/pages/OnboardingPage.css" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/OnboardingPage.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/pages/PaymentKakaoStubPage.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/PaymentKakaoStubPage.jsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/pages/SignupPage.css" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/SignupPage.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/pages/SignupPage.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/SignupPage.jsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/routes/mypageRoutes.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/routes/mypageRoutes.jsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/package-lock.json" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
