@@ -45,4 +45,10 @@ public class MatchRequestCreateRequest {
     private LocalDate desiredDate;
 
     private Integer desiredBudget;
+
+    /**
+     * 희망 예산 범위(원). 프롬프트/입력에서 범위를 받는 경우 그대로 저장한다(선택).
+     */
+    private Integer budgetMinWon;
+    private Integer budgetMaxWon;
 }
