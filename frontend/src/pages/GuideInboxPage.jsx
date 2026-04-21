@@ -42,6 +42,17 @@ function formatScheduleTime(t) {
   return String(t)
 }
 
+function formatBudgetRange(minWon, maxWon) {
+  const min = minWon != null && minWon !== '' && !Number.isNaN(Number(minWon)) ? Number(minWon) : null
+  const max = maxWon != null && maxWon !== '' && !Number.isNaN(Number(maxWon)) ? Number(maxWon) : null
+  if (min == null && max == null) return null
+  if (min != null && max != null) {
+    return `₩${min.toLocaleString('ko-KR')}~${max.toLocaleString('ko-KR')}`
+  }
+  const only = min ?? max
+  return `₩${Number(only).toLocaleString('ko-KR')}`
+}
+
 function formatBudget(value) {
   return value ? `₩${Number(value).toLocaleString('ko-KR')}` : '—'
 }
@@ -271,7 +282,7 @@ export function GuideInboxPage() {
                         <td>{`게스트 #${r.guestId}`}</td>
                         <td>{r.destination ?? '—'}</td>
                         <td>{r.desiredDate ?? '—'}</td>
-                        <td>{formatBudget(r.desiredBudget)}</td>
+                        <td>{formatBudgetRange(r.budgetMinWon, r.budgetMaxWon) ?? formatBudget(r.desiredBudget)}</td>
                         <td className="inbox-actions">
                           {r.status === 'PENDING' && (
                             <>
@@ -309,7 +320,9 @@ export function GuideInboxPage() {
                     <p className="inbox-card-line">👤 <strong>게스트</strong> {`게스트 #${r.guestId}`}</p>
                     <p className="inbox-card-line">📍 <strong>목적지</strong> {r.destination ?? '—'}</p>
                     <p className="inbox-card-line">📅 <strong>희망일</strong> {r.desiredDate ?? '—'}</p>
-                    <p className="inbox-card-line">💰 <strong>예산</strong> {formatBudget(r.desiredBudget)}</p>
+                    <p className="inbox-card-line">
+                      💰 <strong>예산</strong> {formatBudgetRange(r.budgetMinWon, r.budgetMaxWon) ?? formatBudget(r.desiredBudget)}
+                    </p>
                     {r.conceptSummary && (
                       <p className="inbox-card-line">🗺️ <strong>여행 컨셉</strong> {r.conceptSummary}</p>
                     )}

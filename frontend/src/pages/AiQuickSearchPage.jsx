@@ -5,7 +5,12 @@ import { apiRequest } from '../api/client'
 
 import './AiQuickSearchPage.css'
 
-const PLACEHOLDER = '제주도에서 조용히 사진 찍기 좋은 오름 추천해줘'
+const PLACEHOLDER =
+  '예시) 제주 2박3일 · 2명(커플) / 예산 하루 10~15만원(총 30~45만원)\n' +
+  '- 맛집 투어 + 야경 좋은 곳 위주로 가고 싶어요\n' +
+  '- 걷는 코스는 적게(부모님 동행) / 술집은 빼고\n' +
+  '- 이동은 렌트카, 오전 10시~저녁 9시 선호\n' +
+  '- 한국어 가능 가이드면 좋아요'
 const LS_AI_SEARCH_SNAPSHOT = 'localguest_ai_search_snapshot_v1'
 const LS_AI_MATCH_DRAFT = 'localguest_ai_match_draft_v1'
 const AI_GUIDE_DEFAULT_SHOW = 3
