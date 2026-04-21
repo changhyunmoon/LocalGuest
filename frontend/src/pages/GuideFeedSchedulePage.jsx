@@ -8,36 +8,7 @@ import { fetchGuideMatchRequests } from '../lib/matchingGuest.js'
 import '../layouts/GuideDashboardLayout.css'
 import './GuideMypagePages.css'
 import { GuideCoursePanel } from './GuideCoursePanel.jsx'
-
-function formatTime(t) {
-  if (t == null) return '—'
-  if (typeof t === 'string') return t.length >= 5 ? t.slice(0, 5) : t
-  return String(t)
-}
-
-function parseDateOnly(value) {
-  if (!value) return null
-  const d = new Date(`${value}T00:00:00`)
-  return Number.isNaN(d.getTime()) ? null : d
-}
-
-function ymd(date) {
-  const y = date.getFullYear()
-  const m = String(date.getMonth() + 1).padStart(2, '0')
-  const d = String(date.getDate()).padStart(2, '0')
-  return `${y}-${m}-${d}`
-}
-
-function monthTitle(date) {
-  return `${date.getFullYear()}. ${String(date.getMonth() + 1).padStart(2, '0')}`
-}
-
-function nextStatus(s) {
-  if (s === 'BOOKED') return 'booked'
-  if (s === 'PENDING') return 'pending'
-  if (s === 'BLOCKED') return 'blocked'
-  return 'plain'
-}
+import { GuideScheduleSection } from './GuideScheduleSection.jsx'
 
 function parseFeedHeading(content) {
   if (!content || !String(content).trim()) {
@@ -96,6 +67,31 @@ function readFileAsDataUrl(file) {
 
 const MAX_LOCAL_IMAGE_BYTES = 1024 * 1024 * 2 // 2MB
 
+function formatScheduleTime(t) {
+  if (t == null) return ''
+  if (typeof t === 'string') return t.length >= 5 ? t.slice(0, 5) : t
+  return String(t)
+}
+
+function isWholeDayOpenSlot(s) {
+  if (!s || s.status !== 'AVAILABLE') return false
+  const st = formatScheduleTime(s.startTime)
+  const en = formatScheduleTime(s.endTime)
+  return st.startsWith('00:00') && (en.startsWith('23:59') || en === '23:59')
+}
+
+/** POST 직전 서버 기준으로 종일 AVAILABLE 여부 확인 (블록 해제 직후 React state와 불일치 방지) */
+async function fetchSchedulesSnapshot(apiReq, guideId) {
+  const res = await apiReq(`/guides/${guideId}/schedules`, { method: 'GET', skipAuth: true })
+  const text = await res.text()
+  if (!res.ok) return null
+  return text ? JSON.parse(text) : []
+}
+
+function hasWholeDayAvailableSlot(list, dateStr) {
+  return list.some((s) => s.availableDate === dateStr && s.status === 'AVAILABLE' && isWholeDayOpenSlot(s))
+}
+
 export function GuideFeedSchedulePage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const { guideId, loading: idLoading, error: idError, reload: reloadId } = useResolvedGuideId()
@@ -116,13 +112,11 @@ export function GuideFeedSchedulePage() {
   const { toasts, addToast } = useToast()
   const [blockedDates, setBlockedDates] = useState(() => new Set())
   const [busy, setBusy] = useState(false)
+  /** 스케줄 API 연속 클릭 방지 — React state `busy`보다 먼저 막음 */
+  const scheduleOpLockRef = useRef(false)
   const mainFileInputRef = useRef(null)
   const dragIdx = useRef(null)
   const currentTab = searchParams.get('tab') === 'schedule' ? 'schedule' : 'feed'
-  const [calendarMonth, setCalendarMonth] = useState(() => {
-    const now = new Date()
-    return new Date(now.getFullYear(), now.getMonth(), 1)
-  })
 
   const reloadFeeds = useCallback(async (id) => {
     try {
@@ -170,6 +164,35 @@ export function GuideFeedSchedulePage() {
     }
   }, [])
 
+  /** 스케줄/블록/대기만 갱신 — 피드 재조회 없음 (달력 토글 시 렉 방지) */
+  const reloadScheduleData = useCallback(async (id) => {
+    try {
+      const [sr, pr, br] = await Promise.all([
+        apiRequest(`/guides/${id}/schedules`, { method: 'GET', skipAuth: true }),
+        apiRequest(`/guides/${id}/schedules/pending`, { method: 'GET' }),
+        apiRequest(`/guides/${id}/schedules/blocked`, { method: 'GET', skipAuth: true }),
+      ])
+      const st = await sr.text()
+      const pt = await pr.text()
+      const bt = await br.text()
+      if (!sr.ok) {
+        throw new Error(await readJsonError(sr, st))
+      }
+      setSchedules(st ? JSON.parse(st) : [])
+      if (pr.ok) {
+        setPendingSchedules(pt ? JSON.parse(pt) : [])
+      } else {
+        setPendingSchedules([])
+      }
+      if (br.ok) {
+        const blockedList = bt ? JSON.parse(bt) : []
+        setBlockedDates(new Set(blockedList.map((s) => s.availableDate)))
+      }
+    } catch (e) {
+      console.warn('[reloadScheduleData]', e)
+    }
+  }, [])
+
   useEffect(() => {
     if (!guideId) return
     fetchGuideMatchRequests(apiRequest)
@@ -186,68 +209,6 @@ export function GuideFeedSchedulePage() {
     }
     return map
   }, [guideRequests])
-
-  const upcomingTours = useMemo(() => {
-    const today = new Date()
-    const begin = new Date(today.getFullYear(), today.getMonth(), today.getDate())
-    return schedules
-      .filter((s) => s?.matchRequestId != null || s?.status === 'BOOKED')
-      .map((s) => {
-        const request = requestsByScheduleId.get(Number(s.scheduleId))
-        const d = parseDateOnly(s.availableDate)
-        return {
-          scheduleId: s.scheduleId,
-          status: s.status,
-          availableDate: s.availableDate,
-          startTime: formatTime(s.startTime),
-          endTime: formatTime(s.endTime),
-          isPaid: !!s.isPaid,
-          hasCourse: !!s.hasCourse,
-          matchRequestId: s.matchRequestId ?? request?.requestId ?? null,
-          destination: request?.destination ?? '로컬 투어',
-          desiredDate: request?.desiredDate ?? s.availableDate,
-          dateObj: d,
-        }
-      })
-      .filter((s) => s.dateObj && s.dateObj >= begin)
-      .sort((a, b) => a.dateObj - b.dateObj)
-  }, [schedules, requestsByScheduleId])
-
-  const calendarCells = useMemo(() => {
-    const y = calendarMonth.getFullYear()
-    const m = calendarMonth.getMonth()
-    const first = new Date(y, m, 1)
-    const startWeekday = first.getDay()
-    const daysInMonth = new Date(y, m + 1, 0).getDate()
-    const prevDays = new Date(y, m, 0).getDate()
-    const cells = []
-
-    for (let i = 0; i < startWeekday; i += 1) {
-      const day = prevDays - startWeekday + i + 1
-      const d = new Date(y, m - 1, day)
-      cells.push({ date: d, inMonth: false, key: `p-${ymd(d)}` })
-    }
-    for (let day = 1; day <= daysInMonth; day += 1) {
-      const d = new Date(y, m, day)
-      cells.push({ date: d, inMonth: true, key: `c-${ymd(d)}` })
-    }
-    while (cells.length < 42) {
-      const day = cells.length - (startWeekday + daysInMonth) + 1
-      const d = new Date(y, m + 1, day)
-      cells.push({ date: d, inMonth: false, key: `n-${ymd(d)}` })
-    }
-    return cells
-  }, [calendarMonth])
-
-  const scheduleByDate = useMemo(() => {
-    const map = new Map()
-    for (const s of schedules) {
-      if (!s?.availableDate) continue
-      if (!map.has(s.availableDate)) map.set(s.availableDate, [])
-      map.get(s.availableDate).push(s)
-    }
-    return map
-  }, [schedules])
 
   useEffect(() => {
     if (!guideId) return
@@ -312,13 +273,15 @@ export function GuideFeedSchedulePage() {
     }
   }
 
-  const toggleBlock = async (dateStr) => {
-    if (!guideId || busy) return
+  /** 예약 요청 막기 (BLOCKED) */
+  const setDayBlocked = async (dateStr) => {
+    if (!guideId || scheduleOpLockRef.current || busy) return
+    if (blockedDates.has(dateStr)) return
+    scheduleOpLockRef.current = true
     setBusy(true)
     try {
-      const isBlocked = blockedDates.has(dateStr)
       const res = await apiRequest(`/guides/${guideId}/schedules/block`, {
-        method: isBlocked ? 'DELETE' : 'POST',
+        method: 'POST',
         json: { date: dateStr },
       })
       const text = await res.text()
@@ -326,71 +289,100 @@ export function GuideFeedSchedulePage() {
         addToast(await readJsonError(res, text), 'error')
         return
       }
-      setBlockedDates((prev) => {
-        const next = new Set(prev)
-        if (isBlocked) next.delete(dateStr)
-        else next.add(dateStr)
-        return next
-      })
-      addToast(isBlocked ? `${dateStr} 예약 가능으로 변경됐어요 ✅` : `${dateStr} 예약 불가로 설정됐어요 🚫`)
-      await loadAll(guideId)
+      setBlockedDates((prev) => new Set(prev).add(dateStr))
+      addToast(`${dateStr} 예약 요청을 받지 않아요 🚫`)
+      await reloadScheduleData(guideId)
     } catch {
       addToast('날짜 설정 실패', 'error')
     } finally {
+      scheduleOpLockRef.current = false
       setBusy(false)
     }
   }
 
-  const acceptPendingSchedule = async (scheduleId) => {
-    if (!guideId) return
+  /** 비어 있음 → 예약 받기: 종일 AVAILABLE 슬롯 생성 (막힌 날이면 먼저 해제) */
+  const activateReceiving = async (dateStr) => {
+    if (!guideId || scheduleOpLockRef.current || busy) return
+    if (!blockedDates.has(dateStr) && hasWholeDayAvailableSlot(schedules, dateStr)) {
+      addToast('이미 이 날은 예약을 받는 설정이에요')
+      return
+    }
+    scheduleOpLockRef.current = true
     setBusy(true)
     try {
-      const res = await apiRequest(`/guides/${guideId}/schedules/${scheduleId}/accept`, { method: 'POST' })
+      if (blockedDates.has(dateStr)) {
+        const u = await apiRequest(`/guides/${guideId}/schedules/block`, {
+          method: 'DELETE',
+          json: { date: dateStr },
+        })
+        const ut = await u.text()
+        if (!u.ok) {
+          addToast(await readJsonError(u, ut), 'error')
+          return
+        }
+        setBlockedDates((prev) => {
+          const next = new Set(prev)
+          next.delete(dateStr)
+          return next
+        })
+      }
+      const snap = await fetchSchedulesSnapshot(apiRequest, guideId)
+      const list = snap ?? schedules
+      if (hasWholeDayAvailableSlot(list, dateStr)) {
+        addToast('이미 이 날은 예약을 받는 설정이에요')
+        await reloadScheduleData(guideId)
+        return
+      }
+      const res = await apiRequest(`/guides/${guideId}/schedules`, {
+        method: 'POST',
+        json: { availableDate: dateStr, startTime: '00:00:00', endTime: '23:59:00' },
+      })
       const text = await res.text()
       if (!res.ok) {
+        if (res.status === 409) {
+          addToast('이미 이 날은 예약을 받는 설정이에요')
+          await reloadScheduleData(guideId)
+          return
+        }
         addToast(await readJsonError(res, text), 'error')
         return
       }
-      await loadAll(guideId)
+      addToast(`${dateStr} — 이 날 예약 요청을 받도록 설정했어요`)
+      await reloadScheduleData(guideId)
     } catch {
-      addToast('스케줄 수락 실패', 'error')
+      addToast('설정에 실패했어요', 'error')
     } finally {
+      scheduleOpLockRef.current = false
       setBusy(false)
     }
   }
 
-  const rejectPendingSchedule = async (scheduleId) => {
-    if (!guideId || !window.confirm('이 예약 대기 스케줄을 거절할까요?')) return
-    setBusy(true)
-    try {
-      const res = await apiRequest(`/guides/${guideId}/schedules/${scheduleId}/reject`, { method: 'POST' })
-      const text = await res.text()
-      if (!res.ok) {
-        addToast(await readJsonError(res, text), 'error')
-        return
-      }
-      await loadAll(guideId)
-    } catch {
-      addToast('스케줄 거절 실패', 'error')
-    } finally {
-      setBusy(false)
+  /** 종일(00:00~23:59) 예약 받기 슬롯만 삭제 → 중립. 시간대별 일정은 유지 */
+  const clearOpenDay = async (dateStr) => {
+    if (!guideId || scheduleOpLockRef.current || busy) return
+    const markers = schedules.filter((s) => s.availableDate === dateStr && isWholeDayOpenSlot(s))
+    if (markers.length === 0) {
+      addToast('종일로 켠 "예약 받기"만 여기서 끌 수 있어요. 다른 시간대는 목록에서 삭제해 주세요.', 'error')
+      return
     }
-  }
-
-  const removeSchedule = async (scheduleId) => {
-    if (!guideId || !window.confirm('이 스케줄을 삭제할까요?')) return
+    if (!window.confirm('이 날짜의 종일 예약 받기 설정을 지울까요? (예약을 막지는 않아요)')) return
+    scheduleOpLockRef.current = true
     setBusy(true)
     try {
-      const res = await apiRequest(`/guides/${guideId}/schedules/${scheduleId}`, { method: 'DELETE' })
-      if (!res.ok) {
-        const text = await res.text()
-        addToast(await readJsonError(res, text), 'error')
-        return
+      for (const s of markers) {
+        const res = await apiRequest(`/guides/${guideId}/schedules/${s.scheduleId}`, { method: 'DELETE' })
+        if (!res.ok) {
+          const t = await res.text()
+          addToast(await readJsonError(res, t), 'error')
+          return
+        }
       }
-      await loadAll(guideId)
+      addToast('이 날을 비었습니다.')
+      await reloadScheduleData(guideId)
     } catch {
-      addToast('스케줄 삭제 실패', 'error')
+      addToast('삭제에 실패했어요', 'error')
     } finally {
+      scheduleOpLockRef.current = false
       setBusy(false)
     }
   }
@@ -663,191 +655,36 @@ export function GuideFeedSchedulePage() {
           </ul>
         </section>
       ) : (
-        <section className="gss-wrap">
-          <header className="gss-head">
+        <>
+          <header className="gss-head gss-head--schedule">
             <h2>🗓️ 스케줄 관리</h2>
             <p>투어 가능 일정을 관리하고 예약 현황을 확인하세요.</p>
           </header>
-          <div className="gss-banner">
-            💡 기본적으로 모든 날짜는 예약 가능입니다. 막고 싶은 날짜를 클릭하면 예약 불가로 설정됩니다.
+          <div className="gss-banner gss-banner--schedule">
+            <span className="gss-banner__icon" aria-hidden="true">💡</span>
+            <span>
+              달력은 기본이 <strong>비어 있음</strong>이에요. 예약 요청을 받을 날만 날짜를 눌러 <strong>예약 받기</strong>를 켜 주세요. (월을 바꿔도 자동으로 켜지지 않아요.)
+            </span>
           </div>
-          <div className="gss-grid">
-            <article className="gss-cal-card">
-              <div className="gss-cal-top">
-                <strong>{monthTitle(calendarMonth)}</strong>
-                <div className="gss-month-nav">
-                  <button
-                    type="button"
-                    className="gss-nav-btn"
-                    onClick={() => setCalendarMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1))}
-                    aria-label="이전 달"
-                  >
-                    ‹
-                  </button>
-                  <button
-                    type="button"
-                    className="gss-nav-btn"
-                    onClick={() => setCalendarMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1))}
-                    aria-label="다음 달"
-                  >
-                    ›
-                  </button>
-                </div>
-              </div>
-              <div className="gss-week">
-                <span>SUN</span>
-                <span>MON</span>
-                <span>TUE</span>
-                <span>WED</span>
-                <span>THU</span>
-                <span>FRI</span>
-                <span>SAT</span>
-              </div>
-              <div className="gss-days">
-                {calendarCells.map((cell) => {
-                  const dayKey = ymd(cell.date)
-                  const daySchedules = scheduleByDate.get(dayKey) ?? []
-                  const isBlocked = blockedDates.has(dayKey)
-                  const hasBooked = daySchedules.some((s) => s.status === 'BOOKED')
-                  const hasPending = daySchedules.some((s) => s.status === 'PENDING')
-                  let kind = cell.inMonth ? 'available' : 'plain'
-                  if (isBlocked) kind = 'blocked'
-                  else if (hasBooked) kind = 'booked'
-                  else if (hasPending) kind = 'pending'
-                  const today = ymd(new Date()) === dayKey
-                  const canToggle = cell.inMonth && !hasBooked && !hasPending
-                  return (
-                    <button
-                      key={cell.key}
-                      type="button"
-                      className={`gss-day ${cell.inMonth ? '' : 'is-out'} ${kind !== 'plain' ? `is-${kind}` : ''} ${today ? 'is-today' : ''}`}
-                      title={isBlocked ? `${dayKey} · 예약 불가 (클릭 시 해제)` : canToggle ? `${dayKey} · 클릭 시 예약 불가 설정` : dayKey}
-                      onClick={canToggle ? () => void toggleBlock(dayKey) : undefined}
-                      disabled={!cell.inMonth || busy}
-                    >
-                      <span>{cell.date.getDate()}</span>
-                      {isBlocked && <small className="gss-blocked-x">✕</small>}
-                      {!isBlocked && daySchedules.length > 0 && <small>{daySchedules.length}</small>}
-                    </button>
-                  )
-                })}
-              </div>
-              <div className="gss-legend">
-                <span className="gss-dot gss-dot--available">예약 가능</span>
-                <span className="gss-dot gss-dot--today">오늘</span>
-                <span className="gss-dot gss-dot--booked">투어 예약 있음</span>
-                <span className="gss-dot gss-dot--pending">예약 대기</span>
-                <span className="gss-dot gss-dot--blocked">예약 불가</span>
-              </div>
-            </article>
-
-            <article className="gss-upcoming">
-              <h3>다가오는 투어 🚩</h3>
-              <div className="gss-upcoming-list">
-                {upcomingTours.length === 0 && <p className="gm-hint">예약된 투어가 아직 없습니다.</p>}
-                {upcomingTours.slice(0, 6).map((tour) => (
-                  <section key={tour.scheduleId} className={`gss-tour-card${tour.hasCourse ? ' course-done' : ''}`}>
-                    <p className="gss-tour-time">
-                      {tour.availableDate} ({tour.startTime})
-                    </p>
-                    <p className="gss-tour-title">{tour.destination}</p>
-                    <p className="gss-tour-meta">
-                      시간: {tour.startTime} ~ {tour.endTime} · 상태: {tour.status}
-                      {tour.isPaid ? ' · 결제완료' : ''}
-                    </p>
-                    <p className="gss-tour-meta">
-                      예약번호: {tour.matchRequestId ?? '미연결'} · 스케줄 #{tour.scheduleId}
-                    </p>
-                    {tour.status === 'BOOKED' && (
-                      <button
-                        type="button"
-                        className="gss-course-btn"
-                        onClick={() => setCourseTarget({
-                          scheduleId: tour.scheduleId,
-                          availableDate: tour.availableDate,
-                          startTime: tour.startTime,
-                          endTime: tour.endTime,
-                          destination: tour.destination,
-                        })}
-                      >
-                        {tour.hasCourse ? '코스 수정하기 →' : '코스 작성하기 →'}
-                      </button>
-                    )}
-                  </section>
-                ))}
-              </div>
-            </article>
-          </div>
-
-          <div className="gm-card" style={{ marginTop: '1rem' }}>
-            <h2>스케줄 편집</h2>
-          {pendingSchedules.length > 0 && (
-            <div style={{ marginBottom: '1rem' }}>
-              <p className="gm-hint" style={{ marginBottom: '0.5rem' }}>
-                수락 대기(PENDING) — <code>GET /api/guides/&#123;id&#125;/schedules/pending</code> ·{' '}
-                <code>POST …/&#123;scheduleId&#125;/accept|reject</code>
-              </p>
-              <ul className="gm-list">
-                {pendingSchedules.map((s) => (
-                  <li key={`p-${s.scheduleId}`}>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', justifyContent: 'space-between' }}>
-                      <span>
-                        <strong>{s.availableDate}</strong> {formatTime(s.startTime)}–{formatTime(s.endTime)}
-                        {s.matchRequestId != null ? ` · 매칭 #${s.matchRequestId}` : ''}
-                      </span>
-                      <span style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
-                        <button
-                          type="button"
-                          className="gm-btn"
-                          style={{ padding: '0.35rem 0.75rem' }}
-                          onClick={() => void acceptPendingSchedule(s.scheduleId)}
-                          disabled={busy}
-                        >
-                          수락
-                        </button>
-                        <button type="button" className="gm-danger" onClick={() => void rejectPendingSchedule(s.scheduleId)} disabled={busy}>
-                          거절
-                        </button>
-                      </span>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-          <p className="gm-hint" style={{ marginBottom: '0.5rem' }}>
-            캘린더에서 날짜를 클릭해 예약 불가 설정/해제할 수 있습니다. (BOOKED·PENDING 날짜는 변경 불가)
-          </p>
-          <ul className="gm-list" style={{ marginTop: '0.85rem' }}>
-            {schedules.length === 0 && <li>등록된 스케줄이 없습니다.</li>}
-            {schedules.map((s) => (
-              <li key={s.scheduleId}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.5rem', flexWrap: 'wrap' }}>
-                  <span>
-                    <strong>{s.availableDate}</strong> {formatTime(s.startTime)}–{formatTime(s.endTime)} · {s.status}
-                    {s.isPaid ? ' · 결제됨' : ''}
-                  </span>
-                  <button
-                    type="button"
-                    className="gm-danger"
-                    onClick={() => void removeSchedule(s.scheduleId)}
-                    disabled={busy}
-                  >
-                    삭제
-                  </button>
-                </div>
-              </li>
-            ))}
-          </ul>
-          </div>
-        </section>
+          <GuideScheduleSection
+            schedules={schedules}
+            pendingSchedules={pendingSchedules}
+            blockedDates={blockedDates}
+            busy={busy}
+            onActivateReceiving={activateReceiving}
+            onSetBlocked={setDayBlocked}
+            onClearOpenDay={clearOpenDay}
+            onOpenCourse={(tour) => setCourseTarget(tour)}
+            requestsByScheduleId={requestsByScheduleId}
+          />
+        </>
       )}
       {courseTarget && (
         <GuideCoursePanel
           guideId={guideId}
           schedule={courseTarget}
           onClose={() => setCourseTarget(null)}
-          onSaved={() => { setCourseTarget(null); void loadAll(guideId) }}
+          onSaved={() => { setCourseTarget(null); void reloadScheduleData(guideId) }}
         />
       )}
     </div>

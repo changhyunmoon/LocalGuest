@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 
 import { apiRequest } from '../api/client.js'
+import { useGuidePendingRequests } from '../context/GuidePendingRequestsProvider.jsx'
 import { useAuth } from '../context/useAuth.js'
 import { useResolvedGuideId } from '../hooks/useResolvedGuideId.js'
 import { fetchGuideMatchRequests } from '../lib/matchingGuest.js'
@@ -38,6 +39,7 @@ function statusLabel(status) {
 
 export function GuideInboxPage() {
   const { isGuide } = useAuth()
+  const { refresh: refreshPendingBadge } = useGuidePendingRequests()
   const { guideId } = useResolvedGuideId()
   const [rows, setRows] = useState([])
   const [schedulesById, setSchedulesById] = useState({})
@@ -52,7 +54,8 @@ export function GuideInboxPage() {
     setToast('')
     const data = await fetchGuideMatchRequests(apiRequest)
     setRows(Array.isArray(data) ? data : [])
-  }, [])
+    void refreshPendingBadge()
+  }, [refreshPendingBadge])
 
   useEffect(() => {
     if (!isGuide) {
@@ -204,7 +207,7 @@ export function GuideInboxPage() {
   if (!isGuide) {
     return (
       <div className="inbox">
-        <h1>가이드 예약함</h1>
+        <h1>매칭 요청</h1>
         <p className="inbox-warn">
           이 화면은 JWT 역할이 <strong>GUIDE</strong>일 때만 API가 허용합니다. 가이드 신청 직후라면{' '}
           <strong>다시 로그인</strong>한 뒤 이용해 주세요.
@@ -218,7 +221,7 @@ export function GuideInboxPage() {
 
   return (
     <div className="inbox">
-      <h1>🤝 매칭 수락/거절</h1>
+      <h1>매칭 요청</h1>
 
       {loading && <p>불러오는 중…</p>}
       {error && <p className="inbox-error">{error}</p>}

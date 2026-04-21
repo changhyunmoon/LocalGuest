@@ -333,7 +333,7 @@ public class GuideScheduleService {
         return GuideScheduleResponse.from(guideScheduleRepository.save(block));
     }
 
-    // 날짜 단위 BLOCKED 해제 — BLOCKED → AVAILABLE, 없으면 무시
+    // 날짜 단위 BLOCKED 해제 — BLOCKED 행 삭제 → 달력은 '설정 없음(중립)'으로 돌아감 (자동 예약 가능 아님)
     @Transactional
     public void unblockDate(Long guideId, LocalDate date, Long userId) {
         getVerifiedProfile(guideId, userId);
@@ -344,7 +344,7 @@ public class GuideScheduleService {
                 .filter(s -> s.getStatus() == GuideScheduleStatus.BLOCKED)
                 .toList();
 
-        blocked.forEach(s -> s.changeStatus(GuideScheduleStatus.AVAILABLE));
+        blocked.forEach(guideScheduleRepository::delete);
     }
 
     // 시작 시간 < 종료 시간 검증 공통 메서드 — DB의 CHECK 제약과 이중 보호

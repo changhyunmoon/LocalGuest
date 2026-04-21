@@ -1,6 +1,8 @@
+import { useEffect, useRef } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
 
 import { SiteFooter } from '../components/SiteFooter.jsx'
+import { GuidePendingRequestsProvider, useGuidePendingRequests } from '../context/GuidePendingRequestsProvider.jsx'
 import { useAuth } from '../context/useAuth.js'
 
 /** @param {...string | false | undefined} extra */
@@ -19,11 +21,26 @@ function isGuidesMatchCompletePath(pathname) {
   return /^\/guides\/[^/]+\/match\/complete(?:\/|$)/.test(pathname)
 }
 
-export function AppLayout() {
+function AppLayoutInner() {
   const { pathname } = useLocation()
   const { isAuthenticated, email, isGuide, logout } = useAuth()
+  const { pendingCount } = useGuidePendingRequests()
   const guideMypageActive = isGuide && pathname.startsWith('/guide/mypage')
   const matchComplete = isGuidesMatchCompletePath(pathname)
+  const baseTitleRef = useRef(typeof document !== 'undefined' ? document.title : 'LocalGuest')
+
+  useEffect(() => {
+    const base = baseTitleRef.current
+    const onInbox = pathname === '/guide/inbox' || pathname.startsWith('/guide/inbox/')
+    if (pendingCount > 0 && !onInbox) {
+      document.title = pendingCount > 99 ? `(99+) ${base}` : `(${pendingCount}) ${base}`
+    } else {
+      document.title = base
+    }
+  }, [pendingCount, pathname])
+
+  const inboxAria =
+    pendingCount > 0 ? `매칭 요청, 처리 필요 ${pendingCount}건` : '매칭 요청'
 
   return (
     <div className="shell">
@@ -67,8 +84,18 @@ export function AppLayout() {
             {isGuide ? '가이드 마이페이지' : '마이페이지'}
           </NavLink>
           {isGuide && (
-            <NavLink to="/guide/inbox" className={pillClass('shell-pill-link--guide')}>
-              가이드 예약함
+            <NavLink
+              to="/guide/inbox"
+              className={pillClass('shell-pill-link--guide', 'shell-pill-link--inbox')}
+              aria-label={inboxAria}
+              title={pendingCount > 0 ? `처리할 매칭 요청 ${pendingCount}건` : undefined}
+            >
+              <span className="shell-inbox-label">매칭 요청</span>
+              {pendingCount > 0 && (
+                <span className="shell-inbox-badge" aria-hidden="true">
+                  {pendingCount > 99 ? '99+' : pendingCount}
+                </span>
+              )}
             </NavLink>
           )}
         </nav>
@@ -106,5 +133,13 @@ export function AppLayout() {
 
       <SiteFooter />
     </div>
+  )
+}
+
+export function AppLayout() {
+  return (
+    <GuidePendingRequestsProvider>
+      <AppLayoutInner />
+    </GuidePendingRequestsProvider>
   )
 }
