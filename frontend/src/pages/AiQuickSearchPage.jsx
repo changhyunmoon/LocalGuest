@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 
 import { apiRequest } from '../api/client'
 
@@ -122,7 +122,8 @@ function pickFallbackGuides(promptText, keywords, allGuides) {
 }
 
 export function AiQuickSearchPage() {
-  const [prompt, setPrompt] = useState('')
+  const location = useLocation()
+  const [prompt, setPrompt] = useState(() => String(location.state?.initialPrompt ?? ''))
   const [hasSearched, setHasSearched] = useState(false)
   const [panelOpen, setPanelOpen] = useState(false)
   const [loading, setLoading] = useState(false)
