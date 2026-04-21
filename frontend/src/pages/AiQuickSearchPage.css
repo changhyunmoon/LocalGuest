@@ -475,6 +475,23 @@
   border-color: #1f2328;
 }
 
+.ais-more {
+  margin-top: 0.75rem;
+  width: 100%;
+  padding: 0.6rem 1rem;
+  border-radius: 999px;
+  border: 1px solid #d1d5db;
+  background: #fff;
+  color: #111827;
+  font-size: 0.82rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.ais-more:hover {
+  background: #f9fafb;
+}
+
 .ais-spot-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

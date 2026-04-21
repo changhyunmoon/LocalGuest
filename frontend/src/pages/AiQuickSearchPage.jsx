@@ -7,7 +7,8 @@ import './AiQuickSearchPage.css'
 
 const PLACEHOLDER = '제주도에서 조용히 사진 찍기 좋은 오름 추천해줘'
 const LS_AI_SEARCH_SNAPSHOT = 'localguest_ai_search_snapshot_v1'
-const AI_GUIDE_SHOW_MAX = 5
+const AI_GUIDE_DEFAULT_SHOW = 3
+const AI_GUIDE_EXPANDED_SHOW = 5
 
 const JEJU_OREUM_SPOTS = [
   { title: '아부오름', caption: '완만한 능선, 소풍 명소', tape: 'g' },
@@ -131,6 +132,7 @@ export function AiQuickSearchPage() {
   const [showGuides, setShowGuides] = useState(false)
   const [showSpots, setShowSpots] = useState(false)
   const [fallbackGuides, setFallbackGuides] = useState([])
+  const [expandedGuides, setExpandedGuides] = useState(false)
   /** @type {Record<string, Array<{ feedId: number, imageUrl?: string, content?: string }>>} */
   const [guideFeedsById, setGuideFeedsById] = useState({})
   const typeTimerRef = useRef(null)
@@ -204,6 +206,7 @@ export function AiQuickSearchPage() {
       setPrompt(restoredPrompt)
       setResult(restoredResult)
       setFallbackGuides(restoredFallback)
+      setExpandedGuides(Boolean(snap.expandedGuides))
       setHasSearched(Boolean(snap.hasSearched))
       setPanelOpen(Boolean(snap.panelOpen))
       // narrative는 result 기반으로 다시 생성해 타이핑 효과를 복원한다.
@@ -225,12 +228,13 @@ export function AiQuickSearchPage() {
           panelOpen: true,
           result,
           fallbackGuides,
+          expandedGuides,
         }),
       )
     } catch {
       /* ignore */
     }
-  }, [fallbackGuides, hasSearched, prompt, result])
+  }, [expandedGuides, fallbackGuides, hasSearched, prompt, result])
 
   useEffect(() => {
     const recs = result?.recommendations
@@ -238,7 +242,8 @@ export function AiQuickSearchPage() {
       setGuideFeedsById({})
       return
     }
-    const ids = [...new Set(recs.slice(0, AI_GUIDE_SHOW_MAX).map((r) => r?.guideId).filter((id) => id != null))].map(String)
+    const showMax = expandedGuides ? AI_GUIDE_EXPANDED_SHOW : AI_GUIDE_DEFAULT_SHOW
+    const ids = [...new Set(recs.slice(0, showMax).map((r) => r?.guideId).filter((id) => id != null))].map(String)
     if (ids.length === 0) return
 
     let cancelled = false
@@ -266,22 +271,24 @@ export function AiQuickSearchPage() {
     }
   }, [result])
 
-  const runSearch = async (e) => {
+  const runSearch = async (e, options = {}) => {
     e?.preventDefault()
     const q = prompt.trim()
     if (!q || loading) return
+    const topN = Number(options?.topN ?? AI_GUIDE_DEFAULT_SHOW)
 
     setError('')
     setResult(null)
     setFallbackGuides([])
     setHasSearched(true)
+    setExpandedGuides(topN > AI_GUIDE_DEFAULT_SHOW)
     setLoading(true)
     openPanelSoon()
 
     try {
       const res = await apiRequest('/ai/recommend', {
         method: 'POST',
-        json: { prompt: q, topN: 5 },
+        json: { prompt: q, topN },
       })
       const text = await res.text()
       if (res.status === 401 || res.status === 403 || res.status === 302) {
@@ -311,7 +318,7 @@ export function AiQuickSearchPage() {
           if (guideRes.ok) {
             const all = guideText ? JSON.parse(guideText) : []
             const picked = pickFallbackGuides(q, data?.keywords, Array.isArray(all) ? all : [])
-            setFallbackGuides(picked.slice(0, AI_GUIDE_SHOW_MAX))
+            setFallbackGuides(picked.slice(0, topN))
           }
         } catch {
           setFallbackGuides([])
@@ -337,7 +344,8 @@ export function AiQuickSearchPage() {
   }
 
   const recs = result?.recommendations && Array.isArray(result.recommendations) ? result.recommendations : []
-  const topGuides = recs.length > 0 ? recs.slice(0, AI_GUIDE_SHOW_MAX) : fallbackGuides.slice(0, AI_GUIDE_SHOW_MAX)
+  const showMax = expandedGuides ? AI_GUIDE_EXPANDED_SHOW : AI_GUIDE_DEFAULT_SHOW
+  const topGuides = recs.length > 0 ? recs.slice(0, showMax) : fallbackGuides.slice(0, showMax)
   const keywords = result?.keywords
   const spots = pickSpots(prompt, keywords)
   const activityHint =
@@ -517,6 +525,15 @@ export function AiQuickSearchPage() {
                         )
                       })}
                     </ul>
+                  )}
+                  {!loading && !expandedGuides && recs.length > AI_GUIDE_DEFAULT_SHOW && (
+                    <button
+                      type="button"
+                      className="ais-more"
+                      onClick={() => void runSearch(null, { topN: AI_GUIDE_EXPANDED_SHOW })}
+                    >
+                      추천 가이드 더 보기
+                    </button>
                   )}
                 </section>
 
