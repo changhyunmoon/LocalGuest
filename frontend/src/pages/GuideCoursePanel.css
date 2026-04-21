@@ -21,6 +21,30 @@
   animation: gcp-slide-in 0.22s ease;
 }
 
+.gcp-page-wrap {
+  width: 100%;
+}
+
+.gcp-panel--page {
+  width: 100%;
+  max-width: min(760px, 100%);
+  height: auto;
+  min-height: min(520px, 70dvh);
+  margin: 0 auto;
+  border-radius: 16px;
+  border: 1px solid #e8eaed;
+  box-shadow: 0 6px 24px rgba(31, 35, 40, 0.05);
+  animation: none;
+}
+
+.gcp-panel--page.gcp-panel--no-header {
+  border-radius: 18px;
+}
+
+.gcp-panel--no-header .gcp-body {
+  padding-top: 1.25rem;
+}
+
 @keyframes gcp-slide-in {
   from { transform: translateX(100%); }
   to   { transform: translateX(0); }
@@ -165,6 +189,14 @@
   background: rgba(255, 255, 255, 0.85);
   padding: 6px 14px;
   border-radius: 20px;
+}
+
+.gcp-map-loc-hint {
+  margin: 8px 0 0;
+  padding: 0 2px;
+  font-size: 11px;
+  line-height: 1.45;
+  color: #9ca3af;
 }
 
 /* 지도 커스텀 핀 */
@@ -313,10 +345,11 @@
   width: 26px;
   height: 26px;
   border-radius: 50%;
-  background: #111;
-  color: #fff;
+  background: linear-gradient(145deg, #f7d7e5, #edc0d3);
+  border: 1px solid #efbfd0;
+  color: #7a4f68;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -406,8 +439,9 @@
 }
 
 .gcp-btn--primary {
-  background: #111;
-  color: #fff;
+  background: linear-gradient(135deg, #f6d8e6 0%, #edbfd3 100%);
+  border: 1px solid #efbfd0;
+  color: #6d3f58;
 }
 
 .gcp-btn--ghost {
@@ -418,5 +452,7 @@
   padding-right: 20px;
 }
 
-.gcp-btn--primary:hover:not(:disabled) { opacity: 0.85; }
+.gcp-btn--primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #f2cddd 0%, #e7adc5 100%);
+}
 .gcp-btn--ghost:hover { background: #e5e7eb; }

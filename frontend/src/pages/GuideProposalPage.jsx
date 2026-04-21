@@ -212,7 +212,7 @@ export function GuideProposalPage() {
           <div>
             <p className="gp-name">{profile.nickname ?? '가이드'}</p>
             <p className="gp-meta">
-              ⭐ {rating} ({rc}) · {profile.region ?? ''}
+              🌟 {rating} ({rc}) · {profile.region ?? ''}
             </p>
           </div>
         </div>

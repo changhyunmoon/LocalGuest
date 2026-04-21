@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 
 import { apiRequest } from '../api/client.js'
 import { useResolvedGuideId } from '../hooks/useResolvedGuideId.js'
@@ -6,6 +7,8 @@ import { buildGuidePutBody } from '../lib/guideProfilePayload.js'
 
 import '../layouts/GuideDashboardLayout.css'
 import './GuideMypagePages.css'
+
+const KAKAO_APP_KEY = import.meta.env.VITE_KAKAO_MAP_APP_KEY
 
 function useToast() {
   const [toasts, setToasts] = useState([])
@@ -19,14 +22,32 @@ function useToast() {
 
 function Toast({ toasts }) {
   if (toasts.length === 0) return null
-  return (
-    <div style={{ position: 'fixed', bottom: '1.5rem', right: '1.5rem', zIndex: 9999, display: 'flex', flexDirection: 'column', gap: '0.5rem', pointerEvents: 'none' }}>
+  if (typeof document === 'undefined') return null
+  return createPortal(
+    <div style={{ position: 'fixed', top: '1.1rem', left: '50%', transform: 'translateX(-50%)', zIndex: 9999, display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'center', pointerEvents: 'none' }}>
       {toasts.map((t) => (
-        <div key={t.id} style={{ padding: '0.7rem 1.2rem', borderRadius: 10, background: t.type === 'success' ? '#15803d' : '#b91c1c', color: '#fff', fontSize: '0.88rem', fontWeight: 600, boxShadow: '0 4px 16px rgba(0,0,0,0.18)', minWidth: 180, maxWidth: 320 }}>
+        <div
+          key={t.id}
+          style={{
+            padding: '0.74rem 0.98rem',
+            borderRadius: 12,
+            border: t.type === 'success' ? '1px solid #e7a8c2' : '1px solid #f7b4c1',
+            background: t.type === 'success' ? 'linear-gradient(180deg, #f7d9e8, #efbfd0)' : 'linear-gradient(180deg, #ffe8ee, #ffd8e1)',
+            color: t.type === 'success' ? '#5a2f45' : '#9f274c',
+            fontSize: '0.86rem',
+            fontWeight: 700,
+            boxShadow: '0 14px 28px rgba(15, 23, 42, 0.16)',
+            textAlign: 'center',
+            letterSpacing: '-0.01em',
+            minWidth: 240,
+            maxWidth: 420,
+          }}
+        >
           {t.message}
         </div>
       ))}
-    </div>
+    </div>,
+    document.body,
   )
 }
 
@@ -39,6 +60,52 @@ async function readJsonError(res, text) {
   }
 }
 
+function loadKakaoSdk(appKey) {
+  if (!appKey) return Promise.reject(new Error('카카오맵 앱 키가 없습니다.'))
+  if (window.kakao?.maps?.services) return Promise.resolve(window.kakao)
+  return new Promise((resolve, reject) => {
+    const existing = document.getElementById('kakao-map-sdk')
+    if (existing) {
+      existing.addEventListener('load', () => window.kakao.maps.load(() => resolve(window.kakao)))
+      existing.addEventListener('error', () => reject(new Error('카카오맵 SDK 로드 실패')))
+      return
+    }
+    const script = document.createElement('script')
+    script.id = 'kakao-map-sdk'
+    script.async = true
+    script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${appKey}&autoload=false&libraries=services`
+    script.onload = () => window.kakao.maps.load(() => resolve(window.kakao))
+    script.onerror = () => reject(new Error('카카오맵 SDK 로드 실패'))
+    document.head.appendChild(script)
+  })
+}
+
+function detectRegionByCurrentLocation(kakao) {
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) {
+      reject(new Error('브라우저 위치 기능을 지원하지 않습니다.'))
+      return
+    }
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const geocoder = new kakao.maps.services.Geocoder()
+        geocoder.coord2RegionCode(position.coords.longitude, position.coords.latitude, (result, status) => {
+          if (status !== kakao.maps.services.Status.OK || !Array.isArray(result) || result.length === 0) {
+            reject(new Error('현재 위치에서 지역 정보를 찾지 못했습니다.'))
+            return
+          }
+          const hRegion = result.find((r) => r.region_type === 'H') ?? result[0]
+          const city = String(hRegion?.region_2depth_name ?? '').trim()
+          const province = String(hRegion?.region_1depth_name ?? '').trim()
+          resolve(city || [province, String(hRegion?.region_2depth_name ?? '').trim()].filter(Boolean).join(' '))
+        })
+      },
+      () => reject(new Error('위치 권한이 없어 현재 위치를 가져올 수 없습니다.')),
+      { enableHighAccuracy: true, timeout: 10000 },
+    )
+  })
+}
+
 export function GuideProfileEditPage() {
   const { guideId, loading: idLoading, error: idError } = useResolvedGuideId()
   const [profile, setProfile] = useState(null)
@@ -46,9 +113,11 @@ export function GuideProfileEditPage() {
   const { toasts, addToast } = useToast()
   const photoInputRef = useRef(null)
   const [previewUrl, setPreviewUrl] = useState(null)
+  const [pendingUploadFile, setPendingUploadFile] = useState(null)
   const [imageDeleted, setImageDeleted] = useState(false)
   const [loadError, setLoadError] = useState('')
   const [saving, setSaving] = useState(false)
+  const [resolvingRegion, setResolvingRegion] = useState(false)
 
   const load = useCallback(async (id) => {
     setLoadError('')
@@ -68,6 +137,14 @@ export function GuideProfileEditPage() {
     if (!guideId) return
     void load(guideId)
   }, [guideId, load])
+
+  useEffect(() => {
+    return () => {
+      if (previewUrl && previewUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(previewUrl)
+      }
+    }
+  }, [previewUrl])
 
   const setField = (key, value) => {
     setProfile((p) => (p ? { ...p, [key]: value } : p))
@@ -112,10 +189,33 @@ export function GuideProfileEditPage() {
         setSaving(false)
         return
       }
+      if (pendingUploadFile && !imageDeleted) {
+        const formData = new FormData()
+        formData.append('file', pendingUploadFile)
+        formData.append('folder', 'guide-profile')
+        const uploadRes = await apiRequest('/files/upload', { method: 'POST', body: formData })
+        const uploadText = await uploadRes.text()
+        if (!uploadRes.ok) {
+          addToast(await readJsonError(uploadRes, uploadText), 'error')
+          setSaving(false)
+          return
+        }
+        let uploadedUrl = ''
+        try {
+          const json = uploadText ? JSON.parse(uploadText) : {}
+          uploadedUrl = String(json?.url ?? '').trim()
+        } catch {
+          uploadedUrl = ''
+        }
+        if (!uploadedUrl) {
+          addToast('이미지 업로드 URL을 받지 못했습니다.', 'error')
+          setSaving(false)
+          return
+        }
+        body.profileImage = uploadedUrl
+      }
       if (imageDeleted) {
         body.profileImage = null
-      } else if (previewUrl) {
-        body.profileImage = profile.profileImage ?? undefined
       }
       const res = await apiRequest(`/guides/${guideId}`, { method: 'PUT', json: body })
       const text = await res.text()
@@ -123,8 +223,15 @@ export function GuideProfileEditPage() {
         addToast(await readJsonError(res, text), 'error')
         return
       }
-      addToast('저장되었습니다.')
-      window.location.reload()
+      const updated = text ? JSON.parse(text) : profile
+      setProfile(updated)
+      if (previewUrl && previewUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(previewUrl)
+      }
+      setPreviewUrl(null)
+      setPendingUploadFile(null)
+      setImageDeleted(false)
+      addToast('변경사항이 반영됐어요.')
     } catch {
       addToast('네트워크 오류', 'error')
     } finally {
@@ -190,8 +297,19 @@ export function GuideProfileEditPage() {
             onChange={(e) => {
               const file = e.target.files?.[0]
               if (!file) return
-              setPreviewUrl(URL.createObjectURL(file))
-              setImageDeleted(false)
+              void (async () => {
+                try {
+                  const objectUrl = URL.createObjectURL(file)
+                  if (previewUrl && previewUrl.startsWith('blob:')) {
+                    URL.revokeObjectURL(previewUrl)
+                  }
+                  setPreviewUrl(objectUrl)
+                  setPendingUploadFile(file)
+                  setImageDeleted(false)
+                } catch {
+                  addToast('이미지 파일 처리에 실패했습니다.', 'error')
+                }
+              })()
               e.target.value = ''
             }}
           />
@@ -199,8 +317,12 @@ export function GuideProfileEditPage() {
             type="button"
             className="gpv-photo-btn"
             onClick={() => {
+              if (previewUrl && previewUrl.startsWith('blob:')) {
+                URL.revokeObjectURL(previewUrl)
+              }
               setImageDeleted(true)
               setPreviewUrl(null)
+              setPendingUploadFile(null)
               if (photoInputRef.current) photoInputRef.current.value = ''
             }}
           >
@@ -215,6 +337,7 @@ export function GuideProfileEditPage() {
               onChange={(e) => {
                 setField('profileImage', e.target.value)
                 setPreviewUrl(null)
+                setPendingUploadFile(null)
                 setImageDeleted(false)
               }}
               placeholder="https://image-url"
@@ -231,17 +354,41 @@ export function GuideProfileEditPage() {
 
         <div className="gpv-field">
           <label htmlFor="gp-region">주 활동 지역</label>
-          <select id="gp-region" value={profile.region ?? ''} onChange={(e) => setField('region', e.target.value)}>
-            {profile.region && !['제주특별자치도 제주시', '제주특별자치도 서귀포시', '부산광역시', '강원특별자치도 강릉시', '전라남도 여수시'].includes(profile.region) && (
-              <option value={profile.region}>{profile.region}</option>
-            )}
-            <option value="">지역 선택</option>
-            <option value="제주특별자치도 제주시">제주특별자치도 제주시</option>
-            <option value="제주특별자치도 서귀포시">제주특별자치도 서귀포시</option>
-            <option value="부산광역시">부산광역시</option>
-            <option value="강원특별자치도 강릉시">강원특별자치도 강릉시</option>
-            <option value="전라남도 여수시">전라남도 여수시</option>
-          </select>
+          <div className="gpv-region-row">
+            <input
+              id="gp-region"
+              value={profile.region ?? ''}
+              onChange={(e) => setField('region', e.target.value)}
+              placeholder="예: 구미시"
+            />
+            <button
+              type="button"
+              className="gpv-photo-btn gpv-region-btn"
+              disabled={resolvingRegion}
+              onClick={() => {
+                void (async () => {
+                  setResolvingRegion(true)
+                  try {
+                    const kakao = await loadKakaoSdk(KAKAO_APP_KEY)
+                    const city = await detectRegionByCurrentLocation(kakao)
+                    if (!city) {
+                      addToast('현재 위치 지역을 찾지 못했습니다. 직접 입력해 주세요.', 'error')
+                      return
+                    }
+                    setField('region', city)
+                    addToast(`현재 위치 지역(${city})으로 입력했습니다.`)
+                  } catch (e) {
+                    addToast(e instanceof Error ? e.message : '현재 위치 지역 입력에 실패했습니다.', 'error')
+                  } finally {
+                    setResolvingRegion(false)
+                  }
+                })()
+              }}
+            >
+              {resolvingRegion ? '위치 확인 중…' : '현재 위치'}
+            </button>
+          </div>
+          <p className="gm-hint gpv-region-hint">📍 버튼을 누르면 현재 위치 기준 지역이 자동으로 입력됩니다.</p>
         </div>
 
         <div className="gpv-field">

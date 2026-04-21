@@ -1,0 +1,155 @@
+/* 코스 작성 — 가이드 대시보드(g-panel)와 동일한 흰 배경·카드 톤, 컴팩트 */
+
+.gce-page {
+  width: 100%;
+  max-width: min(760px, 100%);
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+.gce-header {
+  margin-bottom: 0.85rem;
+  padding: 0.75rem 0.9rem;
+  background: #fff;
+  border: 1px solid #e8eaed;
+  border-radius: 16px;
+  box-shadow: 0 6px 24px rgba(31, 35, 40, 0.05);
+}
+
+.gce-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin: 0 0 0.65rem;
+  padding: 0.25rem 0;
+  border: none;
+  background: none;
+  color: #3c434d;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.gce-back:hover {
+  color: #1f2328;
+}
+
+.gce-kicker {
+  margin: 0 0 0.2rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #7a828d;
+}
+
+.gce-title-num {
+  margin: 0 0 0.35rem;
+  font-size: 1.2rem;
+  font-weight: 800;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+  color: #1f2328;
+}
+
+.gce-hero-sub {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: #5c6370;
+  line-height: 1.4;
+}
+
+.gce-banner {
+  margin: 0.65rem 0 0;
+  padding: 0.5rem 0.65rem;
+  border-radius: 8px;
+  background: #f4f6f8;
+  border: 1px solid #e8eaed;
+  color: #3c434d;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.gce-alert {
+  margin: 0 0 0.75rem;
+  padding: 0.55rem 0.75rem;
+  border-radius: 8px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+  font-size: 0.8125rem;
+}
+
+.gce-busy {
+  margin: 0 0 0.75rem;
+  font-size: 0.75rem;
+  color: #7a828d;
+}
+
+.gce-guest {
+  margin-bottom: 0.85rem;
+  padding: 0.75rem 0.9rem;
+  background: #fff;
+  border: 1px solid #e8eaed;
+  border-radius: 16px;
+  box-shadow: 0 6px 24px rgba(31, 35, 40, 0.05);
+}
+
+.gce-guest-title {
+  margin: 0 0 0.65rem;
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: #1f2328;
+}
+
+.gce-guest-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 0.55rem 1rem;
+}
+
+.gce-guest-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.gce-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #9ca3af;
+}
+
+.gce-value {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #1f2328;
+  word-break: break-word;
+}
+
+.gce-concept {
+  margin: 0.65rem 0 0;
+  padding-top: 0.65rem;
+  border-top: 1px solid #eef0f3;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: #3c434d;
+}
+
+.gce-concept-detail {
+  margin: 0.5rem 0 0;
+  font-size: 0.78rem;
+  line-height: 1.55;
+  color: #6b7280;
+  white-space: pre-wrap;
+}
+
+.gce-editor {
+  width: 100%;
+}

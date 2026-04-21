@@ -1,21 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 
 import { PageError, PageLoading } from '../components/PageStates.jsx'
 import { apiRequest } from '../api/client'
+import { DEFAULT_KOREA_CENTER, getUserLatLng, resolveLatLng } from '../lib/kakaoGeocode.js'
 import { parseCourseDetail } from './GuideCoursePanel.jsx'
 
 import './GuideMatchedCoursePage.css'
 
 // ── 상수 ──────────────────────────────────────────────────────────────────
 const KAKAO_APP_KEY = import.meta.env.VITE_KAKAO_MAP_APP_KEY
-
-const REGION_BASE = {
-  제주: { lat: 33.4996, lng: 126.5312 },
-  부산: { lat: 35.1796, lng: 129.0756 },
-  강릉: { lat: 37.7519, lng: 128.8761 },
-  여수: { lat: 34.7604, lng: 127.6622 },
-}
 
 // ── 유틸 (기존 GuideMatchedCoursePage와 동일) ─────────────────────────────
 function loadKakaoSdk(appKey) {
@@ -38,26 +32,15 @@ function loadKakaoSdk(appKey) {
   })
 }
 
-function geocodeAddress(kakao, query) {
-  return new Promise((resolve) => {
-    const geocoder = new kakao.maps.services.Geocoder()
-    geocoder.addressSearch(query, (result, status) => {
-      if (status !== kakao.maps.services.Status.OK || !result?.length) { resolve(null); return }
-      resolve({ lat: Number(result[0].y), lng: Number(result[0].x) })
-    })
-  })
-}
-
-function fallbackLatLng(region, idx) {
-  const hit = Object.entries(REGION_BASE).find(([key]) => String(region ?? '').includes(key))
-  const base = hit?.[1] ?? { lat: 33.4996, lng: 126.5312 }
+function fallbackLatLng(idx) {
+  const base = DEFAULT_KOREA_CENTER
   return { lat: base.lat + idx * 0.007, lng: base.lng + (idx % 2 === 0 ? 0.009 : -0.006) }
 }
 
 function createSpotOverlay(kakao, map, latlng, idx, name) {
   const root = document.createElement('div')
   root.className = 'gmc-pin'
-  root.innerHTML = `<span class="gmc-pin-badge">${idx + 1}</span><span class="gmc-pin-label">${name}</span>`
+  root.innerHTML = `<span class="gmc-pin-badge"><span class="gmc-pin-badge-inner">${idx + 1}</span></span><span class="gmc-pin-label">${name}</span>`
   return new kakao.maps.CustomOverlay({ map, position: latlng, yAnchor: 1.25, content: root })
 }
 
@@ -75,6 +58,7 @@ function findLatestRequest(list, guideId, requestId) {
 export function GuideMatchedCoursePage() {
   const { guideId } = useParams()
   const [searchParams] = useSearchParams()
+  const location = useLocation()
   const navigate = useNavigate()
   const mapRef = useRef(null)
 
@@ -168,16 +152,27 @@ export function GuideMatchedCoursePage() {
         const kakao = await loadKakaoSdk(KAKAO_APP_KEY)
         if (cancelled || !mapRef.current) return
 
-        const center = fallbackLatLng(profile?.region, 0)
+        let center = DEFAULT_KOREA_CENTER
+        const userPos = await getUserLatLng()
+        if (userPos) {
+          center = userPos
+        } else if (meetingPoint.trim()) {
+          const byMeeting = await resolveLatLng(kakao, meetingPoint.trim(), { regionHint: String(profile?.region ?? '').trim() })
+          if (byMeeting) center = byMeeting
+        } else if (spots[0]?.name) {
+          const firstSpot = await resolveLatLng(kakao, spots[0].name, { regionHint: String(profile?.region ?? '').trim() })
+          if (firstSpot) center = firstSpot
+        }
         const map = new kakao.maps.Map(mapRef.current, {
           center: new kakao.maps.LatLng(center.lat, center.lng),
           level: 8,
         })
 
+        const regionHint = String(profile?.region ?? '').trim()
         const resolved = await Promise.all(
           spots.map(async (spot, idx) => {
-            const point = await geocodeAddress(kakao, `${spot.name} ${profile?.region ?? ''}`.trim())
-            return point ?? fallbackLatLng(profile?.region, idx)
+            const point = await resolveLatLng(kakao, spot.name, { regionHint })
+            return point ?? fallbackLatLng(idx)
           }),
         )
         if (cancelled) return
@@ -202,7 +197,7 @@ export function GuideMatchedCoursePage() {
 
     void draw()
     return () => { cancelled = true }
-  }, [spots, isPaid, profile?.region])
+  }, [spots, isPaid, profile?.region, meetingPoint])
 
   const handleOpenMatchChat = async () => {
     setChatBusy(true)
@@ -228,7 +223,6 @@ export function GuideMatchedCoursePage() {
   const rating = profile?.averageRating != null && profile?.averageRating !== ''
     ? Number(profile.averageRating).toFixed(1) : '—'
   const rc = profile?.reviewCount != null ? profile.reviewCount : 0
-  const likes = useMemo(() => Math.max(Math.round(rc * 2.8) + 40, 12), [rc])
 
   if (loading) return <div className="gmc"><PageLoading /></div>
   if (error || !profile) {
@@ -250,6 +244,11 @@ export function GuideMatchedCoursePage() {
       {/* 가이드 프로필 헤더 (기존 유지) */}
       <Link
         to={`/guides/${guideId}`}
+        state={{
+          fromMatchedCourse: true,
+          hideMatchRequest: true,
+          returnTo: `${location.pathname}${location.search}`,
+        }}
         className="gmc-hero gmc-hero--link"
         aria-label={`${profile.nickname ?? '가이드'} 프로필 및 피드 보기`}
       >
@@ -259,11 +258,10 @@ export function GuideMatchedCoursePage() {
         />
         <div className="gmc-hero-body">
           <h1 className="gmc-name">{profile.nickname ?? '가이드'}</h1>
-          <p className="gmc-meta">📍 {profile.region ?? ''} · ⭐ {rating} ({rc} 리뷰)</p>
+          <p className="gmc-meta">{profile.region ?? ''} · 평점 {rating} ({rc} 리뷰)</p>
           <p className="gmc-quote">"{profile.bio?.slice(0, 120) || '관광객은 모르는 사진 찍기 좋은 조용한 루트를 안내합니다.'}"</p>
           <p className="gmc-hero-cta">프로필·피드 보기 →</p>
         </div>
-        <div className="gmc-likes">♥ {likes}</div>
       </Link>
 
       {/* 코스 섹션 */}
@@ -297,7 +295,7 @@ export function GuideMatchedCoursePage() {
             {/* 결제 전 지도 잠금 오버레이 */}
             {!isPaid && (
               <div className="gmc-map-lock">
-                <span className="gmc-lock-icon">🔒</span>
+                <span className="gmc-lock-icon"><span className="gmc-lock-glyph" /></span>
                 <p className="gmc-lock-title">결제 완료 후 코스 공개</p>
                 <p className="gmc-lock-desc">상세 코스와 지도는 결제 후 확인할 수 있어요</p>
               </div>

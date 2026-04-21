@@ -18,7 +18,7 @@ function formatDt(iso) {
 
 function stars(rating) {
   const n = Math.max(1, Math.min(5, Math.round(Number(rating ?? 0))))
-  return '★'.repeat(n)
+  return '🌟'.repeat(n)
 }
 
 export function GuideReviewsManagePage() {
@@ -94,7 +94,7 @@ export function GuideReviewsManagePage() {
 
   return (
     <div className="g-panel">
-      <h1>⭐ 가이드 리뷰</h1>
+      <h1>🌟 가이드 리뷰</h1>
 
       {loadError && (
         <PageError message={loadError} onRetry={() => guideId != null && void loadPage(guideId, page)} />
@@ -115,7 +115,7 @@ export function GuideReviewsManagePage() {
             <article className="grv-score-card">
               <p>나의 평균 평점</p>
               <strong>
-                ★ {Number(summary.averageRating).toFixed(1)}
+                🌟 {Number(summary.averageRating).toFixed(1)}
               </strong>
               <span>리뷰 {summary.reviewCount}개</span>
             </article>

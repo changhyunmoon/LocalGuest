@@ -29,9 +29,58 @@
   margin-top: 0.5rem;
 }
 
+.inbox-status-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.inbox-status-section {
+  border: 1px solid #e8eaed;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 2px 10px rgba(31, 35, 40, 0.04);
+  padding: 0.75rem;
+}
+
+.inbox-status-section--inprogress {
+  border-color: #bfdbfe;
+  background: #f8fbff;
+}
+
+.inbox-status-section--pending {
+  border-color: #fde68a;
+  background: #fffcf2;
+}
+
+.inbox-status-section--extension {
+  border-color: #ddd6fe;
+  background: #faf5ff;
+}
+
+.inbox-status-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.35rem;
+}
+
+.inbox-status-count {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #4b5563;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  border-radius: 999px;
+  padding: 0.2rem 0.55rem;
+  white-space: nowrap;
+}
+
 .inbox-table-wrap {
   overflow-x: auto;
-  margin-top: 1rem;
+  margin-top: 0.45rem;
   -webkit-overflow-scrolling: touch;
 }
 
@@ -58,18 +107,38 @@
   white-space: nowrap;
 }
 
+.inbox-dna-cell {
+  max-width: 14rem;
+}
+
+.inbox-dna-text {
+  display: inline-block;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: top;
+}
+
 .inbox-btn {
   margin-right: 0.35rem;
   margin-bottom: 0.25rem;
   padding: 0.35rem 0.65rem;
   border-radius: 8px;
-  border: 1px solid #1f2328;
-  background: #1f2328;
-  color: #fff;
+  border: 1px solid #efbfd0;
+  background: linear-gradient(135deg, #f6d8e6 0%, #edbfd3 100%);
+  color: #6d3f58;
   font-size: 0.78rem;
   font-weight: 700;
   cursor: pointer;
   font-family: inherit;
+  transition: background 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
+}
+
+.inbox-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #f2cddd 0%, #e7adc5 100%);
+  border-color: #e8a8bf;
+  transform: translateY(-1px);
 }
 
 .inbox-btn:disabled {
@@ -242,7 +311,7 @@
   font-size: 0.95rem;
   font-weight: 800;
   color: #1f2328;
-  margin: 1.25rem 0 0.6rem;
+  margin: 0;
 }
 
 .inbox-card {

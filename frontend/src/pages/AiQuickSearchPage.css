@@ -53,19 +53,18 @@
 
 .ais-prompt-bar {
   display: flex;
-  align-items: flex-end;
+  align-items: flex-start;
   gap: 0.5rem;
-  padding: 0.55rem 0.55rem 0.55rem 0.85rem;
-  background: #fff;
-  border-radius: 999px;
-  border: 1px solid #e5e7eb;
-  box-shadow: 0 10px 40px rgba(15, 23, 42, 0.08);
+  padding: 0.8rem 0.75rem 0.75rem 0.95rem;
+  background: #fffdfd;
+  border-radius: 22px;
+  border: 1px solid #f0dce4;
 }
 
 .ais-input {
   flex: 1;
-  min-height: 2.5rem;
-  max-height: 8rem;
+  min-height: 6.6rem;
+  max-height: 13rem;
   border: none;
   outline: none;
   resize: none;
@@ -74,7 +73,7 @@
   line-height: 1.45;
   color: #1f2328;
   background: transparent;
-  padding: 0.35rem 0 0.35rem 0.15rem;
+  padding: 0.3rem 0 0.3rem 0.15rem;
 }
 
 .ais-input::placeholder {
@@ -86,14 +85,20 @@
   width: 2.65rem;
   height: 2.65rem;
   border-radius: 50%;
-  border: none;
-  background: #1f2328;
-  color: #fff;
+  border: 1px solid #efbfd0;
+  background: linear-gradient(135deg, #f6d8e6 0%, #edbfd3 100%);
+  color: #6d3f58;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.2s ease, transform 0.15s ease;
+  transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+  box-shadow: 0 6px 14px rgba(186, 113, 147, 0.22);
+  margin-top: 0.18rem;
+}
+
+.ais--hero .ais-input {
+  min-height: 7.2rem;
 }
 
 .ais-send:disabled {
@@ -102,8 +107,9 @@
 }
 
 .ais-send:not(:disabled):hover {
-  background: #111418;
+  background: linear-gradient(135deg, #f2ccdd 0%, #e7adc5 100%);
   transform: scale(1.04);
+  box-shadow: 0 8px 18px rgba(186, 113, 147, 0.3);
 }
 
 .ais-send-icon {
@@ -114,8 +120,8 @@
 .ais-send-spinner {
   width: 1.1rem;
   height: 1.1rem;
-  border: 2px solid rgba(255, 255, 255, 0.35);
-  border-top-color: #fff;
+  border: 2px solid rgba(141, 71, 102, 0.28);
+  border-top-color: #8a4e69;
   border-radius: 50%;
   animation: ais-spin 0.7s linear infinite;
 }
@@ -301,6 +307,34 @@
   border: 1px solid #e8eaed;
   border-radius: 14px;
   box-shadow: 0 4px 16px rgba(31, 35, 40, 0.04);
+  position: relative;
+}
+
+.ais-rank {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.ais-rank-badge {
+  width: 1.65rem;
+  height: 1.65rem;
+  border-radius: 999px;
+  background: linear-gradient(145deg, #f7d7e5, #edc0d3);
+  border: 1px solid #efbfd0;
+  color: #7a4f68;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.82rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+.ais-rank-text {
+  font-size: 0.76rem;
+  font-weight: 800;
+  color: #7a4f68;
 }
 
 .ais-guide-feeds {
@@ -443,9 +477,30 @@
 }
 
 .ais-profile-btn--primary {
-  background: #1f2328;
-  color: #fff !important;
-  border-color: #1f2328;
+  background: linear-gradient(135deg, #f6d8e6 0%, #edbfd3 100%);
+  color: #6d3f58 !important;
+  border-color: #efbfd0;
+}
+
+.ais-profile-btn--primary:hover {
+  background: linear-gradient(135deg, #f2cddd 0%, #e7adc5 100%);
+}
+
+.ais-more {
+  margin-top: 0.75rem;
+  width: 100%;
+  padding: 0.6rem 1rem;
+  border-radius: 999px;
+  border: 1px solid #d1d5db;
+  background: #fff;
+  color: #111827;
+  font-size: 0.82rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.ais-more:hover {
+  background: #f9fafb;
 }
 
 .ais-spot-grid {

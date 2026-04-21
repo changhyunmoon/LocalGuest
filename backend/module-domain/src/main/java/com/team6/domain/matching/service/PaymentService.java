@@ -14,11 +14,13 @@ import com.team6.domain.matching.entity.Refund;
 import com.team6.domain.matching.entity.enums.MatchRequestStatus;
 import com.team6.domain.matching.entity.enums.PaymentStatus;
 import com.team6.domain.matching.entity.enums.RefundType;
+import com.team6.domain.matching.entity.enums.TourExtensionStatus;
 import com.team6.domain.matching.exception.MatchingErrorCode;
 import com.team6.domain.matching.exception.MatchingException;
 import com.team6.domain.matching.repository.MatchRequestRepository;
 import com.team6.domain.matching.repository.PaymentRepository;
 import com.team6.domain.matching.repository.RefundRepository;
+import com.team6.domain.matching.repository.TourExtensionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -42,6 +44,7 @@ public class PaymentService {
     private final FakePgClient fakePgClient;
     private final KakaoPayClient kakaoPayClient;
     private final GuideScheduleSyncClient guideScheduleSyncClient;
+    private final TourExtensionRepository tourExtensionRepository;
 
     @Value("${matching.payment.provider:fake}")
     private String paymentProvider;
@@ -58,7 +61,10 @@ public class PaymentService {
         if (!matchRequest.getGuestId().equals(guestId)) {
             throw new MatchingException(MatchingErrorCode.MATCH_REQUEST_UNAUTHORIZED);
         }
-        if (matchRequest.getStatus() != MatchRequestStatus.PENDING
+
+        if (isExtensionPayment(request.getPaymentType())) {
+            validateExtensionPaymentRequest(matchRequest, request);
+        } else if (matchRequest.getStatus() != MatchRequestStatus.PENDING
                 && matchRequest.getStatus() != MatchRequestStatus.ACCEPTED) {
             throw new MatchingException(MatchingErrorCode.MATCH_REQUEST_INVALID_STATUS);
         }
@@ -163,6 +169,7 @@ public class PaymentService {
 
         payment.complete(pgTransactionId);
         payment.getMatchRequest().markAsPaidIfAcceptedOrPending();
+        completeExtensionIfNeeded(payment);
         syncGuideSchedulePaidSafely(payment);
 
         log.info("[Payment] Stub PG 승인 완료 — paymentId={}, pgTransactionId={}, paidAt={}, refundDeadline={}",
@@ -242,6 +249,38 @@ public class PaymentService {
 
     private boolean isKakaoProvider() {
         return "kakao".equalsIgnoreCase(paymentProvider);
+    }
+
+    private boolean isExtensionPayment(String paymentType) {
+        return "EXTENSION".equalsIgnoreCase(paymentType);
+    }
+
+    private void validateExtensionPaymentRequest(MatchRequest matchRequest, PaymentCreateRequest request) {
+        if (matchRequest.getStatus() != MatchRequestStatus.ACCEPTED
+                && matchRequest.getStatus() != MatchRequestStatus.PAID
+                && matchRequest.getStatus() != MatchRequestStatus.IN_PROGRESS
+                && matchRequest.getStatus() != MatchRequestStatus.COMPLETED) {
+            throw new MatchingException(MatchingErrorCode.MATCH_REQUEST_INVALID_STATUS);
+        }
+        var extension = tourExtensionRepository.findByMatchRequest_Id(matchRequest.getId())
+                .orElseThrow(() -> new MatchingException(MatchingErrorCode.TOUR_EXTENSION_NOT_FOUND));
+        if (extension.getStatus() != TourExtensionStatus.GUIDE_APPROVED) {
+            throw new MatchingException(MatchingErrorCode.MATCH_REQUEST_INVALID_STATUS);
+        }
+        if (extension.getExtendedPrice() == null || !extension.getExtendedPrice().equals(request.getAmount())) {
+            throw new MatchingException(MatchingErrorCode.PAYMENT_AMOUNT_MISMATCH);
+        }
+    }
+
+    private void completeExtensionIfNeeded(Payment payment) {
+        if (!isExtensionPayment(payment.getPaymentType())) {
+            return;
+        }
+        var extension = tourExtensionRepository.findByMatchRequest_Id(payment.getMatchRequest().getId())
+                .orElseThrow(() -> new MatchingException(MatchingErrorCode.TOUR_EXTENSION_NOT_FOUND));
+        extension.completePayByGuestSelection();
+        log.info("[F05-03] 연장 결제 완료 반영 — requestId={}, paymentId={}, extensionId={}",
+                payment.getMatchRequest().getId(), payment.getId(), extension.getId());
     }
 
     /**

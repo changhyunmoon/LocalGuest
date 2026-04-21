@@ -7,8 +7,8 @@ import { fetchGuestPayments, pickLatestCompletedPaymentIdForRequest } from '../l
 
 import './GuideMatchOptionsPage.css'
 
-const PRICE_CHAT = 10000
-const PRICE_ACCOMPANY = 50000
+/** 가이드 마이페이지 「종일 패키지」와 동일: 서버 `pricePerHour` × 8 (`GuideFeesPage`와 맞춤) */
+const FULL_DAY_HOURS = 8
 const KAKAO_APP_KEY = import.meta.env.VITE_KAKAO_MAP_APP_KEY
 
 function loadKakaoSdk(appKey) {
@@ -77,6 +77,42 @@ function hasProposalContent(row) {
   return !!(String(row.proposedSchedule ?? '').trim() || String(row.proposeMessage ?? '').trim())
 }
 
+function parseProfileTags(keywords) {
+  if (keywords == null || keywords === '') return []
+  return String(keywords)
+    .split(/[,#\s]+/)
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .slice(0, 10)
+    .map((t) => (t.startsWith('#') ? t : `#${t}`))
+}
+
+function feedCardTitle(content) {
+  if (!content || !String(content).trim()) return '피드'
+  const line = String(content).split(/\r?\n/)[0]?.trim()
+  if (!line) return '피드'
+  return line.length > 72 ? `${line.slice(0, 72)}…` : line
+}
+
+function feedSnippet(content) {
+  if (!content) return ''
+  const lines = String(content).split(/\r?\n/)
+  const rest = lines.slice(1).join(' ').trim()
+  const chunk = rest || lines[0]?.trim() || ''
+  return chunk.length > 140 ? `${chunk.slice(0, 140)}…` : chunk
+}
+
+function feedPrimaryImage(feed) {
+  const urls = Array.isArray(feed?.imageUrls) ? feed.imageUrls : []
+  const u0 = urls.find((u) => u && String(u).trim())
+  if (u0) return String(u0).trim()
+  if (feed?.imageUrl) {
+    const first = String(feed.imageUrl).split(',')[0]?.trim()
+    if (first) return first
+  }
+  return ''
+}
+
 export function GuideMatchOptionsPage() {
   const { guideId } = useParams()
   const location = useLocation()
@@ -88,19 +124,26 @@ export function GuideMatchOptionsPage() {
   const [profile, setProfile] = useState(null)
   const [requestId, setRequestId] = useState(stateRequestId != null ? Number(stateRequestId) : null)
   const [activeRequest, setActiveRequest] = useState(null)
-  const [paymentType, setPaymentType] = useState(/** @type {'CHAT' | 'ACCOMPANY'} */ ('CHAT'))
-  const [reviews, setReviews] = useState([])
   const [paying, setPaying] = useState(false)
   const [payErr, setPayErr] = useState('')
-  const [payFocus, setPayFocus] = useState(false)
   const [proposalArrivedNotice, setProposalArrivedNotice] = useState(false)
   const [checkingProposal, setCheckingProposal] = useState(false)
-  const matchingOptionsRef = useRef(null)
   const previewMapRef = useRef(null)
   const hasProposalRef = useRef(false)
   const initializedProposalRef = useRef(false)
 
-  const amount = paymentType === 'CHAT' ? PRICE_CHAT : PRICE_ACCOMPANY
+  /** `/guides/:id/detail` 전체 (모달에서 피드·소개 확장용) */
+  const [guideDetail, setGuideDetail] = useState(null)
+  const [profileModalOpen, setProfileModalOpen] = useState(false)
+  const [modalReviews, setModalReviews] = useState([])
+  const [modalReviewsLoading, setModalReviewsLoading] = useState(false)
+  const [modalReviewsErr, setModalReviewsErr] = useState('')
+
+  const accompanyPackageWon = useMemo(() => {
+    const hourly = profile?.pricePerHour != null ? Number(profile.pricePerHour) : 0
+    if (!Number.isFinite(hourly) || hourly <= 0) return 0
+    return Math.round(hourly * FULL_DAY_HOURS)
+  }, [profile])
 
   const load = useCallback(async (options = {}) => {
     const silent = Boolean(options?.silent)
@@ -113,6 +156,7 @@ export function GuideMatchOptionsPage() {
       const text = await res.text()
       if (!res.ok) throw new Error(text || '가이드를 불러오지 못했습니다.')
       const detail = text ? JSON.parse(text) : null
+      setGuideDetail(detail)
       setProfile(detail?.profile ?? null)
 
       const listRes = await apiRequest('/matching/requests/guest/list', { method: 'GET' })
@@ -153,16 +197,6 @@ export function GuideMatchOptionsPage() {
       }
 
       setRequestId(activeRid)
-
-      const revRes = await apiRequest(`/reviews/guide/${guideId}?size=12&sort=createdAt,desc`, { method: 'GET', skipAuth: true })
-      const revText = await revRes.text()
-      if (revRes.ok) {
-        const page = revText ? JSON.parse(revText) : {}
-        const raw = page?.content
-        setReviews(Array.isArray(raw) ? raw : [])
-      } else {
-        setReviews([])
-      }
     } catch (e) {
       if (!silent) {
         setError(e instanceof Error ? e.message : '오류')
@@ -183,7 +217,6 @@ export function GuideMatchOptionsPage() {
       ? Number(profile.averageRating).toFixed(1)
       : '—'
   const rc = profile?.reviewCount != null ? profile.reviewCount : 0
-  const likes = useMemo(() => Math.max(Math.round(rc * 2.8) + 40, 12), [rc])
 
   const quote = useMemo(() => {
     const b = profile?.bio?.trim()
@@ -205,11 +238,80 @@ export function GuideMatchOptionsPage() {
   const previewLockedSpots = previewSpots.slice(1)
   const hasLockedPreview = previewLockedSpots.length > 0 || !!previewHint
 
+  const modalTags = useMemo(() => parseProfileTags(profile?.keywords), [profile])
+
+  const modalFeeds = useMemo(() => {
+    const feeds = guideDetail?.feeds
+    return Array.isArray(feeds) ? feeds : []
+  }, [guideDetail])
+
+  const modalStoryBlocks = useMemo(() => {
+    const p = profile
+    if (!p) return []
+    return [
+      p.residenceYears != null && Number(p.residenceYears) > 0
+        ? { label: '거주', text: `이 지역에 약 ${p.residenceYears}년 살았어요.` }
+        : null,
+      p.localStory && String(p.localStory).trim()
+        ? { label: '지역 이야기', text: String(p.localStory).trim() }
+        : null,
+      p.guideStyle && String(p.guideStyle).trim()
+        ? { label: '가이드 스타일', text: String(p.guideStyle).trim() }
+        : null,
+      p.defaultCourse && String(p.defaultCourse).trim()
+        ? { label: '추천 코스', text: String(p.defaultCourse).trim() }
+        : null,
+    ].filter(Boolean)
+  }, [profile])
+
   useEffect(() => {
-    if (!payFocus) return
-    const timer = setTimeout(() => setPayFocus(false), 1400)
-    return () => clearTimeout(timer)
-  }, [payFocus])
+    if (!profileModalOpen) return
+    const onKey = (e) => {
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        setProfileModalOpen(false)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    const prevOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      document.body.style.overflow = prevOverflow
+    }
+  }, [profileModalOpen])
+
+  useEffect(() => {
+    if (!profileModalOpen || !guideId) return
+    let cancelled = false
+    setModalReviewsLoading(true)
+    setModalReviewsErr('')
+    void apiRequest(`/reviews/guide/${guideId}?size=15&sort=createdAt,desc`, { method: 'GET', skipAuth: true })
+      .then(async (revRes) => {
+        const revText = await revRes.text()
+        if (cancelled) return
+        if (!revRes.ok) {
+          setModalReviewsErr(revText || '후기를 불러오지 못했습니다.')
+          setModalReviews([])
+          return
+        }
+        const page = revText ? JSON.parse(revText) : {}
+        const raw = page?.content
+        setModalReviews(Array.isArray(raw) ? raw : [])
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setModalReviewsErr('후기를 불러오지 못했습니다.')
+          setModalReviews([])
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setModalReviewsLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [profileModalOpen, guideId])
 
   useEffect(() => {
     if (!proposalArrivedNotice) return
@@ -255,11 +357,6 @@ export function GuideMatchOptionsPage() {
     }
   }
 
-  const moveToPaymentOptions = () => {
-    matchingOptionsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-    setPayFocus(true)
-  }
-
   useEffect(() => {
     if (!previewMapRef.current) return
     let cancelled = false
@@ -297,14 +394,18 @@ export function GuideMatchOptionsPage() {
       setPayErr('가이드가 코스를 작성한 뒤 결제를 진행할 수 있어요.')
       return
     }
+    if (accompanyPackageWon <= 0) {
+      setPayErr('가이드가 종일 패키지 요금을 설정해야 결제할 수 있어요. 가이드 마이페이지에서 비용을 저장한 뒤 다시 시도해 주세요.')
+      return
+    }
     setPaying(true)
     try {
       const res = await apiRequest('/matching/payments', {
         method: 'POST',
         json: {
           matchRequestId: requestId,
-          amount,
-          paymentType,
+          amount: accompanyPackageWon,
+          paymentType: 'ACCOMPANY',
         },
       })
       const t = await res.text()
@@ -370,7 +471,21 @@ export function GuideMatchOptionsPage() {
         <p className="gmo-arrived-banner">제시안이 도착했어요! 아래에서 코스 일부를 확인하고 결제를 진행해 주세요.</p>
       )}
 
-      <header className="gmo-hero">
+      <header
+        className="gmo-hero gmo-hero--clickable"
+        role="button"
+        tabIndex={0}
+        aria-haspopup="dialog"
+        aria-expanded={profileModalOpen}
+        aria-label={`${profile.nickname ?? '가이드'} 상세 정보 열기`}
+        onClick={() => setProfileModalOpen(true)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            setProfileModalOpen(true)
+          }
+        }}
+      >
         <div
           className="gmo-hero-ph"
           style={profile.profileImage ? { backgroundImage: `url(${profile.profileImage})` } : undefined}
@@ -378,87 +493,60 @@ export function GuideMatchOptionsPage() {
         <div className="gmo-hero-body">
           <h1 className="gmo-hero-name">{profile.nickname ?? '가이드'}</h1>
           <p className="gmo-hero-meta">
-            📍 {profile.region ?? ''} · ⭐ {rating} ({rc} 리뷰)
+            {profile.region ?? ''} · 평점 {rating} ({rc} 리뷰)
           </p>
           <p className="gmo-hero-quote">{quote}</p>
-        </div>
-        <div className="gmo-likes" aria-label="좋아요">
-          <span aria-hidden>♡</span> {likes}
+          <p className="gmo-hero-hint">클릭하면 소개·피드·후기를 볼 수 있어요</p>
         </div>
       </header>
 
-      <div className="gmo-grid">
+      <div className="gmo-main-flow">
+        <section className="gmo-price-panel" aria-labelledby="gmo-price-title">
+          <h2 id="gmo-price-title">직접 만나기 (동행)</h2>
+          <p className="gmo-price-lead">
+            가이드가 마이페이지에서 설정한 <strong>종일 패키지</strong> 요금입니다. (시간당 요금 × {FULL_DAY_HOURS}시간)
+          </p>
+          <div className="gmo-price-highlight">
+            <span className="gmo-price-label">동행 패키지</span>
+            <strong className="gmo-price-value">
+              {accompanyPackageWon > 0 ? formatKrw(accompanyPackageWon) : '요금 미설정'}
+            </strong>
+          </div>
+          <div className="gmo-total gmo-total--single">
+            <span>결제 금액</span>
+            <strong>{accompanyPackageWon > 0 ? formatKrw(accompanyPackageWon) : '—'}</strong>
+          </div>
+
+          <button
+            type="button"
+            className="gmo-pay"
+            disabled={paying || requestId == null || !courseReadyForPayment || accompanyPackageWon <= 0}
+            onClick={() => void onPay()}
+          >
+            {paying ? '처리 중…' : !courseReadyForPayment ? '가이드 코스 작성 대기중' : accompanyPackageWon <= 0 ? '요금 설정 대기' : '결제하고 코스 열기'}
+          </button>
+          {!courseReadyForPayment && (
+            <p className="gmo-course-gate">가이드가 코스를 작성하면 결제 버튼이 활성화됩니다.</p>
+          )}
+          {courseReadyForPayment && accompanyPackageWon <= 0 && (
+            <p className="gmo-course-gate">가이드가 가이드 비용(종일 패키지)을 저장해야 결제할 수 있어요.</p>
+          )}
+          {payErr && <p className="gmo-err">{payErr}</p>}
+        </section>
+
         <section className="gmo-preview" aria-labelledby="gmo-preview-title">
           <h2 id="gmo-preview-title">추천 코스 미리보기</h2>
           <div className="gmo-map">
             <div ref={previewMapRef} className="gmo-map-canvas" />
             <div className="gmo-map-overlay">
               <div className="gmo-lock" aria-hidden>
-                🔒
+                <span className="gmo-lock-glyph" />
               </div>
               <p className="gmo-map-title">매칭 후 상세 코스가 공개됩니다</p>
               <p className="gmo-map-sub">결제 및 매칭을 완료하고 나만의 비밀 지도를 확인하세요.</p>
             </div>
           </div>
         </section>
-
-        <aside
-          ref={matchingOptionsRef}
-          className={`gmo-side${payFocus ? ' gmo-side--focus' : ''}`}
-          aria-labelledby="gmo-side-title"
-        >
-          <h2 id="gmo-side-title">가이드 매칭 옵션</h2>
-
-          <label className="gmo-opt">
-            <input
-              type="radio"
-              name="payType"
-              checked={paymentType === 'CHAT'}
-              onChange={() => setPaymentType('CHAT')}
-            />
-            <span className="gmo-opt-inner">
-              <span className="gmo-opt-text">
-                <span className="gmo-opt-title">정보만 받기 (채팅)</span>
-                <span className="gmo-opt-desc">채팅으로 코스·팁을 받아요</span>
-              </span>
-              <span className="gmo-opt-price">{formatKrw(PRICE_CHAT)}</span>
-            </span>
-          </label>
-
-          <label className="gmo-opt">
-            <input
-              type="radio"
-              name="payType"
-              checked={paymentType === 'ACCOMPANY'}
-              onChange={() => setPaymentType('ACCOMPANY')}
-            />
-            <span className="gmo-opt-inner">
-              <span className="gmo-opt-text">
-                <span className="gmo-opt-title">직접 만나기 (동행)</span>
-                <span className="gmo-opt-desc">현지에서 함께 동행해요</span>
-              </span>
-              <span className="gmo-opt-price">{formatKrw(PRICE_ACCOMPANY)}</span>
-            </span>
-          </label>
-
-          <div className="gmo-total">
-            <span>Total</span>
-            <strong>{formatKrw(amount)}</strong>
-          </div>
-
-          <button
-            type="button"
-            className="gmo-pay"
-            disabled={paying || requestId == null || !courseReadyForPayment}
-            onClick={() => void onPay()}
-          >
-            {paying ? '처리 중…' : !courseReadyForPayment ? '가이드 코스 작성 대기중' : '결제하고 코스 열기'}
-          </button>
-          {!courseReadyForPayment && (
-            <p className="gmo-course-gate">가이드가 코스를 작성하면 결제 버튼이 활성화됩니다.</p>
-          )}
-          {payErr && <p className="gmo-err">{payErr}</p>}
-        </aside>
       </div>
 
       {previewSpots.length > 0 && (
@@ -488,9 +576,9 @@ export function GuideMatchOptionsPage() {
               <div className="gmo-locked-overlay">
                 <div className="gmo-pay-hint-card">
                   <p className="gmo-pay-hint-title">아직 공개되지 않은 코스가 있어요</p>
-                  <p className="gmo-pay-hint-sub">결제하기를 누르면 위 매칭 옵션에서 바로 진행할 수 있어요.</p>
-                  <button type="button" className="gmo-pay-hint-btn" onClick={moveToPaymentOptions}>
-                    결제하기로 이동
+                  <p className="gmo-pay-hint-sub">아래 버튼을 누르면 바로 결제 단계로 이동합니다.</p>
+                  <button type="button" className="gmo-pay-hint-btn" onClick={() => void onPay()}>
+                    결제 진행하기
                   </button>
                 </div>
               </div>
@@ -503,8 +591,8 @@ export function GuideMatchOptionsPage() {
           )}
           {!hasLockedPreview && (
             <div className="gmo-pay-hint-inline">
-              <button type="button" className="gmo-pay-hint-btn" onClick={moveToPaymentOptions}>
-                결제하기로 이동
+              <button type="button" className="gmo-pay-hint-btn" onClick={() => void onPay()}>
+                결제 진행하기
               </button>
             </div>
           )}
@@ -518,31 +606,128 @@ export function GuideMatchOptionsPage() {
         </section>
       )}
 
-      <section className="gmo-reviews" aria-labelledby="gmo-rev-title">
-        <h2 id="gmo-rev-title">여행자들의 후기 ({rc})</h2>
-        <p className="gmo-reviews-readonly">후기는 투어가 완료된 뒤 작성할 수 있어요. 지금은 기존 후기만 확인할 수 있습니다.</p>
-        <ul className="gmo-review-list">
-          {reviews.length === 0 ? (
-            <li className="gmo-review-item">
-              <div className="gmo-review-av" />
-              <div>
-                <p className="gmo-review-name">LocalGuest</p>
-                <p className="gmo-review-text">아직 등록된 후기가 없어요. 매칭 후 첫 후기를 남겨 보세요!</p>
+      {profileModalOpen && (
+        <div
+          className="gmo-profile-modal"
+          role="presentation"
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget) setProfileModalOpen(false)
+          }}
+        >
+          <div
+            className="gmo-profile-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="gmo-profile-dialog-title"
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            <div className="gmo-profile-dialog-head">
+              <h2 id="gmo-profile-dialog-title" className="gmo-profile-dialog-title">
+                {profile.nickname ?? '가이드'}
+              </h2>
+              <button type="button" className="gmo-profile-dialog-close" onClick={() => setProfileModalOpen(false)}>
+                닫기
+              </button>
+            </div>
+            <p className="gmo-profile-dialog-meta">
+              {profile.region ?? ''} · 평점 {rating} ({rc} 리뷰)
+            </p>
+            {modalTags.length > 0 && (
+              <div className="gmo-profile-dialog-tags">
+                {modalTags.map((t) => (
+                  <span key={t} className="gmo-profile-dialog-tag">
+                    {t}
+                  </span>
+                ))}
               </div>
-            </li>
-          ) : (
-            reviews.slice(0, 6).map((r) => (
-              <li key={r.id} className="gmo-review-item">
-                <div className="gmo-review-av" />
-                <div>
-                  <p className="gmo-review-name">{r.writeNickname ?? '여행자'}</p>
-                  <p className="gmo-review-text">{r.content}</p>
+            )}
+
+            <section className="gmo-profile-dialog-section" aria-labelledby="gmo-modal-intro">
+              <h3 id="gmo-modal-intro" className="gmo-profile-dialog-h3">
+                소개
+              </h3>
+              {profile.bio && String(profile.bio).trim() ? (
+                <p className="gmo-profile-dialog-prose">{String(profile.bio).trim()}</p>
+              ) : (
+                <p className="gmo-profile-dialog-muted">등록된 한 줄 소개가 없어요.</p>
+              )}
+              {modalStoryBlocks.length > 0 && (
+                <dl className="gmo-profile-dialog-dl">
+                  {modalStoryBlocks.map((row) => (
+                    <div key={row.label}>
+                      <dt>{row.label}</dt>
+                      <dd>{row.text}</dd>
+                    </div>
+                  ))}
+                </dl>
+              )}
+            </section>
+
+            <section className="gmo-profile-dialog-section" aria-labelledby="gmo-modal-feeds">
+              <h3 id="gmo-modal-feeds" className="gmo-profile-dialog-h3">
+                피드
+              </h3>
+              {modalFeeds.length === 0 ? (
+                <p className="gmo-profile-dialog-muted">등록된 피드가 없어요.</p>
+              ) : (
+                <div className="gmo-profile-dialog-feeds">
+                  {modalFeeds.map((f) => {
+                    const href = `/guides/${guideId}/feeds/${f.feedId}`
+                    const bg = feedPrimaryImage(f)
+                    return (
+                      <Link key={f.feedId} to={href} className="gmo-profile-dialog-feed" onClick={() => setProfileModalOpen(false)}>
+                        <div
+                          className="gmo-profile-dialog-feed-img"
+                          style={bg ? { backgroundImage: `url(${bg})` } : undefined}
+                        />
+                        <div className="gmo-profile-dialog-feed-body">
+                          <span className="gmo-profile-dialog-feed-title">{feedCardTitle(f.content)}</span>
+                          <span className="gmo-profile-dialog-feed-snippet">{feedSnippet(f.content)}</span>
+                        </div>
+                      </Link>
+                    )
+                  })}
                 </div>
-              </li>
-            ))
-          )}
-        </ul>
-      </section>
+              )}
+            </section>
+
+            <section className="gmo-profile-dialog-section" aria-labelledby="gmo-modal-reviews">
+              <h3 id="gmo-modal-reviews" className="gmo-profile-dialog-h3">
+                후기
+              </h3>
+              {modalReviewsLoading ? (
+                <p className="gmo-profile-dialog-muted">불러오는 중…</p>
+              ) : modalReviewsErr ? (
+                <p className="gmo-profile-dialog-muted">{modalReviewsErr}</p>
+              ) : modalReviews.length === 0 ? (
+                <p className="gmo-profile-dialog-muted">아직 등록된 후기가 없어요.</p>
+              ) : (
+                <ul className="gmo-profile-dialog-reviews">
+                  {modalReviews.map((r) => (
+                    <li key={r.id} className="gmo-profile-dialog-review">
+                      <div className="gmo-profile-dialog-review-head">
+                        <span className="gmo-profile-dialog-review-name">{r.writeNickname ?? '여행자'}</span>
+                        <span className="gmo-profile-dialog-review-stars">
+                          {'🌟'.repeat(Math.min(5, Math.max(0, Number(r.rating) || 0)))}
+                        </span>
+                      </div>
+                      {r.content && String(r.content).trim() ? (
+                        <p className="gmo-profile-dialog-review-text">{String(r.content).trim()}</p>
+                      ) : null}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+
+            <p className="gmo-profile-dialog-footer">
+              <Link to={`/guides/${guideId}`} onClick={() => setProfileModalOpen(false)}>
+                전체 프로필 페이지로 이동 →
+              </Link>
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

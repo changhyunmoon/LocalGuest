@@ -3,8 +3,9 @@ import { Link } from 'react-router-dom'
 
 import { MypageDevHint } from '../components/MypageDevHint.jsx'
 import { useAuth } from '../context/useAuth.js'
-import { getGuestDisplayName, loadGuestPrivacyForm } from '../lib/guestMypagePrefs.js'
+import { getGuestDisplayName, loadGuestPrivacyForm, loadTravelTags } from '../lib/guestMypagePrefs.js'
 import { getEmailFromToken, getRoleFromToken, parseJwtPayload } from '../lib/jwt.js'
+import { buildTravelDnaPreview, loadTravelDna } from '../lib/travelDna.js'
 
 import './MypageMemberPages.css'
 
@@ -16,21 +17,21 @@ export function MypageProfilePage() {
   const jwtRole = useMemo(() => (token ? getRoleFromToken(token) : null), [token])
 
   const [nickname, setNickname] = useState('')
+  const [travelTags, setTravelTags] = useState([])
 
   useEffect(() => {
     const f = loadGuestPrivacyForm(email)
     setNickname(f.nickname ?? '')
+    setTravelTags(loadTravelTags())
   }, [email])
 
   const displayName = useMemo(() => getGuestDisplayName(email), [email, nickname])
+  const travelDnaPreview = useMemo(() => buildTravelDnaPreview(loadTravelDna()), [])
 
   return (
     <div className="mp-member">
       <h1>👤 프로필</h1>
-      <p className="sub">
-        계정 이메일·역할은 로그인 토큰 기준이며, 표시 이름 등은 <strong>개인정보 설정(/mypage/privacy)</strong>에 저장한 값을
-        함께 씁니다. 서버에 게스트 프로필이 없을 때 닉네임·알림 설정은 <strong>이 브라우저(로컬)에만</strong> 남습니다.
-      </p>
+      <p className="sub">내 계정 정보와 여행 성향 태그를 확인할 수 있어요.</p>
       <MypageDevHint>
         회원 API: <code>POST /members/join</code>, <code>DELETE /members/me?role=...</code> · 표시는 JWT + 로컬 prefs
       </MypageDevHint>
@@ -69,6 +70,36 @@ export function MypageProfilePage() {
             </Link>
           </div>
         </article>
+      </div>
+
+      <h2 style={{ margin: '1.1rem 0 0.75rem', fontSize: '0.95rem', fontWeight: 800 }}>내 여행 성향 태그</h2>
+      <div className="mp-scrap-hero" style={{ marginBottom: '0.75rem' }}>
+        {travelTags.length > 0 ? (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.45rem' }}>
+            {travelTags.map((tag) => (
+              <span
+                key={tag}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  border: '1px solid #efbfd0',
+                  borderRadius: '999px',
+                  padding: '0.22rem 0.58rem',
+                  background: '#fff7fb',
+                  color: '#7a4f68',
+                  fontSize: '0.8rem',
+                  fontWeight: 600,
+                }}
+              >
+                #{tag}
+              </span>
+            ))}
+          </div>
+        ) : (
+          <p style={{ margin: 0, color: '#5f5266', lineHeight: 1.55 }}>
+            {travelDnaPreview || '아직 저장된 여행 성향이 없습니다.'}
+          </p>
+        )}
       </div>
     </div>
   )

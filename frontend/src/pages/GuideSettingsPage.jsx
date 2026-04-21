@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
+import { createPortal } from 'react-dom'
 
 import { PageError, PageLoading } from '../components/PageStates.jsx'
 import { apiRequest } from '../api/client.js'
@@ -20,14 +21,32 @@ function useToast() {
 
 function Toast({ toasts }) {
   if (toasts.length === 0) return null
-  return (
-      <div style={{ position: 'fixed', bottom: '1.5rem', right: '1.5rem', zIndex: 9999, display: 'flex', flexDirection: 'column', gap: '0.5rem', pointerEvents: 'none' }}>
+  if (typeof document === 'undefined') return null
+  return createPortal(
+      <div style={{ position: 'fixed', top: '1.1rem', left: '50%', transform: 'translateX(-50%)', zIndex: 9999, display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'center', pointerEvents: 'none' }}>
         {toasts.map((t) => (
-            <div key={t.id} style={{ padding: '0.7rem 1.2rem', borderRadius: 10, background: t.type === 'success' ? '#15803d' : '#b91c1c', color: '#fff', fontSize: '0.88rem', fontWeight: 600, boxShadow: '0 4px 16px rgba(0,0,0,0.18)', minWidth: 180, maxWidth: 320 }}>
+            <div
+              key={t.id}
+              style={{
+                padding: '0.74rem 0.98rem',
+                borderRadius: 12,
+                border: t.type === 'success' ? '1px solid #e7a8c2' : '1px solid #f7b4c1',
+                background: t.type === 'success' ? 'linear-gradient(180deg, #f7d9e8, #efbfd0)' : 'linear-gradient(180deg, #ffe8ee, #ffd8e1)',
+                color: t.type === 'success' ? '#5a2f45' : '#9f274c',
+                fontSize: '0.86rem',
+                fontWeight: 700,
+                boxShadow: '0 14px 28px rgba(15, 23, 42, 0.16)',
+                textAlign: 'center',
+                letterSpacing: '-0.01em',
+                minWidth: 240,
+                maxWidth: 420,
+              }}
+            >
               {t.message}
             </div>
         ))}
-      </div>
+      </div>,
+      document.body,
   )
 }
 
@@ -40,33 +59,43 @@ async function readJsonError(res, text) {
   }
 }
 
+const HOURS = 8
+const LS_PUSH = 'guide_pref_push_notif'
+const LS_EMAIL = 'guide_pref_email_notif'
+
+function loadBool(key, fallback) {
+  const v = localStorage.getItem(key)
+  if (v === '1') return true
+  if (v === '0') return false
+  return fallback
+}
+
 export function GuideSettingsPage() {
   const { guideId, loading: idLoading, error: idError } = useResolvedGuideId()
   const navigate = useNavigate()
   const { toasts, addToast } = useToast()
   const [profile, setProfile] = useState(null)
-  const [summary, setSummary] = useState(null)
   const [loadError, setLoadError] = useState('')
   const [busy, setBusy] = useState(false)
   const [withdrawing, setWithdrawing] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [pushOn, setPushOn] = useState(() => loadBool(LS_PUSH, true))
+  const [emailOn, setEmailOn] = useState(() => loadBool(LS_EMAIL, false))
+  const [packageWon, setPackageWon] = useState('')
+  const [deactivateConfirmOpen, setDeactivateConfirmOpen] = useState(false)
 
   const load = useCallback(async (id) => {
     setLoadError('')
     try {
-      const [pr, sr] = await Promise.all([
-        apiRequest(`/guides/${id}`, { method: 'GET', skipAuth: true }),
-        apiRequest(`/guides/${id}/reviews/summary`, { method: 'GET', skipAuth: true }),
-      ])
+      const pr = await apiRequest(`/guides/${id}`, { method: 'GET', skipAuth: true })
       const pt = await pr.text()
-      const st = await sr.text()
       if (!pr.ok) {
         throw new Error(await readJsonError(pr, pt))
       }
-      if (!sr.ok) {
-        throw new Error(await readJsonError(sr, st))
-      }
       setProfile(pt ? JSON.parse(pt) : null)
-      setSummary(st ? JSON.parse(st) : null)
+      const loadedProfile = pt ? JSON.parse(pt) : null
+      const hourly = loadedProfile?.pricePerHour != null ? Number(loadedProfile.pricePerHour) : 0
+      setPackageWon(hourly > 0 ? String(Math.round(hourly * HOURS)) : '')
     } catch (e) {
       setLoadError(e instanceof Error ? e.message : '불러오기 실패')
     }
@@ -87,8 +116,9 @@ export function GuideSettingsPage() {
         addToast(await readJsonError(res, text), 'error')
         return
       }
-      setProfile(text ? JSON.parse(text) : profile)
-      addToast('전환되었습니다.')
+      const next = text ? JSON.parse(text) : profile
+      setProfile(next)
+      addToast(next?.isActive ? '활성화되었습니다.' : '비활성화되어 게스트에게 보이지 않습니다.')
     } catch {
       addToast('요청 실패', 'error')
     } finally {
@@ -111,6 +141,51 @@ export function GuideSettingsPage() {
       addToast('탈퇴 요청 실패', 'error')
     } finally {
       setWithdrawing(false)
+    }
+  }
+
+  const savePrefs = () => {
+    localStorage.setItem(LS_PUSH, pushOn ? '1' : '0')
+    localStorage.setItem(LS_EMAIL, emailOn ? '1' : '0')
+  }
+
+  const handleSaveFees = async () => {
+    if (!guideId || !profile) return
+    setSaving(true)
+    savePrefs()
+    try {
+      const pkg = Number(packageWon.replace(/[^\d]/g, ''))
+      if (!Number.isFinite(pkg) || pkg <= 0) {
+        addToast('종일 패키지 금액을 올바르게 입력해 주세요.', 'error')
+        return
+      }
+      const hourly = Math.max(1, Math.round(pkg / HOURS))
+      const body = {
+        nickname: profile.nickname,
+        profileImage: profile.profileImage ?? undefined,
+        bio: profile.bio ?? undefined,
+        region: profile.region,
+        language: profile.language,
+        pricePerHour: hourly,
+        isActive: profile?.isActive ?? true,
+        residenceYears: profile.residenceYears ?? undefined,
+        localStory: profile.localStory ?? undefined,
+        keywords: profile.keywords ?? undefined,
+        defaultCourse: profile.defaultCourse ?? undefined,
+        guideStyle: profile.guideStyle ?? undefined,
+      }
+      const res = await apiRequest(`/guides/${guideId}`, { method: 'PUT', json: body })
+      const text = await res.text()
+      if (!res.ok) {
+        addToast(await readJsonError(res, text), 'error')
+        return
+      }
+      setProfile(text ? JSON.parse(text) : profile)
+      addToast('설정이 반영됐어요.')
+    } catch {
+      addToast('네트워크 오류가 발생했습니다.', 'error')
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -141,25 +216,52 @@ export function GuideSettingsPage() {
   return (
       <div className="g-panel">
         <h1>🔧 가이드 설정</h1>
-        <p className="g-hint">
-          노출·요금은 <Link to="/guide/mypage/fees">가이드 비용</Link>, 프로필 필드는{' '}
-          <Link to="/guide/mypage/profile">프로필 등록</Link>에서 수정합니다. 여기서는 서버에 있는 토글·승인·리뷰 요약만
-          다룹니다.
-        </p>
+        <p className="g-hint">가이드 운영에 필요한 노출/비용/알림/리뷰/계정 설정을 한 곳에서 관리합니다.</p>
         <div className="gm-stack" style={{ marginTop: '1rem', maxWidth: '32rem' }}>
+
+          <section className="gm-card">
+            <h2>가이드 비용 및 알림</h2>
+            <p className="gm-hint">종일 패키지 금액(8시간 기준)과 로컬 알림 옵션을 함께 저장합니다.</p>
+            <div className="g-row">
+              <div>
+                <strong>새로운 예약 요청 알림 (Push)</strong>
+              </div>
+              <label className="g-toggle">
+                <input type="checkbox" checked={pushOn} onChange={(e) => setPushOn(e.target.checked)} />
+                <span className="g-toggle-ui" />
+              </label>
+            </div>
+            <div className="g-row">
+              <div>
+                <strong>메시지 수신 알림 (Email)</strong>
+              </div>
+              <label className="g-toggle">
+                <input type="checkbox" checked={emailOn} onChange={(e) => setEmailOn(e.target.checked)} />
+                <span className="g-toggle-ui" />
+              </label>
+            </div>
+            <div className="g-price-row" style={{ marginTop: '0.85rem' }}>
+              <label htmlFor="pkg-won">종일 패키지</label>
+              <input
+                id="pkg-won"
+                inputMode="numeric"
+                value={packageWon}
+                onChange={(e) => setPackageWon(e.target.value.replace(/[^\d]/g, ''))}
+                placeholder="140000"
+              />
+              <span style={{ fontWeight: 600, color: '#374151' }}>원</span>
+            </div>
+            <div className="g-save-row" style={{ marginTop: '0.9rem' }}>
+              <button type="button" className="g-save" onClick={() => void handleSaveFees()} disabled={saving}>
+                {saving ? '저장 중…' : '비용/알림 저장'}
+              </button>
+            </div>
+          </section>
 
           {/* 활성화 섹션 */}
           <section className="gm-card">
-            <h2>활성화</h2>
-            <p className="gm-hint">
-              <code>PATCH /api/guides/&#123;guideId&#125;/active</code> — 서버에서 활성 여부를 토글합니다.
-            </p>
-            <p style={{ margin: '0.5rem 0', fontSize: '0.9rem' }}>
-              현재 상태:{' '}
-              <strong style={{ color: profile?.isActive ? '#15803d' : '#b91c1c' }}>
-                {profile?.isActive ? '활성' : '비활성'}
-              </strong>
-            </p>
+            <h2>게스트 노출 설정</h2>
+            <p className="gm-hint">비활성화 시 게스트에게 뜨지 않아요.</p>
             <div style={{ display: 'flex', gap: '0.6rem', marginTop: '0.5rem' }}>
               {/* 활성화 버튼 */}
               <button
@@ -184,7 +286,9 @@ export function GuideSettingsPage() {
               {/* 비활성화 버튼 */}
               <button
                   type="button"
-                  onClick={() => { if (profile?.isActive) void toggleActive() }}
+                  onClick={() => {
+                    if (profile?.isActive) setDeactivateConfirmOpen(true)
+                  }}
                   disabled={busy || !profile?.isActive}
                   style={{
                     padding: '0.5rem 1.2rem',
@@ -210,19 +314,12 @@ export function GuideSettingsPage() {
             <p style={{ margin: 0, fontSize: '0.9rem' }}>
               승인 여부: <strong>{profile?.isApproved ? '승인됨' : '미승인'}</strong>
             </p>
-            <p className="gm-hint" style={{ marginTop: '0.5rem' }}>
-              승인 API는 관리자용 <code>PATCH /guides/&#123;id&#125;/approve</code> 입니다. 일반 가이드 계정에서는 호출하지
-              않습니다.
-            </p>
           </section>
 
           {/* 계정 탈퇴 섹션 */}
           <section className="gm-card">
             <h2>계정 탈퇴</h2>
-            <p className="gm-hint">
-              <code>DELETE /members/me?role=GUIDE</code> — 가이드 자격을 탈퇴합니다. 탈퇴 후에는 가이드 기능을 사용할 수
-              없습니다.
-            </p>
+            <p className="gm-hint">가이드 자격을 탈퇴합니다. 탈퇴 후에는 가이드 기능을 사용할 수 없습니다.</p>
             <button
                 type="button"
                 className="gm-btn gm-btn--danger"
@@ -233,19 +330,32 @@ export function GuideSettingsPage() {
             </button>
           </section>
 
-          {/* 리뷰 요약 섹션 */}
-          <section className="gm-card">
-            <h2>리뷰 요약</h2>
-            <p className="gm-hint">
-              <code>GET /api/guides/&#123;guideId&#125;/reviews/summary</code>
-            </p>
-            <p style={{ margin: '0.5rem 0 0', fontSize: '0.95rem' }}>
-              평균 평점: <strong>{summary?.averageRating != null ? Number(summary.averageRating).toFixed(2) : '—'}</strong>{' '}
-              / 리뷰 수: <strong>{summary?.reviewCount ?? '—'}</strong>
-            </p>
-          </section>
-
         </div>
+        {deactivateConfirmOpen && (
+          <div className="gm-confirm-overlay" role="dialog" aria-modal="true" aria-label="비활성화 확인" onClick={() => !busy && setDeactivateConfirmOpen(false)}>
+            <div className="gm-confirm" onClick={(e) => e.stopPropagation()}>
+              <p className="gm-confirm-kicker">노출 숨기기</p>
+              <h3>정말 숨기겠어요?</h3>
+              <p>비활성화 시 게스트에게 보이지 않아요.</p>
+              <div className="gm-confirm-actions">
+                <button type="button" className="gm-confirm-btn gm-confirm-btn--line" onClick={() => setDeactivateConfirmOpen(false)} disabled={busy}>
+                  취소
+                </button>
+                <button
+                  type="button"
+                  className="gm-confirm-btn gm-confirm-btn--danger"
+                  disabled={busy}
+                  onClick={() => {
+                    setDeactivateConfirmOpen(false)
+                    void toggleActive()
+                  }}
+                >
+                  확인
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
         <Toast toasts={toasts} />
       </div>
   )
