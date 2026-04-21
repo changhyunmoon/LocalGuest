@@ -65,7 +65,7 @@ class PromptRecommendationServiceTest {
         PromptRecommendationService service = createService();
 
         GuideRecommendResponse response = service.recommendByPrompt(
-                "제주 2박3일 4명 여행인데 오션뷰랑 맛집 위주로 추천해줘. 술집은 빼고!",
+                "제주 2박3일 4명 여행인데 오션뷰랑 맛집 위주로 추천해줘. 예산은 10~20만원 정도. 술집은 빼고!",
                 3,
                 List.of(
                         GuideRecommendRequest.GuideCandidateDto.builder()
@@ -94,6 +94,7 @@ class PromptRecommendationServiceTest {
         assertThat(response.getMatchRequestDraft().getConcept()).contains("희망 활동");
         assertThat(response.getMatchRequestDraft().getConcept()).contains("맛집");
         assertThat(response.getMatchRequestDraft().getConcept()).contains("바다");
+        assertThat(response.getMatchRequestDraft().getDesiredBudget()).isEqualTo(150_000);
         assertThat(response.getPolicyVersion()).isEqualTo(AiRecommendationTuning.POLICY_VERSION);
         assertThat(response.getNotice()).contains("한 분뿐");
         assertThat(response.getNoticeCodes()).contains(
