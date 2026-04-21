@@ -167,6 +167,14 @@
   border-radius: 20px;
 }
 
+.gcp-map-loc-hint {
+  margin: 8px 0 0;
+  padding: 0 2px;
+  font-size: 11px;
+  line-height: 1.45;
+  color: #9ca3af;
+}
+
 /* 지도 커스텀 핀 */
 .gcp-pin {
   display: flex;
