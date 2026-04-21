@@ -96,6 +96,45 @@
   border-left-color: #9ca3af;
 }
 
+.g-dash-link-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.45rem;
+  width: 100%;
+}
+
+.g-dash-link-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.g-dash-nav-badge {
+  flex-shrink: 0;
+  min-width: 1.1rem;
+  height: 1.1rem;
+  padding: 0 0.28rem;
+  border-radius: 999px;
+  background: #dc2626;
+  color: #fff;
+  font-size: 0.62rem;
+  font-weight: 800;
+  line-height: 1.1rem;
+  text-align: center;
+  box-shadow: 0 0 0 2px #f6f7f8;
+  animation: g-dash-badge-pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes g-dash-badge-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 2px #f6f7f8, 0 0 0 0 rgba(220, 38, 38, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 2px #f6f7f8, 0 0 0 5px rgba(220, 38, 38, 0);
+  }
+}
+
 .g-dash-sep {
   margin: 0.85rem 0 0.45rem;
   border-top: 1px solid #e6e9ee;
