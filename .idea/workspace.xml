@@ -6,17 +6,21 @@
   <component name="ChangeListManager">
     <list default="true" id="84d1b3de-8103-452e-83cf-38ecd34993e7" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/module-domain/src/main/java/com/team6/domain/matching/dto/request/MatchRequestCreateRequest.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/module-domain/src/main/java/com/team6/domain/matching/dto/request/MatchRequestCreateRequest.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/api-server/src/main/resources/application.yml" beforeDir="false" afterPath="$PROJECT_DIR$/backend/api-server/src/main/resources/application.yml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/module-domain/src/main/java/com/team6/domain/matching/service/MatchRequestService.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/module-domain/src/main/java/com/team6/domain/matching/service/MatchRequestService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/pages/GuideCoursePanel.css" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/GuideCoursePanel.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/pages/GuideCoursePanel.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/GuideCoursePanel.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/api/client.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/api/client.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/layouts/AppLayout.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/layouts/AppLayout.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/layouts/DashboardLayout.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/layouts/DashboardLayout.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/layouts/GuideDashboardLayout.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/layouts/GuideDashboardLayout.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/layouts/MypageShell.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/layouts/MypageShell.jsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend/src/pages/GuideDetailPage.css" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/GuideDetailPage.css" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend/src/pages/GuideDetailPage.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/GuideDetailPage.jsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend/src/pages/GuideFeedSchedulePage.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/GuideFeedSchedulePage.jsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/pages/GuideInboxPage.css" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/GuideInboxPage.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/pages/GuideInboxPage.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/GuideInboxPage.jsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/pages/GuideScheduleSection.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/GuideScheduleSection.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/pages/GuideMypagePages.css" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/GuideMypagePages.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/pages/GuideProfileEditPage.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/GuideProfileEditPage.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/pages/GuideSettingsPage.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/GuideSettingsPage.jsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend/src/routes/guideRoutes.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/routes/guideRoutes.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/routes/mypageRoutes.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/routes/mypageRoutes.jsx" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />

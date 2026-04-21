@@ -42,13 +42,13 @@ public class MatchRequestService {
     public MatchRequestCreateResponse createMatchRequest(Long guestId, MatchRequestCreateRequest request) {
         Long guideMemberId = resolveGuideMemberId(request.getGuideId());
         validateCreateRequest(guestId, guideMemberId);
-        Long guideScheduleId = resolveOrCreateScheduleId(request.getGuideId(), request);
+        ScheduleResolution scheduleResolution = resolveOrCreateSchedule(request.getGuideId(), request);
 
         String conceptSummary = resolveConceptSummary(request);
         MatchRequest matchRequest = MatchRequest.create(
                 guestId,
                 request.getGuideId(),
-                guideScheduleId,
+                scheduleResolution.scheduleId(),
                 request.getDestination(),
                 request.getConcept(),
                 conceptSummary,
@@ -59,7 +59,15 @@ public class MatchRequestService {
         );
 
         MatchRequest saved = matchRequestRepository.save(matchRequest);
-        guideScheduleSyncClient.markPending(saved.getGuideId(), saved.getGuideScheduleId(), saved.getId(), guideMemberId);
+        if (scheduleResolution.createdSchedule() != null) {
+            // 같은 트랜잭션에서 만든 슬롯은 HTTP sync 전에 직접 PENDING 반영해야 조회 불가 타이밍 문제가 없다.
+            scheduleResolution.createdSchedule().changeStatus(GuideScheduleStatus.PENDING);
+            scheduleResolution.createdSchedule().linkMatchRequest(saved.getId());
+            log.info("[F03-04] 자동 생성 슬롯 PENDING 반영 — guideId={}, scheduleId={}, requestId={}",
+                    saved.getGuideId(), saved.getGuideScheduleId(), saved.getId());
+        } else {
+            guideScheduleSyncClient.markPending(saved.getGuideId(), saved.getGuideScheduleId(), saved.getId(), guideMemberId);
+        }
         log.info("[F03-04] 매칭 요청 생성 — guestId={}, guideId={}", guestId, request.getGuideId());
         return MatchRequestCreateResponse.from(saved);
     }
@@ -249,9 +257,9 @@ public class MatchRequestService {
      *   2) AVAILABLE 슬롯이 있으면 그 슬롯 사용
      *   3) 슬롯이 없으면 종일 AVAILABLE(00:00~23:59) 슬롯을 생성해 사용
      */
-    private Long resolveOrCreateScheduleId(Long guideId, MatchRequestCreateRequest request) {
+    private ScheduleResolution resolveOrCreateSchedule(Long guideId, MatchRequestCreateRequest request) {
         if (request.getGuideScheduleId() != null) {
-            return request.getGuideScheduleId();
+            return new ScheduleResolution(request.getGuideScheduleId(), null);
         }
 
         LocalDate desiredDate = request.getDesiredDate();
@@ -271,7 +279,7 @@ public class MatchRequestService {
                 .min(Comparator.comparing(GuideSchedule::getStartTime))
                 .orElse(null);
         if (available != null) {
-            return available.getId();
+            return new ScheduleResolution(available.getId(), null);
         }
 
         boolean pendingOrBooked = daySchedules.stream()
@@ -289,8 +297,11 @@ public class MatchRequestService {
                 .endTime(LocalTime.of(23, 59))
                 .status(GuideScheduleStatus.AVAILABLE)
                 .build();
-        return guideScheduleRepository.save(generated).getId();
+        GuideSchedule saved = guideScheduleRepository.save(generated);
+        return new ScheduleResolution(saved.getId(), saved);
     }
+
+    private record ScheduleResolution(Long scheduleId, GuideSchedule createdSchedule) {}
 
     private void syncTourProgress(MatchRequest request, LocalDate today) {
         request.markInProgressIfTourDay(today);

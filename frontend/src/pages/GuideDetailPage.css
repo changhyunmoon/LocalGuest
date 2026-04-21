@@ -359,6 +359,12 @@
   color: #9ca3af;
 }
 
+.gdp-match-day.is-reserved {
+  background: #f3f4f6;
+  border-color: #d1d5db;
+  color: #9ca3af;
+}
+
 .gdp-match-day.is-selected {
   background: #2563eb;
   border-color: #2563eb;
@@ -383,17 +389,6 @@
   top: 0.15rem;
   font-size: 0.72rem;
   color: #9ca3af;
-}
-
-.gdp-match-dot {
-  position: absolute;
-  left: 50%;
-  bottom: 0.2rem;
-  width: 4px;
-  height: 4px;
-  margin-left: -2px;
-  border-radius: 999px;
-  background: #2563eb;
 }
 
 .gdp-match-times {
@@ -423,4 +418,117 @@
   margin: 0.55rem 0 0;
   font-size: 0.78rem;
   color: #4b5563;
+}
+
+.gdp-confirm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  background: rgba(2, 6, 23, 0.55);
+  backdrop-filter: blur(2px);
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+}
+
+.gdp-confirm {
+  width: min(100%, 460px);
+  border-radius: 18px;
+  border: 1px solid #e2e8f0;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+  box-shadow: 0 24px 50px rgba(15, 23, 42, 0.28);
+  padding: 1.1rem 1.1rem 1rem;
+}
+
+.gdp-confirm-kicker {
+  margin: 0 0 0.35rem;
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #1d4ed8;
+  background: #eff6ff;
+  border: 1px solid #dbeafe;
+  border-radius: 999px;
+  padding: 0.14rem 0.5rem;
+}
+
+.gdp-confirm h3 {
+  margin: 0;
+  font-size: 1.08rem;
+  color: #111827;
+  letter-spacing: -0.01em;
+}
+
+.gdp-confirm-sub {
+  margin: 0.42rem 0 0;
+  color: #475569;
+  font-size: 0.86rem;
+}
+
+.gdp-confirm-list {
+  margin: 1rem 0 0;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.gdp-confirm-list > div {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 0.62rem 0.75rem;
+  background: #ffffff;
+}
+
+.gdp-confirm-list dt {
+  margin: 0 0 0.22rem;
+  color: #64748b;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.gdp-confirm-list dd {
+  margin: 0;
+  color: #111827;
+  font-size: 0.92rem;
+  line-height: 1.45;
+  white-space: pre-wrap;
+}
+
+.gdp-confirm-actions {
+  margin-top: 1.05rem;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.gdp-confirm-btn {
+  border-radius: 10px;
+  font-size: 0.84rem;
+  font-weight: 600;
+  padding: 0.5rem 0.9rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.gdp-confirm-btn--line {
+  border: 1px solid #d1d5db;
+  background: #fff;
+  color: #374151;
+}
+
+.gdp-confirm-btn--line:hover:not(:disabled) {
+  border-color: #94a3b8;
+  color: #0f172a;
+}
+
+.gdp-confirm-btn--solid {
+  border: 1px solid #0f172a;
+  background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+  color: #fff;
+}
+
+.gdp-confirm-btn--solid:hover:not(:disabled) {
+  border-color: #020617;
+  background: linear-gradient(180deg, #111827 0%, #020617 100%);
 }
