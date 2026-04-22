@@ -26,8 +26,7 @@ public class GuideScheduleFormResponse {
     private Boolean isPaid;          // 결제 완료 여부 (프론트 잠금 처리 기준)
 
     // Entity → 양식 응답 DTO 변환
-    // courseDetail은 isPaid=true일 때만 반환, 결제 전이면 null (잠금)
-    public static GuideScheduleFormResponse from(GuideSchedule schedule) {
+    public static GuideScheduleFormResponse from(GuideSchedule schedule, boolean exposeCourseDetail) {
         boolean paid = Boolean.TRUE.equals(schedule.getIsPaid());
         return GuideScheduleFormResponse.builder()
                 .scheduleId(schedule.getId())
@@ -37,8 +36,17 @@ public class GuideScheduleFormResponse {
                 .endTime(schedule.getEndTime())
                 .meetingPoint(schedule.getMeetingPoint() != null ? schedule.getMeetingPoint() : "")
                 .guideMessage(schedule.getGuideMessage() != null ? schedule.getGuideMessage() : "")
-                .courseDetail(paid ? schedule.getCourseDetail() : null) // 결제 전 잠금
+                .courseDetail(exposeCourseDetail ? schedule.getCourseDetail() : null)
                 .isPaid(paid)
                 .build();
+    }
+
+    /**
+     * @deprecated 공개 정책 판단은 서비스에서 수행하고, {@link #from(GuideSchedule, boolean)}를 사용한다.
+     */
+    @Deprecated
+    public static GuideScheduleFormResponse from(GuideSchedule schedule) {
+        boolean paid = Boolean.TRUE.equals(schedule.getIsPaid());
+        return from(schedule, paid);
     }
 }

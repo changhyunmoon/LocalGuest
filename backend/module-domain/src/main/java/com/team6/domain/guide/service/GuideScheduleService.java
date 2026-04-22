@@ -12,6 +12,9 @@ import com.team6.domain.guide.exception.GuideErrorCode;
 import com.team6.domain.guide.exception.GuideException;
 import com.team6.domain.guide.repository.GuideProfileRepository;
 import com.team6.domain.guide.repository.GuideScheduleRepository;
+import com.team6.domain.matching.entity.MatchRequest;
+import com.team6.domain.matching.entity.enums.MatchRequestStatus;
+import com.team6.domain.matching.repository.MatchRequestRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -31,6 +34,7 @@ public class GuideScheduleService {
 
     private final GuideScheduleRepository guideScheduleRepository;
     private final GuideProfileRepository guideProfileRepository;
+    private final MatchRequestRepository matchRequestRepository;
 
     // 스케줄 등록 (F06-04)
     @Transactional
@@ -194,9 +198,18 @@ public class GuideScheduleService {
     // 현재 인증된 사용자라면 누구나 호출 가능
     // 개선 시 가이드 본인 또는 매칭된 게스트만 허용하도록 변경 필요
     @Transactional(readOnly = true)
-    public GuideScheduleFormResponse getScheduleForm(Long scheduleId, Long guideId) {
+    public GuideScheduleFormResponse getScheduleForm(Long scheduleId, Long guideId, boolean isGuideCaller) {
         GuideSchedule schedule = getVerifiedSchedule(scheduleId, guideId);
-        return GuideScheduleFormResponse.from(schedule);
+        boolean expose = isGuideCaller || isTourCompleted(schedule.getMatchRequestId());
+        return GuideScheduleFormResponse.from(schedule, expose);
+    }
+
+    private boolean isTourCompleted(Long matchRequestId) {
+        if (matchRequestId == null) return false;
+        return matchRequestRepository.findById(matchRequestId)
+                .map(MatchRequest::getStatus)
+                .filter(st -> st == MatchRequestStatus.COMPLETED)
+                .isPresent();
     }
 
     // 수락 후 여행 계획 양식 저장 — BOOKED 상태 스케줄에만 가능 (F06-04)
