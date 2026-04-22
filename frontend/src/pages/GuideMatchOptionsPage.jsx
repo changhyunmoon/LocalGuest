@@ -223,9 +223,7 @@ export function GuideMatchOptionsPage() {
   const courseReadyForPayment = useMemo(() => {
     return String(activeRequest?.proposedSchedule ?? '').trim().length > 0
   }, [activeRequest])
-  const previewFirstSpot = previewSpots[0] ?? null
-  const previewLockedSpots = previewSpots.slice(1)
-  const hasLockedPreview = previewLockedSpots.length > 0 || !!previewHint
+  const hasPreview = previewSpots.length > 0
 
   const modalTags = useMemo(() => parseProfileTags(profile?.keywords), [profile])
 
@@ -538,57 +536,29 @@ export function GuideMatchOptionsPage() {
         </section>
       </div>
 
-      {previewSpots.length > 0 && (
+      {hasPreview && (
         <section className="gmo-half-preview" aria-label="코스 텍스트 미리보기">
-          <p className="gmo-half-title">가이드가 작성한 코스 일부</p>
+          <p className="gmo-half-title">가이드가 작성한 코스 (시간·설명)</p>
           <ul className="gmo-spot-preview-list">
-            <li className="gmo-spot-preview-item">
-              <span className="gmo-spot-preview-num">1</span>
-              <span className="gmo-spot-preview-name">로컬 스팟</span>
-              {previewFirstSpot?.time && <span className="gmo-spot-preview-time">{previewFirstSpot.time}</span>}
-              <span className="gmo-spot-preview-desc">{previewFirstSpot?.desc ?? ''}</span>
-            </li>
+            {previewSpots.map((spot, idx) => (
+              <li key={`${idx + 1}-${spot.time}-${spot.desc.slice(0, 12)}`} className="gmo-spot-preview-item">
+                <span className="gmo-spot-preview-num">{idx + 1}</span>
+                <span className="gmo-spot-preview-name">로컬 스팟</span>
+                {spot.time && <span className="gmo-spot-preview-time">{spot.time}</span>}
+                <span className="gmo-spot-preview-desc">{spot.desc}</span>
+              </li>
+            ))}
           </ul>
 
-          {hasLockedPreview && (
-            <div className="gmo-locked-zone">
-              <div className="gmo-locked-blur" aria-hidden>
-                <ul className="gmo-spot-preview-list">
-                  {previewLockedSpots.map((spot, idx) => (
-                    <li key={`${idx + 2}-${spot.time}-${spot.desc.slice(0, 12)}`} className="gmo-spot-preview-item">
-                      <span className="gmo-spot-preview-num">{idx + 2}</span>
-                      <span className="gmo-spot-preview-name">로컬 스팟</span>
-                      {spot.time && <span className="gmo-spot-preview-time">{spot.time}</span>}
-                      <span className="gmo-spot-preview-desc">{spot.desc}</span>
-                    </li>
-                  ))}
-                </ul>
-                {previewHint && <p className="gmo-half-visible">가이드 메모: {previewHint}</p>}
-                <p className="gmo-half-foot">나머지 상세 코스는 결제 후 공개됩니다.</p>
-              </div>
-              <div className="gmo-locked-overlay">
-                <div className="gmo-pay-hint-card">
-                  <p className="gmo-pay-hint-title">아직 공개되지 않은 코스가 있어요</p>
-                  <p className="gmo-pay-hint-sub">아래 버튼을 누르면 바로 결제 단계로 이동합니다.</p>
-                  <button type="button" className="gmo-pay-hint-btn" onClick={() => void onPay()}>
-                    결제 진행하기
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-          {!hasLockedPreview && (
-            <div className="gmo-pay-hint-inline">
-              <p className="gmo-half-foot">나머지 상세 코스는 결제 후 공개됩니다.</p>
-            </div>
-          )}
-          {!hasLockedPreview && (
-            <div className="gmo-pay-hint-inline">
-              <button type="button" className="gmo-pay-hint-btn" onClick={() => void onPay()}>
-                결제 진행하기
-              </button>
-            </div>
-          )}
+          {previewHint && <p className="gmo-half-visible">가이드 메모: {previewHint}</p>}
+          <div className="gmo-pay-hint-inline">
+            <p className="gmo-half-foot">장소명은 투어 완료 후 공개됩니다.</p>
+          </div>
+          <div className="gmo-pay-hint-inline">
+            <button type="button" className="gmo-pay-hint-btn" onClick={() => void onPay()}>
+              결제 진행하기
+            </button>
+          </div>
         </section>
       )}
       {previewSpots.length === 0 && (

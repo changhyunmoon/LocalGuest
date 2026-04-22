@@ -388,48 +388,6 @@
   white-space: nowrap;
 }
 
-.gmo-locked-zone {
-  margin-top: 0.75rem;
-  position: relative;
-  border-radius: 14px;
-  overflow: hidden;
-  border: 1px solid #dbe3f0;
-  background: linear-gradient(180deg, #eef2ff 0%, #e9eefc 100%);
-  min-height: 180px;
-}
-
-.gmo-locked-blur {
-  padding: 0.75rem 0.8rem;
-  filter: blur(5px);
-  transform: scale(1.02);
-  opacity: 0.92;
-  user-select: none;
-  pointer-events: none;
-}
-
-.gmo-locked-overlay {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.8rem;
-  pointer-events: none;
-}
-
-.gmo-pay-hint-card {
-  margin-top: 0;
-  padding: 0.75rem 0.8rem;
-  border-radius: 12px;
-  border: 1px solid #d1d5db;
-  background: #fff;
-  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.16);
-  pointer-events: auto;
-  text-align: center;
-  max-width: 260px;
-  width: 100%;
-}
-
 .gmo-pay-hint-title {
   margin: 0;
   font-size: 0.82rem;
