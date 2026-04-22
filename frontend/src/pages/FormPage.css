@@ -142,28 +142,9 @@
   background: #f2cddd;
 }
 
-/* 로그인 / 구글 로그인 동일 폭·블록 버튼 */
-.form-auth-primary-btn {
-  width: 100%;
-  box-sizing: border-box;
-  margin-top: 0;
-  min-height: 2.65rem;
-}
-
-/* 비밀번호 입력란과 로그인 버튼 사이 여유 */
-button[type='submit'].form-login-submit.form-auth-primary-btn {
-  margin-top: 0.65rem;
-}
-
 .form-social--inside {
   margin-top: 0.1rem;
   padding-top: 0.25rem;
-}
-
-.form-social--after-login {
-  margin-top: 0.35rem;
-  padding-top: 0.35rem;
-  border-top: none;
 }
 
 .form-google-login {
@@ -214,49 +195,4 @@ button[type='submit'].form-login-submit.form-auth-primary-btn {
 .form-footer a {
   color: #0d47a1;
   font-weight: 600;
-}
-
-.form-account-links {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  gap: 0.2rem 0.35rem;
-  margin-top: 0.15rem;
-  padding-top: 0.15rem;
-  font-size: 0.82rem;
-  color: #6b7280;
-}
-
-.form-account-links__sep {
-  color: #d1d5db;
-  user-select: none;
-}
-
-.form-text-link {
-  margin: 0;
-  padding: 0;
-  border: none;
-  background: none;
-  font: inherit;
-  font-size: inherit;
-  color: #6b7280;
-  text-decoration: underline;
-  text-underline-offset: 2px;
-  cursor: pointer;
-}
-
-.form-text-link:hover {
-  color: #374151;
-}
-
-a.form-text-link {
-  color: #6b7280;
-  text-decoration: underline;
-  text-underline-offset: 2px;
-  font-weight: inherit;
-}
-
-a.form-text-link:hover {
-  color: #374151;
 }

@@ -639,7 +639,11 @@ export function SignupPage() {
                 {emailConfirmBusy ? '확인 중…' : '확인'}
               </button>
             </div>
-            {emailVerified && <p className="signup-hint signup-hint--sent">인증이 완료되었습니다.</p>}
+            {emailVerified && (
+              <p className="signup-hint" style={{ color: '#047857' }}>
+                인증이 완료되었습니다.
+              </p>
+            )}
           </div>
 
           {error && <p className="signup-error">{error}</p>}
