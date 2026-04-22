@@ -303,7 +303,7 @@ export function GuideMatchedCoursePage() {
             <div ref={mapRef} className="gmc-map" />
             {mapErr && <p className="gmc-err gmc-map-err">{mapErr}</p>}
             {/* 결제 전 지도 잠금 오버레이 */}
-            {!isPaid && (
+            {!mapUnlocked && (
               <div className="gmc-map-lock">
                 <span className="gmc-lock-icon"><span className="gmc-lock-glyph" /></span>
                 <p className="gmc-lock-title">결제 완료 후 코스 공개</p>
@@ -315,7 +315,7 @@ export function GuideMatchedCoursePage() {
           {/* 타임라인 */}
           <aside className="gmc-timeline">
             {/* 결제 완료: 실제 courseDetail 스팟 표시 */}
-            {isPaid && spots.length > 0
+            {mapUnlocked && spots.length > 0
               ? spots.slice(0, 4).map((spot, idx) => (
                   <article key={idx} className="gmc-spot">
                     <p className="gmc-spot-label">SPOT {idx + 1}</p>
@@ -323,7 +323,7 @@ export function GuideMatchedCoursePage() {
                     {spot.desc && <p className="gmc-spot-desc">{spot.desc}</p>}
                   </article>
                 ))
-              : !isPaid && (
+              : !mapUnlocked && (
                   // 결제 전: 잠금 안내
                   <article className="gmc-spot gmc-spot--locked">
                     <p className="gmc-spot-label">SPOT 1 ~ N</p>
@@ -345,7 +345,7 @@ export function GuideMatchedCoursePage() {
                 )
             }
             {/* 가이드 미작성 케이스 (isPaid=true인데 spots=0) */}
-            {isPaid && spots.length === 0 && (
+            {mapUnlocked && spots.length === 0 && (
               <article className="gmc-spot">
                 <p className="gmc-spot-label">코스 준비 중</p>
                 <h3 className="gmc-spot-name">가이드가 코스를 작성 중이에요</h3>
