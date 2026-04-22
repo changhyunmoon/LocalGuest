@@ -2483,6 +2483,9 @@
 .gss3-bact--warn    { background: #d97706; color: #fff; border-color: #d97706; }
 .gss3-bact--warn:hover    { background: #b45309; }
 
+.gss3-bact--danger { background: #fff; color: #b91c1c; border-color: #fecaca; }
+.gss3-bact--danger:hover:not(:disabled) { background: #fef2f2; }
+
 /* 설정 없음 — 중립 (기본) */
 .gss3-day--neutral {
   background: #fafafa;

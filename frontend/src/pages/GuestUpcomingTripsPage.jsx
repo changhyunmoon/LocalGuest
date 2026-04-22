@@ -147,6 +147,8 @@ export function GuestUpcomingTripsPage() {
   const [names, setNames] = useState({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [toast, setToast] = useState('')
+  const [busyId, setBusyId] = useState(null)
   const [paymentIdByRequest, setPaymentIdByRequest] = useState(() => ({}))
 
   const reload = useCallback(async () => {
@@ -211,6 +213,35 @@ export function GuestUpcomingTripsPage() {
     [navigate, paymentIdByRequest],
   )
 
+  const cancelTrip = useCallback(async (row) => {
+    if (!row?.requestId) return
+    const rid = Number(row.requestId)
+    if (!Number.isFinite(rid) || rid <= 0) return
+    const st = String(row.status ?? '').toUpperCase()
+    if (!(st === 'ACCEPTED' || st === 'PAID')) return
+
+    const reason = window.prompt('예약 취소 사유를 입력해 주세요.', '개인 사정으로 일정이 변경되었습니다.')
+    if (!reason || !String(reason).trim()) return
+    if (!window.confirm(`요청 #${rid} 예약을 취소할까요?`)) return
+
+    setBusyId(rid)
+    setToast('')
+    try {
+      const res = await apiRequest(`/matching/requests/${rid}/guest/cancel`, {
+        method: 'PATCH',
+        json: { cancelReason: String(reason).trim() },
+      })
+      const text = await res.text()
+      if (!res.ok) throw new Error(text || '취소 실패')
+      setToast('예약을 취소했습니다.')
+      await reload()
+    } catch (e) {
+      setToast(e instanceof Error ? e.message : '취소 실패')
+    } finally {
+      setBusyId(null)
+    }
+  }, [reload])
+
   const sections = useMemo(() => groupRows(rows), [rows])
   const totalCount = rows.length
 
@@ -224,6 +255,7 @@ export function GuestUpcomingTripsPage() {
 
       {loading && <PageLoading />}
       {!loading && error && <PageError message={error} onRetry={() => void reload()} />}
+      {!loading && !error && toast && <p className="gut-toast" role="status">{toast}</p>}
 
       {!loading && !error && rows.length === 0 && (
         <PageEmpty title="예정된 여행이 없습니다">진행 중이거나 예정된 매칭이 생기면 여기에 표시됩니다.</PageEmpty>
@@ -256,9 +288,21 @@ export function GuestUpcomingTripsPage() {
                           <p className="gut-line gut-line--sub">예산 {budget}</p>
                           <div className="gut-card-footer">
                             <span className="gut-trail" aria-hidden="true">✈︎ 여행 준비 중</span>
-                            <button type="button" className="gut-open" onClick={() => openMatchScreen(row)}>
-                              일정 확인하기
-                            </button>
+                            <div className="gut-card-actions">
+                              {(row.status === 'ACCEPTED' || row.status === 'PAID') && (
+                                <button
+                                  type="button"
+                                  className="gut-cancel"
+                                  disabled={busyId != null}
+                                  onClick={() => void cancelTrip(row)}
+                                >
+                                  {busyId === row.requestId ? '취소 중…' : '예약 취소'}
+                                </button>
+                              )}
+                              <button type="button" className="gut-open" onClick={() => openMatchScreen(row)}>
+                                일정 확인하기
+                              </button>
+                            </div>
                           </div>
                         </div>
                         <div className="gut-card-preview-wrap">
