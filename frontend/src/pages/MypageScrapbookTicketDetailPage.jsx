@@ -72,7 +72,6 @@ export function MypageScrapbookTicketDetailPage() {
   const { requestId } = useParams()
   const navigate = useNavigate()
   const mapRef = useRef(null)
-  const reviewFileInputRef = useRef(null)
 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -87,7 +86,6 @@ export function MypageScrapbookTicketDetailPage() {
   const [content, setContent] = useState('')
   const [reviewBusy, setReviewBusy] = useState(false)
   const [reviewError, setReviewError] = useState('')
-  const [reviewPhotos, setReviewPhotos] = useState([])
 
   const load = useCallback(async () => {
     const rid = Number(requestId)
@@ -293,7 +291,6 @@ export function MypageScrapbookTicketDetailPage() {
       }
       setReviewModal(false)
       setContent('')
-      setReviewPhotos([])
       const reviews = await fetchMyReviewMap().catch(() => ({}))
       setReviewByMatch(reviews)
     } catch {
@@ -384,7 +381,6 @@ export function MypageScrapbookTicketDetailPage() {
               setReviewError('')
               setRating(5)
               setContent('')
-              setReviewPhotos([])
               setReviewModal(true)
             }}
           >
@@ -429,23 +425,6 @@ export function MypageScrapbookTicketDetailPage() {
               placeholder="좋았던 점, 아쉬운 점, 다시 가고 싶은 이유를 자유롭게 남겨주세요."
               disabled={reviewBusy}
             />
-
-            <div className="mp-review-upload-row">
-              <input
-                ref={reviewFileInputRef}
-                type="file"
-                accept="image/*"
-                multiple
-                style={{ display: 'none' }}
-                onChange={(e) => setReviewPhotos(Array.from(e.target.files ?? []))}
-              />
-              <button type="button" className="mp-btn mp-btn--line" disabled={reviewBusy} onClick={() => reviewFileInputRef.current?.click()}>
-                📷 사진 첨부
-              </button>
-              <span className="mp-review-upload-note">
-                {reviewPhotos.length > 0 ? `${reviewPhotos.length}장의 사진이 첨부되었습니다.` : '사진을 첨부할 수 있습니다.'}
-              </span>
-            </div>
 
             {reviewError && <p className="err" style={{ marginTop: '0.55rem', marginBottom: 0 }}>{reviewError}</p>}
             <div className="mp-modal-actions">
