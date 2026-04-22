@@ -242,27 +242,38 @@ export function GuestUpcomingTripsPage() {
                 {section.rows.map((row) => {
                   const d = daysUntil(row.desiredDate)
                   const nick = names[row.guideId] ?? `가이드 #${row.guideId}`
-                  const dest = row.destination ?? '로컬 투어'
                   const budget = formatBudgetRangeKrw(row.budgetMinWon, row.budgetMaxWon, row.desiredBudget)
                   const tripTitle = buildTripCardTitle(row, nick)
                   return (
                     <article key={row.requestId} className="gut-card gut-card--timeline">
-                      <div className="gut-card-main">
-                        <div className="gut-card-kick">
-                          <span className={`gut-dday${d === 0 ? ' is-today' : d === 1 ? ' is-soon' : ''}`}>
-                            {row.status === 'ACCEPTED' ? '결제 필요' : ddayLabel(d, row.status)}
-                          </span>
-                          <span className="gut-date">{row.desiredDate ?? '—'}</span>
-                          <span className="gut-pill gut-pill--dest">{dest}</span>
-                          <span className="gut-pill gut-pill--status">{statusText(row.status)}</span>
+                      <div className="gut-card-split">
+                        <div className="gut-card-text">
+                          <div className="gut-card-hero-row">
+                            {row.status === 'ACCEPTED' && <span className="gut-payment-need">결제 필요</span>}
+                            <span className="gut-date gut-date--hero">{row.desiredDate ?? '—'}</span>
+                          </div>
+                          <h3 className="gut-title" title={tripTitle}>{tripTitle}</h3>
+                          <p className="gut-line gut-line--sub">예산 {budget}</p>
+                          <div className="gut-card-footer">
+                            <span className="gut-trail" aria-hidden="true">✈︎ 여행 준비 중</span>
+                            <button type="button" className="gut-open" onClick={() => openMatchScreen(row)}>
+                              일정 확인하기
+                            </button>
+                          </div>
                         </div>
-                        <h3 className="gut-title" title={tripTitle}>{tripTitle}</h3>
-                        <p className="gut-line gut-line--sub">예산 {budget}</p>
-                        <div className="gut-card-footer">
-                          <span className="gut-trail" aria-hidden="true">✈︎ 여행 준비 중</span>
-                          <button type="button" className="gut-open" onClick={() => openMatchScreen(row)}>
-                            일정 확인하기
-                          </button>
+                        <div className="gut-card-preview-wrap">
+                          <div
+                            className="gut-trip-polaroid"
+                            role="img"
+                            aria-label={ddayLabel(d, row.status)}
+                          >
+                            <span className="gut-trip-polaroid__tape" />
+                            <span
+                              className={`gut-trip-polaroid__dday${d === 0 ? ' is-today' : d === 1 ? ' is-soon' : ''}`}
+                            >
+                              {ddayLabel(d, row.status)}
+                            </span>
+                          </div>
                         </div>
                       </div>
                     </article>
