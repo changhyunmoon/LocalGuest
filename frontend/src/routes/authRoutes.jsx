@@ -2,8 +2,6 @@ import { useEffect } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 
 import { useAuth } from '../context/useAuth.js'
-import { FindIdPage } from '../pages/FindIdPage'
-import { ForgotPasswordPage } from '../pages/ForgotPasswordPage'
 import { LoginPage } from '../pages/LoginPage'
 import { OnboardingPage } from '../pages/OnboardingPage'
 import { SignupPage } from '../pages/SignupPage'
@@ -46,8 +44,6 @@ function OAuth2CallbackPage() {
 
 export const authRoutes = [
   { path: 'auth/login', element: <LoginPage /> },
-  { path: 'auth/find-id', element: <FindIdPage /> },
-  { path: 'auth/forgot-password', element: <ForgotPasswordPage /> },
   { path: 'auth/signup', element: <SignupPage /> },
   { path: 'oauth2/callback', element: <OAuth2CallbackPage /> },
   { path: 'onboarding', element: <OnboardingPage /> },

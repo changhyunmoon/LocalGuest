@@ -126,16 +126,10 @@ export function LoginPage() {
           />
         </label>
 
-        {error && <p className="form-error">{error}</p>}
-
-        <button type="submit" className="submit form-login-submit form-auth-primary-btn" disabled={loading}>
-          {loading ? '처리 중…' : '로그인'}
-        </button>
-
-        <div className="form-social form-social--inside form-social--after-login">
+        <div className="form-social form-social--inside">
           <button
             type="button"
-            className="submit ghost form-google-login form-auth-primary-btn"
+            className="submit ghost form-google-login"
             onClick={() => beginGoogleOAuth(role, returnTo)}
             title="Google OAuth2 로그인"
           >
@@ -146,27 +140,11 @@ export function LoginPage() {
           </button>
         </div>
 
-        <nav className="form-account-links" aria-label="계정 찾기 및 가입">
-          <button type="button" className="form-text-link" onClick={() => navigate('/auth/find-id', { state: { role } })}>
-            아이디(이메일) 찾기
-          </button>
-          <span className="form-account-links__sep" aria-hidden>
-            ·
-          </span>
-          <button
-            type="button"
-            className="form-text-link"
-            onClick={() => navigate('/auth/forgot-password', { state: { role } })}
-          >
-            비밀번호 찾기
-          </button>
-          <span className="form-account-links__sep" aria-hidden>
-            ·
-          </span>
-          <button type="button" className="form-text-link" onClick={() => navigate('/auth/signup')}>
-            회원가입
-          </button>
-        </nav>
+        {error && <p className="form-error">{error}</p>}
+
+        <button type="submit" className="submit form-login-submit" disabled={loading}>
+          {loading ? '처리 중…' : '로그인'}
+        </button>
       </form>
 
       {roleMismatch && (
