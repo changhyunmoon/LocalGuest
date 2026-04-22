@@ -1,15 +1,12 @@
 package com.team6.domain.member.controller;
 
-import com.team6.domain.member.dto.request.FindIdRequest;
-import com.team6.domain.member.dto.request.MemberJoinRequest;
-import com.team6.domain.member.dto.request.PasswordResetConfirmRequest;
-import com.team6.domain.member.dto.request.PasswordResetSendRequest;
+import com.team6.domain.member.dto.request.*;
+import com.team6.domain.member.dto.response.MemberProfileResponse;
+import com.team6.domain.member.entity.Member;
 import com.team6.domain.member.entity.Role;
 import com.team6.domain.member.service.AccountRecoveryService;
 import com.team6.domain.member.service.MemberService;
 import com.team6.domain.member.service.SignupEmailVerificationService;
-import com.team6.domain.member.dto.request.EmailVerificationSendRequest;
-import com.team6.domain.member.dto.request.EmailVerificationConfirmRequest;
 import com.team6.domain.member.dto.response.EmailVerificationSendResponse;
 import com.team6.domain.member.dto.response.FindIdResponse;
 import com.team6.domain.member.dto.response.NicknameAvailabilityResponse;
@@ -85,6 +82,7 @@ public class MemberController {
         }
     }
 
+    // 비밀번호 재설정 코드 발송
     @PostMapping("/password-reset/send")
     public ResponseEntity<?> sendPasswordResetCode(@Valid @RequestBody PasswordResetSendRequest body) {
         try {
@@ -96,6 +94,7 @@ public class MemberController {
         }
     }
 
+    // 비밀번호 재설정 코드 확인
     @PostMapping("/password-reset/confirm")
     public ResponseEntity<?> confirmPasswordReset(@Valid @RequestBody PasswordResetConfirmRequest body) {
         try {
@@ -110,5 +109,25 @@ public class MemberController {
             return ResponseEntity.badRequest()
                     .body(ExceptionResponse.of(HttpStatus.BAD_REQUEST, "PWD_RESET_CONFIRM_FAILED", e.getMessage()));
         }
+    }
+
+    // 프로필 이미지 조회
+    @GetMapping("/me/profile")
+    public ResponseEntity<MemberProfileResponse> getMyProfile() {
+        Member member = memberService.getCurrentMember();
+        return ResponseEntity.ok(MemberProfileResponse.from(member));
+    }
+
+    // 프로필 이미지 업데이트
+    @PutMapping("/me/profile")
+    public ResponseEntity<MemberProfileResponse> updateMyProfile(
+            @RequestBody(required = false) MemberProfileImageUpdateRequest body) {
+        String url = body != null ? body.getProfileImageUrl() : null;
+        // 예: null = 유지, "" = 삭제
+        if (url == null) {
+            return ResponseEntity.ok(MemberProfileResponse.from(memberService.getCurrentMember()));
+        }
+        memberService.updateMyProfileImage(url, true);
+        return ResponseEntity.ok(MemberProfileResponse.from(memberService.getCurrentMember()));
     }
 }
