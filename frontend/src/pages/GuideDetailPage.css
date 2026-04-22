@@ -562,7 +562,8 @@
 .gdp-confirm-overlay {
   position: fixed;
   inset: 0;
-  z-index: 90;
+  /* shell-route-transition(transform) 밖(body)에 포털되므로 앱 헤더 위로 올라오도록 여유 있게 */
+  z-index: 2000;
   background: rgba(2, 6, 23, 0.55);
   backdrop-filter: blur(2px);
   display: grid;
