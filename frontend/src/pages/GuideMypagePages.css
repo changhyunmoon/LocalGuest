@@ -1185,6 +1185,13 @@
   }
 }
 
+/* 프로필·소개: 폼 폭과 카드 폭을 맞추고 메인 영역에서 가운데 정렬 */
+.g-panel.g-panel--profile {
+  max-width: min(640px, 100%);
+  margin-left: auto;
+  margin-right: auto;
+}
+
 /* guide profile visual refresh (F06-01) */
 .gpv-head h1 {
   margin: 0 0 0.3rem;
@@ -1298,7 +1305,7 @@
 
 .gpv-form {
   margin-top: 1rem;
-  width: min(560px, 100%);
+  width: 100%;
 }
 
 .gpv-field {
