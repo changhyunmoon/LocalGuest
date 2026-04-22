@@ -228,6 +228,39 @@ export function GuideFeedSchedulePage() {
     return map
   }, [guideRequests])
 
+  const cancelBookedRequest = useCallback(async ({ requestId, scheduleId, availableDate }) => {
+    if (!guideId) return
+    const rid = Number(requestId)
+    if (!Number.isFinite(rid) || rid <= 0) {
+      addToast('취소할 예약 정보를 찾을 수 없습니다.', 'error')
+      return
+    }
+    const reason = window.prompt('일정 취소 사유를 입력해 주세요.', '개인 사정으로 일정이 변경되었습니다.')
+    if (!reason || !String(reason).trim()) return
+    if (!window.confirm(`${availableDate || ''} 예약(#${rid})을 취소할까요?`)) return
+
+    setBusy(true)
+    try {
+      const res = await apiRequest(`/matching/requests/${rid}/guide/cancel`, {
+        method: 'PATCH',
+        json: { cancelReason: String(reason).trim() },
+      })
+      const text = await res.text()
+      if (!res.ok) {
+        addToast(await readJsonError(res, text), 'error')
+        return
+      }
+      addToast('일정을 취소했습니다.')
+      await reloadScheduleData(guideId)
+      const reqs = await fetchGuideMatchRequests(apiRequest).catch(() => [])
+      setGuideRequests(Array.isArray(reqs) ? reqs : [])
+    } catch {
+      addToast('일정 취소에 실패했습니다.', 'error')
+    } finally {
+      setBusy(false)
+    }
+  }, [guideId, addToast, reloadScheduleData])
+
   useEffect(() => {
     if (!guideId) return
     void loadAll(guideId)
@@ -679,6 +712,7 @@ export function GuideFeedSchedulePage() {
             onActivateReceiving={activateReceiving}
             onSetBlocked={setDayBlocked}
             onOpenCourse={moveToCourseEditor}
+            onCancelRequest={cancelBookedRequest}
             requestsByScheduleId={requestsByScheduleId}
           />
         </>
