@@ -67,7 +67,19 @@ async function readJsonError(res, text) {
 function buildProposedSchedule(courseDetail) {
   const spots = parseCourseDetail(courseDetail ?? '').filter((spot) => String(spot.name ?? '').trim())
   if (spots.length === 0) return ''
-  return spots.map((spot) => spot.name.trim()).join(' -> ')
+  // 결제 전 미리보기용: 지명은 숨기고 시간/설명만 노출
+  // 포맷: "SPOT 1 | 오전 10:00 | 한적한 산책 + 카페" (줄바꿈 구분)
+  const clamp = (s, n) => (s.length > n ? `${s.slice(0, n)}…` : s)
+  return spots
+    .map((spot, idx) => {
+      const time = String(spot.time ?? '').trim()
+      const desc = String(spot.desc ?? '').trim()
+      const safeDesc = clamp(desc.replace(/\s+/g, ' '), 44)
+      const label = `SPOT ${idx + 1}`
+      // time/desc가 비어도 게스트 화면에서 깨지지 않게 빈 칸 허용
+      return `${label} | ${time || '시간 미정'} | ${safeDesc || '자세한 코스는 결제 후 공개됩니다'}`
+    })
+    .join('\n')
 }
 
 function formatTime(t) {
