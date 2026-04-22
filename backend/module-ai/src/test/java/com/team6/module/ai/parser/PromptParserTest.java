@@ -52,6 +52,26 @@ class PromptParserTest {
     }
 
     @Test
+    void parse_should_map_budget_ceiling_phrases_to_zero_through_cap() {
+        GuideRecommendRequest r1 = promptParser.parse("부산 여행 예산 20만원 이하로 코스 추천", 3, List.of());
+        assertThat(r1.getRegion()).isEqualTo("부산");
+        assertThat(r1.getBudgetMinWon()).isZero();
+        assertThat(r1.getBudgetMaxWon()).isEqualTo(200_000);
+
+        GuideRecommendRequest r2 = promptParser.parse("제주 15만 이내 맛집 위주", 3, List.of());
+        assertThat(r2.getBudgetMinWon()).isZero();
+        assertThat(r2.getBudgetMaxWon()).isEqualTo(150_000);
+
+        GuideRecommendRequest r3 = promptParser.parse("강릉 최대 12만원 배낭여행", 3, List.of());
+        assertThat(r3.getBudgetMinWon()).isZero();
+        assertThat(r3.getBudgetMaxWon()).isEqualTo(120_000);
+
+        GuideRecommendRequest r4 = promptParser.parse("경주 예산 below 300000원 커플", 3, List.of());
+        assertThat(r4.getBudgetMinWon()).isZero();
+        assertThat(r4.getBudgetMaxWon()).isEqualTo(300_000);
+    }
+
+    @Test
     void extractDesiredTourDateRange_should_parse_single_and_ranges() {
         int y = LocalDate.now().getYear();
 

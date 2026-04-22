@@ -62,6 +62,23 @@ public class PromptParser {
     );
     private static final Pattern BUDGET_MANWON_BAND = Pattern.compile("(\\d+)\\s*만원\\s*대");
     private static final Pattern BUDGET_MANWON_RANGE = Pattern.compile("(\\d+)\\s*[~-]\\s*(\\d+)\\s*만(?:원)?");
+    /** "20만 이하", "20만원 이내", "8만 안으로" 등 상한만 있는 표현 → 0원 ~ 상한. */
+    private static final Pattern BUDGET_CEILING_MANWON_SUFFIX = Pattern.compile(
+            "(\\d{1,3}(?:,\\d{3})+|\\d+)\\s*만(?:원)?\\s*(이하|이내|까지|안(?:으로)?)"
+    );
+    /** "최대 20만", "상한 15만원" 등 (이하/이내 생략). */
+    private static final Pattern BUDGET_MAX_ONLY_MANWON = Pattern.compile(
+            "(?:최대|상한|최고)\\s*(\\d{1,3}(?:,\\d{3})+|\\d+)\\s*만(?:원)?\\b"
+    );
+    private static final Pattern BUDGET_CEILING_WON_SUFFIX = Pattern.compile(
+            "(\\d{1,3}(?:,\\d{3})+|\\d+)\\s*원\\s*(이하|이내|까지|under|below|at\\s+most)"
+    );
+    private static final Pattern BUDGET_CEILING_WON_ENGLISH_FIRST = Pattern.compile(
+            "(?:below|under|at\\s+most)\\s*(\\d{1,3}(?:,\\d{3})+|\\d+)\\s*원\\b"
+    );
+    private static final Pattern BUDGET_MAX_ONLY_WON = Pattern.compile(
+            "(?:최대|상한|최고)\\s*(\\d{1,3}(?:,\\d{3})+|\\d+)\\s*원\\b"
+    );
     private static final Pattern HEADCOUNT = Pattern.compile("(\\d+)\\s*(명|인)");
     private static final Pattern DURATION_NIGHTS_DAYS = Pattern.compile("(\\d+)\\s*박\\s*(\\d+)\\s*일");
     private static final Pattern DURATION_NIGHTS_ONLY = Pattern.compile("(\\d+)\\s*박(?!\\s*\\d)");
@@ -200,6 +217,43 @@ public class PromptParser {
                 return null;
             }
         }
+
+        Matcher ceilingManSuffix = BUDGET_CEILING_MANWON_SUFFIX.matcher(prompt);
+        if (ceilingManSuffix.find()) {
+            Integer cap = manWonDigitsToWon(ceilingManSuffix.group(1));
+            if (cap != null && cap > 0) {
+                return new BudgetRange(0, cap);
+            }
+        }
+        Matcher ceilingMaxMan = BUDGET_MAX_ONLY_MANWON.matcher(prompt);
+        if (ceilingMaxMan.find()) {
+            Integer cap = manWonDigitsToWon(ceilingMaxMan.group(1));
+            if (cap != null && cap > 0) {
+                return new BudgetRange(0, cap);
+            }
+        }
+        Matcher ceilingWonEnglishFirst = BUDGET_CEILING_WON_ENGLISH_FIRST.matcher(prompt);
+        if (ceilingWonEnglishFirst.find()) {
+            Integer cap = convertWon(ceilingWonEnglishFirst.group(1), "원");
+            if (cap != null && cap > 0) {
+                return new BudgetRange(0, cap);
+            }
+        }
+        Matcher ceilingWonSuffix = BUDGET_CEILING_WON_SUFFIX.matcher(prompt);
+        if (ceilingWonSuffix.find()) {
+            Integer cap = convertWon(ceilingWonSuffix.group(1), "원");
+            if (cap != null && cap > 0) {
+                return new BudgetRange(0, cap);
+            }
+        }
+        Matcher ceilingMaxWon = BUDGET_MAX_ONLY_WON.matcher(prompt);
+        if (ceilingMaxWon.find()) {
+            Integer cap = convertWon(ceilingMaxWon.group(1), "원");
+            if (cap != null && cap > 0) {
+                return new BudgetRange(0, cap);
+            }
+        }
+
         // "예산 하루 10만원" 같이 단일 금액 표현도 범위(min=max)로 보존한다.
         Integer single = extractBudgetAmount(prompt);
         if (single != null && single >= 0) {
@@ -704,20 +758,7 @@ public class PromptParser {
         if (!m.find()) {
             return null;
         }
-        String number = m.group(1).replace(",", "");
-        try {
-            long man = Long.parseLong(number);
-            if (man <= 0L || man > 1_000_000L) {
-                return null;
-            }
-            long value = man * 10_000L;
-            if (value > Integer.MAX_VALUE) {
-                return null;
-            }
-            return (int) value;
-        } catch (NumberFormatException e) {
-            return null;
-        }
+        return manWonDigitsToWon(m.group(1));
     }
 
     private String extractCompanionType(String prompt) {
@@ -1020,6 +1061,27 @@ public class PromptParser {
                 value *= 10_000L;
             }
             if (value <= 0L || value > Integer.MAX_VALUE) {
+                return null;
+            }
+            return (int) value;
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    /** {@code N}만 / {@code N}만원 숫자부만 원화 상한으로 변환 (예: 20 → 200_000). */
+    private static Integer manWonDigitsToWon(String rawNumber) {
+        if (rawNumber == null) {
+            return null;
+        }
+        String number = rawNumber.replace(",", "");
+        try {
+            long man = Long.parseLong(number);
+            if (man <= 0L || man > 1_000_000L) {
+                return null;
+            }
+            long value = man * 10_000L;
+            if (value > Integer.MAX_VALUE) {
                 return null;
             }
             return (int) value;
