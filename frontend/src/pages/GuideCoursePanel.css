@@ -277,6 +277,15 @@
   background: #fff;
 }
 
+.gcp-input.gcp-select {
+  cursor: pointer;
+  appearance: auto;
+}
+
+.gcp-select--time {
+  min-width: 0;
+}
+
 .gcp-textarea {
   width: 100%;
   padding: 9px 12px;

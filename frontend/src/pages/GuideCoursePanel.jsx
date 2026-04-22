@@ -1,10 +1,50 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { apiRequest } from '../api/client.js'
 import { DEFAULT_KOREA_CENTER, geocodeAddressOnly, getUserLatLng, resolveLatLng } from '../lib/kakaoGeocode.js'
 import { loadKakaoSdk } from '../lib/kakaoMapSdk.js'
 import './GuideCoursePanel.css'
 
 const KAKAO_APP_KEY = import.meta.env.VITE_KAKAO_MAP_APP_KEY
+
+/** @param {number} h 0–23 @param {number} minute 0 or 30 */
+function formatKoreanTimeSlot(h, minute) {
+  const isPM = h >= 12
+  let displayH = h % 12
+  if (displayH === 0) displayH = 12
+  const period = isPM ? '오후' : '오전'
+  return `${period} ${displayH}:${String(minute).padStart(2, '0')}`
+}
+
+/** @param {string | undefined} s "HH:mm" */
+function parseHmToMinutes(s) {
+  if (s == null || typeof s !== 'string') return null
+  const m = s.trim().match(/^(\d{1,2}):(\d{2})$/)
+  if (!m) return null
+  const h = Number(m[1])
+  const min = Number(m[2])
+  if (!Number.isFinite(h) || !Number.isFinite(min) || h < 0 || h > 23 || min < 0 || min > 59) return null
+  return h * 60 + min
+}
+
+/** 30분 간격 라벨 목록. 스케줄 시작·종료가 파싱되면 그 구간만, 아니면 하루 전체 */
+function buildCourseTimeOptionLabels(startTime, endTime) {
+  const all = []
+  for (let h = 0; h < 24; h += 1) {
+    for (const minute of [0, 30]) {
+      all.push(formatKoreanTimeSlot(h, minute))
+    }
+  }
+  const start = parseHmToMinutes(startTime)
+  const end = parseHmToMinutes(endTime)
+  if (start == null || end == null || end < start) return all
+  const filtered = []
+  for (let mins = 0; mins < 24 * 60; mins += 30) {
+    if (mins >= start && mins <= end) {
+      filtered.push(formatKoreanTimeSlot(Math.floor(mins / 60), mins % 60))
+    }
+  }
+  return filtered.length > 0 ? filtered : all
+}
 
 function createPinOverlay(kakao, map, latlng, idx, name) {
   const root = document.createElement('div')
@@ -76,6 +116,12 @@ export function GuideCoursePanel({
   const debounceTimerRef = useRef(null)
   const dragSpotIdx = useRef(null)
   const spotsRef = useRef(spots)
+
+  const courseTimeOptions = useMemo(
+    () => buildCourseTimeOptionLabels(schedule?.startTime, schedule?.endTime),
+    [schedule?.startTime, schedule?.endTime],
+  )
+  const courseTimeOptionSet = useMemo(() => new Set(courseTimeOptions), [courseTimeOptions])
 
   // ── 초기 데이터 로드 (GET form) ──────────────────────────────────────
   useEffect(() => {
@@ -498,13 +544,21 @@ export function GuideCoursePanel({
                         )}
                       </div>
                       <div className="gcp-spot-row2">
-                        <input
-                          className="gcp-input"
-                          type="text"
-                          placeholder="시간 (예: 오전 10:00)"
+                        <select
+                          id={`gcp-spot-time-${idx}`}
+                          className="gcp-input gcp-select gcp-select--time"
+                          aria-label={`스팟 ${idx + 1} 시간`}
                           value={spot.time}
                           onChange={(e) => updateSpot(idx, 'time', e.target.value)}
-                        />
+                        >
+                          <option value="">시간 선택</option>
+                          {courseTimeOptions.map((t) => (
+                            <option key={t} value={t}>{t}</option>
+                          ))}
+                          {spot.time && !courseTimeOptionSet.has(spot.time) ? (
+                            <option value={spot.time}>{spot.time}</option>
+                          ) : null}
+                        </select>
                         <input
                           className="gcp-input"
                           type="text"
