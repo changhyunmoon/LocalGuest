@@ -127,23 +127,22 @@ export function GuideMatchedCoursePage() {
 
   useEffect(() => { void load() }, [load])
 
-  // ── isPaid 판단 ─────────────────────────────────────────────────────────
-  // 백엔드 GuideScheduleFormResponse: isPaid=false이면 courseDetail=null으로 마스킹
-  const isPaid = formData?.isPaid === true
+  const matchStatus = String(matchRequest?.status ?? '').toUpperCase()
+  const mapUnlocked = matchStatus === 'PAID' || matchStatus === 'IN_PROGRESS' || matchStatus === 'COMPLETED'
+  const revealPlaceName = matchStatus === 'COMPLETED'
   const meetingPoint = formData?.meetingPoint ?? ''
   const guideMessage = formData?.guideMessage ?? ''
   const previewSpots = useMemo(() => parsePreviewSpots(matchRequest?.proposedSchedule), [matchRequest?.proposedSchedule])
-  // courseDetail: isPaid=true일 때만 내려옴
+  // courseDetail: 결제 후(PAID/IN_PROGRESS)부터 내려오며, 완료(COMPLETED) 시 장소명까지 공개됨
   const spots = useMemo(() => {
-    if (!isPaid || !formData?.courseDetail) return []
+    if (!mapUnlocked || !formData?.courseDetail) return []
     return parseCourseDetail(formData.courseDetail)
-  }, [isPaid, formData])
+  }, [mapUnlocked, formData])
 
   // ── 지도 ───────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!mapRef.current) return
-    // isPaid=false면 지도에 마커 없이 흐린 처리만
-    if (!isPaid || spots.length === 0) return
+    if (!mapUnlocked || spots.length === 0) return
     let cancelled = false
 
     const draw = async () => {
@@ -159,6 +158,8 @@ export function GuideMatchedCoursePage() {
         } else if (meetingPoint.trim()) {
           const byMeeting = await resolveLatLng(kakao, meetingPoint.trim(), { regionHint: String(profile?.region ?? '').trim() })
           if (byMeeting) center = byMeeting
+        } else if (spots[0]?.lat != null && spots[0]?.lng != null) {
+          center = { lat: Number(spots[0].lat), lng: Number(spots[0].lng) }
         } else if (spots[0]?.name) {
           const firstSpot = await resolveLatLng(kakao, spots[0].name, { regionHint: String(profile?.region ?? '').trim() })
           if (firstSpot) center = firstSpot
@@ -171,7 +172,12 @@ export function GuideMatchedCoursePage() {
         const regionHint = String(profile?.region ?? '').trim()
         const resolved = await Promise.all(
           spots.map(async (spot, idx) => {
-            const point = await resolveLatLng(kakao, spot.name, { regionHint })
+            if (spot?.lat != null && spot?.lng != null) {
+              const lat = Number(spot.lat)
+              const lng = Number(spot.lng)
+              if (Number.isFinite(lat) && Number.isFinite(lng)) return { lat, lng }
+            }
+            const point = spot?.name ? await resolveLatLng(kakao, spot.name, { regionHint }) : null
             return point ?? fallbackLatLng(idx)
           }),
         )
@@ -183,7 +189,11 @@ export function GuideMatchedCoursePage() {
           const latlng = new kakao.maps.LatLng(p.lat, p.lng)
           path.push(latlng)
           bounds.extend(latlng)
-          createSpotOverlay(kakao, map, latlng, idx, spots[idx].name)
+          const s = spots[idx]
+          const label = revealPlaceName
+            ? (s?.name ?? '')
+            : `${s?.time ? `${s.time} · ` : ''}${s?.desc ?? ''}`.trim() || '코스'
+          createSpotOverlay(kakao, map, latlng, idx, label)
         })
         if (path.length > 1) {
           new kakao.maps.Polyline({ map, path, strokeWeight: 8, strokeColor: '#f9fafb', strokeOpacity: 0.95, strokeStyle: 'solid' })
@@ -197,7 +207,7 @@ export function GuideMatchedCoursePage() {
 
     void draw()
     return () => { cancelled = true }
-  }, [spots, isPaid, profile?.region, meetingPoint])
+  }, [spots, mapUnlocked, revealPlaceName, profile?.region, meetingPoint])
 
   const handleOpenMatchChat = async () => {
     setChatBusy(true)
