@@ -319,8 +319,17 @@ export function GuideMatchedCoursePage() {
               ? spots.slice(0, 4).map((spot, idx) => (
                   <article key={idx} className="gmc-spot">
                     <p className="gmc-spot-label">SPOT {idx + 1}</p>
-                    <h3 className="gmc-spot-name">{spot.name}{spot.time ? ` (${spot.time})` : ''}</h3>
-                    {spot.desc && <p className="gmc-spot-desc">{spot.desc}</p>}
+                    {(() => {
+                      const rawName = String(spot?.name ?? '').trim()
+                      const isMaskedName = !revealPlaceName && rawName === '로컬 스팟'
+                      const title = isMaskedName ? String(spot?.desc ?? '').trim() : rawName
+                      return (
+                        <>
+                          <h3 className="gmc-spot-name">{title || '코스'}{spot?.time ? ` (${spot.time})` : ''}</h3>
+                          {!isMaskedName && spot?.desc && <p className="gmc-spot-desc">{spot.desc}</p>}
+                        </>
+                      )
+                    })()}
                   </article>
                 ))
               : !mapUnlocked && (
