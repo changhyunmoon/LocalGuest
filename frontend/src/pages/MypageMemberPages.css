@@ -354,6 +354,44 @@ button.mp-thumb--match:focus-visible {
   color: #6b7280;
 }
 
+.mp-scrap-map-block {
+  margin-bottom: 1.25rem;
+}
+
+.mp-scrap-map-title {
+  margin: 0 0 0.35rem;
+  font-size: 1rem;
+  font-weight: 800;
+  color: #111827;
+}
+
+.mp-scrap-map-desc {
+  margin: 0 0 0.6rem;
+  font-size: 0.86rem;
+  color: #6b7280;
+}
+
+.mp-scrap-map-wrap {
+  position: relative;
+  background: #fff;
+  border: 1px solid #e8eaed;
+  border-radius: 14px;
+  padding: 0.45rem;
+}
+
+.mp-scrap-overview-map {
+  width: 100%;
+  height: 300px;
+  border-radius: 10px;
+  background: linear-gradient(160deg, #f3f4f6, #e5e7eb);
+}
+
+.mp-scrap-map-err {
+  margin: 0.45rem 0 0;
+  font-size: 0.82rem;
+  color: #b91c1c;
+}
+
 .mp-scrap-empty {
   border: 1px dashed #efbfd0;
   background: linear-gradient(180deg, #fff9fc, #fffdfd);

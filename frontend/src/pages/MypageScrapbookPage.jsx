@@ -1,10 +1,14 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { PageEmpty, PageError, PageLoading } from '../components/PageStates.jsx'
 import { apiRequest } from '../api/client.js'
+import { DEFAULT_KOREA_CENTER, resolveLatLng } from '../lib/kakaoGeocode.js'
+import { loadKakaoSdk } from '../lib/kakaoMapSdk.js'
 import { daysUntil, fetchGuestMatchRequests } from '../lib/matchingGuest.js'
 
 import './MypageMemberPages.css'
+
+const KAKAO_APP_KEY = import.meta.env.VITE_KAKAO_MAP_APP_KEY
 
 async function loadGuideNicknames(apiRequest, guideIds) {
   const map = {}
@@ -42,6 +46,8 @@ export function MypageScrapbookPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
   const [tearingRequestId, setTearingRequestId] = useState(null)
+  const overviewMapRef = useRef(null)
+  const [overviewMapErr, setOverviewMapErr] = useState('')
 
   const loadScrapbook = useCallback(async () => {
     const all = await fetchGuestMatchRequests(apiRequest)
@@ -84,6 +90,70 @@ export function MypageScrapbookPage() {
     }
   }, [loadScrapbook])
 
+  useEffect(() => {
+    if (loading || error || rows.length === 0) return
+    if (!overviewMapRef.current) return
+    let cancelled = false
+
+    const drawOverview = async () => {
+      try {
+        setOverviewMapErr('')
+        const el = overviewMapRef.current
+        if (!el) return
+        el.innerHTML = ''
+        const kakao = await loadKakaoSdk(KAKAO_APP_KEY)
+        if (cancelled || !overviewMapRef.current) return
+
+        const dests = [...new Set(rows.map((r) => String(r.destination ?? '').trim()).filter(Boolean))].slice(0, 15)
+        const hint = dests[0] ?? ''
+        const points =
+          dests.length > 0
+            ? await Promise.all(
+                dests.map(async (d, idx) => {
+                  const p = await resolveLatLng(kakao, d, { regionHint: hint || d })
+                  return (
+                    p ?? {
+                      lat: DEFAULT_KOREA_CENTER.lat + idx * 0.04,
+                      lng: DEFAULT_KOREA_CENTER.lng + (idx % 2 === 0 ? 0.03 : -0.03),
+                    }
+                  )
+                }),
+              )
+            : [{ ...DEFAULT_KOREA_CENTER }]
+
+        const center = points[0]
+        const map = new kakao.maps.Map(el, {
+          center: new kakao.maps.LatLng(center.lat, center.lng),
+          level: 10,
+        })
+        const bounds = new kakao.maps.LatLngBounds()
+        points.forEach((p, idx) => {
+          const latlng = new kakao.maps.LatLng(p.lat, p.lng)
+          bounds.extend(latlng)
+          const marker = new kakao.maps.Marker({
+            map,
+            position: latlng,
+            title: dests[idx] ? `${dests[idx]} · 여행 ${idx + 1}` : `여행 ${idx + 1}`,
+          })
+          void marker
+        })
+        if (points.length > 1) {
+          map.setBounds(bounds)
+        }
+      } catch (e) {
+        if (!cancelled) setOverviewMapErr(e instanceof Error ? e.message : '지도를 불러오지 못했습니다.')
+      }
+    }
+
+    void drawOverview()
+    return () => {
+      cancelled = true
+      if (overviewMapRef.current) {
+        overviewMapRef.current.innerHTML = ''
+      }
+    }
+  }, [loading, error, rows])
+
   const count = rows.length
 
   const subtitle = useMemo(() => {
@@ -106,6 +176,19 @@ export function MypageScrapbookPage() {
               <p>{subtitle}</p>
             </div>
           </div>
+
+          {rows.length > 0 && (
+            <section className="mp-scrap-map-block" aria-labelledby="mp-scrap-map-title">
+              <h2 id="mp-scrap-map-title" className="mp-scrap-map-title">
+                여행 지도
+              </h2>
+              <p className="mp-scrap-map-desc">완료된 여행의 목적지를 한 지도에 모았어요.</p>
+              <div className="mp-scrap-map-wrap">
+                <div ref={overviewMapRef} className="mp-scrap-overview-map" />
+                {overviewMapErr && <p className="mp-scrap-map-err">{overviewMapErr}</p>}
+              </div>
+            </section>
+          )}
 
           {rows.length === 0 && (
             <PageEmpty title="완료된 투어 기록이 아직 없어요!" className="mp-scrap-empty">
