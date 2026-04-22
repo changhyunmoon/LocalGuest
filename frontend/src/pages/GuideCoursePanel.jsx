@@ -54,25 +54,36 @@ function createPinOverlay(kakao, map, latlng, idx, name) {
 }
 
 // ── courseDetail 직렬화/파싱 ───────────────────────────────────────────
-// 형식: "1. 장소명 | 시간 | 설명\n2. ..."
+// 형식: "1. 장소명 | 시간 | 설명 | lat,lng\n2. ..."
 export function serializeCourse(spots) {
   return spots
     .filter((s) => s.name.trim())
-    .map((s, i) => `${i + 1}. ${s.name.trim()} | ${s.time.trim()} | ${s.desc.trim()}`)
+    .map((s, i) => {
+      const lat = Number(s.lat)
+      const lng = Number(s.lng)
+      const coord = Number.isFinite(lat) && Number.isFinite(lng) ? ` | ${lat},${lng}` : ''
+      return `${i + 1}. ${s.name.trim()} | ${s.time.trim()} | ${s.desc.trim()}${coord}`
+    })
     .join('\n')
 }
 
 export function parseCourseDetail(text) {
-  if (!text?.trim()) return [{ name: '', time: '', desc: '' }]
+  if (!text?.trim()) return [{ name: '', time: '', desc: '', lat: null, lng: null }]
   return text
     .split('\n')
     .filter(Boolean)
     .map((line) => {
       const parts = line.replace(/^\d+\.\s*/, '').split('|')
+      const coordRaw = parts[3]?.trim() ?? ''
+      const coordMatch = coordRaw.match(/(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)/)
+      const lat = coordMatch ? Number(coordMatch[1]) : null
+      const lng = coordMatch ? Number(coordMatch[2]) : null
       return {
         name: parts[0]?.trim() ?? '',
         time: parts[1]?.trim() ?? '',
         desc: parts[2]?.trim() ?? '',
+        lat: Number.isFinite(lat) ? lat : null,
+        lng: Number.isFinite(lng) ? lng : null,
       }
     })
 }
@@ -230,7 +241,7 @@ export function GuideCoursePanel({
 
   const [meetingPoint, setMeetingPoint] = useState('')
   const [guideMessage, setGuideMessage] = useState('')
-  const [spots, setSpots] = useState([{ name: '', time: '', desc: '' }])
+  const [spots, setSpots] = useState([{ name: '', time: '', desc: '', lat: null, lng: null }])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -284,7 +295,7 @@ export function GuideCoursePanel({
             const parsed = parseCourseDetail(mergedDetail)
             setMeetingPoint(seed.meetingPoint ?? '')
             setGuideMessage(seed.guideMessage ?? '')
-            setSpots(parsed.length ? parsed : [{ name: '', time: '', desc: '' }])
+            setSpots(parsed.length ? parsed : [{ name: '', time: '', desc: '', lat: null, lng: null }])
             setGeoStatus(parsed.map((s) => (s.name ? 'ok' : 'idle')))
           }
         } else {
@@ -300,7 +311,7 @@ export function GuideCoursePanel({
             setMeetingPoint(merged.meetingPoint)
             setGuideMessage(merged.guideMessage)
             const parsed = parseCourseDetail(merged.courseDetail)
-            setSpots(parsed.length ? parsed : [{ name: '', time: '', desc: '' }])
+            setSpots(parsed.length ? parsed : [{ name: '', time: '', desc: '', lat: null, lng: null }])
             setGeoStatus(parsed.map((s) => (s.name ? 'ok' : 'idle')))
           }
         }
@@ -345,6 +356,19 @@ export function GuideCoursePanel({
     setGeoStatus((prev) => {
       const next = [...prev]
       results.forEach(({ point, origIdx }) => { next[origIdx] = point ? 'ok' : 'error' })
+      return next
+    })
+
+    // 좌표 캐시: 저장 시 courseDetail에 포함되도록 spots에 lat/lng 반영
+    setSpots((prev) => {
+      const next = [...prev]
+      results.forEach(({ point, origIdx }) => {
+        if (!point) return
+        const cur = next[origIdx]
+        if (!cur) return
+        next[origIdx] = { ...cur, lat: point.lat, lng: point.lng }
+      })
+      spotsRef.current = next
       return next
     })
 
@@ -455,7 +479,7 @@ export function GuideCoursePanel({
   const addSpot = () => {
     setOpenTimeIdx(null)
     setSpots((prev) => {
-      const next = [...prev, { name: '', time: '', desc: '' }]
+      const next = [...prev, { name: '', time: '', desc: '', lat: null, lng: null }]
       spotsRef.current = next
       return next
     })
