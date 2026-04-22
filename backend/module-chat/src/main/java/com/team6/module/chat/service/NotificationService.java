@@ -53,6 +53,10 @@ public class NotificationService {
                     }
                 });
             });
+        } else if ("ROOM_LEFT".equals(res.type())) {
+            if (res.receiverEmail() != null && emitters.containsKey(res.receiverEmail())) {
+                sendToLocalEmitter(res.receiverEmail(), res);
+            }
         } else {
             // 초대(NEW_ROOM) 등 특정 수신자가 명시된 경우
             if (res.receiverEmail() != null && emitters.containsKey(res.receiverEmail())) {

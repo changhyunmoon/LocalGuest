@@ -1,6 +1,6 @@
 import { Client } from '@stomp/stompjs'
 import SockJS from 'sockjs-client/dist/sockjs'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 
 import { PageEmpty, PageError, PageLoading } from '../components/PageStates.jsx'
@@ -54,6 +54,23 @@ export function MessagesPage() {
   const readUpdateTimerRef = useRef(/** @type {ReturnType<typeof setTimeout> | null} */ (null))
   const autoReadTimerRef = useRef(/** @type {ReturnType<typeof setTimeout> | null} */ (null))
   const roomMenuRef = useRef(/** @type {HTMLDivElement | null} */ (null))
+  const selectedRoomIdRef = useRef(selectedRoomId)
+
+  useEffect(() => {
+    selectedRoomIdRef.current = selectedRoomId
+  }, [selectedRoomId])
+
+  const removeRoomFromList = useCallback((rid) => {
+    setRooms((prev) => {
+      const next = prev.filter((r) => r.roomId !== rid)
+      setSelectedRoomId((cur) => {
+        if (cur !== rid) return cur
+        setMessages([])
+        return next[0]?.roomId ?? ''
+      })
+      return next
+    })
+  }, [])
 
   const myNickname = useMemo(() => {
     const fromClaims =
@@ -89,7 +106,8 @@ export function MessagesPage() {
       refreshTimer = setTimeout(async () => {
         try {
           const list = await fetchChatRooms()
-          setRooms(list.map((r) => (selectedRoomId && r.roomId === selectedRoomId ? { ...r, unreadCount: 0 } : r)))
+          const sid = selectedRoomIdRef.current
+          setRooms(list.map((r) => (sid && r.roomId === sid ? { ...r, unreadCount: 0 } : r)))
         } catch {
           /* ignore */
         }
@@ -99,8 +117,28 @@ export function MessagesPage() {
     es.addEventListener('chat-event', (evt) => {
       try {
         const payload = JSON.parse(String(/** @type {MessageEvent} */ (evt).data || '{}'))
+        if (payload?.type === 'ROOM_LEFT' && payload.roomId) {
+          const rid = payload.roomId
+          const roomDeleted = Boolean(payload.data?.roomDeleted)
+          const leftUser =
+            typeof payload.data?.leftUserEmail === 'string'
+              ? payload.data.leftUserEmail
+              : typeof payload.senderEmail === 'string'
+                ? payload.senderEmail
+                : ''
+          if (roomDeleted) {
+            removeRoomFromList(rid)
+            return
+          }
+          if (leftUser && leftUser === email) {
+            removeRoomFromList(rid)
+            return
+          }
+          scheduleRefreshRooms()
+          return
+        }
         // 현재 보고 있는 방에서의 NEW_MESSAGE는 unreadCount 갱신 대상이 아니다(0 유지).
-        if (payload?.type === 'NEW_MESSAGE' && payload?.roomId && payload.roomId === selectedRoomId) {
+        if (payload?.type === 'NEW_MESSAGE' && payload?.roomId && payload.roomId === selectedRoomIdRef.current) {
           return
         }
         if (payload?.type === 'NEW_MESSAGE' || payload?.type === 'NEW_ROOM') {
@@ -120,7 +158,7 @@ export function MessagesPage() {
       es.close()
       if (sseRef.current === es) sseRef.current = null
     }
-  }, [isAuthenticated, token])
+  }, [isAuthenticated, token, email, removeRoomFromList])
 
   const onPickRoom = (roomId) => {
     setRoomMenuOpen(false)
@@ -150,25 +188,27 @@ export function MessagesPage() {
     setRoomMenuOpen(false)
     setError('')
     try {
-      const res = await apiRequest(`/chat/rooms/${encodeURIComponent(selectedRoomId)}`, { method: 'DELETE' })
+      const res = await apiRequest('/chat/rooms/leave', {
+        method: 'POST',
+        json: { roomId: selectedRoomId },
+      })
       const text = await res.text()
-      if (!res.ok && res.status !== 204) {
-        let msg = text || '퇴장에 실패했습니다.'
-        try {
-          const j = JSON.parse(text)
-          if (j?.message) msg = String(j.message)
-        } catch {
-          /* ignore */
-        }
+      /** @type {{ success?: boolean, message?: string, roomDeleted?: boolean }} */
+      let parsed = {}
+      try {
+        if (text.startsWith('{') || text.startsWith('[')) parsed = JSON.parse(text)
+      } catch {
+        /* ignore */
+      }
+      if (!res.ok) {
+        const msg = typeof parsed.message === 'string' && parsed.message.trim() ? parsed.message.trim() : '퇴장에 실패했습니다.'
         throw new Error(msg)
       }
+      if (parsed.success === false) {
+        throw new Error(typeof parsed.message === 'string' && parsed.message ? parsed.message : '퇴장에 실패했습니다.')
+      }
       const rid = selectedRoomId
-      setRooms((prev) => {
-        const next = prev.filter((r) => r.roomId !== rid)
-        setSelectedRoomId(next[0]?.roomId ?? '')
-        setMessages([])
-        return next
-      })
+      removeRoomFromList(rid)
     } catch (e) {
       setError(e instanceof Error ? e.message : '퇴장에 실패했습니다.')
     }
