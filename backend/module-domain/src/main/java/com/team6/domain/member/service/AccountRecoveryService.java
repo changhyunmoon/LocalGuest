@@ -5,7 +5,6 @@ import com.team6.domain.member.entity.Member;
 import com.team6.domain.member.entity.Role;
 import com.team6.domain.member.entity.Status;
 import com.team6.domain.member.repository.MemberRepository;
-import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -20,7 +19,6 @@ import java.security.SecureRandom;
 import java.util.concurrent.TimeUnit;
 
 @Service
-@RequiredArgsConstructor
 public class AccountRecoveryService {
 
     private static final int TTL_SEC = 180;
@@ -28,7 +26,6 @@ public class AccountRecoveryService {
 
     private final MemberRepository memberRepository;
     private final PasswordEncoder passwordEncoder;
-    @Qualifier("memberRedisTemplate")
     private final RedisTemplate<String, String> redisTemplate;
     @Nullable
     private final JavaMailSender mailSender;
@@ -36,6 +33,18 @@ public class AccountRecoveryService {
 
     @Value("${spring.profiles.active:prod}")
     private String activeProfile;
+
+    public AccountRecoveryService(
+            MemberRepository memberRepository,
+            PasswordEncoder passwordEncoder,
+            @Qualifier("memberRedisTemplate") RedisTemplate<String, String> redisTemplate,
+            @Nullable JavaMailSender mailSender
+    ) {
+        this.memberRepository = memberRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.redisTemplate = redisTemplate;
+        this.mailSender = mailSender;
+    }
 
     @Transactional(readOnly = true)
     public FindIdResponse findMaskedEmail(String name, String nickname, Role role) {
