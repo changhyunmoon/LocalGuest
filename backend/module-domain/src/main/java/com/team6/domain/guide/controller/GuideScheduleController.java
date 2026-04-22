@@ -108,7 +108,14 @@ public class GuideScheduleController {
             @PathVariable Long guideId,
             @PathVariable Long scheduleId
     ) {
-        return ResponseEntity.ok(guideScheduleService.getScheduleForm(scheduleId, guideId));
+        boolean isGuideCaller;
+        try {
+            guideAuthenticationSupport.getCurrentGuideMemberId();
+            isGuideCaller = true;
+        } catch (Exception e) {
+            isGuideCaller = false;
+        }
+        return ResponseEntity.ok(guideScheduleService.getScheduleForm(scheduleId, guideId, isGuideCaller));
     }
 
     // 수락 후 여행 계획 양식 저장 — BOOKED 상태에만 가능 (F06-04)
