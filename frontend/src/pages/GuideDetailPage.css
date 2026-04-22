@@ -632,6 +632,7 @@
   font-size: 0.92rem;
   line-height: 1.45;
   white-space: pre-wrap;
+  min-height: 1.45em;
 }
 
 .gdp-confirm-actions {
