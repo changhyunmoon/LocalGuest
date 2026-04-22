@@ -126,10 +126,16 @@ export function LoginPage() {
           />
         </label>
 
-        <div className="form-social form-social--inside">
+        {error && <p className="form-error">{error}</p>}
+
+        <button type="submit" className="submit form-login-submit form-auth-primary-btn" disabled={loading}>
+          {loading ? '처리 중…' : '로그인'}
+        </button>
+
+        <div className="form-social form-social--inside form-social--after-login">
           <button
             type="button"
-            className="submit ghost form-google-login"
+            className="submit ghost form-google-login form-auth-primary-btn"
             onClick={() => beginGoogleOAuth(role, returnTo)}
             title="Google OAuth2 로그인"
           >
@@ -140,11 +146,27 @@ export function LoginPage() {
           </button>
         </div>
 
-        {error && <p className="form-error">{error}</p>}
-
-        <button type="submit" className="submit form-login-submit" disabled={loading}>
-          {loading ? '처리 중…' : '로그인'}
-        </button>
+        <nav className="form-account-links" aria-label="계정 찾기 및 가입">
+          <button type="button" className="form-text-link" onClick={() => navigate('/auth/find-id', { state: { role } })}>
+            아이디(이메일) 찾기
+          </button>
+          <span className="form-account-links__sep" aria-hidden>
+            ·
+          </span>
+          <button
+            type="button"
+            className="form-text-link"
+            onClick={() => navigate('/auth/forgot-password', { state: { role } })}
+          >
+            비밀번호 찾기
+          </button>
+          <span className="form-account-links__sep" aria-hidden>
+            ·
+          </span>
+          <button type="button" className="form-text-link" onClick={() => navigate('/auth/signup')}>
+            회원가입
+          </button>
+        </nav>
       </form>
 
       {roleMismatch && (

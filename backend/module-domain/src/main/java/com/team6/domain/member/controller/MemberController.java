@@ -1,15 +1,22 @@
 package com.team6.domain.member.controller;
 
+import com.team6.domain.member.dto.request.FindIdRequest;
 import com.team6.domain.member.dto.request.MemberJoinRequest;
+import com.team6.domain.member.dto.request.PasswordResetConfirmRequest;
+import com.team6.domain.member.dto.request.PasswordResetSendRequest;
 import com.team6.domain.member.entity.Role;
+import com.team6.domain.member.service.AccountRecoveryService;
 import com.team6.domain.member.service.MemberService;
 import com.team6.domain.member.service.SignupEmailVerificationService;
 import com.team6.domain.member.dto.request.EmailVerificationSendRequest;
 import com.team6.domain.member.dto.request.EmailVerificationConfirmRequest;
 import com.team6.domain.member.dto.response.EmailVerificationSendResponse;
+import com.team6.domain.member.dto.response.FindIdResponse;
 import com.team6.domain.member.dto.response.NicknameAvailabilityResponse;
+import com.team6.module.common.global.exception.ExceptionResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,6 +26,7 @@ import org.springframework.web.bind.annotation.*;
 public class MemberController {
     private final MemberService memberService;
     private final SignupEmailVerificationService signupEmailVerificationService;
+    private final AccountRecoveryService accountRecoveryService;
 
     // 가입
     @PostMapping("/join")
@@ -63,5 +71,44 @@ public class MemberController {
         }
         boolean taken = memberService.existsByNickname(nickname.trim());
         return ResponseEntity.ok(new NicknameAvailabilityResponse(!taken));
+    }
+
+    /** 가입 시 입력한 이름·닉네임·역할로 로그인 아이디(이메일) 일부를 확인합니다. */
+    @PostMapping("/find-id")
+    public ResponseEntity<?> findLoginId(@Valid @RequestBody FindIdRequest body) {
+        try {
+            FindIdResponse res = accountRecoveryService.findMaskedEmail(body.getName(), body.getNickname(), body.getRole());
+            return ResponseEntity.ok(res);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest()
+                    .body(ExceptionResponse.of(HttpStatus.BAD_REQUEST, "FIND_ID_FAILED", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/password-reset/send")
+    public ResponseEntity<?> sendPasswordResetCode(@Valid @RequestBody PasswordResetSendRequest body) {
+        try {
+            int sec = accountRecoveryService.sendPasswordResetCode(body.getEmail(), body.getRole());
+            return ResponseEntity.ok(new EmailVerificationSendResponse(sec));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest()
+                    .body(ExceptionResponse.of(HttpStatus.BAD_REQUEST, "PWD_RESET_SEND_FAILED", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/password-reset/confirm")
+    public ResponseEntity<?> confirmPasswordReset(@Valid @RequestBody PasswordResetConfirmRequest body) {
+        try {
+            accountRecoveryService.resetPasswordAfterVerification(
+                    body.getEmail(),
+                    body.getRole(),
+                    body.getCode(),
+                    body.getNewPassword()
+            );
+            return ResponseEntity.ok().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest()
+                    .body(ExceptionResponse.of(HttpStatus.BAD_REQUEST, "PWD_RESET_CONFIRM_FAILED", e.getMessage()));
+        }
     }
 }
