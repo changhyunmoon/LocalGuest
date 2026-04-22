@@ -134,14 +134,6 @@
   color: #6b7280;
 }
 
-.msg-copy-hint {
-  display: block;
-  margin-top: 0.28rem;
-  font-size: 0.72rem;
-  font-weight: 600;
-  color: #15803d;
-}
-
 .msg-header-actions {
   position: relative;
   margin-left: auto;

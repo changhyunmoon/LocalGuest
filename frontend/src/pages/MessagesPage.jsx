@@ -1,7 +1,7 @@
 import { Client } from '@stomp/stompjs'
 import SockJS from 'sockjs-client/dist/sockjs'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 
 import { PageEmpty, PageError, PageLoading } from '../components/PageStates.jsx'
 import { apiRequest } from '../api/client'
@@ -37,7 +37,6 @@ function nicknameFromEmail(email) {
 
 export function MessagesPage() {
   const { isAuthenticated, email, token, claims } = useAuth()
-  const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const chatBodyRef = useRef(null)
   const stompRef = useRef(/** @type {Client | null} */ (null))
@@ -52,7 +51,6 @@ export function MessagesPage() {
   const [error, setError] = useState('')
   const [sending, setSending] = useState(false)
   const [roomMenuOpen, setRoomMenuOpen] = useState(false)
-  const [copyHint, setCopyHint] = useState('')
   const readUpdateTimerRef = useRef(/** @type {ReturnType<typeof setTimeout> | null} */ (null))
   const autoReadTimerRef = useRef(/** @type {ReturnType<typeof setTimeout> | null} */ (null))
   const roomMenuRef = useRef(/** @type {HTMLDivElement | null} */ (null))
@@ -142,19 +140,6 @@ export function MessagesPage() {
     document.addEventListener('mousedown', onDocMouseDown)
     return () => document.removeEventListener('mousedown', onDocMouseDown)
   }, [roomMenuOpen])
-
-  const copyRoomId = async () => {
-    if (!selectedRoomId) return
-    try {
-      await navigator.clipboard.writeText(selectedRoomId)
-      setCopyHint('채팅방 ID를 복사했어요.')
-      window.setTimeout(() => setCopyHint(''), 2000)
-    } catch {
-      setCopyHint('복사에 실패했어요.')
-      window.setTimeout(() => setCopyHint(''), 2000)
-    }
-    setRoomMenuOpen(false)
-  }
 
   const leaveSelectedRoom = async () => {
     if (!selectedRoomId) return
@@ -436,7 +421,6 @@ export function MessagesPage() {
             <span>
               {selectedRoom?.participantCount ? `참여자 ${selectedRoom.participantCount}명` : '채팅방을 선택해 주세요'}
             </span>
-            {copyHint ? <span className="msg-copy-hint">{copyHint}</span> : null}
           </div>
           <div className="msg-header-actions" ref={roomMenuRef}>
             <button
@@ -452,20 +436,6 @@ export function MessagesPage() {
             </button>
             {roomMenuOpen && selectedRoomId ? (
               <div className="msg-room-menu" role="menu">
-                <button type="button" className="msg-room-menu-item" role="menuitem" onClick={() => void copyRoomId()}>
-                  채팅방 ID 복사
-                </button>
-                <button
-                  type="button"
-                  className="msg-room-menu-item"
-                  role="menuitem"
-                  onClick={() => {
-                    setRoomMenuOpen(false)
-                    navigate('/mypage/scrapbook')
-                  }}
-                >
-                  나의 여행 기록 열기
-                </button>
                 <button type="button" className="msg-room-menu-item msg-room-menu-item--danger" role="menuitem" onClick={() => void leaveSelectedRoom()}>
                   채팅방 퇴장하기
                 </button>
