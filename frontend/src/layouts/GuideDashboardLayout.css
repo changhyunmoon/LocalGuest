@@ -37,6 +37,8 @@
   height: 3.7rem;
   border-radius: 50%;
   background: #f9e8ee;
+  background-size: cover;
+  background-position: center;
   margin-bottom: 0.65rem;
 }
 
@@ -88,6 +90,26 @@
 
 .g-dash-profile-btn:hover {
   background: #fdeaf1;
+}
+
+.g-dash-profile-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.g-dash-profile-actions {
+  margin-top: 0.1rem;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.35rem;
+}
+
+.g-dash-profile-error {
+  margin: 0.4rem 0 0;
+  color: #b91c1c;
+  font-size: 0.68rem;
+  line-height: 1.35;
 }
 
 .g-dash-nav {

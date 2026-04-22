@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, Navigate, NavLink, Outlet, useLocation } from 'react-router-dom'
 
 import { apiRequest } from '../api/client.js'
 import { useGuidePendingRequests } from '../context/GuidePendingRequestsProvider.jsx'
 import { useAuth } from '../context/useAuth.js'
 import { useResolvedGuideId } from '../hooks/useResolvedGuideId.js'
+import { buildGuidePutBody } from '../lib/guideProfilePayload.js'
 
 import './GuideDashboardLayout.css'
 
@@ -24,7 +25,11 @@ export function GuideDashboardLayout() {
   const { pathname, search } = useLocation()
   const { guideId } = useResolvedGuideId()
   const displayName = email ? email.split('@')[0] : '홍길동'
+  const photoInputRef = useRef(null)
   const [guideStyleRaw, setGuideStyleRaw] = useState('')
+  const [guideProfile, setGuideProfile] = useState(null)
+  const [imageBusy, setImageBusy] = useState(false)
+  const [imageError, setImageError] = useState('')
 
   useEffect(() => {
     if (!guideId) return
@@ -35,7 +40,10 @@ export function GuideDashboardLayout() {
         const text = await res.text()
         if (!res.ok || cancelled) return
         const data = text ? JSON.parse(text) : null
-        if (!cancelled) setGuideStyleRaw(String(data?.guideStyle ?? '').trim())
+        if (!cancelled) {
+          setGuideProfile(data)
+          setGuideStyleRaw(String(data?.guideStyle ?? '').trim())
+        }
       } catch {
         /* ignore guide style fetch errors in sidebar */
       }
@@ -59,13 +67,96 @@ export function GuideDashboardLayout() {
     return <Navigate to="/mypage" replace />
   }
 
+  const saveGuideProfileImage = async (nextImageUrl) => {
+    if (!guideId || !guideProfile) {
+      throw new Error('가이드 프로필 정보를 아직 불러오지 못했습니다.')
+    }
+    const body = buildGuidePutBody(guideProfile)
+    body.profileImage = nextImageUrl === '' ? null : nextImageUrl
+    const saveRes = await apiRequest(`/guides/${guideId}`, { method: 'PUT', json: body })
+    const saveText = await saveRes.text()
+    if (!saveRes.ok) throw new Error(saveText || '가이드 프로필 이미지 저장에 실패했습니다.')
+    const updated = saveText ? JSON.parse(saveText) : guideProfile
+    setGuideProfile(updated)
+    setGuideStyleRaw(String(updated?.guideStyle ?? '').trim())
+  }
+
+  const uploadGuideProfileImage = async (file) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('folder', 'guide-profile')
+    const uploadRes = await apiRequest('/files/upload', { method: 'POST', body: formData })
+    const uploadText = await uploadRes.text()
+    if (!uploadRes.ok) throw new Error(uploadText || '이미지 업로드에 실패했습니다.')
+    const uploadJson = uploadText ? JSON.parse(uploadText) : {}
+    const uploadedUrl = String(uploadJson?.url ?? '').trim()
+    if (!uploadedUrl) throw new Error('이미지 업로드 URL을 받지 못했습니다.')
+    await saveGuideProfileImage(uploadedUrl)
+  }
+
   return (
     <div className="g-dash">
       <aside className="g-dash-side">
         <div className="g-dash-profile">
-          <div className="g-dash-avatar" aria-hidden />
+          <div
+            className="g-dash-avatar"
+            aria-hidden
+            style={guideProfile?.profileImage ? { backgroundImage: `url(${guideProfile.profileImage})` } : undefined}
+          />
           <strong className="g-dash-name">{displayName}</strong>
           <span className="g-dash-email">{email ?? ''}</span>
+          <input
+            ref={photoInputRef}
+            type="file"
+            accept="image/*"
+            style={{ display: 'none' }}
+            onChange={(e) => {
+              const file = e.target.files?.[0]
+              e.target.value = ''
+              if (!file) return
+              if (!file.type.startsWith('image/')) {
+                setImageError('이미지 파일만 업로드할 수 있습니다.')
+                return
+              }
+              void (async () => {
+                setImageBusy(true)
+                setImageError('')
+                try {
+                  await uploadGuideProfileImage(file)
+                } catch (err) {
+                  setImageError(err instanceof Error ? err.message : '프로필 이미지 업로드에 실패했습니다.')
+                } finally {
+                  setImageBusy(false)
+                }
+              })()
+            }}
+          />
+          <div className="g-dash-profile-actions">
+            <button type="button" className="g-dash-profile-btn" disabled={imageBusy} onClick={() => photoInputRef.current?.click()}>
+              {imageBusy ? '업로드 중…' : '사진 변경'}
+            </button>
+            <button
+              type="button"
+              className="g-dash-profile-btn"
+              disabled={imageBusy || !guideProfile?.profileImage}
+              onClick={() => {
+                void (async () => {
+                  setImageBusy(true)
+                  setImageError('')
+                  try {
+                    await saveGuideProfileImage('')
+                  } catch (err) {
+                    setImageError(err instanceof Error ? err.message : '프로필 이미지 삭제에 실패했습니다.')
+                  } finally {
+                    setImageBusy(false)
+                  }
+                })()
+              }}
+            >
+              사진 삭제
+            </button>
+          </div>
+          {imageError && <p className="g-dash-profile-error">{imageError}</p>}
           {guideStyleTags.length > 0 && (
             <div className="g-dash-style-tags" aria-label="가이드 스타일 태그">
               {guideStyleTags.map((tag) => (

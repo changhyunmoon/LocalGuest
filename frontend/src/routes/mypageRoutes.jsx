@@ -6,7 +6,6 @@ import { GuestUpcomingTripsPage } from '../pages/GuestUpcomingTripsPage'
 import { MypageItineraryPage } from '../pages/MypageItineraryPage'
 import { MypagePaymentsPage } from '../pages/MypagePaymentsPage'
 import { MypagePrivacyPage } from '../pages/MypagePrivacyPage'
-import { MypageProfilePage } from '../pages/MypageProfilePage'
 import { MypageReviewsPage } from '../pages/MypageReviewsPage'
 import { MypageScrapbookPage } from '../pages/MypageScrapbookPage'
 import { MypageScrapbookTicketDetailPage } from '../pages/MypageScrapbookTicketDetailPage'
@@ -30,7 +29,6 @@ export const mypageRoutes = [
     ),
     children: [
       { index: true, element: <Navigate to="scrapbook" replace /> },
-      { path: 'profile', element: <MypageProfilePage /> },
       {
         path: 'scrapbook',
         element: <MypageScrapbookPage />,

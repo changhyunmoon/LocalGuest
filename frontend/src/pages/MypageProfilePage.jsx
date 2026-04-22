@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 
+import { apiRequest } from '../api/client.js'
 import { MypageDevHint } from '../components/MypageDevHint.jsx'
 import { useAuth } from '../context/useAuth.js'
 import { getGuestDisplayName, loadGuestPrivacyForm, loadTravelTags } from '../lib/guestMypagePrefs.js'
@@ -11,6 +12,7 @@ import './MypageMemberPages.css'
 
 export function MypageProfilePage() {
   const { email, token } = useAuth()
+  const photoInputRef = useRef(null)
 
   const claims = useMemo(() => parseJwtPayload(token ?? ''), [token])
   const jwtEmail = useMemo(() => (token ? getEmailFromToken(token) : null), [token])
@@ -18,12 +20,73 @@ export function MypageProfilePage() {
 
   const [nickname, setNickname] = useState('')
   const [travelTags, setTravelTags] = useState([])
+  const [profileImageUrl, setProfileImageUrl] = useState(null)
+  const [imageBusy, setImageBusy] = useState(false)
+  const [imageError, setImageError] = useState('')
 
   useEffect(() => {
     const f = loadGuestPrivacyForm(email)
     setNickname(f.nickname ?? '')
     setTravelTags(loadTravelTags())
   }, [email])
+
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      if (!token) {
+        if (!cancelled) setProfileImageUrl(null)
+        return
+      }
+      try {
+        const res = await apiRequest('/members/me/profile', { method: 'GET' })
+        const text = await res.text()
+        if (!res.ok) {
+          throw new Error(text || '프로필 이미지를 불러오지 못했습니다.')
+        }
+        const json = text ? JSON.parse(text) : {}
+        if (!cancelled) setProfileImageUrl(json?.profileImageUrl ? String(json.profileImageUrl) : null)
+      } catch (e) {
+        if (!cancelled) {
+          setProfileImageUrl(null)
+          setImageError(e instanceof Error ? e.message : '프로필 이미지를 불러오지 못했습니다.')
+        }
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [token])
+
+  const uploadGuestProfileImage = async (file) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('folder', 'guest-profile')
+    const uploadRes = await apiRequest('/files/upload', { method: 'POST', body: formData })
+    const uploadText = await uploadRes.text()
+    if (!uploadRes.ok) throw new Error(uploadText || '이미지 업로드에 실패했습니다.')
+    const uploadJson = uploadText ? JSON.parse(uploadText) : {}
+    const uploadedUrl = String(uploadJson?.url ?? '').trim()
+    if (!uploadedUrl) throw new Error('이미지 업로드 URL을 받지 못했습니다.')
+
+    const saveRes = await apiRequest('/members/me/profile', {
+      method: 'PUT',
+      json: { profileImageUrl: uploadedUrl },
+    })
+    const saveText = await saveRes.text()
+    if (!saveRes.ok) throw new Error(saveText || '프로필 이미지 저장에 실패했습니다.')
+    const saveJson = saveText ? JSON.parse(saveText) : {}
+    return saveJson?.profileImageUrl ? String(saveJson.profileImageUrl) : uploadedUrl
+  }
+
+  const clearGuestProfileImage = async () => {
+    const saveRes = await apiRequest('/members/me/profile', {
+      method: 'PUT',
+      json: { profileImageUrl: '' },
+    })
+    const saveText = await saveRes.text()
+    if (!saveRes.ok) throw new Error(saveText || '프로필 이미지 삭제에 실패했습니다.')
+    return null
+  }
 
   const displayName = useMemo(() => getGuestDisplayName(email), [email, nickname])
   const travelDnaPreview = useMemo(() => buildTravelDnaPreview(loadTravelDna()), [])
@@ -45,12 +108,91 @@ export function MypageProfilePage() {
             표시 닉네임(로컬): <strong>{nickname?.trim() ? nickname.trim() : '—'}</strong>
           </p>
         </div>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.45rem', justifyContent: 'flex-end' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem', alignItems: 'flex-end' }}>
+          <div
+            aria-label="게스트 프로필 이미지"
+            style={{
+              width: '4.3rem',
+              height: '4.3rem',
+              borderRadius: '50%',
+              border: '1px solid #f0d8e5',
+              backgroundColor: '#fff',
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              backgroundImage: profileImageUrl ? `url(${profileImageUrl})` : 'none',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#7a4f68',
+              fontWeight: 700,
+              fontSize: '0.82rem',
+            }}
+          >
+            {!profileImageUrl ? 'No Img' : ''}
+          </div>
+          <input
+            ref={photoInputRef}
+            type="file"
+            accept="image/*"
+            style={{ display: 'none' }}
+            onChange={(e) => {
+              const file = e.target.files?.[0]
+              e.target.value = ''
+              if (!file) return
+              if (!file.type.startsWith('image/')) {
+                setImageError('이미지 파일만 업로드할 수 있습니다.')
+                return
+              }
+              void (async () => {
+                setImageBusy(true)
+                setImageError('')
+                try {
+                  const savedUrl = await uploadGuestProfileImage(file)
+                  setProfileImageUrl(savedUrl)
+                } catch (err) {
+                  setImageError(err instanceof Error ? err.message : '프로필 이미지 업로드에 실패했습니다.')
+                } finally {
+                  setImageBusy(false)
+                }
+              })()
+            }}
+          />
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.45rem', justifyContent: 'flex-end' }}>
+            <button type="button" className="mp-btn mp-btn--line" disabled={imageBusy} onClick={() => photoInputRef.current?.click()}>
+              {imageBusy ? '업로드 중…' : '프로필 사진 등록'}
+            </button>
+            <button
+              type="button"
+              className="mp-btn mp-btn--line"
+              disabled={imageBusy || !profileImageUrl}
+              onClick={() => {
+                void (async () => {
+                  setImageBusy(true)
+                  setImageError('')
+                  try {
+                    await clearGuestProfileImage()
+                    setProfileImageUrl(null)
+                  } catch (err) {
+                    setImageError(err instanceof Error ? err.message : '프로필 이미지 삭제에 실패했습니다.')
+                  } finally {
+                    setImageBusy(false)
+                  }
+                })()
+              }}
+            >
+              사진 삭제
+            </button>
+          </div>
           <Link to="/mypage/privacy" className="mp-btn" style={{ textDecoration: 'none' }}>
             개인정보/알림 설정
           </Link>
         </div>
       </div>
+      {imageError && (
+        <p className="err" style={{ marginTop: '-0.25rem', marginBottom: '0.85rem' }}>
+          {imageError}
+        </p>
+      )}
 
       <h2 style={{ margin: '0 0 0.75rem', fontSize: '0.95rem', fontWeight: 800 }}>계정/토큰 정보</h2>
       <div className="mp-cards">
