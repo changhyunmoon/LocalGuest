@@ -61,6 +61,9 @@ async function readJsonError(res, text) {
   }
 }
 
+const LANGUAGE_OPTIONS = ['한국어', '영어', '한국어+영어', '일본어', '중국어']
+const GUIDE_STYLE_OPTIONS = ['활기찬 탐험가형', '여유로운 동네 친구형', '전문 해설사형', '감성 포토 투어형', '맛집 전문 큐레이터형']
+
 function detectRegionByCurrentLocation(kakao) {
   return new Promise((resolve, reject) => {
     if (!navigator.geolocation) {
@@ -252,11 +255,15 @@ export function GuideProfileEditPage() {
     )
   }
 
+  const hasFallbackLanguage = !!(profile.language && !LANGUAGE_OPTIONS.includes(String(profile.language).trim()))
+  const parsedResidenceYears = Number.parseInt(String(profile.residenceYears ?? '').replace(/[^\d]/g, ''), 10)
+  const residenceYearsPreview = Number.isFinite(parsedResidenceYears) ? parsedResidenceYears : 0
+
   return (
     <div className="g-panel">
       <section className="gpv-head">
-        <h1>가이드 프로필 등록 📸</h1>
-        <p>여행자들에게 보일 기본 정보를 입력해주세요.</p>
+        <h1>가이드 프로필 · 소개 📸</h1>
+        <p>기본 정보와 소개글을 한곳에서 입력·저장할 수 있어요.</p>
       </section>
       <div className="gpv-profile-row">
         <div
@@ -395,15 +402,77 @@ export function GuideProfileEditPage() {
           </div>
         </div>
 
+        <div className="gi-cards gpv-profile-intro-cards">
+          <div className="gi-card">
+            <h2 className="gi-card-title">기본 소개</h2>
+
+            <div className="gm-field">
+              <label htmlFor="gp-bio">자기소개</label>
+              <textarea
+                id="gp-bio"
+                value={profile.bio ?? ''}
+                onChange={(e) => setField('bio', e.target.value)}
+                rows={6}
+                maxLength={4000}
+                placeholder="나를 소개하는 글을 작성해주세요."
+              />
+            </div>
+
+            <div className="gm-field">
+              <label htmlFor="gp-story">지역 스토리</label>
+              <textarea
+                id="gp-story"
+                value={profile.localStory ?? ''}
+                onChange={(e) => setField('localStory', e.target.value)}
+                rows={6}
+                maxLength={4000}
+                placeholder="이 지역과의 특별한 인연이나 스토리를 공유해주세요."
+              />
+            </div>
+
+            <div className="gm-field">
+              <label htmlFor="gp-years">
+                거주 연수 <span className="gi-range-val">{residenceYearsPreview}년</span>
+              </label>
+              <div className="gi-years-row">
+                <input
+                  id="gp-years"
+                  type="number"
+                  min={0}
+                  max={80}
+                  inputMode="numeric"
+                  value={profile.residenceYears != null && profile.residenceYears !== '' ? String(profile.residenceYears) : ''}
+                  onChange={(e) => {
+                    const next = e.target.value.replace(/[^\d]/g, '')
+                    if (next === '') {
+                      setField('residenceYears', '')
+                      return
+                    }
+                    setField('residenceYears', Math.min(80, Number(next)))
+                  }}
+                  className="gi-years-input"
+                  placeholder="거주 연수"
+                />
+                <span className="gi-years-suffix">년</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div className="gpv-mini-grid">
-          <div className="gpv-field">
+          <div className="gm-field">
             <label htmlFor="gp-lang">기본 언어</label>
-            <input
-              id="gp-lang"
-              value={profile.language ?? ''}
-              onChange={(e) => setField('language', e.target.value)}
-              placeholder="한국어, English"
-            />
+            <select id="gp-lang" value={profile.language ?? ''} onChange={(e) => setField('language', e.target.value)}>
+              {hasFallbackLanguage && (
+                <option value={profile.language}>기존값 유지 ({profile.language})</option>
+              )}
+              <option value="">선택 안 함</option>
+              <option value="한국어">한국어</option>
+              <option value="영어">영어</option>
+              <option value="한국어+영어">한국어+영어</option>
+              <option value="일본어">일본어</option>
+              <option value="중국어">중국어</option>
+            </select>
           </div>
           <div className="gpv-field">
             <label htmlFor="gp-price">시간당 가격(원)</label>
@@ -416,24 +485,49 @@ export function GuideProfileEditPage() {
           </div>
         </div>
 
-        <div className="gpv-field">
-          <label htmlFor="gp-course">기본 코스</label>
-          <input
-            id="gp-course"
-            value={profile.defaultCourse ?? ''}
-            onChange={(e) => setField('defaultCourse', e.target.value)}
-            placeholder="예: 골목 투어 → 전통 시장 → 야경"
-          />
-        </div>
+        <div className="gi-cards gpv-profile-intro-cards">
+          <div className="gi-card">
+            <h2 className="gi-card-title">가이드 스타일 &amp; AI 매칭 설정</h2>
 
-        <div className="gpv-field">
-          <label htmlFor="gp-style">가이드 스타일</label>
-          <input
-            id="gp-style"
-            value={profile.guideStyle ?? ''}
-            onChange={(e) => setField('guideStyle', e.target.value)}
-            placeholder="예: 편안하고 친근한 동네 산책형"
-          />
+            <div className="gm-field">
+              <label>가이드 스타일</label>
+              <div className="gi-chip-list">
+                {GUIDE_STYLE_OPTIONS.map((chip) => (
+                  <button
+                    key={chip}
+                    type="button"
+                    className={`gi-chip${profile.guideStyle === chip ? ' is-on' : ''}`}
+                    onClick={() => {
+                      const g = profile.guideStyle ?? ''
+                      setField('guideStyle', g === chip ? '' : chip)
+                    }}
+                  >
+                    {chip}
+                  </button>
+                ))}
+              </div>
+              <div className="gi-tag-row" style={{ marginTop: '0.5rem' }}>
+                <input
+                  className="gi-tag-input"
+                  value={GUIDE_STYLE_OPTIONS.includes(String(profile.guideStyle ?? '').trim()) ? '' : (profile.guideStyle ?? '')}
+                  onChange={(e) => setField('guideStyle', e.target.value)}
+                  placeholder="직접 입력 (선택 옵션 외)"
+                />
+              </div>
+            </div>
+
+            <div className="gm-field">
+              <label htmlFor="gp-course">기본 코스</label>
+              <textarea
+                id="gp-course"
+                value={profile.defaultCourse ?? ''}
+                onChange={(e) => setField('defaultCourse', e.target.value)}
+                rows={2}
+                placeholder="주로 안내하는 코스 흐름 예: 남산 → 이태원 → 해방촌"
+              />
+              <p className="gm-hint">매칭된 여행자에게 첫 코스 제안으로 사용됩니다</p>
+            </div>
+          </div>
         </div>
 
         <div className="gpv-save-row">

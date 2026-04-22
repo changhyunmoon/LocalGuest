@@ -1457,6 +1457,11 @@
   cursor: not-allowed;
 }
 
+/* 프로필 페이지에 통합된 소개 카드 구역 */
+.gpv-profile-intro-cards {
+  width: 100%;
+}
+
 /* guide intro edit page (소개글 작성) */
 .gi-cards {
   display: flex;

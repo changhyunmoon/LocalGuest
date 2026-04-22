@@ -9,8 +9,7 @@ import { useResolvedGuideId } from '../hooks/useResolvedGuideId.js'
 import './GuideDashboardLayout.css'
 
 const NAV = [
-  { to: '/guide/mypage/profile', label: '📄 프로필 등록' },
-  { to: '/guide/mypage/intro', label: '📝 소개글 작성' },
+  { to: '/guide/mypage/profile', label: '📄 프로필 · 소개' },
   { to: '/guide/mypage/feed-schedule?tab=feed', label: '💼 피드 등록', tab: 'feed' },
   { to: '/guide/mypage/feed-schedule?tab=schedule', label: '📅 스케줄 관리', tab: 'schedule' },
   { to: '/guide/mypage/settlement', label: '💰 정산 예정 금액' },
