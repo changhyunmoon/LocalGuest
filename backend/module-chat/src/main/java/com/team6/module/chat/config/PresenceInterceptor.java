@@ -1,12 +1,12 @@
 package com.team6.module.chat.config;
 
 import com.team6.module.chat.service.ChatRoomService;
+import com.team6.module.chat.support.ChatPresenceRedisKeys;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider; // 추가
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -39,9 +39,6 @@ public class PresenceInterceptor implements ChannelInterceptor {
         this.chatRoomService = chatRoomService;
     }
 
-    private static final String ROOM_PARTICIPANTS = "CHAT_ROOM_PARTICIPANTS:";
-    private static final String USER_SESSION = "USER_SESSION:";
-
     @Override
     public Message<?> preSend(Message<?> message, MessageChannel channel) {
         StompHeaderAccessor accessor = MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
@@ -53,9 +50,9 @@ public class PresenceInterceptor implements ChannelInterceptor {
         if (StompCommand.SUBSCRIBE.equals(accessor.getCommand())) {
             String roomId = getRoomId(accessor.getDestination());
             if (roomId != null && userEmail != null) {
-                redisTemplate.opsForSet().add(ROOM_PARTICIPANTS + roomId, userEmail);
+                redisTemplate.opsForSet().add(ChatPresenceRedisKeys.roomParticipantsKey(roomId), userEmail);
                 Map<String, String> sessionData = Map.of("email", userEmail, "roomId", roomId);
-                redisTemplate.opsForHash().putAll(USER_SESSION + sessionId, sessionData);
+                redisTemplate.opsForHash().putAll(ChatPresenceRedisKeys.userSessionKey(sessionId), sessionData);
 
                 chatRoomService.updateLastReadAt(roomId, userEmail);
                 sendReadUpdate(roomId, userEmail);
@@ -63,15 +60,15 @@ public class PresenceInterceptor implements ChannelInterceptor {
             }
         }
         else if (StompCommand.DISCONNECT.equals(accessor.getCommand())) {
-            Map<Object, Object> sessionData = redisTemplate.opsForHash().entries(USER_SESSION + sessionId);
+            Map<Object, Object> sessionData = redisTemplate.opsForHash().entries(ChatPresenceRedisKeys.userSessionKey(sessionId));
             if (!sessionData.isEmpty()) {
                 String email = (String) sessionData.get("email");
                 String roomId = (String) sessionData.get("roomId");
 
                 chatRoomService.updateLastReadAt(roomId, email);
 
-                redisTemplate.opsForSet().remove(ROOM_PARTICIPANTS + roomId, email);
-                redisTemplate.delete(USER_SESSION + sessionId);
+                redisTemplate.opsForSet().remove(ChatPresenceRedisKeys.roomParticipantsKey(roomId), email);
+                redisTemplate.delete(ChatPresenceRedisKeys.userSessionKey(sessionId));
                 log.info("[Presence] User {} left room {}", email, roomId);
             }
         }

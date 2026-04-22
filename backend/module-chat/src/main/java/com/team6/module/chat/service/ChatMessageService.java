@@ -10,6 +10,7 @@ import com.team6.module.chat.entity.mysql.ChatParticipant;
 import com.team6.module.chat.entity.mysql.ChatRoom;
 import com.team6.module.chat.repository.mongodb.ChatMessageRepository;
 import com.team6.module.chat.repository.mysql.ChatRoomRepository;
+import com.team6.module.chat.support.ChatPresenceRedisKeys;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
@@ -48,7 +49,7 @@ public class ChatMessageService {
         ChatRoom chatRoom = chatRoomRepository.findByRoomId(request.roomId())
                 .orElseThrow(() -> new RuntimeException("채팅방을 찾을 수 없습니다: " + request.roomId()));
 
-        String activeUsersKey = "CHAT_ROOM_PARTICIPANTS:" + request.roomId();
+        String activeUsersKey = ChatPresenceRedisKeys.roomParticipantsKey(request.roomId());
         Long activeCount = redisTemplate.opsForSet().size(activeUsersKey);
         int currentActive = (activeCount != null) ? activeCount.intValue() : 0;
 

@@ -25,6 +25,7 @@ public class ChatRoomService {
     private final ChatRoomRepository chatRoomRepository;
     private final ChatMessageRepository chatMessageRepository;
     private final NotificationService notificationService;
+    private final ChatPresenceRedisService chatPresenceRedisService;
 
     //채팅방 생성
     @Transactional
@@ -115,8 +116,10 @@ public class ChatRoomService {
         if (room.getParticipants().isEmpty()) {
             chatMessageRepository.deleteByRoomId(roomId);
             chatRoomRepository.delete(room);
+            chatPresenceRedisService.purgeRoomPresence(roomId);
         } else {
             chatRoomRepository.save(room);
+            chatPresenceRedisService.removeUserFromRoomParticipants(roomId, userEmail);
         }
     }
 
