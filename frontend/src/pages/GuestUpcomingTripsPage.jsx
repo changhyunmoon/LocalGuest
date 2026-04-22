@@ -15,6 +15,14 @@ import './GuestUpcomingTripsPage.css'
 
 const UPCOMING = new Set(['PENDING', 'ACCEPTED', 'PAID', 'IN_PROGRESS'])
 
+function moodEmoji(status, d) {
+  if (status === 'IN_PROGRESS') return '🧳'
+  if (status === 'ACCEPTED') return '🧾'
+  if (d === 0) return '🚀'
+  if (d === 1) return '⏳'
+  return '✨'
+}
+
 function formatBudgetRangeKrw(minWon, maxWon, fallbackSingleWon) {
   const min = minWon != null && minWon !== '' && !Number.isNaN(Number(minWon)) ? Number(minWon) : null
   const max = maxWon != null && maxWon !== '' && !Number.isNaN(Number(maxWon)) ? Number(maxWon) : null
@@ -150,12 +158,14 @@ export function GuestUpcomingTripsPage() {
   )
 
   const sections = useMemo(() => groupRows(rows), [rows])
+  const totalCount = rows.length
 
   return (
     <div className="gut-page">
       <header className="gut-hero">
-        <h1>📆 내 여행 일정 한눈에 보기</h1>
-        <p>가까운 일정부터 D-Day 순서로 확인하고, 필요한 일정은 바로 눌러 상세/매칭 화면으로 이동해 보세요.</p>
+        <div className="gut-hero-badge">설렘 ON · {totalCount}개의 여행</div>
+        <h1>내 여행 일정 한눈에 보기</h1>
+        <p>가까운 일정부터 D-Day 순서로 정리했어요. 다음 여행을 눌러 바로 상세/매칭 화면으로 이동해 보세요.</p>
       </header>
 
       {loading && <PageLoading />}
@@ -178,17 +188,24 @@ export function GuestUpcomingTripsPage() {
                 {section.rows.map((row) => {
                   const d = daysUntil(row.desiredDate)
                   const nick = names[row.guideId] ?? `가이드 #${row.guideId}`
+                  const dest = row.destination ?? '로컬 투어'
+                  const budget = formatBudgetRangeKrw(row.budgetMinWon, row.budgetMaxWon, row.desiredBudget)
                   return (
                     <article key={row.requestId} className="gut-card">
+                      <div className="gut-card-top">
+                        <span className="gut-spot" aria-hidden="true">{moodEmoji(row.status, d)}</span>
+                        <div className="gut-pills">
+                          <span className="gut-pill gut-pill--dest">{dest}</span>
+                          <span className="gut-pill gut-pill--status">{statusText(row.status)}</span>
+                        </div>
+                      </div>
                       <div className="gut-meta">
                         <span className={`gut-dday${d === 0 ? ' is-today' : d === 1 ? ' is-soon' : ''}`}>
                           {row.status === 'ACCEPTED' ? '결제 필요' : ddayLabel(d, row.status)}
                         </span>
                         <h3>{nick}</h3>
-                        <p>{row.destination ?? '로컬 투어'} · {row.desiredDate ?? '—'}</p>
-                        <p>
-                          상태: {statusText(row.status)} · 예산: {formatBudgetRangeKrw(row.budgetMinWon, row.budgetMaxWon, row.desiredBudget)}
-                        </p>
+                        <p className="gut-line">{row.desiredDate ?? '—'}</p>
+                        <p className="gut-line gut-line--sub">예산 {budget}</p>
                       </div>
                       <button type="button" className="gut-open" onClick={() => openMatchScreen(row)}>
                         일정 확인하기
