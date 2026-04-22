@@ -62,6 +62,7 @@ function ScheduleDrawer({
   onActivateReceiving,
   onSetBlocked,
   onOpenCourse,
+  onCancelRequest,
   busy,
 }) {
   const navigate = useNavigate()
@@ -214,6 +215,20 @@ function ScheduleDrawer({
                     >
                       {s.hasCourse ? '코스 수정하기 →' : '코스 작성하기 →'}
                     </button>
+                    <button
+                      type="button"
+                      className="gss3-dact gss3-dact--danger"
+                      disabled={busy}
+                      onClick={() =>
+                        onCancelRequest?.({
+                          requestId: s.matchRequestId ?? req?.requestId ?? null,
+                          scheduleId: s.scheduleId,
+                          availableDate: s.availableDate,
+                        })
+                      }
+                    >
+                      일정 취소하기
+                    </button>
                   </div>
                 )}
               </div>
@@ -223,7 +238,7 @@ function ScheduleDrawer({
   )
 }
 
-function BookingCard({ dateKey, info, req, isSelected, onClickCard, onOpenCourse, navigate }) {
+function BookingCard({ dateKey, info, req, isSelected, onClickCard, onOpenCourse, onCancelRequest, navigate, busy }) {
   const d = parseDateOnly(dateKey)
   if (!d) return null
 
@@ -290,6 +305,22 @@ function BookingCard({ dateKey, info, req, isSelected, onClickCard, onOpenCourse
               {hasCourse ? '코스 수정' : '코스 작성 (필요)'}
             </button>
           )}
+          {isBooked && (
+            <button
+              type="button"
+              className="gss3-bact gss3-bact--danger"
+              disabled={busy}
+              onClick={() =>
+                onCancelRequest?.({
+                  requestId: info.matchRequestId ?? req?.requestId ?? null,
+                  scheduleId: info.scheduleId,
+                  availableDate: info.availableDate,
+                })
+              }
+            >
+              일정 취소
+            </button>
+          )}
           {isPending && (
             <button type="button" className="gss3-bact gss3-bact--primary" onClick={() => navigate('/guide/inbox')}>
               매칭 요청에서 처리 →
@@ -309,6 +340,7 @@ export function GuideScheduleSection({
   onActivateReceiving,
   onSetBlocked,
   onOpenCourse,
+  onCancelRequest,
   requestsByScheduleId = new Map(),
 }) {
   const navigate = useNavigate()
@@ -596,7 +628,9 @@ export function GuideScheduleSection({
                   isSelected={selectedKey === s.availableDate}
                   onClickCard={handleCardClick}
                   onOpenCourse={onOpenCourse}
+                  onCancelRequest={onCancelRequest}
                   navigate={navigate}
+                  busy={busy}
                 />
               )
             })
