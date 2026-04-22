@@ -74,15 +74,6 @@ async function readJsonError(res, text) {
   }
 }
 
-function readFileAsDataUrl(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => resolve(typeof reader.result === 'string' ? reader.result : '')
-    reader.onerror = () => reject(new Error('파일을 읽을 수 없습니다.'))
-    reader.readAsDataURL(file)
-  })
-}
-
 const MAX_LOCAL_IMAGE_BYTES = 1024 * 1024 * 2 // 2MB
 
 function formatScheduleTime(t) {
@@ -133,8 +124,25 @@ export function GuideFeedSchedulePage() {
   /** 스케줄 API 연속 클릭 방지 — React state `busy`보다 먼저 막음 */
   const scheduleOpLockRef = useRef(false)
   const mainFileInputRef = useRef(null)
+  const feedImagesRef = useRef([])
   const dragIdx = useRef(null)
   const currentTab = searchParams.get('tab') === 'schedule' ? 'schedule' : 'feed'
+
+  const revokePreviewUrl = useCallback((src) => {
+    if (typeof src === 'string' && src.startsWith('blob:')) {
+      URL.revokeObjectURL(src)
+    }
+  }, [])
+
+  useEffect(() => {
+    feedImagesRef.current = feedImages
+  }, [feedImages])
+
+  useEffect(() => {
+    return () => {
+      feedImagesRef.current.forEach((img) => revokePreviewUrl(img?.src))
+    }
+  }, [revokePreviewUrl])
 
   const reloadFeeds = useCallback(async (id) => {
     try {
@@ -268,18 +276,40 @@ export function GuideFeedSchedulePage() {
 
   const addFeed = async () => {
     if (!guideId || !feedTitle.trim()) return
-    // 파일 업로드(base64 data:URL)는 백엔드 페이로드 제한 초과로 전송 불가 → URL 모드 권장
-    const validUrls = feedImages.map((img) => img.src).filter((src) => !src.startsWith('data:'))
-    if (feedImages.length > 0 && validUrls.length < feedImages.length) {
-      addToast('파일 이미지는 서버 용량 제한으로 저장되지 않습니다. URL 입력 탭을 이용해주세요.', 'error')
-    }
     setBusy(true)
     try {
+      const uploadedImageUrls = []
+      for (const img of feedImages) {
+        if (img?.file) {
+          const formData = new FormData()
+          formData.append('file', img.file)
+          formData.append('folder', 'guide-feed')
+          const uploadRes = await apiRequest('/files/upload', { method: 'POST', body: formData })
+          const uploadText = await uploadRes.text()
+          if (!uploadRes.ok) {
+            addToast(await readJsonError(uploadRes, uploadText), 'error')
+            setBusy(false)
+            return
+          }
+          const uploadJson = uploadText ? JSON.parse(uploadText) : {}
+          const uploadedUrl = String(uploadJson?.url ?? '').trim()
+          if (!uploadedUrl) {
+            addToast('이미지 업로드 URL을 받지 못했습니다.', 'error')
+            setBusy(false)
+            return
+          }
+          uploadedImageUrls.push(uploadedUrl)
+          continue
+        }
+        const src = String(img?.src ?? '').trim()
+        if (!src || src.startsWith('blob:') || src.startsWith('data:')) continue
+        uploadedImageUrls.push(src)
+      }
       const tagLine = feedLocationTags.length > 0 ? '\n' + feedLocationTags.map((t) => `#${t}`).join(' ') : ''
       const content = (feedTitle.trim() + '\n' + feedBody.trim() + tagLine).trim()
       const res = await apiRequest(`/guides/${guideId}/feeds`, {
         method: 'POST',
-        json: { content, imageUrls: validUrls.length > 0 ? validUrls : undefined },
+        json: { content, imageUrls: uploadedImageUrls.length > 0 ? uploadedImageUrls : undefined },
       })
       const text = await res.text()
       if (!res.ok) {
@@ -290,6 +320,7 @@ export function GuideFeedSchedulePage() {
       }
       setFeedTitle('')
       setFeedBody('')
+      feedImages.forEach((img) => revokePreviewUrl(img?.src))
       setFeedImages([])
       setUrlInput('')
       setFeedImageMode('file')
@@ -417,22 +448,27 @@ export function GuideFeedSchedulePage() {
     const oversized = toProcess.filter((f) => f.size > MAX_LOCAL_IMAGE_BYTES)
     if (oversized.length) addToast(`${oversized.length}개 파일이 2MB를 초과해 제외됐습니다.`, 'error')
     const valid = toProcess.filter((f) => f.size <= MAX_LOCAL_IMAGE_BYTES)
-    const results = await Promise.allSettled(valid.map(readFileAsDataUrl))
-    const newImgs = results
-      .filter((r) => r.status === 'fulfilled')
-      .map((r) => ({ id: Date.now() + Math.random(), src: r.value }))
+    const newImgs = valid.map((file) => ({
+      id: Date.now() + Math.random(),
+      src: URL.createObjectURL(file),
+      file,
+    }))
     setFeedImages((prev) => [...prev, ...newImgs].slice(0, 10))
   }
 
   const addUrlImage = () => {
     const src = urlInput.trim()
     if (!src || feedImages.length >= 10) return
-    setFeedImages((prev) => [...prev, { id: Date.now() + Math.random(), src }])
+    setFeedImages((prev) => [...prev, { id: Date.now() + Math.random(), src, file: null }])
     setUrlInput('')
   }
 
   const removeImage = (id) => {
-    setFeedImages((prev) => prev.filter((img) => img.id !== id))
+    setFeedImages((prev) => {
+      const target = prev.find((img) => img.id === id)
+      revokePreviewUrl(target?.src)
+      return prev.filter((img) => img.id !== id)
+    })
   }
 
   const reorderImages = (dropIdx) => {
