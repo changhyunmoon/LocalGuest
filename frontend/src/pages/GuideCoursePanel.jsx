@@ -77,6 +77,31 @@ export function parseCourseDetail(text) {
     })
 }
 
+function courseDraftStorageKey(scheduleId) {
+  return `localguest.guide.courseFormDraft.v1.${String(scheduleId ?? '')}`
+}
+
+function loadCourseDraft(scheduleId) {
+  try {
+    if (typeof window === 'undefined') return null
+    const raw = window.localStorage.getItem(courseDraftStorageKey(scheduleId))
+    if (!raw) return null
+    const parsed = JSON.parse(raw)
+    return parsed && typeof parsed === 'object' ? parsed : null
+  } catch {
+    return null
+  }
+}
+
+function saveCourseDraft(scheduleId, draft) {
+  try {
+    if (typeof window === 'undefined') return
+    window.localStorage.setItem(courseDraftStorageKey(scheduleId), JSON.stringify(draft ?? null))
+  } catch {
+    // ignore (storage full / disabled)
+  }
+}
+
 /** 네이티브 select는 목록 높이 제한이 불가해, 스크롤 가능한 커스텀 패널 사용 */
 function CourseTimeDropdown({
   id,
@@ -244,6 +269,7 @@ export function GuideCoursePanel({
       setLoading(true)
       setError('')
       try {
+        const cached = loadCourseDraft(schedule.scheduleId)
         const res = await apiRequest(
           `/guides/${guideId}/schedules/${schedule.scheduleId}/form`,
           { method: 'GET' },
@@ -252,11 +278,12 @@ export function GuideCoursePanel({
         if (!res.ok) {
           // 404면 빈 폼으로 시작 (아직 작성 안 한 케이스)
           if (res.status !== 404) throw new Error(text || '불러오기 실패')
-          if (!cancelled && initialForm) {
-            const mergedDetail = String(initialForm.courseDetail ?? '').trim()
+          const seed = initialForm ?? cached
+          if (!cancelled && seed) {
+            const mergedDetail = String(seed.courseDetail ?? '').trim()
             const parsed = parseCourseDetail(mergedDetail)
-            setMeetingPoint(initialForm.meetingPoint ?? '')
-            setGuideMessage(initialForm.guideMessage ?? '')
+            setMeetingPoint(seed.meetingPoint ?? '')
+            setGuideMessage(seed.guideMessage ?? '')
             setSpots(parsed.length ? parsed : [{ name: '', time: '', desc: '' }])
             setGeoStatus(parsed.map((s) => (s.name ? 'ok' : 'idle')))
           }
@@ -265,9 +292,9 @@ export function GuideCoursePanel({
           const merged = {
             ...data,
             // 결제 전 마스킹으로 courseDetail이 비어오는 경우를 대비해, 직전에 저장한 로컬 값을 우선 표시한다.
-            meetingPoint: data?.meetingPoint ?? initialForm?.meetingPoint ?? '',
-            guideMessage: data?.guideMessage ?? initialForm?.guideMessage ?? '',
-            courseDetail: data?.courseDetail ?? initialForm?.courseDetail ?? '',
+            meetingPoint: data?.meetingPoint ?? initialForm?.meetingPoint ?? cached?.meetingPoint ?? '',
+            guideMessage: data?.guideMessage ?? initialForm?.guideMessage ?? cached?.guideMessage ?? '',
+            courseDetail: data?.courseDetail ?? initialForm?.courseDetail ?? cached?.courseDetail ?? '',
           }
           if (!cancelled) {
             setMeetingPoint(merged.meetingPoint)
@@ -525,6 +552,7 @@ export function GuideCoursePanel({
         meetingPoint: savedForm?.meetingPoint ?? payload.meetingPoint,
         guideMessage: savedForm?.guideMessage ?? payload.guideMessage,
       }
+      saveCourseDraft(schedule.scheduleId, mergedSavedForm)
       setSaveMsg('저장되었습니다!')
       setTimeout(() => setSaveMsg(''), 2500)
       onSaved(mergedSavedForm)
