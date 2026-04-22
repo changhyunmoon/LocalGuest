@@ -1,7 +1,7 @@
 import { Client } from '@stomp/stompjs'
 import SockJS from 'sockjs-client/dist/sockjs'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 
 import { PageEmpty, PageError, PageLoading } from '../components/PageStates.jsx'
 import { apiRequest } from '../api/client'
@@ -37,6 +37,7 @@ function nicknameFromEmail(email) {
 
 export function MessagesPage() {
   const { isAuthenticated, email, token, claims } = useAuth()
+  const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const chatBodyRef = useRef(null)
   const stompRef = useRef(/** @type {Client | null} */ (null))
@@ -50,8 +51,11 @@ export function MessagesPage() {
   const [loadingMessages, setLoadingMessages] = useState(false)
   const [error, setError] = useState('')
   const [sending, setSending] = useState(false)
+  const [roomMenuOpen, setRoomMenuOpen] = useState(false)
+  const [copyHint, setCopyHint] = useState('')
   const readUpdateTimerRef = useRef(/** @type {ReturnType<typeof setTimeout> | null} */ (null))
   const autoReadTimerRef = useRef(/** @type {ReturnType<typeof setTimeout> | null} */ (null))
+  const roomMenuRef = useRef(/** @type {HTMLDivElement | null} */ (null))
 
   const myNickname = useMemo(() => {
     const fromClaims =
@@ -121,9 +125,68 @@ export function MessagesPage() {
   }, [isAuthenticated, token])
 
   const onPickRoom = (roomId) => {
+    setRoomMenuOpen(false)
     setSelectedRoomId(roomId)
     // 읽음 처리 요청은 별도로 보내지만, UI는 즉시 0으로 내려 카톡처럼 반응하게 한다.
     setRooms((prev) => prev.map((r) => (r.roomId === roomId ? { ...r, unreadCount: 0 } : r)))
+  }
+
+  useEffect(() => {
+    if (!roomMenuOpen) return
+    const onDocMouseDown = (e) => {
+      const el = roomMenuRef.current
+      if (el && !el.contains(/** @type {Node} */ (e.target))) {
+        setRoomMenuOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', onDocMouseDown)
+    return () => document.removeEventListener('mousedown', onDocMouseDown)
+  }, [roomMenuOpen])
+
+  const copyRoomId = async () => {
+    if (!selectedRoomId) return
+    try {
+      await navigator.clipboard.writeText(selectedRoomId)
+      setCopyHint('채팅방 ID를 복사했어요.')
+      window.setTimeout(() => setCopyHint(''), 2000)
+    } catch {
+      setCopyHint('복사에 실패했어요.')
+      window.setTimeout(() => setCopyHint(''), 2000)
+    }
+    setRoomMenuOpen(false)
+  }
+
+  const leaveSelectedRoom = async () => {
+    if (!selectedRoomId) return
+    const ok = window.confirm(
+      '채팅방에서 나갑니다. 다른 참가자가 남아 있으면 대화와 방은 그대로 유지되고, 마지막 사람이 나가면 서버에서 방과 메시지가 삭제돼요. 계속할까요?',
+    )
+    if (!ok) return
+    setRoomMenuOpen(false)
+    setError('')
+    try {
+      const res = await apiRequest(`/chat/rooms/${encodeURIComponent(selectedRoomId)}`, { method: 'DELETE' })
+      const text = await res.text()
+      if (!res.ok && res.status !== 204) {
+        let msg = text || '퇴장에 실패했습니다.'
+        try {
+          const j = JSON.parse(text)
+          if (j?.message) msg = String(j.message)
+        } catch {
+          /* ignore */
+        }
+        throw new Error(msg)
+      }
+      const rid = selectedRoomId
+      setRooms((prev) => {
+        const next = prev.filter((r) => r.roomId !== rid)
+        setSelectedRoomId(next[0]?.roomId ?? '')
+        setMessages([])
+        return next
+      })
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '퇴장에 실패했습니다.')
+    }
   }
 
   const bumpRoomPreview = (roomId, message, createdAt) => {
@@ -373,8 +436,42 @@ export function MessagesPage() {
             <span>
               {selectedRoom?.participantCount ? `참여자 ${selectedRoom.participantCount}명` : '채팅방을 선택해 주세요'}
             </span>
+            {copyHint ? <span className="msg-copy-hint">{copyHint}</span> : null}
           </div>
-          <span className="msg-dot" />
+          <div className="msg-header-actions" ref={roomMenuRef}>
+            <button
+              type="button"
+              className="msg-menu-trigger"
+              aria-expanded={roomMenuOpen}
+              aria-haspopup="true"
+              aria-label="채팅방 메뉴"
+              disabled={!selectedRoomId}
+              onClick={() => setRoomMenuOpen((o) => !o)}
+            >
+              <span className="msg-menu-dots" aria-hidden />
+            </button>
+            {roomMenuOpen && selectedRoomId ? (
+              <div className="msg-room-menu" role="menu">
+                <button type="button" className="msg-room-menu-item" role="menuitem" onClick={() => void copyRoomId()}>
+                  채팅방 ID 복사
+                </button>
+                <button
+                  type="button"
+                  className="msg-room-menu-item"
+                  role="menuitem"
+                  onClick={() => {
+                    setRoomMenuOpen(false)
+                    navigate('/mypage/scrapbook')
+                  }}
+                >
+                  나의 여행 기록 열기
+                </button>
+                <button type="button" className="msg-room-menu-item msg-room-menu-item--danger" role="menuitem" onClick={() => void leaveSelectedRoom()}>
+                  채팅방 퇴장하기
+                </button>
+              </div>
+            ) : null}
+          </div>
         </header>
 
         <div ref={chatBodyRef} className="msg-body">

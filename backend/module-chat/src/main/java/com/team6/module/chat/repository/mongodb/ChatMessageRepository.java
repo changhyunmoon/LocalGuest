@@ -13,4 +13,6 @@ public interface ChatMessageRepository extends MongoRepository<ChatMessage, Stri
 
     // 특정 채팅방의 메시지를 페이지 단위로 조회 (Slice 사용으로 count 쿼리 생략)
     Slice<ChatMessage> findByRoomIdOrderByCreatedAtDesc(String roomId, Pageable pageable);
+
+    void deleteByRoomId(String roomId);
 }

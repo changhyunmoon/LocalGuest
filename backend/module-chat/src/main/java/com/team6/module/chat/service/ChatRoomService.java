@@ -9,8 +9,10 @@ import com.team6.module.chat.entity.mysql.ChatRoom;
 import com.team6.module.chat.repository.mongodb.ChatMessageRepository;
 import com.team6.module.chat.repository.mysql.ChatRoomRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.Comparator;
@@ -97,6 +99,25 @@ public class ChatRoomService {
                 .findFirst()
                 .ifPresent(ChatParticipant::updateLastReadAt);
 
+    }
+
+    /**
+     * 참여자가 채팅방에서 퇴장한다. 본인 행만 제거하며,
+     * 마지막 참가자가 퇴장한 경우에만 MySQL 방·참가자와 Mongo 메시지를 삭제한다.
+     */
+    @Transactional
+    public void leaveChatRoomAsParticipant(String roomId, String userEmail) {
+        ChatRoom room = chatRoomRepository.findByRoomIdWithParticipants(roomId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "채팅방을 찾을 수 없습니다."));
+        if (!room.removeParticipantByEmail(userEmail)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "채팅방 참여자만 퇴장할 수 있습니다.");
+        }
+        if (room.getParticipants().isEmpty()) {
+            chatMessageRepository.deleteByRoomId(roomId);
+            chatRoomRepository.delete(room);
+        } else {
+            chatRoomRepository.save(room);
+        }
     }
 
 }

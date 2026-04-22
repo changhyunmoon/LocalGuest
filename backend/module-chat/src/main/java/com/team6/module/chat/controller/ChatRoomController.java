@@ -39,4 +39,12 @@ public class ChatRoomController {
         return ResponseEntity.ok(response);
     }
 
+    /** 참여자 퇴장. 마지막 참가자가 나가면 MySQL 방·참가자 및 Mongo 메시지를 삭제한다. */
+    @DeleteMapping("/{roomId}")
+    public ResponseEntity<Void> leaveRoom(@PathVariable String roomId) {
+        String userEmail = SecurityUtil.getCurrentUserEmail();
+        chatRoomService.leaveChatRoomAsParticipant(roomId, userEmail);
+        return ResponseEntity.noContent().build();
+    }
+
 }
