@@ -150,11 +150,6 @@
   min-height: 2.65rem;
 }
 
-/* 비밀번호 입력란과 로그인 버튼 사이 여유 */
-button[type='submit'].form-login-submit.form-auth-primary-btn {
-  margin-top: 0.65rem;
-}
-
 .form-social--inside {
   margin-top: 0.1rem;
   padding-top: 0.25rem;
