@@ -51,6 +51,68 @@ function statusText(status) {
   return '상태 확인 필요'
 }
 
+/** 한글 음절 받침 — 조사 와/과 */
+function hasBatchimKo(char) {
+  if (!char) return false
+  const c = char.charCodeAt(0)
+  if (c < 0xac00 || c > 0xd7a3) return false
+  return (c - 0xac00) % 28 !== 0
+}
+
+function nicknameWithWaParticle(nick) {
+  const n = String(nick ?? '').trim()
+  if (!n) return '가이드와'
+  const last = n[n.length - 1]
+  return `${n}${hasBatchimKo(last) ? '과' : '와'}`
+}
+
+function shortDestinationLabel(dest) {
+  const s = String(dest ?? '').trim()
+  if (!s) return '로컬'
+  if (/제주/i.test(s)) return '제주도'
+  if (/강릉|속초|동해/i.test(s)) return '동해안'
+  if (/부산/i.test(s)) return '부산'
+  if (/서울/i.test(s)) return '서울'
+  if (/경주/i.test(s)) return '경주'
+  const first = s.split(/[\s,，/|]+/).filter(Boolean)[0] ?? s
+  let cleaned = first.replace(/특별시|광역시|특별자치도/g, '').trim()
+  if (cleaned.endsWith('시') && cleaned.length > 2) cleaned = cleaned.slice(0, -1)
+  const w = cleaned || first
+  return w.length > 10 ? `${w.slice(0, 10)}…` : w
+}
+
+const ACTIVITY_HINTS = [
+  [/맛집|미식|먹거리|식도락|음식|식사/i, '맛집'],
+  [/카페|커피|브런치/i, '카페'],
+  [/야경|야경명소/i, '야경'],
+  [/역사|유적|문화재|박물관/i, '역사'],
+  [/한옥|전통\s*마을/i, '한옥마을'],
+  [/숲|산책|둘레길|트레킹/i, '숲길'],
+  [/해변|바다|해안/i, '바다'],
+  [/쇼핑|마켓|시장/i, '쇼핑'],
+  [/포토|사진|스냅/i, '포토'],
+  [/골목|골목길/i, '골목'],
+  [/힐링|여유|느긋/i, '힐링'],
+]
+
+function activityKeywordFromRow(row) {
+  const pool = [row.conceptSummary, row.concept, row.proposeMessage, row.destination]
+    .map((x) => String(x ?? ''))
+    .join('\n')
+  for (const [re, label] of ACTIVITY_HINTS) {
+    if (re.test(pool)) return label
+  }
+  return '로컬'
+}
+
+/** @param {Record<string, unknown>} row */
+function buildTripCardTitle(row, guideNickname) {
+  const nick = String(guideNickname ?? '').trim() || '가이드'
+  const dest = shortDestinationLabel(row.destination)
+  const act = activityKeywordFromRow(row)
+  return `${nicknameWithWaParticle(nick)} 함께하는 ${dest} ${act} 투어`
+}
+
 function groupRows(rows) {
   const paymentPending = []
   const inProgress = []
@@ -182,6 +244,7 @@ export function GuestUpcomingTripsPage() {
                   const nick = names[row.guideId] ?? `가이드 #${row.guideId}`
                   const dest = row.destination ?? '로컬 투어'
                   const budget = formatBudgetRangeKrw(row.budgetMinWon, row.budgetMaxWon, row.desiredBudget)
+                  const tripTitle = buildTripCardTitle(row, nick)
                   return (
                     <article key={row.requestId} className="gut-card gut-card--timeline">
                       <div className="gut-card-main">
@@ -193,7 +256,7 @@ export function GuestUpcomingTripsPage() {
                           <span className="gut-pill gut-pill--dest">{dest}</span>
                           <span className="gut-pill gut-pill--status">{statusText(row.status)}</span>
                         </div>
-                        <h3 className="gut-title">{nick}</h3>
+                        <h3 className="gut-title" title={tripTitle}>{tripTitle}</h3>
                         <p className="gut-line gut-line--sub">예산 {budget}</p>
                         <div className="gut-card-footer">
                           <span className="gut-trail" aria-hidden="true">✈︎ 여행 준비 중</span>
