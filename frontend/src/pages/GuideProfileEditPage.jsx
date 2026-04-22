@@ -10,6 +10,7 @@ import '../layouts/GuideDashboardLayout.css'
 import './GuideMypagePages.css'
 
 const KAKAO_APP_KEY = import.meta.env.VITE_KAKAO_MAP_APP_KEY
+const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024
 
 function useToast() {
   const [toasts, setToasts] = useState([])
@@ -286,6 +287,16 @@ export function GuideProfileEditPage() {
             onChange={(e) => {
               const file = e.target.files?.[0]
               if (!file) return
+              if (!file.type.startsWith('image/')) {
+                addToast('이미지 파일만 업로드할 수 있습니다.', 'error')
+                e.target.value = ''
+                return
+              }
+              if (file.size > MAX_IMAGE_SIZE_BYTES) {
+                addToast('이미지 파일은 5MB 이하만 업로드할 수 있습니다.', 'error')
+                e.target.value = ''
+                return
+              }
               void (async () => {
                 try {
                   const objectUrl = URL.createObjectURL(file)
