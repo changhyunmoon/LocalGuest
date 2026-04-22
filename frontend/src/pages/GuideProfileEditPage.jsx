@@ -277,7 +277,7 @@ export function GuideProfileEditPage() {
         />
         <div className="gpv-photo-actions">
           <button type="button" className="gpv-photo-btn" onClick={() => photoInputRef.current?.click()}>
-            사진 변경
+            이미지 변경
           </button>
           <input
             ref={photoInputRef}
@@ -326,23 +326,8 @@ export function GuideProfileEditPage() {
               if (photoInputRef.current) photoInputRef.current.value = ''
             }}
           >
-            사진 삭제
+            이미지 삭제
           </button>
-          <details className="gpv-photo-url-box">
-            <summary>이미지 URL 직접 입력</summary>
-            <input
-              id="gp-img"
-              className="gpv-photo-input"
-              value={imageDeleted ? '' : (previewUrl ? '' : (profile.profileImage ?? ''))}
-              onChange={(e) => {
-                setField('profileImage', e.target.value)
-                setPreviewUrl(null)
-                setPendingUploadFile(null)
-                setImageDeleted(false)
-              }}
-              placeholder="https://image-url"
-            />
-          </details>
         </div>
       </div>
 

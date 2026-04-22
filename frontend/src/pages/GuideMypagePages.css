@@ -1219,6 +1219,7 @@
   width: 4.4rem;
   height: 4.4rem;
   border-radius: 50%;
+  border: 1px solid #efbfd0;
   background: linear-gradient(145deg, #e5e7eb, #d1d5db);
   background-size: cover;
   background-position: center;
@@ -1227,17 +1228,35 @@
 
 .gpv-photo-actions {
   min-width: 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.45rem;
 }
 
 .gpv-photo-btn {
-  border: 1px solid #d1d5db;
-  background: #fff;
+  border: 1px solid #efbfd0;
+  background: #fff7fb;
   border-radius: 10px;
   padding: 0.35rem 0.75rem;
   font-size: 0.74rem;
-  color: #111;
+  color: #7a4f68;
   white-space: nowrap;
   font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background-color 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
+}
+
+.gpv-photo-btn:hover:not(:disabled) {
+  background: #f2cddd;
+  border-color: #e8a8bf;
+  transform: translateY(-1px);
+}
+
+.gpv-photo-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .gpv-region-row {

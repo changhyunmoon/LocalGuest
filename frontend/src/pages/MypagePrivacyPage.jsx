@@ -245,15 +245,15 @@ export function MypagePrivacyPage() {
             />
             <button
               type="button"
-              className="mp-btn mp-btn--line"
+              className="mp-privacy-photo-btn"
               disabled={imageBusy}
               onClick={() => photoInputRef.current?.click()}
             >
-              {imageBusy ? '업로드 중…' : profileImageUrl ? '사진 변경' : '사진 등록'}
+              {imageBusy ? '업로드 중…' : '이미지 변경'}
             </button>
             <button
               type="button"
-              className="mp-btn mp-btn--line"
+              className="mp-privacy-photo-btn"
               disabled={imageBusy || !profileImageUrl}
               onClick={() => {
                 void (async () => {

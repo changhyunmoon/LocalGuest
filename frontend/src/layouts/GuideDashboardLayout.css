@@ -1,7 +1,7 @@
 .g-dash {
   display: grid;
-  grid-template-columns: minmax(0, 210px) minmax(0, 1fr);
-  gap: clamp(1rem, 2.8vw, 1.5rem);
+  grid-template-columns: minmax(0, 260px) minmax(0, 1fr);
+  gap: clamp(1rem, 3vw, 1.75rem);
   align-items: start;
   width: 100%;
   max-width: 100%;
@@ -14,10 +14,10 @@
 }
 
 .g-dash-side {
-  background: #fff5f9;
-  border-right: 1px solid #f0dce4;
-  border-radius: 0;
-  padding: 1rem 0.7rem 0.9rem;
+  background: #fffdfd;
+  border: 1px solid #f0dce4;
+  border-radius: 14px;
+  padding: 1.1rem 0.85rem;
   min-width: 0;
   max-width: 100%;
 }
@@ -27,8 +27,8 @@
   flex-direction: column;
   align-items: center;
   text-align: center;
-  padding: 0.25rem 0.4rem 0.85rem;
-  border-bottom: 1px solid #e6e9ee;
+  padding: 0.35rem 0.5rem 1rem;
+  border-bottom: 1px solid #eef0f3;
   margin-bottom: 0.65rem;
 }
 
@@ -43,12 +43,12 @@
 }
 
 .g-dash-name {
-  font-size: 0.95rem;
+  font-size: 1rem;
   color: #4a3c56;
 }
 
 .g-dash-email {
-  font-size: 0.72rem;
+  font-size: 0.78rem;
   color: #9f90a7;
   margin-top: 0.2rem;
   word-break: break-all;
@@ -67,63 +67,26 @@
   align-items: center;
   border-radius: 999px;
   border: 1px solid #efbfd0;
-  background: linear-gradient(180deg, #fff6fb, #fff);
-  color: #8f4664;
-  font-size: 0.68rem;
-  font-weight: 800;
-  padding: 0.2rem 0.5rem;
+  background: #fff7fb;
+  color: #7a4f68;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.2rem 0.55rem;
   line-height: 1.2;
-}
-
-.g-dash-profile-btn {
-  margin-top: 0.65rem;
-  padding: 0.3rem 0.75rem;
-  border-radius: 999px;
-  border: 1px solid #efbfd0;
-  background: #fff8fb;
-  font-size: 0.7rem;
-  font-weight: 600;
-  color: #7a5f78;
-  cursor: pointer;
-  font-family: inherit;
-}
-
-.g-dash-profile-btn:hover {
-  background: #fdeaf1;
-}
-
-.g-dash-profile-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.g-dash-profile-actions {
-  margin-top: 0.1rem;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 0.35rem;
-}
-
-.g-dash-profile-error {
-  margin: 0.4rem 0 0;
-  color: #b91c1c;
-  font-size: 0.68rem;
-  line-height: 1.35;
 }
 
 .g-dash-nav {
   display: flex;
   flex-direction: column;
-  gap: 0.08rem;
+  gap: 0.15rem;
 }
 
 .g-dash-link {
-  padding: 0.48rem 0.55rem;
-  border-radius: 8px;
+  padding: 0.55rem 0.65rem;
+  border-radius: 10px;
   color: #7f6b82;
   text-decoration: none;
-  font-size: 0.8rem;
+  font-size: 0.84rem;
   line-height: 1.35;
   border-left: 3px solid transparent;
 }
@@ -164,24 +127,24 @@
   font-weight: 800;
   line-height: 1.1rem;
   text-align: center;
-  border: 2px solid #fff5f9;
+  border: 2px solid #fffdfd;
 }
 
 .g-dash-sep {
-  margin: 0.85rem 0 0.45rem;
-  border-top: 1px solid #e6e9ee;
+  margin: 1rem 0 0.45rem;
+  border-top: 1px solid #eef0f3;
 }
 
 .g-dash-logout {
   width: 100%;
-  margin-top: 0.25rem;
+  margin-top: 0.1rem;
   padding: 0.5rem 0.65rem;
   border: none;
   border-radius: 10px;
   background: none;
   text-align: left;
-  font-size: 0.8rem;
-  color: #ad6c8c;
+  font-size: 0.84rem;
+  color: #b25f7f;
   cursor: pointer;
   font-family: inherit;
 }
@@ -192,7 +155,7 @@
 
 .g-dash-main {
   min-width: 0;
-  padding-right: 0.25rem;
+  padding: 0;
 }
 
 .g-panel {
