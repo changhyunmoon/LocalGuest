@@ -260,7 +260,8 @@ export function GuideProfileEditPage() {
   const residenceYearsPreview = Number.isFinite(parsedResidenceYears) ? parsedResidenceYears : 0
 
   return (
-    <div className="g-panel g-panel--profile">
+    <div className="g-panel">
+      <div className="gpv-sheet">
       <section className="gpv-head">
         <h1>가이드 프로필 · 소개 📸</h1>
         <p>기본 정보와 소개글을 한곳에서 입력·저장할 수 있어요.</p>
@@ -535,6 +536,7 @@ export function GuideProfileEditPage() {
             {saving ? '저장 중…' : '저장하기'}
           </button>
         </div>
+      </div>
       </div>
       <Toast toasts={toasts} />
     </div>

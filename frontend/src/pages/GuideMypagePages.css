@@ -1185,8 +1185,9 @@
   }
 }
 
-/* 프로필·소개: 폼 폭과 카드 폭을 맞추고 메인 영역에서 가운데 정렬 */
-.g-panel.g-panel--profile {
+/* 프로필·소개: 다른 메뉴와 동일한 g-panel 폭 유지, 폼만 시트 안에서 가운데·적정 폭 */
+.gpv-sheet {
+  width: 100%;
   max-width: min(640px, 100%);
   margin-left: auto;
   margin-right: auto;
