@@ -1,10 +1,50 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { apiRequest } from '../api/client.js'
 import { DEFAULT_KOREA_CENTER, geocodeAddressOnly, getUserLatLng, resolveLatLng } from '../lib/kakaoGeocode.js'
 import { loadKakaoSdk } from '../lib/kakaoMapSdk.js'
 import './GuideCoursePanel.css'
 
 const KAKAO_APP_KEY = import.meta.env.VITE_KAKAO_MAP_APP_KEY
+
+/** @param {number} h 0–23 @param {number} minute 0 or 30 */
+function formatKoreanTimeSlot(h, minute) {
+  const isPM = h >= 12
+  let displayH = h % 12
+  if (displayH === 0) displayH = 12
+  const period = isPM ? '오후' : '오전'
+  return `${period} ${displayH}:${String(minute).padStart(2, '0')}`
+}
+
+/** @param {string | undefined} s "HH:mm" */
+function parseHmToMinutes(s) {
+  if (s == null || typeof s !== 'string') return null
+  const m = s.trim().match(/^(\d{1,2}):(\d{2})$/)
+  if (!m) return null
+  const h = Number(m[1])
+  const min = Number(m[2])
+  if (!Number.isFinite(h) || !Number.isFinite(min) || h < 0 || h > 23 || min < 0 || min > 59) return null
+  return h * 60 + min
+}
+
+/** 30분 간격 라벨 목록. 스케줄 시작·종료가 파싱되면 그 구간만, 아니면 하루 전체 */
+function buildCourseTimeOptionLabels(startTime, endTime) {
+  const all = []
+  for (let h = 0; h < 24; h += 1) {
+    for (const minute of [0, 30]) {
+      all.push(formatKoreanTimeSlot(h, minute))
+    }
+  }
+  const start = parseHmToMinutes(startTime)
+  const end = parseHmToMinutes(endTime)
+  if (start == null || end == null || end < start) return all
+  const filtered = []
+  for (let mins = 0; mins < 24 * 60; mins += 30) {
+    if (mins >= start && mins <= end) {
+      filtered.push(formatKoreanTimeSlot(Math.floor(mins / 60), mins % 60))
+    }
+  }
+  return filtered.length > 0 ? filtered : all
+}
 
 function createPinOverlay(kakao, map, latlng, idx, name) {
   const root = document.createElement('div')
@@ -35,6 +75,106 @@ export function parseCourseDetail(text) {
         desc: parts[2]?.trim() ?? '',
       }
     })
+}
+
+/** 네이티브 select는 목록 높이 제한이 불가해, 스크롤 가능한 커스텀 패널 사용 */
+function CourseTimeDropdown({
+  id,
+  ariaLabel,
+  value,
+  options,
+  optionSet,
+  isOpen,
+  onToggle,
+  onClose,
+  onSelect,
+}) {
+  const listRef = useRef(null)
+  const legacy = value && !optionSet.has(value) ? value : null
+
+  useEffect(() => {
+    if (!isOpen) return
+    const onKey = (e) => {
+      if (e.key === 'Escape') onClose()
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [isOpen, onClose])
+
+  useEffect(() => {
+    if (!isOpen || !listRef.current) return
+    const sel = listRef.current.querySelector('.gcp-time-dd-option--selected')
+    sel?.scrollIntoView({ block: 'nearest' })
+  }, [isOpen, value])
+
+  return (
+    <div className={`gcp-time-dd${isOpen ? ' gcp-time-dd--open' : ''}`} data-gcp-time-dd>
+      <button
+        type="button"
+        id={id}
+        className="gcp-input gcp-time-dd-trigger"
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
+        aria-label={ariaLabel}
+        onClick={() => onToggle()}
+      >
+        <span className={value ? 'gcp-time-dd-value' : 'gcp-time-dd-placeholder'}>
+          {value || '시간 선택'}
+        </span>
+        <span className="gcp-time-dd-chevron" aria-hidden>▾</span>
+      </button>
+      {isOpen ? (
+        <ul ref={listRef} className="gcp-time-dd-list" role="listbox" aria-labelledby={id}>
+          <li role="presentation">
+            <button
+              type="button"
+              role="option"
+              aria-selected={!value}
+              className={`gcp-time-dd-option${!value ? ' gcp-time-dd-option--selected' : ''}`}
+              onClick={() => {
+                onSelect('')
+                onClose()
+              }}
+            >
+              시간 선택
+            </button>
+          </li>
+          {options.map((t) => (
+            <li key={t} role="presentation">
+              <button
+                type="button"
+                role="option"
+                aria-selected={value === t}
+                className={`gcp-time-dd-option${value === t ? ' gcp-time-dd-option--selected' : ''}`}
+                onClick={() => {
+                  onSelect(t)
+                  onClose()
+                }}
+              >
+                {t}
+              </button>
+            </li>
+          ))}
+          {legacy ? (
+            <li role="presentation">
+              <button
+                type="button"
+                role="option"
+                aria-selected={value === legacy}
+                className={`gcp-time-dd-option${value === legacy ? ' gcp-time-dd-option--selected' : ''}`}
+                onClick={() => {
+                  onSelect(legacy)
+                  onClose()
+                }}
+              >
+                {legacy}
+              </button>
+            </li>
+          ) : null}
+        </ul>
+      ) : null}
+    </div>
+  )
 }
 
 // ── 메인 컴포넌트 ─────────────────────────────────────────────────────
@@ -76,6 +216,25 @@ export function GuideCoursePanel({
   const debounceTimerRef = useRef(null)
   const dragSpotIdx = useRef(null)
   const spotsRef = useRef(spots)
+
+  const courseTimeOptions = useMemo(
+    () => buildCourseTimeOptionLabels(schedule?.startTime, schedule?.endTime),
+    [schedule?.startTime, schedule?.endTime],
+  )
+  const courseTimeOptionSet = useMemo(() => new Set(courseTimeOptions), [courseTimeOptions])
+  const [openTimeIdx, setOpenTimeIdx] = useState(null)
+  const closeCourseTimeDropdown = useCallback(() => setOpenTimeIdx(null), [])
+
+  useEffect(() => {
+    if (openTimeIdx == null) return
+    const onPointerDown = (e) => {
+      const t = e.target
+      if (!(t instanceof Element)) return
+      if (!t.closest('[data-gcp-time-dd]')) setOpenTimeIdx(null)
+    }
+    document.addEventListener('pointerdown', onPointerDown, true)
+    return () => document.removeEventListener('pointerdown', onPointerDown, true)
+  }, [openTimeIdx])
 
   // ── 초기 데이터 로드 (GET form) ──────────────────────────────────────
   useEffect(() => {
@@ -267,6 +426,7 @@ export function GuideCoursePanel({
   }
 
   const addSpot = () => {
+    setOpenTimeIdx(null)
     setSpots((prev) => {
       const next = [...prev, { name: '', time: '', desc: '' }]
       spotsRef.current = next
@@ -277,6 +437,7 @@ export function GuideCoursePanel({
 
   const removeSpot = (idx) => {
     if (spots.length <= 1) return
+    setOpenTimeIdx(null)
     const newSpots = spots.filter((_, i) => i !== idx)
     spotsRef.current = newSpots
     setSpots(newSpots)
@@ -289,6 +450,7 @@ export function GuideCoursePanel({
     const from = dragSpotIdx.current
     if (from === null || from === dropIdx) return
     dragSpotIdx.current = null
+    setOpenTimeIdx(null)
     setSpots((prev) => {
       const next = [...prev]
       const [moved] = next.splice(from, 1)
@@ -498,12 +660,16 @@ export function GuideCoursePanel({
                         )}
                       </div>
                       <div className="gcp-spot-row2">
-                        <input
-                          className="gcp-input"
-                          type="text"
-                          placeholder="시간 (예: 오전 10:00)"
+                        <CourseTimeDropdown
+                          id={`gcp-spot-time-${idx}`}
+                          ariaLabel={`스팟 ${idx + 1} 시간`}
                           value={spot.time}
-                          onChange={(e) => updateSpot(idx, 'time', e.target.value)}
+                          options={courseTimeOptions}
+                          optionSet={courseTimeOptionSet}
+                          isOpen={openTimeIdx === idx}
+                          onToggle={() => setOpenTimeIdx((cur) => (cur === idx ? null : idx))}
+                          onClose={closeCourseTimeDropdown}
+                          onSelect={(v) => updateSpot(idx, 'time', v)}
                         />
                         <input
                           className="gcp-input"
