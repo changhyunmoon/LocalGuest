@@ -302,6 +302,13 @@
   flex-wrap: wrap;
 }
 
+.gut-card-actions {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
 .gut-trail {
   font-size: 0.72rem;
   font-weight: 900;
@@ -462,7 +469,7 @@
   font-family: inherit;
   transition: background 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
   flex: 0 1 auto;
-  margin-left: auto;
+  margin-left: 0;
 }
 
 .gut-cancel {

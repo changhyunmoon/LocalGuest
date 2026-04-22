@@ -288,19 +288,21 @@ export function GuestUpcomingTripsPage() {
                           <p className="gut-line gut-line--sub">예산 {budget}</p>
                           <div className="gut-card-footer">
                             <span className="gut-trail" aria-hidden="true">✈︎ 여행 준비 중</span>
-                            {(row.status === 'ACCEPTED' || row.status === 'PAID') && (
-                              <button
-                                type="button"
-                                className="gut-cancel"
-                                disabled={busyId != null}
-                                onClick={() => void cancelTrip(row)}
-                              >
-                                {busyId === row.requestId ? '취소 중…' : '예약 취소'}
+                            <div className="gut-card-actions">
+                              {(row.status === 'ACCEPTED' || row.status === 'PAID') && (
+                                <button
+                                  type="button"
+                                  className="gut-cancel"
+                                  disabled={busyId != null}
+                                  onClick={() => void cancelTrip(row)}
+                                >
+                                  {busyId === row.requestId ? '취소 중…' : '예약 취소'}
+                                </button>
+                              )}
+                              <button type="button" className="gut-open" onClick={() => openMatchScreen(row)}>
+                                일정 확인하기
                               </button>
-                            )}
-                            <button type="button" className="gut-open" onClick={() => openMatchScreen(row)}>
-                              일정 확인하기
-                            </button>
+                            </div>
                           </div>
                         </div>
                         <div className="gut-card-preview-wrap">
