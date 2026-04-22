@@ -512,7 +512,7 @@ export function GuideDetailPage() {
     setConfirmModal({
       destination: dest,
       desiredDate: desiredDate || '',
-      concept: conceptText,
+      guestConcept: concept.trim(),
       payload: {
         guideId: Number(guideId),
         scheduleId: selectedScheduleId != null ? Number(selectedScheduleId) : undefined,
@@ -934,7 +934,7 @@ export function GuideDetailPage() {
               </div>
               <div>
                 <dt>하고 싶은 일</dt>
-                <dd>{confirmModal.concept || '입력 없음'}</dd>
+                <dd>{confirmModal.guestConcept}</dd>
               </div>
               {confirmModal.payload?.budgetMinWon != null && confirmModal.payload?.budgetMaxWon != null ? (
                 <div>
