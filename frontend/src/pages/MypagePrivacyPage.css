@@ -78,6 +78,30 @@
   font: inherit;
 }
 
+.mp-privacy-photo-btn {
+  padding: 0.35rem 0.75rem;
+  border-radius: 10px;
+  border: 1px solid #efbfd0;
+  background: #fff7fb;
+  color: #7a4f68;
+  font-size: 0.74rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background-color 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
+}
+
+.mp-privacy-photo-btn:hover:not(:disabled) {
+  background: #f2cddd;
+  border-color: #e8a8bf;
+  transform: translateY(-1px);
+}
+
+.mp-privacy-photo-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .mp-privacy-email-block {
   margin-top: 0.85rem;
   padding: 0.75rem 0.85rem;
