@@ -192,7 +192,9 @@ export function GuestUpcomingTripsPage() {
                   const budget = formatBudgetRangeKrw(row.budgetMinWon, row.budgetMaxWon, row.desiredBudget)
                   return (
                     <article key={row.requestId} className="gut-card gut-card--timeline">
-                      <span className="gut-spot" aria-hidden="true">{moodEmoji(row.status, d)}</span>
+                      <span className="gut-spot" aria-hidden="true">
+                        <span className="gut-spot-emoji">{moodEmoji(row.status, d)}</span>
+                      </span>
                       <div className="gut-card-main">
                         <span className="gut-watermark" aria-hidden="true">{dest}</span>
                         <div className="gut-card-row gut-card-row--top">
