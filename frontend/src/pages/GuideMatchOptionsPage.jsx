@@ -49,7 +49,15 @@ function parsePreviewSpots(proposedSchedule) {
     .split(/\r?\n|,/)
     .map((v) => v.trim())
     .filter(Boolean)
-  return rows
+  return rows.map((line, idx) => {
+    const parts = line.split('|').map((p) => p.trim()).filter(Boolean)
+    // 새 포맷: "SPOT n | time | desc"
+    if (parts.length >= 3 && /^SPOT\s*\d+/i.test(parts[0])) {
+      return { idx, time: parts[1], desc: parts.slice(2).join(' | ') }
+    }
+    // 구 포맷(장소명만): desc로 처리
+    return { idx, time: '', desc: line }
+  })
 }
 
 function hasProposalContent(row) {
@@ -215,7 +223,7 @@ export function GuideMatchOptionsPage() {
   const courseReadyForPayment = useMemo(() => {
     return String(activeRequest?.proposedSchedule ?? '').trim().length > 0
   }, [activeRequest])
-  const previewFirstSpot = previewSpots[0] ?? ''
+  const previewFirstSpot = previewSpots[0] ?? null
   const previewLockedSpots = previewSpots.slice(1)
   const hasLockedPreview = previewLockedSpots.length > 0 || !!previewHint
 
@@ -536,7 +544,9 @@ export function GuideMatchOptionsPage() {
           <ul className="gmo-spot-preview-list">
             <li className="gmo-spot-preview-item">
               <span className="gmo-spot-preview-num">1</span>
-              <span className="gmo-spot-preview-name">{previewFirstSpot}</span>
+              <span className="gmo-spot-preview-name">로컬 스팟</span>
+              {previewFirstSpot?.time && <span className="gmo-spot-preview-time">{previewFirstSpot.time}</span>}
+              <span className="gmo-spot-preview-desc">{previewFirstSpot?.desc ?? ''}</span>
             </li>
           </ul>
 
@@ -545,9 +555,11 @@ export function GuideMatchOptionsPage() {
               <div className="gmo-locked-blur" aria-hidden>
                 <ul className="gmo-spot-preview-list">
                   {previewLockedSpots.map((spot, idx) => (
-                    <li key={`${idx + 1}-${spot.slice(0, 12)}`} className="gmo-spot-preview-item">
+                    <li key={`${idx + 2}-${spot.time}-${spot.desc.slice(0, 12)}`} className="gmo-spot-preview-item">
                       <span className="gmo-spot-preview-num">{idx + 2}</span>
-                      <span className="gmo-spot-preview-name">{spot}</span>
+                      <span className="gmo-spot-preview-name">로컬 스팟</span>
+                      {spot.time && <span className="gmo-spot-preview-time">{spot.time}</span>}
+                      <span className="gmo-spot-preview-desc">{spot.desc}</span>
                     </li>
                   ))}
                 </ul>

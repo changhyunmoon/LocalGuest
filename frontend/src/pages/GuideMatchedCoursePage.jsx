@@ -42,6 +42,13 @@ function parsePreviewSpots(proposedSchedule) {
     .split(/\r?\n|,/)
     .map((v) => v.trim())
     .filter(Boolean)
+    .map((line, idx) => {
+      const parts = line.split('|').map((p) => p.trim()).filter(Boolean)
+      if (parts.length >= 3 && /^SPOT\s*\d+/i.test(parts[0])) {
+        return { idx, time: parts[1], desc: parts.slice(2).join(' | ') }
+      }
+      return { idx, time: '', desc: line }
+    })
 }
 
 // ── 메인 컴포넌트 ─────────────────────────────────────────────────────────
@@ -316,7 +323,11 @@ export function GuideMatchedCoursePage() {
                     </p>
                     {previewSpots.length > 0 && (
                       <p className="gmc-spot-desc">
-                        미리보기: {previewSpots.slice(0, 3).join(' → ')}
+                        미리보기:{' '}
+                        {previewSpots
+                          .slice(0, 3)
+                          .map((s, i) => `${i + 1}. ${s.time ? `${s.time} · ` : ''}${s.desc}`)
+                          .join(' / ')}
                         {previewSpots.length > 3 ? ' …' : ''}
                       </p>
                     )}
