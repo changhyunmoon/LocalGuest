@@ -200,16 +200,54 @@ public class GuideScheduleService {
     @Transactional(readOnly = true)
     public GuideScheduleFormResponse getScheduleForm(Long scheduleId, Long guideId, boolean isGuideCaller) {
         GuideSchedule schedule = getVerifiedSchedule(scheduleId, guideId);
-        boolean expose = isGuideCaller || isTourCompleted(schedule.getMatchRequestId());
-        return GuideScheduleFormResponse.from(schedule, expose);
+        if (isGuideCaller) {
+            return GuideScheduleFormResponse.from(schedule, true);
+        }
+
+        MatchRequestStatus st = resolveMatchStatus(schedule.getMatchRequestId());
+        if (st == MatchRequestStatus.COMPLETED) {
+            return GuideScheduleFormResponse.from(schedule, true);
+        }
+        if (st == MatchRequestStatus.PAID || st == MatchRequestStatus.IN_PROGRESS) {
+            String masked = maskCourseDetail(schedule.getCourseDetail());
+            return GuideScheduleFormResponse.from(schedule, true, masked);
+        }
+        // 결제 전(ACCEPTED) 등: 상세 코스는 숨김
+        return GuideScheduleFormResponse.from(schedule, false);
     }
 
-    private boolean isTourCompleted(Long matchRequestId) {
-        if (matchRequestId == null) return false;
+    private MatchRequestStatus resolveMatchStatus(Long matchRequestId) {
+        if (matchRequestId == null) return null;
         return matchRequestRepository.findById(matchRequestId)
                 .map(MatchRequest::getStatus)
-                .filter(st -> st == MatchRequestStatus.COMPLETED)
-                .isPresent();
+                .orElse(null);
+    }
+
+    /**
+     * courseDetail 포맷(줄 단위): "n. name | time | desc" (+ 이후 확장 필드가 있어도 보존)
+     * 결제 후(완료 전)에는 name만 마스킹한다.
+     */
+    private String maskCourseDetail(String courseDetail) {
+        if (courseDetail == null || courseDetail.isBlank()) return courseDetail;
+        String[] lines = courseDetail.split("\\R");
+        StringBuilder out = new StringBuilder();
+        for (String line : lines) {
+            if (line == null || line.isBlank()) continue;
+            String trimmed = line.trim();
+            // "1. ..." prefix 제거 후 '|' 기준으로 파싱
+            String noNum = trimmed.replaceFirst("^\\d+\\.\\s*", "");
+            String[] parts = noNum.split("\\|", -1);
+            if (parts.length >= 1) {
+                parts[0] = "로컬 스팟";
+            }
+            String rebuilt = String.join(" | ", java.util.Arrays.stream(parts).map(String::trim).toArray(String[]::new));
+            // 원래 번호가 있으면 유지
+            String prefix = trimmed.matches("^\\d+\\..*") ? trimmed.replaceFirst("^(\\d+\\.).*$", "$1 ") : "";
+            if (!prefix.isEmpty()) out.append(prefix);
+            out.append(rebuilt);
+            out.append('\n');
+        }
+        return out.toString().trim();
     }
 
     // 수락 후 여행 계획 양식 저장 — BOOKED 상태 스케줄에만 가능 (F06-04)

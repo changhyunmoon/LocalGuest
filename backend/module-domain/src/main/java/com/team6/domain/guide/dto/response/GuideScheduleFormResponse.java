@@ -26,7 +26,7 @@ public class GuideScheduleFormResponse {
     private Boolean isPaid;          // 결제 완료 여부 (프론트 잠금 처리 기준)
 
     // Entity → 양식 응답 DTO 변환
-    public static GuideScheduleFormResponse from(GuideSchedule schedule, boolean exposeCourseDetail) {
+    public static GuideScheduleFormResponse from(GuideSchedule schedule, boolean exposeCourseDetail, String courseDetailOverride) {
         boolean paid = Boolean.TRUE.equals(schedule.getIsPaid());
         return GuideScheduleFormResponse.builder()
                 .scheduleId(schedule.getId())
@@ -36,9 +36,13 @@ public class GuideScheduleFormResponse {
                 .endTime(schedule.getEndTime())
                 .meetingPoint(schedule.getMeetingPoint() != null ? schedule.getMeetingPoint() : "")
                 .guideMessage(schedule.getGuideMessage() != null ? schedule.getGuideMessage() : "")
-                .courseDetail(exposeCourseDetail ? schedule.getCourseDetail() : null)
+                .courseDetail(exposeCourseDetail ? (courseDetailOverride != null ? courseDetailOverride : schedule.getCourseDetail()) : null)
                 .isPaid(paid)
                 .build();
+    }
+
+    public static GuideScheduleFormResponse from(GuideSchedule schedule, boolean exposeCourseDetail) {
+        return from(schedule, exposeCourseDetail, null);
     }
 
     /**
