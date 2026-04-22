@@ -424,7 +424,7 @@ export function GuideFeedSchedulePage() {
     setFeedLocationTags((prev) => prev.filter((t) => t !== tag))
   }
 
-  const moveToCourseEditor = useCallback((tour) => {
+  const moveToCourseEditor = useCallback(async (tour) => {
     const sid = Number(tour?.scheduleId)
     if (!Number.isFinite(sid)) return
     const rid = Number(tour?.requestId)
@@ -438,13 +438,25 @@ export function GuideFeedSchedulePage() {
     if (tour?.startTime) params.set('startTime', String(tour.startTime))
     if (tour?.endTime) params.set('endTime', String(tour.endTime))
     if (tour?.destination) params.set('destination', String(tour.destination))
+
+    let initialForm = null
+    if (guideId) {
+      try {
+        const formRes = await apiRequest(`/guides/${guideId}/schedules/${sid}/form`, { method: 'GET' })
+        const formText = await formRes.text()
+        if (formRes.ok) initialForm = formText ? JSON.parse(formText) : null
+      } catch {
+        initialForm = null
+      }
+    }
+
     navigate(`${path}?${params.toString()}`, {
       state: {
         schedule: tour,
-        initialForm: null,
+        initialForm,
       },
     })
-  }, [navigate])
+  }, [navigate, guideId])
 
   if (idLoading) {
     return (
