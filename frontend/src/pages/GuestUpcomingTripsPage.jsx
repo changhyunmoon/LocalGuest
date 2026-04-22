@@ -192,26 +192,30 @@ export function GuestUpcomingTripsPage() {
                   const budget = formatBudgetRangeKrw(row.budgetMinWon, row.budgetMaxWon, row.desiredBudget)
                   return (
                     <article key={row.requestId} className="gut-card gut-card--timeline">
-                      <div className="gut-card-top">
-                        <span className="gut-spot" aria-hidden="true">{moodEmoji(row.status, d)}</span>
-                        <div className="gut-pills">
-                          <span className="gut-pill gut-pill--dest">{dest}</span>
-                          <span className="gut-pill gut-pill--status">{statusText(row.status)}</span>
+                      <span className="gut-spot" aria-hidden="true">{moodEmoji(row.status, d)}</span>
+                      <div className="gut-card-main">
+                        <span className="gut-watermark" aria-hidden="true">{dest}</span>
+                        <div className="gut-card-row gut-card-row--top">
+                          <div className="gut-meta-head">
+                            <span className={`gut-dday${d === 0 ? ' is-today' : d === 1 ? ' is-soon' : ''}`}>
+                              {row.status === 'ACCEPTED' ? '결제 필요' : ddayLabel(d, row.status)}
+                            </span>
+                            <span className="gut-date">{row.desiredDate ?? '—'}</span>
+                          </div>
+                          <div className="gut-pills">
+                            <span className="gut-pill gut-pill--dest">{dest}</span>
+                            <span className="gut-pill gut-pill--status">{statusText(row.status)}</span>
+                          </div>
                         </div>
-                      </div>
-                      <div className="gut-meta">
-                        <div className="gut-meta-head">
-                          <span className={`gut-dday${d === 0 ? ' is-today' : d === 1 ? ' is-soon' : ''}`}>
-                            {row.status === 'ACCEPTED' ? '결제 필요' : ddayLabel(d, row.status)}
-                          </span>
-                          <span className="gut-date">{row.desiredDate ?? '—'}</span>
-                        </div>
-                        <h3>{nick}</h3>
+                        <h3 className="gut-title">{nick}</h3>
                         <p className="gut-line gut-line--sub">예산 {budget}</p>
+                        <div className="gut-card-footer">
+                          <span className="gut-trail" aria-hidden="true">✈︎ 여행 준비 중</span>
+                          <button type="button" className="gut-open" onClick={() => openMatchScreen(row)}>
+                            일정 확인하기
+                          </button>
+                        </div>
                       </div>
-                      <button type="button" className="gut-open" onClick={() => openMatchScreen(row)}>
-                        일정 확인하기
-                      </button>
                     </article>
                   )
                 })}
