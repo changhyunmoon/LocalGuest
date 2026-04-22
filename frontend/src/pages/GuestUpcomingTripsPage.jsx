@@ -15,14 +15,6 @@ import './GuestUpcomingTripsPage.css'
 
 const UPCOMING = new Set(['PENDING', 'ACCEPTED', 'PAID', 'IN_PROGRESS'])
 
-function moodEmoji(status, d) {
-  if (status === 'IN_PROGRESS') return '🧳'
-  if (status === 'ACCEPTED') return '🧾'
-  if (d === 0) return '🚀'
-  if (d === 1) return '⏳'
-  return '✨'
-}
-
 function formatBudgetRangeKrw(minWon, maxWon, fallbackSingleWon) {
   const min = minWon != null && minWon !== '' && !Number.isNaN(Number(minWon)) ? Number(minWon) : null
   const max = maxWon != null && maxWon !== '' && !Number.isNaN(Number(maxWon)) ? Number(maxWon) : null
@@ -192,22 +184,14 @@ export function GuestUpcomingTripsPage() {
                   const budget = formatBudgetRangeKrw(row.budgetMinWon, row.budgetMaxWon, row.desiredBudget)
                   return (
                     <article key={row.requestId} className="gut-card gut-card--timeline">
-                      <span className="gut-spot" aria-hidden="true">
-                        <span className="gut-spot-emoji">{moodEmoji(row.status, d)}</span>
-                      </span>
                       <div className="gut-card-main">
-                        <span className="gut-watermark" aria-hidden="true">{dest}</span>
-                        <div className="gut-card-row gut-card-row--top">
-                          <div className="gut-meta-head">
-                            <span className={`gut-dday${d === 0 ? ' is-today' : d === 1 ? ' is-soon' : ''}`}>
-                              {row.status === 'ACCEPTED' ? '결제 필요' : ddayLabel(d, row.status)}
-                            </span>
-                            <span className="gut-date">{row.desiredDate ?? '—'}</span>
-                          </div>
-                          <div className="gut-pills">
-                            <span className="gut-pill gut-pill--dest">{dest}</span>
-                            <span className="gut-pill gut-pill--status">{statusText(row.status)}</span>
-                          </div>
+                        <div className="gut-card-kick">
+                          <span className={`gut-dday${d === 0 ? ' is-today' : d === 1 ? ' is-soon' : ''}`}>
+                            {row.status === 'ACCEPTED' ? '결제 필요' : ddayLabel(d, row.status)}
+                          </span>
+                          <span className="gut-date">{row.desiredDate ?? '—'}</span>
+                          <span className="gut-pill gut-pill--dest">{dest}</span>
+                          <span className="gut-pill gut-pill--status">{statusText(row.status)}</span>
                         </div>
                         <h3 className="gut-title">{nick}</h3>
                         <p className="gut-line gut-line--sub">예산 {budget}</p>
