@@ -77,6 +77,106 @@ export function parseCourseDetail(text) {
     })
 }
 
+/** 네이티브 select는 목록 높이 제한이 불가해, 스크롤 가능한 커스텀 패널 사용 */
+function CourseTimeDropdown({
+  id,
+  ariaLabel,
+  value,
+  options,
+  optionSet,
+  isOpen,
+  onToggle,
+  onClose,
+  onSelect,
+}) {
+  const listRef = useRef(null)
+  const legacy = value && !optionSet.has(value) ? value : null
+
+  useEffect(() => {
+    if (!isOpen) return
+    const onKey = (e) => {
+      if (e.key === 'Escape') onClose()
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [isOpen, onClose])
+
+  useEffect(() => {
+    if (!isOpen || !listRef.current) return
+    const sel = listRef.current.querySelector('.gcp-time-dd-option--selected')
+    sel?.scrollIntoView({ block: 'nearest' })
+  }, [isOpen, value])
+
+  return (
+    <div className={`gcp-time-dd${isOpen ? ' gcp-time-dd--open' : ''}`} data-gcp-time-dd>
+      <button
+        type="button"
+        id={id}
+        className="gcp-input gcp-time-dd-trigger"
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
+        aria-label={ariaLabel}
+        onClick={() => onToggle()}
+      >
+        <span className={value ? 'gcp-time-dd-value' : 'gcp-time-dd-placeholder'}>
+          {value || '시간 선택'}
+        </span>
+        <span className="gcp-time-dd-chevron" aria-hidden>▾</span>
+      </button>
+      {isOpen ? (
+        <ul ref={listRef} className="gcp-time-dd-list" role="listbox" aria-labelledby={id}>
+          <li role="presentation">
+            <button
+              type="button"
+              role="option"
+              aria-selected={!value}
+              className={`gcp-time-dd-option${!value ? ' gcp-time-dd-option--selected' : ''}`}
+              onClick={() => {
+                onSelect('')
+                onClose()
+              }}
+            >
+              시간 선택
+            </button>
+          </li>
+          {options.map((t) => (
+            <li key={t} role="presentation">
+              <button
+                type="button"
+                role="option"
+                aria-selected={value === t}
+                className={`gcp-time-dd-option${value === t ? ' gcp-time-dd-option--selected' : ''}`}
+                onClick={() => {
+                  onSelect(t)
+                  onClose()
+                }}
+              >
+                {t}
+              </button>
+            </li>
+          ))}
+          {legacy ? (
+            <li role="presentation">
+              <button
+                type="button"
+                role="option"
+                aria-selected={value === legacy}
+                className={`gcp-time-dd-option${value === legacy ? ' gcp-time-dd-option--selected' : ''}`}
+                onClick={() => {
+                  onSelect(legacy)
+                  onClose()
+                }}
+              >
+                {legacy}
+              </button>
+            </li>
+          ) : null}
+        </ul>
+      ) : null}
+    </div>
+  )
+}
+
 // ── 메인 컴포넌트 ─────────────────────────────────────────────────────
 /**
  * @param {{
@@ -122,6 +222,19 @@ export function GuideCoursePanel({
     [schedule?.startTime, schedule?.endTime],
   )
   const courseTimeOptionSet = useMemo(() => new Set(courseTimeOptions), [courseTimeOptions])
+  const [openTimeIdx, setOpenTimeIdx] = useState(null)
+  const closeCourseTimeDropdown = useCallback(() => setOpenTimeIdx(null), [])
+
+  useEffect(() => {
+    if (openTimeIdx == null) return
+    const onPointerDown = (e) => {
+      const t = e.target
+      if (!(t instanceof Element)) return
+      if (!t.closest('[data-gcp-time-dd]')) setOpenTimeIdx(null)
+    }
+    document.addEventListener('pointerdown', onPointerDown, true)
+    return () => document.removeEventListener('pointerdown', onPointerDown, true)
+  }, [openTimeIdx])
 
   // ── 초기 데이터 로드 (GET form) ──────────────────────────────────────
   useEffect(() => {
@@ -313,6 +426,7 @@ export function GuideCoursePanel({
   }
 
   const addSpot = () => {
+    setOpenTimeIdx(null)
     setSpots((prev) => {
       const next = [...prev, { name: '', time: '', desc: '' }]
       spotsRef.current = next
@@ -323,6 +437,7 @@ export function GuideCoursePanel({
 
   const removeSpot = (idx) => {
     if (spots.length <= 1) return
+    setOpenTimeIdx(null)
     const newSpots = spots.filter((_, i) => i !== idx)
     spotsRef.current = newSpots
     setSpots(newSpots)
@@ -335,6 +450,7 @@ export function GuideCoursePanel({
     const from = dragSpotIdx.current
     if (from === null || from === dropIdx) return
     dragSpotIdx.current = null
+    setOpenTimeIdx(null)
     setSpots((prev) => {
       const next = [...prev]
       const [moved] = next.splice(from, 1)
@@ -544,21 +660,17 @@ export function GuideCoursePanel({
                         )}
                       </div>
                       <div className="gcp-spot-row2">
-                        <select
+                        <CourseTimeDropdown
                           id={`gcp-spot-time-${idx}`}
-                          className="gcp-input gcp-select gcp-select--time"
-                          aria-label={`스팟 ${idx + 1} 시간`}
+                          ariaLabel={`스팟 ${idx + 1} 시간`}
                           value={spot.time}
-                          onChange={(e) => updateSpot(idx, 'time', e.target.value)}
-                        >
-                          <option value="">시간 선택</option>
-                          {courseTimeOptions.map((t) => (
-                            <option key={t} value={t}>{t}</option>
-                          ))}
-                          {spot.time && !courseTimeOptionSet.has(spot.time) ? (
-                            <option value={spot.time}>{spot.time}</option>
-                          ) : null}
-                        </select>
+                          options={courseTimeOptions}
+                          optionSet={courseTimeOptionSet}
+                          isOpen={openTimeIdx === idx}
+                          onToggle={() => setOpenTimeIdx((cur) => (cur === idx ? null : idx))}
+                          onClose={closeCourseTimeDropdown}
+                          onSelect={(v) => updateSpot(idx, 'time', v)}
+                        />
                         <input
                           className="gcp-input"
                           type="text"

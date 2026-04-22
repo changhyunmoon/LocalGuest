@@ -277,13 +277,87 @@
   background: #fff;
 }
 
-.gcp-input.gcp-select {
-  cursor: pointer;
-  appearance: auto;
+/* 코스 시간: 스크롤되는 커스텀 드롭다운 */
+.gcp-time-dd {
+  position: relative;
+  width: 100%;
+  min-width: 0;
 }
 
-.gcp-select--time {
+.gcp-time-dd--open {
+  z-index: 30;
+}
+
+.gcp-time-dd-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  cursor: pointer;
+  text-align: left;
+}
+
+.gcp-time-dd-value,
+.gcp-time-dd-placeholder {
+  flex: 1;
   min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gcp-time-dd-placeholder {
+  color: #9ca3af;
+}
+
+.gcp-time-dd-chevron {
+  flex-shrink: 0;
+  font-size: 10px;
+  color: #6b7280;
+  line-height: 1;
+}
+
+.gcp-time-dd-list {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 4px);
+  margin: 0;
+  padding: 4px 0;
+  list-style: none;
+  max-height: 200px;
+  overflow-y: auto;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  box-sizing: border-box;
+}
+
+.gcp-time-dd-option {
+  display: block;
+  width: 100%;
+  padding: 8px 12px;
+  border: none;
+  background: transparent;
+  color: #111;
+  font: inherit;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.gcp-time-dd-option:hover,
+.gcp-time-dd-option:focus {
+  outline: none;
+  background: #f3f4f6;
+}
+
+.gcp-time-dd-option--selected {
+  font-weight: 600;
+  background: #fafafa;
 }
 
 .gcp-textarea {
