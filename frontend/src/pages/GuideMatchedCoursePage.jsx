@@ -34,6 +34,16 @@ function findLatestRequest(list, guideId, requestId) {
   return rows[0] ?? null
 }
 
+function parsePreviewSpots(proposedSchedule) {
+  const raw = String(proposedSchedule ?? '').trim()
+  if (!raw) return []
+  const normalized = raw.replace(/\s*->\s*/g, '\n')
+  return normalized
+    .split(/\r?\n|,/)
+    .map((v) => v.trim())
+    .filter(Boolean)
+}
+
 // ── 메인 컴포넌트 ─────────────────────────────────────────────────────────
 export function GuideMatchedCoursePage() {
   const { guideId } = useParams()
@@ -49,6 +59,7 @@ export function GuideMatchedCoursePage() {
   const [error, setError] = useState('')
   const [profile, setProfile] = useState(null)
   const [scheduleId, setScheduleId] = useState(null)
+  const [matchRequest, setMatchRequest] = useState(null)
   // schedule form 데이터 (백엔드 GuideScheduleFormResponse)
   const [formData, setFormData] = useState(null)
   const [mapErr, setMapErr] = useState('')
@@ -79,6 +90,7 @@ export function GuideMatchedCoursePage() {
         const reqText = await reqRes.text()
         const list = reqText ? JSON.parse(reqText) : []
         const req = findLatestRequest(list, guideId, requestId)
+        setMatchRequest(req)
         // scheduleId는 매칭 요청 응답에 포함되어 있어야 함
         // (matching 도메인 팀에서 scheduleId를 응답에 포함하는 것 전제)
         sid = req?.scheduleId != null ? Number(req.scheduleId) : null
@@ -113,6 +125,7 @@ export function GuideMatchedCoursePage() {
   const isPaid = formData?.isPaid === true
   const meetingPoint = formData?.meetingPoint ?? ''
   const guideMessage = formData?.guideMessage ?? ''
+  const previewSpots = useMemo(() => parsePreviewSpots(matchRequest?.proposedSchedule), [matchRequest?.proposedSchedule])
   // courseDetail: isPaid=true일 때만 내려옴
   const spots = useMemo(() => {
     if (!isPaid || !formData?.courseDetail) return []
@@ -301,6 +314,12 @@ export function GuideMatchedCoursePage() {
                     <p className="gmc-spot-desc">
                       가이드가 작성한 코스 스팟은 결제 완료 후 이 화면에 표시됩니다.
                     </p>
+                    {previewSpots.length > 0 && (
+                      <p className="gmc-spot-desc">
+                        미리보기: {previewSpots.slice(0, 3).join(' → ')}
+                        {previewSpots.length > 3 ? ' …' : ''}
+                      </p>
+                    )}
                   </article>
                 )
             }
