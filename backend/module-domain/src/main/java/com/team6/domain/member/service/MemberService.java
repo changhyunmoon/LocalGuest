@@ -91,6 +91,44 @@ public class MemberService {
     public boolean existsByNickname(String nickname) {
         return memberRepository.existsByNicknameAndStatus(nickname, Status.ACTIVE);
     }
+
+    // 현재 로그인한 사용자 조회
+    @Transactional(readOnly = true)
+    public Member getCurrentMember() {
+        String email = SecurityUtil.getCurrentUserEmail();
+        String roleString = SecurityUtil.getCurrentUserRoleString();
+        Role role = Role.valueOf(roleString.replace("ROLE_", ""));
+        return memberRepository.findByEmailAndRole(email, role)
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다. "));
+    }
+
+
+    // 게스트 전용 API 호출 시 검증
+    private void requireGuest() {
+        String roleString = SecurityUtil.getCurrentUserRoleString();
+        Role role = Role.valueOf(roleString.replace("ROLE_", ""));
+        if (role != Role.GUEST) {
+            throw new IllegalStateException("게스트 전용 API입니다.");
+        }
+    }
+
+    // 프로필 이미지 업데이트
+    @Transactional
+    public void updateMyProfileImage(String urlOrNull, boolean clearWhenBlank) {
+        requireGuest();
+        
+        Member member = getCurrentMember();
+        if (urlOrNull == null) {
+            return;
+        }
+        if (urlOrNull.isBlank() && clearWhenBlank) {
+            member.updateProfileImage(null);
+            return;
+        }
+        if (!urlOrNull.isBlank()) {
+            member.updateProfileImage(urlOrNull);
+        }
+    }
 }
 
 

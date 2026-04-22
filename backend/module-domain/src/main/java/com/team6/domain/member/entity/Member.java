@@ -31,6 +31,9 @@ public class Member {
     @Column(nullable = true, unique = true, length = 100)
     private String nickname;
 
+    @Column(name = "profile_image_url", length = 1000)
+    private String profileImageUrl;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     @Builder.Default
@@ -88,6 +91,11 @@ public class Member {
         this.name = newName;
         this.nickname = newNickName;
         this.updatedAt = LocalDateTime.now();
+    }
+
+    // 프로필 이미지 업데이트
+    public void updateProfileImage(String url) {
+        this.profileImageUrl = (url == null || url.isBlank()) ? null : url.trim();
     }
 
 }

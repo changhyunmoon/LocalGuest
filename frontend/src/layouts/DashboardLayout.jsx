@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, NavLink, Outlet } from 'react-router-dom'
 
+import { apiRequest } from '../api/client.js'
 import { useAuth } from '../context/useAuth.js'
 import { getGuestDisplayName, loadTravelTags } from '../lib/guestMypagePrefs.js'
 
@@ -16,8 +17,9 @@ const guestItems = [
 ]
 
 export function DashboardLayout() {
-  const { email, isGuide, logout } = useAuth()
+  const { email, token, isGuide, logout } = useAuth()
   const [prefsTick, setPrefsTick] = useState(0)
+  const [profileImageUrl, setProfileImageUrl] = useState(null)
 
   useEffect(() => {
     const onPrefs = () => setPrefsTick((t) => t + 1)
@@ -28,11 +30,35 @@ export function DashboardLayout() {
   const displayName = useMemo(() => getGuestDisplayName(email), [email, prefsTick])
   const travelTags = useMemo(() => loadTravelTags(), [prefsTick])
 
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      if (!token) {
+        if (!cancelled) setProfileImageUrl(null)
+        return
+      }
+      try {
+        const res = await apiRequest('/members/me/profile', { method: 'GET' })
+        const text = await res.text()
+        if (!res.ok) return
+        const data = text ? JSON.parse(text) : {}
+        if (!cancelled) setProfileImageUrl(data?.profileImageUrl ? String(data.profileImageUrl) : null)
+      } catch {
+        if (!cancelled) {
+          setProfileImageUrl(null)
+        }
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [token])
+
   return (
     <div className="dash">
       <aside className="dash-side">
         <div className="dash-profile">
-          <div className="dash-avatar" aria-hidden />
+          <div className="dash-avatar" aria-hidden style={profileImageUrl ? { backgroundImage: `url(${profileImageUrl})` } : undefined} />
           <strong className="dash-name">{displayName}</strong>
           <span className="dash-email">{email ?? ''}</span>
           <div className="dash-local-note" role="note" aria-label="여행 성향 태그">

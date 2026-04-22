@@ -31,10 +31,13 @@
 }
 
 .dash-avatar {
+  display: block;
   width: 4.25rem;
   height: 4.25rem;
   border-radius: 50%;
   background: #f9e8ee;
+  background-size: cover;
+  background-position: center;
   margin-bottom: 0.65rem;
 }
 
@@ -89,6 +92,14 @@
 
 .dash-tag-empty {
   color: #9f90a7;
+}
+
+.dash-profile-error {
+  margin: 0.42rem 0 0;
+  color: #b91c1c;
+  font-size: 0.7rem;
+  line-height: 1.35;
+  word-break: keep-all;
 }
 
 .dash-nav {
