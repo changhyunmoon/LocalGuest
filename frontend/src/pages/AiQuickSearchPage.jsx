@@ -13,6 +13,7 @@ const PLACEHOLDER =
   '- 언어: 한국어 가능한 가이드 희망 (영어 가능하면 더 좋아요)'
 const LS_AI_SEARCH_SNAPSHOT = 'localguest_ai_search_snapshot_v1'
 const LS_AI_MATCH_DRAFT = 'localguest_ai_match_draft_v1'
+const LS_AI_CLIENT_SESSION = 'localguest_ai_client_session_v1'
 const AI_GUIDE_DEFAULT_SHOW = 3
 const AI_GUIDE_EXPANDED_SHOW = 5
 
@@ -162,6 +163,24 @@ export function AiQuickSearchPage() {
   /** @type {Record<string, string>} */
   const [guideStyleById, setGuideStyleById] = useState({})
   const typeTimerRef = useRef(null)
+  const clientSessionIdRef = useRef('')
+
+  useEffect(() => {
+    try {
+      let sid = sessionStorage.getItem(LS_AI_CLIENT_SESSION)
+      if (!sid || typeof sid !== 'string') {
+        sid =
+          typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+            ? crypto.randomUUID()
+            : `sess-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`
+        sessionStorage.setItem(LS_AI_CLIENT_SESSION, sid)
+      }
+      clientSessionIdRef.current = sid
+    } catch {
+      clientSessionIdRef.current = `sess-${Date.now()}`
+    }
+  }, [])
+
   const recommendations = useMemo(() => {
     if (!Array.isArray(result?.recommendations)) return []
     return result.recommendations
@@ -292,11 +311,28 @@ export function AiQuickSearchPage() {
   )
 
   const onClickGuideDetail = useCallback(
-    (guideId) => {
+    (guideId, rank) => {
+      const gid = guideId != null ? Number(guideId) : NaN
+      if (Number.isFinite(gid) && rank != null && rank > 0) {
+        void (async () => {
+          try {
+            await apiRequest('/ai/recommend/click', {
+              method: 'POST',
+              json: {
+                policyVersion: result?.policyVersion || undefined,
+                guideId: gid,
+                rank,
+              },
+            })
+          } catch {
+            /* ignore — 클릭 로깅 실패는 탐색 흐름을 막지 않음 */
+          }
+        })()
+      }
       persistMatchDraftForGuide(guideId)
       persistSnapshotForBack()
     },
-    [persistMatchDraftForGuide, persistSnapshotForBack],
+    [persistMatchDraftForGuide, persistSnapshotForBack, result?.policyVersion],
   )
 
   useEffect(() => {
@@ -379,9 +415,14 @@ export function AiQuickSearchPage() {
     openPanelSoon()
 
     try {
+      const sessionId = clientSessionIdRef.current
       const res = await apiRequest('/ai/recommend', {
         method: 'POST',
-        json: { prompt: q, topN },
+        json: {
+          prompt: q,
+          topN,
+          ...(sessionId ? { clientSessionId: sessionId } : {}),
+        },
       })
       const text = await res.text()
       if (res.status === 401 || res.status === 403 || res.status === 302) {
@@ -438,6 +479,11 @@ export function AiQuickSearchPage() {
 
   const showMax = expandedGuides ? AI_GUIDE_EXPANDED_SHOW : AI_GUIDE_DEFAULT_SHOW
   const topGuides = recommendations.length > 0 ? recommendations.slice(0, showMax) : fallbackGuides.slice(0, showMax)
+  const specialGuide = result?.specialSuggestion?.guide ?? null
+  const specialClickRank =
+    Array.isArray(result?.recommendations) && result.recommendations.length > 0
+      ? result.recommendations.length + 1
+      : 1
   const keywords = result?.keywords
   const spots = pickSpots(prompt, keywords)
   const activityHint =
@@ -561,7 +607,7 @@ export function AiQuickSearchPage() {
                                     to={`/guides/${g.guideId}#match-request`}
                                     className="ais-feed-thumb"
                                     title={f.content ? String(f.content).slice(0, 80) : '가이드 상세보기'}
-                                    onClick={() => onClickGuideDetail(g.guideId)}
+                                    onClick={() => onClickGuideDetail(g.guideId, idx + 1)}
                                   >
                                     <span
                                       className="ais-feed-thumb-img"
@@ -575,7 +621,7 @@ export function AiQuickSearchPage() {
                                   to={`/guides/${g.guideId}#match-request`}
                                   className="ais-feed-empty"
                                   title="가이드 상세보기"
-                                  onClick={() => onClickGuideDetail(g.guideId)}
+                                  onClick={() => onClickGuideDetail(g.guideId, idx + 1)}
                                 >
                                   <span
                                     className="ais-feed-thumb-img"
@@ -610,7 +656,7 @@ export function AiQuickSearchPage() {
                               <Link
                                 to={`/guides/${g.guideId}#match-request`}
                                 className="ais-profile-btn ais-profile-btn--primary"
-                                onClick={() => onClickGuideDetail(g.guideId)}
+                                onClick={() => onClickGuideDetail(g.guideId, idx + 1)}
                               >
                                 가이드 상세보기
                               </Link>
@@ -630,6 +676,69 @@ export function AiQuickSearchPage() {
                     </button>
                   )}
                 </section>
+
+                {specialGuide && specialGuide.guideId != null && (
+                  <section
+                    className={`ais-panel ais-panel--special ${showGuides ? 'is-visible' : ''}`}
+                    aria-labelledby="ais-special-title"
+                  >
+                    <h2 id="ais-special-title" className="ais-panel-title">
+                      참고로 볼 만한 가이드
+                    </h2>
+                    <p className="ais-sub">
+                      {String(result?.specialSuggestion?.notice ?? '').trim() ||
+                        '선택한 날짜 기준으로 메인 추천에서는 빠졌지만, 조건은 잘 맞아 참고용으로 보여 드려요.'}
+                    </p>
+                    {(() => {
+                      const sg = specialGuide
+                      const sgid = String(sg.guideId)
+                      const sgImg =
+                        sg.representativeImageUrl ||
+                        (Array.isArray(sg.publicFeedThumbnailUrls) && sg.publicFeedThumbnailUrls[0]) ||
+                        null
+                      const sgRating =
+                        sg.averageRating != null && sg.averageRating !== ''
+                          ? Number(sg.averageRating).toFixed(1)
+                          : '—'
+                      const sgRc = sg.reviewCount != null ? sg.reviewCount : 0
+                      const sgTags = tagsForGuide(sg, keywords, guideStyleById[sgid] || sg.guideStyle)
+                      return (
+                        <div className="ais-special-card">
+                          <div className="ais-guide-row ais-guide-row--special">
+                            <div
+                              className="ais-guide-photo"
+                              style={sgImg ? { backgroundImage: `url(${sgImg})` } : undefined}
+                            />
+                            <div className="ais-guide-main">
+                              <p className="ais-guide-name">{sg.guideName ?? '가이드'}</p>
+                              <p className="ais-guide-rating">
+                                🌟 {sgRating} <span className="ais-guide-rc">({sgRc})</span>
+                              </p>
+                              <p className="ais-guide-region">{sg.region ?? ''}</p>
+                              <p className="ais-guide-reason">{sg.reason ? String(sg.reason).slice(0, 160) : ''}</p>
+                              {sgTags.length > 0 && (
+                                <div className="ais-guide-tags">
+                                  {sgTags.map((t) => (
+                                    <span key={t} className="ais-chip">
+                                      {t}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                            <Link
+                              to={`/guides/${sg.guideId}#match-request`}
+                              className="ais-profile-btn ais-profile-btn--primary"
+                              onClick={() => onClickGuideDetail(sg.guideId, specialClickRank)}
+                            >
+                              가이드 상세보기
+                            </Link>
+                          </div>
+                        </div>
+                      )
+                    })()}
+                  </section>
+                )}
 
                 <section
                   className={`ais-panel ais-panel--spots ${showSpots ? 'is-visible' : ''}`}
