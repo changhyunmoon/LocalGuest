@@ -20,7 +20,5 @@ public interface MemberRepository extends JpaRepository <Member, Long>{
     boolean existsByNicknameAndStatus(String nickname, Status status);
     boolean existsByNickname(String nickname);
 
-
-
-    Role role(Role role);
+    Optional<Member> findByNameAndNicknameAndRoleAndStatus(String name, String nickname, Role role, Status status);
 }
