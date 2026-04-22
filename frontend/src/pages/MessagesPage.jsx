@@ -1,6 +1,6 @@
 import { Client } from '@stomp/stompjs'
 import SockJS from 'sockjs-client/dist/sockjs'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 
 import { PageEmpty, PageError, PageLoading } from '../components/PageStates.jsx'
@@ -50,8 +50,27 @@ export function MessagesPage() {
   const [loadingMessages, setLoadingMessages] = useState(false)
   const [error, setError] = useState('')
   const [sending, setSending] = useState(false)
+  const [roomMenuOpen, setRoomMenuOpen] = useState(false)
   const readUpdateTimerRef = useRef(/** @type {ReturnType<typeof setTimeout> | null} */ (null))
   const autoReadTimerRef = useRef(/** @type {ReturnType<typeof setTimeout> | null} */ (null))
+  const roomMenuRef = useRef(/** @type {HTMLDivElement | null} */ (null))
+  const selectedRoomIdRef = useRef(selectedRoomId)
+
+  useEffect(() => {
+    selectedRoomIdRef.current = selectedRoomId
+  }, [selectedRoomId])
+
+  const removeRoomFromList = useCallback((rid) => {
+    setRooms((prev) => {
+      const next = prev.filter((r) => r.roomId !== rid)
+      setSelectedRoomId((cur) => {
+        if (cur !== rid) return cur
+        setMessages([])
+        return next[0]?.roomId ?? ''
+      })
+      return next
+    })
+  }, [])
 
   const myNickname = useMemo(() => {
     const fromClaims =
@@ -87,7 +106,8 @@ export function MessagesPage() {
       refreshTimer = setTimeout(async () => {
         try {
           const list = await fetchChatRooms()
-          setRooms(list.map((r) => (selectedRoomId && r.roomId === selectedRoomId ? { ...r, unreadCount: 0 } : r)))
+          const sid = selectedRoomIdRef.current
+          setRooms(list.map((r) => (sid && r.roomId === sid ? { ...r, unreadCount: 0 } : r)))
         } catch {
           /* ignore */
         }
@@ -97,8 +117,28 @@ export function MessagesPage() {
     es.addEventListener('chat-event', (evt) => {
       try {
         const payload = JSON.parse(String(/** @type {MessageEvent} */ (evt).data || '{}'))
+        if (payload?.type === 'ROOM_LEFT' && payload.roomId) {
+          const rid = payload.roomId
+          const roomDeleted = Boolean(payload.data?.roomDeleted)
+          const leftUser =
+            typeof payload.data?.leftUserEmail === 'string'
+              ? payload.data.leftUserEmail
+              : typeof payload.senderEmail === 'string'
+                ? payload.senderEmail
+                : ''
+          if (roomDeleted) {
+            removeRoomFromList(rid)
+            return
+          }
+          if (leftUser && leftUser === email) {
+            removeRoomFromList(rid)
+            return
+          }
+          scheduleRefreshRooms()
+          return
+        }
         // 현재 보고 있는 방에서의 NEW_MESSAGE는 unreadCount 갱신 대상이 아니다(0 유지).
-        if (payload?.type === 'NEW_MESSAGE' && payload?.roomId && payload.roomId === selectedRoomId) {
+        if (payload?.type === 'NEW_MESSAGE' && payload?.roomId && payload.roomId === selectedRoomIdRef.current) {
           return
         }
         if (payload?.type === 'NEW_MESSAGE' || payload?.type === 'NEW_ROOM') {
@@ -118,12 +158,60 @@ export function MessagesPage() {
       es.close()
       if (sseRef.current === es) sseRef.current = null
     }
-  }, [isAuthenticated, token])
+  }, [isAuthenticated, token, email, removeRoomFromList])
 
   const onPickRoom = (roomId) => {
+    setRoomMenuOpen(false)
     setSelectedRoomId(roomId)
     // 읽음 처리 요청은 별도로 보내지만, UI는 즉시 0으로 내려 카톡처럼 반응하게 한다.
     setRooms((prev) => prev.map((r) => (r.roomId === roomId ? { ...r, unreadCount: 0 } : r)))
+  }
+
+  useEffect(() => {
+    if (!roomMenuOpen) return
+    const onDocMouseDown = (e) => {
+      const el = roomMenuRef.current
+      if (el && !el.contains(/** @type {Node} */ (e.target))) {
+        setRoomMenuOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', onDocMouseDown)
+    return () => document.removeEventListener('mousedown', onDocMouseDown)
+  }, [roomMenuOpen])
+
+  const leaveSelectedRoom = async () => {
+    if (!selectedRoomId) return
+    const ok = window.confirm(
+      '채팅방에서 나갑니다. 다른 참가자가 남아 있으면 대화와 방은 그대로 유지되고, 마지막 사람이 나가면 서버에서 방과 메시지가 삭제돼요. 계속할까요?',
+    )
+    if (!ok) return
+    setRoomMenuOpen(false)
+    setError('')
+    try {
+      const res = await apiRequest('/chat/rooms/leave', {
+        method: 'POST',
+        json: { roomId: selectedRoomId },
+      })
+      const text = await res.text()
+      /** @type {{ success?: boolean, message?: string, roomDeleted?: boolean }} */
+      let parsed = {}
+      try {
+        if (text.startsWith('{') || text.startsWith('[')) parsed = JSON.parse(text)
+      } catch {
+        /* ignore */
+      }
+      if (!res.ok) {
+        const msg = typeof parsed.message === 'string' && parsed.message.trim() ? parsed.message.trim() : '퇴장에 실패했습니다.'
+        throw new Error(msg)
+      }
+      if (parsed.success === false) {
+        throw new Error(typeof parsed.message === 'string' && parsed.message ? parsed.message : '퇴장에 실패했습니다.')
+      }
+      const rid = selectedRoomId
+      removeRoomFromList(rid)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '퇴장에 실패했습니다.')
+    }
   }
 
   const bumpRoomPreview = (roomId, message, createdAt) => {
@@ -374,7 +462,26 @@ export function MessagesPage() {
               {selectedRoom?.participantCount ? `참여자 ${selectedRoom.participantCount}명` : '채팅방을 선택해 주세요'}
             </span>
           </div>
-          <span className="msg-dot" />
+          <div className="msg-header-actions" ref={roomMenuRef}>
+            <button
+              type="button"
+              className="msg-menu-trigger"
+              aria-expanded={roomMenuOpen}
+              aria-haspopup="true"
+              aria-label="채팅방 메뉴"
+              disabled={!selectedRoomId}
+              onClick={() => setRoomMenuOpen((o) => !o)}
+            >
+              <span className="msg-menu-dots" aria-hidden />
+            </button>
+            {roomMenuOpen && selectedRoomId ? (
+              <div className="msg-room-menu" role="menu">
+                <button type="button" className="msg-room-menu-item msg-room-menu-item--danger" role="menuitem" onClick={() => void leaveSelectedRoom()}>
+                  채팅방 퇴장하기
+                </button>
+              </div>
+            ) : null}
+          </div>
         </header>
 
         <div ref={chatBodyRef} className="msg-body">

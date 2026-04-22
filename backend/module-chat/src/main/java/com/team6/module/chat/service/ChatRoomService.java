@@ -9,12 +9,18 @@ import com.team6.module.chat.entity.mysql.ChatRoom;
 import com.team6.module.chat.repository.mongodb.ChatMessageRepository;
 import com.team6.module.chat.repository.mysql.ChatRoomRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
+
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -23,6 +29,7 @@ public class ChatRoomService {
     private final ChatRoomRepository chatRoomRepository;
     private final ChatMessageRepository chatMessageRepository;
     private final NotificationService notificationService;
+    private final ChatPresenceRedisService chatPresenceRedisService;
 
     //채팅방 생성
     @Transactional
@@ -97,6 +104,59 @@ public class ChatRoomService {
                 .findFirst()
                 .ifPresent(ChatParticipant::updateLastReadAt);
 
+    }
+
+    /**
+     * 참여자가 채팅방에서 퇴장한다. 본인 행만 제거하며,
+     * 마지막 참가자가 퇴장한 경우에만 MySQL 방·참가자와 Mongo 메시지를 삭제한다.
+     *
+     * @return 방이 서버에서 완전히 삭제됐는지 여부
+     */
+    @Transactional
+    public boolean leaveChatRoomAsParticipant(String roomId, String userEmail) {
+        ChatRoom room = chatRoomRepository.findByRoomIdWithParticipants(roomId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "채팅방을 찾을 수 없습니다."));
+        List<String> sseRecipients = room.getParticipants().stream()
+                .map(ChatParticipant::getUserEmail)
+                .toList();
+        if (!room.removeParticipantByEmail(userEmail)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "채팅방 참여자만 퇴장할 수 있습니다.");
+        }
+        boolean roomDeleted = room.getParticipants().isEmpty();
+        if (roomDeleted) {
+            chatMessageRepository.deleteByRoomId(roomId);
+            chatRoomRepository.delete(room);
+            chatPresenceRedisService.purgeRoomPresence(roomId);
+        } else {
+            chatRoomRepository.save(room);
+            chatPresenceRedisService.removeUserFromRoomParticipants(roomId, userEmail);
+        }
+        publishRoomLeftAfterCommit(roomId, userEmail, roomDeleted, sseRecipients);
+        return roomDeleted;
+    }
+
+    private void publishRoomLeftAfterCommit(String roomId, String userEmail, boolean roomDeleted, List<String> sseRecipients) {
+        Map<String, Object> payload = Map.of(
+                "roomDeleted", roomDeleted,
+                "leftUserEmail", userEmail
+        );
+        Runnable publish = () -> {
+            for (String recipient : sseRecipients) {
+                notificationService.broadcast(ChatNotificationResponse.of(
+                        "ROOM_LEFT", roomId, userEmail, recipient, payload
+                ));
+            }
+        };
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    publish.run();
+                }
+            });
+        } else {
+            publish.run();
+        }
     }
 
 }

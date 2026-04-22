@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
 
@@ -54,6 +55,24 @@ public class ChatRoom extends BaseTimeEntity {
     public void addParticipant(ChatParticipant participant) {
         this.participants.add(participant);
         this.participantCount = this.participants.size();
+    }
+
+    /**
+     * 참가자 목록에서 해당 이메일을 제거한다. orphanRemoval으로 DB 행도 삭제된다.
+     *
+     * @return 제거 성공 여부
+     */
+    public boolean removeParticipantByEmail(String userEmail) {
+        Iterator<ChatParticipant> it = this.participants.iterator();
+        while (it.hasNext()) {
+            ChatParticipant p = it.next();
+            if (userEmail.equals(p.getUserEmail())) {
+                it.remove();
+                this.participantCount = this.participants.size();
+                return true;
+            }
+        }
+        return false;
     }
 
     public void updateLastMessage(String message, LocalDateTime sentAt) {
