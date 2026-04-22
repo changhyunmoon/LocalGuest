@@ -200,11 +200,13 @@ export function GuestUpcomingTripsPage() {
                         </div>
                       </div>
                       <div className="gut-meta">
-                        <span className={`gut-dday${d === 0 ? ' is-today' : d === 1 ? ' is-soon' : ''}`}>
-                          {row.status === 'ACCEPTED' ? '결제 필요' : ddayLabel(d, row.status)}
-                        </span>
+                        <div className="gut-meta-head">
+                          <span className={`gut-dday${d === 0 ? ' is-today' : d === 1 ? ' is-soon' : ''}`}>
+                            {row.status === 'ACCEPTED' ? '결제 필요' : ddayLabel(d, row.status)}
+                          </span>
+                          <span className="gut-date">{row.desiredDate ?? '—'}</span>
+                        </div>
                         <h3>{nick}</h3>
-                        <p className="gut-line">{row.desiredDate ?? '—'}</p>
                         <p className="gut-line gut-line--sub">예산 {budget}</p>
                       </div>
                       <button type="button" className="gut-open" onClick={() => openMatchScreen(row)}>
