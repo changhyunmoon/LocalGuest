@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Link, useParams, useLocation, useNavigate } from 'react-router-dom'
 
 import { PageEmpty, PageError, PageLoading } from '../components/PageStates.jsx'
@@ -909,73 +910,76 @@ export function GuideDetailPage() {
         </section>
       )}
 
-      {confirmModal && (
-        <div
-          className="gdp-confirm-overlay"
-          role="dialog"
-          aria-modal="true"
-          aria-label="매칭 요청 확인"
-          onClick={(e) => {
-            if (e.target === e.currentTarget && !submitting) setConfirmModal(null)
-          }}
-        >
-          <div className="gdp-confirm">
-            <p className="gdp-confirm-kicker">Final Check</p>
-            <h3>{p.nickname} 가이드에게 매칭 요청을 보낼까요?</h3>
-            <p className="gdp-confirm-sub">아래 정보가 그대로 전달됩니다. 맞으면 전송해 주세요.</p>
-            <dl className="gdp-confirm-list">
-              <div>
-                <dt>목적지</dt>
-                <dd>{confirmModal.destination}</dd>
-              </div>
-              <div>
-                <dt>날짜</dt>
-                <dd>{confirmModal.desiredDate || '미정'}</dd>
-              </div>
-              <div>
-                <dt>하고 싶은 일</dt>
-                <dd>{confirmModal.guestConcept}</dd>
-              </div>
-              {confirmModal.payload?.budgetMinWon != null && confirmModal.payload?.budgetMaxWon != null ? (
+      {confirmModal &&
+        typeof document !== 'undefined' &&
+        createPortal(
+          <div
+            className="gdp-confirm-overlay"
+            role="dialog"
+            aria-modal="true"
+            aria-label="매칭 요청 확인"
+            onClick={(e) => {
+              if (e.target === e.currentTarget && !submitting) setConfirmModal(null)
+            }}
+          >
+            <div className="gdp-confirm">
+              <p className="gdp-confirm-kicker">Final Check</p>
+              <h3>{p.nickname} 가이드에게 매칭 요청을 보낼까요?</h3>
+              <p className="gdp-confirm-sub">아래 정보가 그대로 전달됩니다. 맞으면 전송해 주세요.</p>
+              <dl className="gdp-confirm-list">
                 <div>
-                  <dt>예산</dt>
-                  <dd>
-                    {Number(confirmModal.payload.budgetMinWon).toLocaleString('ko-KR')}~
-                    {Number(confirmModal.payload.budgetMaxWon).toLocaleString('ko-KR')}원
-                  </dd>
+                  <dt>목적지</dt>
+                  <dd>{confirmModal.destination}</dd>
                 </div>
-              ) : confirmModal.payload?.desiredBudget != null && (
                 <div>
-                  <dt>예산</dt>
-                  <dd>{Number(confirmModal.payload.desiredBudget).toLocaleString('ko-KR')}원</dd>
+                  <dt>날짜</dt>
+                  <dd>{confirmModal.desiredDate || '미정'}</dd>
                 </div>
-              )}
-            </dl>
-            <div className="gdp-confirm-actions">
-              <button
-                type="button"
-                className="gdp-confirm-btn gdp-confirm-btn--line"
-                onClick={() => setConfirmModal(null)}
-                disabled={submitting}
-              >
-                수정할게요
-              </button>
-              <button
-                type="button"
-                className="gdp-confirm-btn gdp-confirm-btn--solid"
-                disabled={submitting}
-                onClick={() => {
-                  const payload = confirmModal.payload
-                  setConfirmModal(null)
-                  void sendMatchRequest(payload)
-                }}
-              >
-                {submitting ? '전송 중…' : '요청 전송'}
-              </button>
+                <div>
+                  <dt>하고 싶은 일</dt>
+                  <dd>{confirmModal.guestConcept}</dd>
+                </div>
+                {confirmModal.payload?.budgetMinWon != null && confirmModal.payload?.budgetMaxWon != null ? (
+                  <div>
+                    <dt>예산</dt>
+                    <dd>
+                      {Number(confirmModal.payload.budgetMinWon).toLocaleString('ko-KR')}~
+                      {Number(confirmModal.payload.budgetMaxWon).toLocaleString('ko-KR')}원
+                    </dd>
+                  </div>
+                ) : confirmModal.payload?.desiredBudget != null && (
+                  <div>
+                    <dt>예산</dt>
+                    <dd>{Number(confirmModal.payload.desiredBudget).toLocaleString('ko-KR')}원</dd>
+                  </div>
+                )}
+              </dl>
+              <div className="gdp-confirm-actions">
+                <button
+                  type="button"
+                  className="gdp-confirm-btn gdp-confirm-btn--line"
+                  onClick={() => setConfirmModal(null)}
+                  disabled={submitting}
+                >
+                  수정할게요
+                </button>
+                <button
+                  type="button"
+                  className="gdp-confirm-btn gdp-confirm-btn--solid"
+                  disabled={submitting}
+                  onClick={() => {
+                    const payload = confirmModal.payload
+                    setConfirmModal(null)
+                    void sendMatchRequest(payload)
+                  }}
+                >
+                  {submitting ? '전송 중…' : '요청 전송'}
+                </button>
+              </div>
             </div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body,
+        )}
     </div>
   )
 }

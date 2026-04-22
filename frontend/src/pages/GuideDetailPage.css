@@ -562,7 +562,7 @@
 .gdp-confirm-overlay {
   position: fixed;
   inset: 0;
-  z-index: 90;
+  z-index: 2000;
   background: rgba(2, 6, 23, 0.55);
   backdrop-filter: blur(2px);
   display: grid;
