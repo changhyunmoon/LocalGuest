@@ -4,32 +4,13 @@ import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { PageError, PageLoading } from '../components/PageStates.jsx'
 import { apiRequest } from '../api/client'
 import { fetchGuestPayments, pickLatestCompletedPaymentIdForRequest } from '../lib/matchingGuest.js'
+import { loadKakaoSdk } from '../lib/kakaoMapSdk.js'
 
 import './GuideMatchOptionsPage.css'
 
 /** 가이드 마이페이지 「종일 패키지」와 동일: 서버 `pricePerHour` × 8 (`GuideFeesPage`와 맞춤) */
 const FULL_DAY_HOURS = 8
 const KAKAO_APP_KEY = import.meta.env.VITE_KAKAO_MAP_APP_KEY
-
-function loadKakaoSdk(appKey) {
-  if (!appKey) return Promise.reject(new Error('카카오맵 앱 키가 없습니다.'))
-  if (window.kakao?.maps?.services) return Promise.resolve(window.kakao)
-  return new Promise((resolve, reject) => {
-    const existing = document.getElementById('kakao-map-sdk')
-    if (existing) {
-      existing.addEventListener('load', () => window.kakao.maps.load(() => resolve(window.kakao)))
-      existing.addEventListener('error', () => reject(new Error('카카오맵 SDK 로드 실패')))
-      return
-    }
-    const script = document.createElement('script')
-    script.id = 'kakao-map-sdk'
-    script.async = true
-    script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${appKey}&autoload=false&libraries=services`
-    script.onload = () => window.kakao.maps.load(() => resolve(window.kakao))
-    script.onerror = () => reject(new Error('카카오맵 SDK 로드 실패'))
-    document.head.appendChild(script)
-  })
-}
 
 function geocodeAddress(kakao, query) {
   return new Promise((resolve) => {

@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { PageError, PageLoading } from '../components/PageStates.jsx'
 import { apiRequest } from '../api/client.js'
 import { DEFAULT_KOREA_CENTER, getUserLatLng, resolveLatLng } from '../lib/kakaoGeocode.js'
+import { loadKakaoSdk } from '../lib/kakaoMapSdk.js'
 import { fetchGuestMatchRequests } from '../lib/matchingGuest.js'
 import { parseCourseDetail } from './GuideCoursePanel.jsx'
 
@@ -19,26 +20,6 @@ function parseApiErrorMessage(text) {
   } catch {
     return text || '요청 실패'
   }
-}
-
-function loadKakaoSdk(appKey) {
-  if (!appKey) return Promise.reject(new Error('카카오맵 앱 키가 없습니다.'))
-  if (window.kakao?.maps?.services) return Promise.resolve(window.kakao)
-  return new Promise((resolve, reject) => {
-    const existing = document.getElementById('kakao-map-sdk')
-    if (existing) {
-      existing.addEventListener('load', () => window.kakao.maps.load(() => resolve(window.kakao)))
-      existing.addEventListener('error', () => reject(new Error('카카오맵 SDK 로드 실패')))
-      return
-    }
-    const script = document.createElement('script')
-    script.id = 'kakao-map-sdk'
-    script.async = true
-    script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${appKey}&autoload=false&libraries=services`
-    script.onload = () => window.kakao.maps.load(() => resolve(window.kakao))
-    script.onerror = () => reject(new Error('카카오맵 SDK 로드 실패'))
-    document.head.appendChild(script)
-  })
 }
 
 function fallbackLatLng(idx) {
@@ -184,12 +165,16 @@ export function MypageScrapbookTicketDetailPage() {
   const hasReview = reviewByMatch[Number(row?.requestId)] != null
 
   useEffect(() => {
+    if (loading || !row) return
     if (!mapRef.current) return
     let cancelled = false
 
     const drawMap = async () => {
       try {
         setMapErr('')
+        const el = mapRef.current
+        if (!el) return
+        el.innerHTML = ''
         const kakao = await loadKakaoSdk(KAKAO_APP_KEY)
         if (cancelled || !mapRef.current) return
 
@@ -208,7 +193,7 @@ export function MypageScrapbookTicketDetailPage() {
           if (byDestination) center = byDestination
         }
 
-        const map = new kakao.maps.Map(mapRef.current, {
+        const map = new kakao.maps.Map(el, {
           center: new kakao.maps.LatLng(center.lat, center.lng),
           level: 8,
         })
@@ -262,8 +247,11 @@ export function MypageScrapbookTicketDetailPage() {
     void drawMap()
     return () => {
       cancelled = true
+      if (mapRef.current) {
+        mapRef.current.innerHTML = ''
+      }
     }
-  }, [spots, profile?.region, formData?.meetingPoint, row?.destination])
+  }, [loading, row, spots, profile?.region, formData?.meetingPoint, row?.destination])
 
   const companionName = useMemo(() => String(profile?.nickname ?? '가이드').trim() || '가이드', [profile?.nickname])
   const tripTitle = useMemo(() => `여행기 #${tripOrder}`, [tripOrder])
