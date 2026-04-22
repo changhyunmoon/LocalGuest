@@ -1185,6 +1185,14 @@
   }
 }
 
+/* 프로필·소개: 다른 메뉴와 동일한 g-panel 폭 유지, 폼만 시트 안에서 가운데·적정 폭 */
+.gpv-sheet {
+  width: 100%;
+  max-width: min(640px, 100%);
+  margin-left: auto;
+  margin-right: auto;
+}
+
 /* guide profile visual refresh (F06-01) */
 .gpv-head h1 {
   margin: 0 0 0.3rem;
@@ -1298,7 +1306,7 @@
 
 .gpv-form {
   margin-top: 1rem;
-  width: min(560px, 100%);
+  width: 100%;
 }
 
 .gpv-field {
@@ -1455,6 +1463,11 @@
 .gpv-save:disabled {
   opacity: 0.45;
   cursor: not-allowed;
+}
+
+/* 프로필 페이지에 통합된 소개 카드 구역 */
+.gpv-profile-intro-cards {
+  width: 100%;
 }
 
 /* guide intro edit page (소개글 작성) */

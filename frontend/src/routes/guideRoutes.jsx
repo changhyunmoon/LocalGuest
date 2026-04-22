@@ -6,7 +6,6 @@ import { GuideApplyPage } from '../pages/GuideApplyPage'
 import { GuideCourseEditorPage } from '../pages/GuideCourseEditorPage'
 import { GuideFeedSchedulePage } from '../pages/GuideFeedSchedulePage'
 import { GuideInboxPage } from '../pages/GuideInboxPage'
-import { GuideIntroEditPage } from '../pages/GuideIntroEditPage'
 import { GuideProfileEditPage } from '../pages/GuideProfileEditPage'
 import { GuideReviewsManagePage } from '../pages/GuideReviewsManagePage'
 import { GuideSettlementPage } from '../pages/GuideSettlementPage'
@@ -71,7 +70,7 @@ export const guideRoutes = [
       },
       {
         path: 'intro',
-        element: <GuideIntroEditPage />,
+        element: <Navigate to="/guide/mypage/profile" replace />,
       },
       {
         path: 'feed-schedule',
