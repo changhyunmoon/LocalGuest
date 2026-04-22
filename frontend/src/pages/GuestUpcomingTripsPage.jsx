@@ -191,7 +191,7 @@ export function GuestUpcomingTripsPage() {
                   const dest = row.destination ?? '로컬 투어'
                   const budget = formatBudgetRangeKrw(row.budgetMinWon, row.budgetMaxWon, row.desiredBudget)
                   return (
-                    <article key={row.requestId} className="gut-card">
+                    <article key={row.requestId} className="gut-card gut-card--timeline">
                       <div className="gut-card-top">
                         <span className="gut-spot" aria-hidden="true">{moodEmoji(row.status, d)}</span>
                         <div className="gut-pills">
