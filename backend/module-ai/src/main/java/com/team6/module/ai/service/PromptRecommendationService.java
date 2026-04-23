@@ -853,16 +853,22 @@ public class PromptRecommendationService {
             int resolvedTopN,
             List<GuideRecommendRequest.GuideCandidateDto> guideCandidates
     ) {
-        if (Boolean.TRUE.equals(aiProperties.isLlmPromptExtractionEnabled()) && llmPromptExtractor != null) {
-            try {
-                Optional<GuideRecommendRequest> llm =
-                        llmPromptExtractor.tryExtract(prompt, resolvedTopN, guideCandidates);
-                if (llm.isPresent()) {
-                    return llm.get();
-                }
-            } catch (Exception e) {
-                log.warn("[AI_PROMPT] LLM 추출 실패, 룰 파서로 폴백: {}", e.toString());
+        if (!Boolean.TRUE.equals(aiProperties.isLlmPromptExtractionEnabled()) || llmPromptExtractor == null) {
+            return promptParser.parse(prompt, resolvedTopN, guideCandidates);
+        }
+        long t0 = System.nanoTime();
+        try {
+            Optional<GuideRecommendRequest> llm =
+                    llmPromptExtractor.tryExtract(prompt, resolvedTopN, guideCandidates);
+            long elapsed = System.nanoTime() - t0;
+            if (llm.isPresent()) {
+                metrics.recordLlmPromptExtraction("success", elapsed, POLICY_VERSION);
+                return llm.get();
             }
+            metrics.recordLlmPromptExtraction("empty", elapsed, POLICY_VERSION);
+        } catch (Exception e) {
+            metrics.recordLlmPromptExtraction("error", System.nanoTime() - t0, POLICY_VERSION);
+            log.warn("[AI_PROMPT] LLM 추출 실패, 룰 파서로 폴백: {}", e.toString());
         }
         return promptParser.parse(prompt, resolvedTopN, guideCandidates);
     }
