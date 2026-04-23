@@ -3503,13 +3503,14 @@
 }
 
 .gss3-cal-grid .gss3-day--pending {
-  background: #fffbeb;
-  border-color: #fde68a;
+  /* 수락 대기도 "예약된 날"로 인지되게 booked 톤에 맞춤 */
+  background: #ecfdf5;
+  border-color: #a7f3d0;
   box-shadow: none;
 }
 
 .gss3-cal-grid .gss3-day--pending .gss3-day-num {
-  color: #92400e;
+  color: #065f46;
   font-weight: 700;
 }
 
