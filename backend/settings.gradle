@@ -7,4 +7,6 @@ include 'module-chat'
 include 'module-ai'
 include 'module-ai-integration'
 
+include 'module-openai'
+
 include 'module-common'
