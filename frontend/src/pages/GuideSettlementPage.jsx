@@ -149,12 +149,6 @@ export function GuideSettlementPage() {
               <h2 className="gst-ledger-title">이번 달 정산부</h2>
               <p className="gst-ledger-lead">활동으로 쌓인 매칭·투어 기준의 수익 현황입니다.</p>
             </div>
-            <button type="button" className="gst-csv-btn" disabled title="곧 제공 예정입니다.">
-              <span className="gst-csv-ico" aria-hidden>
-                ⬇
-              </span>
-              내역 다운로드 (CSV)
-            </button>
           </header>
 
           <div className="gst-summary">
@@ -223,7 +217,6 @@ export function GuideSettlementPage() {
                         <th scope="col" className="gst-th-status">
                           상태
                         </th>
-                        <th className="gst-th-chev" aria-hidden />
                       </tr>
                     </thead>
                     <tbody>
@@ -234,9 +227,6 @@ export function GuideSettlementPage() {
                           <td className="gst-td-amt">{formatMoney(row.desiredBudget ?? 0)}</td>
                           <td className="gst-td-status">
                             <span className="gst-chip">{statusText(row.status)}</span>
-                          </td>
-                          <td className="gst-td-chev" aria-hidden>
-                            ›
                           </td>
                         </tr>
                       ))}

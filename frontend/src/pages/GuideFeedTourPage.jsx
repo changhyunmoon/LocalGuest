@@ -1,9 +1,12 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 
 import { PageEmpty, PageError, PageLoading } from '../components/PageStates.jsx'
+import { ReviewCarousel } from '../components/ReviewCarousel.jsx'
 import { apiRequest } from '../api/client'
+import { rememberRecentGuide } from '../lib/recentGuides.js'
 import { useAuth } from '../context/useAuth.js'
+import { extractReviewListFromPage } from '../lib/reviewPage.js'
 
 import './GuideFeedTourPage.css'
 
@@ -36,26 +39,6 @@ async function fetchJson(path, { skipAuth = true } = {}) {
   return text ? JSON.parse(text) : null
 }
 
-/** Spring `Page<>` 및 변형 응답에서 리뷰 배열만 추출 */
-function extractPageContent(raw) {
-  if (raw == null) return []
-  if (Array.isArray(raw)) return raw
-  if (typeof raw !== 'object') return []
-  if (Array.isArray(raw.content)) return raw.content
-  const d = raw.data
-  if (d && typeof d === 'object' && Array.isArray(d.content)) return d.content
-  return []
-}
-
-function formatReviewWhen(iso) {
-  if (iso == null || iso === '') return ''
-  try {
-    return new Date(iso).toLocaleDateString('ko-KR', { year: 'numeric', month: 'short', day: 'numeric' })
-  } catch {
-    return ''
-  }
-}
-
 export function GuideFeedTourPage() {
   const { guideId, feedId } = useParams()
   const navigate = useNavigate()
@@ -67,49 +50,6 @@ export function GuideFeedTourPage() {
   const [reviewsLoading, setReviewsLoading] = useState(true)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
-  const reviewTrackRef = useRef(/** @type {HTMLDivElement | null} */ (null))
-  const [reviewSlide, setReviewSlide] = useState(0)
-
-  const scrollReviewBy = useCallback((dir) => {
-    const el = reviewTrackRef.current
-    if (!el) return
-    const w = el.clientWidth
-    if (w <= 0) return
-    el.scrollBy({ left: dir * w, behavior: 'smooth' })
-  }, [])
-
-  useEffect(() => {
-    const el = reviewTrackRef.current
-    if (!el || reviews.length === 0) return
-    const onScroll = () => {
-      const w = el.clientWidth
-      if (w <= 0) return
-      setReviewSlide(Math.min(reviews.length - 1, Math.max(0, Math.round(el.scrollLeft / w))))
-    }
-    el.addEventListener('scroll', onScroll, { passive: true })
-    onScroll()
-    return () => el.removeEventListener('scroll', onScroll)
-  }, [reviews.length])
-
-  useEffect(() => {
-    setReviewSlide(0)
-    const el = reviewTrackRef.current
-    if (el) {
-      requestAnimationFrame(() => {
-        el.scrollTo({ left: 0, behavior: 'auto' })
-      })
-    }
-  }, [guideId, reviewReloadKey])
-
-  /** 후기 목록이 DOM에 그려진 직후 첫 슬라이드로 정렬 */
-  useLayoutEffect(() => {
-    if (reviewsLoading || reviews.length === 0) return
-    const el = reviewTrackRef.current
-    if (!el) return
-    el.scrollTo({ left: 0, behavior: 'auto' })
-    setReviewSlide(0)
-  }, [reviewsLoading, reviews.length, guideId, reviewReloadKey])
-
   useEffect(() => {
     let cancelled = false
     ;(async () => {
@@ -152,7 +92,7 @@ export function GuideFeedTourPage() {
           setReviewErr('후기 응답을 해석할 수 없어요.')
           return
         }
-        setReviews(extractPageContent(json))
+        setReviews(extractReviewListFromPage(json))
       } catch {
         if (!cancelled) {
           setReviews([])
@@ -166,6 +106,11 @@ export function GuideFeedTourPage() {
       cancelled = true
     }
   }, [guideId, reviewReloadKey])
+
+  useEffect(() => {
+    if (!guideId) return
+    rememberRecentGuide(Number(guideId))
+  }, [guideId])
 
   const feed = useMemo(() => {
     const feeds = detail?.feeds
@@ -327,58 +272,7 @@ export function GuideFeedTourPage() {
             ) : reviews.length === 0 ? (
               <p className="gft-muted">아직 등록된 리뷰가 없어요.</p>
             ) : (
-              <div className="gft-review-carousel" aria-roledescription="carousel">
-                <div className="gft-review-carousel__chrome">
-                  <button
-                    type="button"
-                    className="gft-review-nav"
-                    aria-label="이전 후기"
-                    disabled={reviewSlide <= 0}
-                    onClick={() => scrollReviewBy(-1)}
-                  >
-                    ‹
-                  </button>
-                  <div className="gft-review-progress" aria-hidden>
-                    <div
-                      className="gft-review-progress__fill"
-                      style={{ width: `${((reviewSlide + 1) / reviews.length) * 100}%` }}
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    className="gft-review-nav"
-                    aria-label="다음 후기"
-                    disabled={reviewSlide >= reviews.length - 1}
-                    onClick={() => scrollReviewBy(1)}
-                  >
-                    ›
-                  </button>
-                </div>
-                <p className="gft-review-counter" aria-live="polite">
-                  {reviewSlide + 1} / {reviews.length}
-                </p>
-                <div className="gft-review-rail" ref={reviewTrackRef} tabIndex={0} role="region" aria-label="가이드 후기 슬라이드">
-                  {reviews.map((r, i) => {
-                    const id = r.id != null ? String(r.id) : `r-${i}`
-                    const stars = Math.min(5, Math.max(0, Math.round(Number(r.rating) || 0)))
-                    const when = formatReviewWhen(r.createdAt)
-                    return (
-                      <div key={id} className="gft-review-slide" aria-roledescription="slide">
-                        <div className="gft-review">
-                          <div className="gft-review-head">
-                            <span className="gft-review-name">{r.writeNickname ?? '여행자'}</span>
-                            <span className="gft-review-stars" aria-label={`${stars}점`}>
-                              {'🌟'.repeat(stars)}
-                            </span>
-                          </div>
-                          {when ? <p className="gft-review-when">{when}</p> : null}
-                          <p className="gft-review-text">{r.content != null && String(r.content).trim() !== '' ? r.content : '내용 없음'}</p>
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
+              <ReviewCarousel reviews={reviews} variant="default" className="gft-review-carousel" />
             )}
           </section>
         </article>

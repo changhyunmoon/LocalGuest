@@ -3895,3 +3895,103 @@
   font-weight: 800;
   color: #64748b;
 }
+
+/* ------------------------------------------------------------------ */
+/* GuideReviewsManagePage -> guest review page like moodboard */
+/* ------------------------------------------------------------------ */
+.mp-member h1 {
+  margin: 0;
+  font-size: 1.15rem;
+  color: #0f172a;
+}
+
+.mp-member .sub {
+  margin: 0.25rem 0 0;
+  color: #64748b;
+  font-size: 0.86rem;
+}
+
+.mp-scrap-hero {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border: 1px solid #dbe4ef;
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.06);
+  padding: 0.9rem 1rem;
+}
+
+.mp-review-summary-inline {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 0.18rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #334155;
+  background: #f8fafc;
+  border: 1px solid #dbe4ef;
+  border-radius: 10px;
+  padding: 0.48rem 0.65rem;
+}
+
+.mp-reviews-moodboard {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-top: 0.85rem;
+}
+
+@media (max-width: 760px) {
+  .mp-reviews-moodboard {
+    grid-template-columns: 1fr;
+  }
+}
+
+.mp-review-postit {
+  position: relative;
+  border: 1px solid #dbe4ef;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+  padding: 0.85rem 0.9rem 0.75rem;
+}
+
+.mp-review-postit__pin {
+  position: absolute;
+  top: -7px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 26px;
+  height: 12px;
+  border-radius: 2px;
+  background: rgba(16, 185, 129, 0.22);
+}
+
+.mp-review-postit__stars {
+  margin: 0 0 0.35rem;
+  font-size: 0.86rem;
+}
+
+.mp-review-postit__body {
+  margin: 0;
+  font-size: 0.86rem;
+  line-height: 1.55;
+  color: #334155;
+  white-space: pre-wrap;
+}
+
+.mp-review-postit__foot {
+  margin-top: 0.55rem;
+  display: flex;
+  justify-content: space-between;
+  gap: 0.55rem;
+  font-size: 0.76rem;
+  color: #64748b;
+}
+
+.mp-review-postit--mint { border-left: 3px solid #10b981; }
+.mp-review-postit--amber { border-left: 3px solid #f59e0b; }
+.mp-review-postit--rose { border-left: 3px solid #f43f5e; }
+.mp-review-postit--indigo { border-left: 3px solid #6366f1; }

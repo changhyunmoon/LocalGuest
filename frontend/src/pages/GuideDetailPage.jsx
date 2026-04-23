@@ -5,6 +5,7 @@ import { Link, useParams, useLocation, useNavigate } from 'react-router-dom'
 import { PageEmpty, PageError, PageLoading } from '../components/PageStates.jsx'
 import { ReviewCarousel } from '../components/ReviewCarousel.jsx'
 import { apiRequest } from '../api/client'
+import { rememberRecentGuide } from '../lib/recentGuides.js'
 import { extractReviewListFromPage } from '../lib/reviewPage.js'
 import { useAuth } from '../context/useAuth.js'
 import { buildTravelDnaPreview, loadTravelDna } from '../lib/travelDna.js'
@@ -336,6 +337,11 @@ export function GuideDetailPage() {
     return () => {
       cancelled = true
     }
+  }, [guideId])
+
+  useEffect(() => {
+    if (!guideId) return
+    rememberRecentGuide(Number(guideId))
   }, [guideId])
 
   useEffect(() => {
