@@ -20,17 +20,17 @@ async function readJsonError(res, text) {
 
 function statusLabel(status) {
   const map = {
-    PENDING:     { label: '대기중',      bg: '#fef9c3', color: '#854d0e' },
-    ACCEPTED:    { label: '제시안 전송됨', bg: '#dbeafe', color: '#1e40af' },
-    REJECTED:    { label: '거절됨',      bg: '#fee2e2', color: '#991b1b' },
-    PAID:        { label: '결제완료',    bg: '#ede9fe', color: '#6d28d9' },
-    COMPLETED:   { label: '완료',        bg: '#d1fae5', color: '#065f46' },
-    IN_PROGRESS: { label: '투어 진행중', bg: '#fef9c3', color: '#854d0e' },
-    CANCELLED:   { label: '취소됨',      bg: '#f3f4f6', color: '#6b7280' },
+    PENDING: { label: '대기중', tone: 'pending' },
+    ACCEPTED: { label: '제시안 전송됨', tone: 'accepted' },
+    REJECTED: { label: '거절됨', tone: 'rejected' },
+    PAID: { label: '결제완료', tone: 'paid' },
+    COMPLETED: { label: '완료', tone: 'completed' },
+    IN_PROGRESS: { label: '투어 진행중', tone: 'progress' },
+    CANCELLED: { label: '취소됨', tone: 'cancelled' },
   }
-  const s = map[status] ?? { label: status, bg: '#f3f4f6', color: '#374151' }
+  const s = map[status] ?? { label: status, tone: 'default' }
   return (
-    <span style={{ fontSize: '0.76rem', fontWeight: 700, padding: '0.2rem 0.55rem', borderRadius: 999, background: s.bg, color: s.color, whiteSpace: 'nowrap' }}>
+    <span className={`inbox-status-chip inbox-status-chip--${s.tone}`}>
       {s.label}
     </span>
   )
@@ -83,17 +83,7 @@ function extensionStatusLabel(status) {
     PAID: '연장 결제 완료',
   }
   return (
-    <span
-      style={{
-        fontSize: '0.76rem',
-        fontWeight: 700,
-        padding: '0.2rem 0.55rem',
-        borderRadius: 999,
-        background: '#ede9fe',
-        color: '#5b21b6',
-        whiteSpace: 'nowrap',
-      }}
-    >
+    <span className="inbox-status-chip inbox-status-chip--extension">
       {map[String(status)] ?? '연장'}
     </span>
   )
@@ -319,7 +309,10 @@ export function GuideInboxPage() {
 
   return (
     <div className="inbox">
-      <h1>매칭 요청</h1>
+      <header className="inbox-head">
+        <h1>매칭 요청 관리</h1>
+        <p className="inbox-sub">요청 상태를 한눈에 확인하고, 대기 요청은 바로 코스를 작성해 제시안으로 전환하세요.</p>
+      </header>
 
       {loading && <p>불러오는 중…</p>}
       {error && <p className="inbox-error">{error}</p>}

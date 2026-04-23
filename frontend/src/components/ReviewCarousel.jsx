@@ -14,7 +14,7 @@ import './ReviewCarousel.css'
 export function ReviewCarousel({ reviews, variant = 'default', className = '' }) {
   const n = Array.isArray(reviews) ? reviews.length : 0
   const [i, setI] = useState(0)
-  const touch = { x0: 0, y0: 0, active: false }
+  const touchRef = useRef({ x0: 0, y0: 0, active: false })
 
   useEffect(() => {
     setI(0)
@@ -53,26 +53,12 @@ export function ReviewCarousel({ reviews, variant = 'default', className = '' })
 
   return (
     <div
-      className={`rev-carousel ${vmod} ${className}`.trim()}
+      className={`rev-carousel ${showNav ? 'rev-carousel--has-nav' : ''} ${vmod} ${className}`.trim()}
       onKeyDown={onKeyDown}
       tabIndex={0}
       role="region"
       aria-label="가이드 후기"
     >
-      {showNav && (
-        <div className="rev-carousel-chrome" aria-hidden={false}>
-          <button type="button" className="rev-carousel-btn rev-carousel-btn--prev" onClick={() => go(-1)} aria-label="이전 후기">
-            ‹
-          </button>
-          <span className="rev-carousel-counter" aria-live="polite">
-            {i + 1} / {n}
-          </span>
-          <button type="button" className="rev-carousel-btn rev-carousel-btn--next" onClick={() => go(1)} aria-label="다음 후기">
-            ›
-          </button>
-        </div>
-      )}
-
       <div
         className="rev-carousel-viewport"
         onTouchStart={(e) => {
@@ -92,6 +78,16 @@ export function ReviewCarousel({ reviews, variant = 'default', className = '' })
           else go(-1)
         }}
       >
+        {showNav && (
+          <>
+            <button type="button" className="rev-carousel-btn rev-carousel-btn--prev" onClick={() => go(-1)} aria-label="이전 후기">
+              ‹
+            </button>
+            <button type="button" className="rev-carousel-btn rev-carousel-btn--next" onClick={() => go(1)} aria-label="다음 후기">
+              ›
+            </button>
+          </>
+        )}
         <ul
           className="rev-carousel-track"
           style={{
@@ -113,7 +109,11 @@ export function ReviewCarousel({ reviews, variant = 'default', className = '' })
       </div>
 
       {showNav && (
-        <div className="rev-carousel-dots" role="tablist" aria-label="후기 번호">
+        <div className="rev-carousel-meta">
+          <span className="rev-carousel-counter" aria-live="polite">
+            {i + 1} / {n}
+          </span>
+          <div className="rev-carousel-dots" role="tablist" aria-label="후기 번호">
           {reviews.map((r, idx) => (
             <button
               key={reviewStableKey(/** @type {Record<string, unknown>} */ (r), idx)}
@@ -126,6 +126,7 @@ export function ReviewCarousel({ reviews, variant = 'default', className = '' })
               onClick={() => setI(idx)}
             />
           ))}
+          </div>
         </div>
       )}
     </div>

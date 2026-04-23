@@ -329,6 +329,10 @@
   gap: clamp(0.75rem, 2vw, 1.25rem);
 }
 
+.f02-expert-grid--recent .f02-expert-rating {
+  color: #0369a1;
+}
+
 @media (max-width: 840px) {
   .f02-expert-grid {
     grid-template-columns: 1fr;
@@ -420,6 +424,39 @@
 .f02-muted {
   color: #6b7280;
   font-size: 0.88rem;
+}
+
+.f02-idea-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(0.75rem, 2vw, 1rem);
+}
+
+.f02-idea-card {
+  background: #ffffff;
+  border: 1px solid #dbe4ef;
+  border-radius: 14px;
+  padding: 0.95rem 1rem;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
+}
+
+.f02-idea-card h3 {
+  margin: 0 0 0.4rem;
+  font-size: 0.94rem;
+  color: #0f172a;
+}
+
+.f02-idea-card p {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.55;
+  color: #475569;
+}
+
+@media (max-width: 840px) {
+  .f02-idea-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .f02-err {

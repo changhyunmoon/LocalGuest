@@ -33,6 +33,18 @@ const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토']
 const WEEKDAYS_SHORT = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT']
 const MONTHS_KO = ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월']
 
+function addDaysKey(key, deltaDays) {
+  if (!key) return null
+  try {
+    const base = new Date(`${String(key)}T00:00:00`)
+    if (Number.isNaN(base.getTime())) return null
+    base.setDate(base.getDate() + Number(deltaDays || 0))
+    return ymd(base)
+  } catch {
+    return null
+  }
+}
+
 function getDayStatus(dayKey, scheduleByDate, blockedDates) {
   if (blockedDates.has(dayKey)) return 'blocked'
   const daySchedules = scheduleByDate.get(dayKey) ?? []
@@ -58,14 +70,24 @@ function calendarDayCaption(daySchedules, requestsByScheduleId) {
 
 function mergeSchedules(schedules, pendingSchedules) {
   const byId = new Map()
+  const extra = []
   for (const s of schedules) {
-    if (s?.scheduleId != null) byId.set(Number(s.scheduleId), s)
+    if (s?.scheduleId != null) {
+      byId.set(Number(s.scheduleId), s)
+      continue
+    }
+    // 백엔드가 연속 일정 차단을 위해 scheduleId 없는 가상 PENDING을 내려줄 수 있다.
+    // 이런 엔트리는 scheduleId로 dedupe가 불가능하므로 별도로 유지한다.
+    if (s?.availableDate && String(s?.status ?? '').toUpperCase() === 'PENDING') {
+      extra.push(s)
+    }
   }
   for (const s of pendingSchedules) {
     const id = Number(s.scheduleId)
     if (!Number.isNaN(id) && !byId.has(id)) byId.set(id, s)
   }
-  return [...byId.values()]
+  if (extra.length === 0) return [...byId.values()]
+  return [...byId.values(), ...extra]
 }
 
 function ScheduleDrawer({
@@ -82,6 +104,8 @@ function ScheduleDrawer({
   const navigate = useNavigate()
   /** 'receive' | 'block' — 적용 전 선택만 반영 */
   const [pick, setPick] = useState('receive')
+  const receiveRadioRef = useRef(null)
+  const blockRadioRef = useRef(null)
 
   const status = selectedKey ? getDayStatus(selectedKey, scheduleByDate, blockedDates) : 'receiving'
   const daySchedules = selectedKey ? (scheduleByDate.get(selectedKey) ?? []) : []
@@ -91,6 +115,16 @@ function ScheduleDrawer({
     if (status === 'blocked') setPick('block')
     else setPick('receive')
   }, [selectedKey, status])
+
+  useEffect(() => {
+    if (!selectedKey) return
+    const target = pick === 'block' ? blockRadioRef.current : receiveRadioRef.current
+    if (!target) return
+    const t = window.setTimeout(() => {
+      target.focus()
+    }, 0)
+    return () => window.clearTimeout(t)
+  }, [selectedKey, pick])
 
   if (!selectedKey) return null
 
@@ -137,14 +171,14 @@ function ScheduleDrawer({
 
           <div className="gss3-pick" role="radiogroup" aria-label="예약 수신 방식">
             <label className={`gss3-pick__row ${pick === 'receive' ? 'gss3-pick__row--on' : ''}`}>
-              <input type="radio" name="gss3-day-pick" checked={pick === 'receive'} onChange={() => setPick('receive')} />
+              <input ref={receiveRadioRef} type="radio" name="gss3-day-pick" checked={pick === 'receive'} onChange={() => setPick('receive')} />
               <div className="gss3-pick__text">
                 <span className="gss3-pick__label">예약 받기</span>
                 <span className="gss3-pick__hint">종일 슬롯 · 게스트가 요청 가능</span>
               </div>
             </label>
             <label className={`gss3-pick__row ${pick === 'block' ? 'gss3-pick__row--on' : ''}`}>
-              <input type="radio" name="gss3-day-pick" checked={pick === 'block'} onChange={() => setPick('block')} />
+              <input ref={blockRadioRef} type="radio" name="gss3-day-pick" checked={pick === 'block'} onChange={() => setPick('block')} />
               <div className="gss3-pick__text">
                 <span className="gss3-pick__label">예약 안 받기</span>
                 <span className="gss3-pick__hint">이 날짜 요청 차단</span>
@@ -386,6 +420,19 @@ export function GuideScheduleSection({
     return map
   }, [schedules, pendingSchedules])
 
+  /** 같은 matchRequestId의 연속 PENDING을 캘린더에서 범위로 표시 */
+  const pendingGroupByDate = useMemo(() => {
+    const map = new Map()
+    for (const [dateKey, list] of scheduleByDate.entries()) {
+      if (!dateKey || !Array.isArray(list) || list.length === 0) continue
+      const pending = list.find((s) => String(s?.status ?? '').toUpperCase() === 'PENDING' && s?.matchRequestId != null)
+      if (pending?.matchRequestId != null) {
+        map.set(dateKey, String(pending.matchRequestId))
+      }
+    }
+    return map
+  }, [scheduleByDate])
+
   const monthKey = `${calendarMonth.getFullYear()}-${String(calendarMonth.getMonth() + 1).padStart(2, '0')}`
   const thisMonthBooked = mergedSchedules.filter((s) => s.availableDate?.startsWith(monthKey) && s.status === 'BOOKED').length
   const thisMonthPending = pendingSchedules.filter((s) => s.availableDate?.startsWith(monthKey)).length
@@ -541,6 +588,8 @@ export function GuideScheduleSection({
               else if (status === 'neutral') cls += ' gss3-day--neutral'
             }
             if (isSelected && key != null) cls += ' gss3-day--selected'
+
+            // 연속 일정이라도 캘린더는 "해당 날짜들이 예약(대기) 상태"임을 각 칸으로 명확히 보여준다.
 
             return (
               <button

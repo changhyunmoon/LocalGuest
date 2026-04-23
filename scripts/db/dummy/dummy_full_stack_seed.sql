@@ -9,7 +9,7 @@
 -- 비즈니스 조건
 --   · 가이드 75: 1~25 서로 다른 지역 25곳 / 26~75 동일 25지역 순환 + 성향·키워드 3파 변주
 --   · 게스트 50: 941001~941050, 성향 태그는 match_request.concept / concept_summary
---   · 여행 내역 match_request 150건
+--   · 여행 내역 match_request 210건 (기본 150 + 리뷰용 보강 60)
 --   · 나머지 테이블은 위 FK에 맞춰 연관 데이터로 채움 (피드·경력·이미지·결제·환불·연장·리뷰·스크랩·채팅방)
 --
 -- 비밀번호 BCrypt = 평문 "LocalGuest1!" (로그인 통일) — node bcryptjs hashSync로 검증됨, Spring BCryptPasswordEncoder와 호환
@@ -36,7 +36,7 @@
 --   guide_feeds            871001 ~ 871075  (DELETE 는 ~871080 까지 여유)
 --   guide_careers          872001 ~ 872075  (DELETE 는 ~872080)
 --   guide_images           873001 ~ 873150  (가이드당 2행)
---   payment                880001 ~ (매칭 건수에 따라 상한 ~880250, 두 번째 블록은 880101~ 부근)
+--   payment                880001 ~ 880550 (ACCOMPANY 880001~, CHAT 880301~)
 --   refund                 881001 ~ 881005  (고정 VALUES)
 --   tour_extension         882001 ~ (조건 만족 매칭 건수만큼, 상한 ~882040)
 --   review                 INSERT 시 id 미지정 → AUTO_INCREMENT (DELETE 885001~885120 은 잔여 시드 정리용)
@@ -65,14 +65,14 @@ SET SESSION cte_max_recursion_depth = 400000;
 SET FOREIGN_KEY_CHECKS = 0;
 
 DELETE FROM refund WHERE id BETWEEN 881001 AND 881020;
-DELETE FROM payment WHERE id BETWEEN 880001 AND 880400;
+DELETE FROM payment WHERE id BETWEEN 880001 AND 880550;
 DELETE FROM tour_extension WHERE id BETWEEN 882001 AND 882040;
 DELETE FROM review WHERE id BETWEEN 885001 AND 885120;
-DELETE FROM review WHERE match_request_id BETWEEN 862001 AND 862210;
-DELETE FROM scrapbooks WHERE match_request_id BETWEEN 862001 AND 862210;
+DELETE FROM review WHERE match_request_id BETWEEN 862001 AND 862220;
+DELETE FROM scrapbooks WHERE match_request_id BETWEEN 862001 AND 862220;
 DELETE FROM chat_participants WHERE id BETWEEN 884001 AND 884080;
 DELETE FROM chat_rooms WHERE id BETWEEN 883001 AND 883040;
-DELETE FROM match_request WHERE id BETWEEN 862001 AND 862210;
+DELETE FROM match_request WHERE id BETWEEN 862001 AND 862220;
 DELETE FROM guide_feeds WHERE id BETWEEN 871001 AND 871080;
 DELETE FROM guide_careers WHERE id BETWEEN 872001 AND 872080;
 DELETE FROM guide_images WHERE id BETWEEN 873001 AND 873200;
@@ -360,7 +360,7 @@ INSERT INTO match_request (
   updated_at
 )
 WITH RECURSIVE seq(n) AS (
-  SELECT 1 AS n UNION ALL SELECT n + 1 FROM seq WHERE n <= 60
+  SELECT 1 AS n UNION ALL SELECT n + 1 FROM seq WHERE n < 60
 )
 SELECT
   862150 + n,
@@ -491,7 +491,7 @@ INSERT INTO payment (
   updated_at
 )
 SELECT
-  880100 + ROW_NUMBER() OVER (ORDER BY id) AS rn,
+  880300 + ROW_NUMBER() OVER (ORDER BY id) AS rn,
   id,
   guest_id,
   30000,

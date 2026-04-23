@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 
 import { PageEmpty, PageError, PageLoading } from '../components/PageStates.jsx'
 import { apiRequest } from '../api/client'
 import { useAuth } from '../context/useAuth.js'
+import { readRecentGuideIds } from '../lib/recentGuides.js'
 
 import './HomePage.css'
 
@@ -76,6 +77,12 @@ export function HomePage() {
   }, [loadGuides])
 
   const experts = guides.slice(0, 3)
+  const recentGuides = useMemo(() => {
+    const ids = readRecentGuideIds()
+    if (ids.length === 0 || guides.length === 0) return []
+    const byId = new Map(guides.map((g) => [Number(g.guideId), g]))
+    return ids.map((id) => byId.get(Number(id))).filter(Boolean).slice(0, 3)
+  }, [guides])
 
   const aiCta = isAuthenticated ? (
     <Link to="/ai-search" className="f02-cta">
@@ -185,6 +192,58 @@ export function HomePage() {
             })}
           </div>
         )}
+      </section>
+
+      <section className="f02-section" aria-labelledby="f02-recent-title">
+        <div className="f02-section-head">
+          <h2 id="f02-recent-title" className="f02-section-title">
+            최근 본 가이드
+          </h2>
+          <Link to="/guides" className="f02-view-all">
+            전체 보기
+          </Link>
+        </div>
+        {recentGuides.length === 0 ? (
+          <p className="f02-muted">가이드 상세를 둘러보면 여기에 최근 본 가이드가 최대 3명까지 표시됩니다.</p>
+        ) : (
+          <div className="f02-expert-grid f02-expert-grid--recent">
+            {recentGuides.map((g) => (
+              <article key={`recent-${g.guideId}`} className="f02-expert-card">
+                <Link to={`/guides/${g.guideId}`} className="f02-expert-link">
+                  <div className="f02-expert-top">
+                    <div className="f02-expert-avatar" style={g.profileImage ? { backgroundImage: `url(${g.profileImage})` } : undefined} />
+                    <div className="f02-expert-meta">
+                      <p className="f02-expert-rating">최근 본 가이드</p>
+                      <strong className="f02-expert-name">{g.nickname ?? '가이드'}</strong>
+                      <span className="f02-expert-region">{g.region ?? '지역 미등록'}</span>
+                    </div>
+                  </div>
+                  <p className="f02-expert-bio">{truncate(g.bio, 84) || '소개글이 곧 채워질 예정이에요.'}</p>
+                </Link>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section className="f02-section" aria-labelledby="f02-ideas-title">
+        <h2 id="f02-ideas-title" className="f02-section-title f02-section-title--solo">
+          메인 구성 추천
+        </h2>
+        <div className="f02-idea-grid">
+          <article className="f02-idea-card">
+            <h3>오늘의 추천 코스</h3>
+            <p>실시간 인기 지역/테마를 바탕으로 3~4개의 코스 카드를 노출하면 첫 클릭 유도가 좋습니다.</p>
+          </article>
+          <article className="f02-idea-card">
+            <h3>신규 등록 가이드</h3>
+            <p>최근 등록된 가이드를 노출하면 플랫폼 활성을 보여주고, 신규 가이드의 노출 공정성도 확보됩니다.</p>
+          </article>
+          <article className="f02-idea-card">
+            <h3>후기 하이라이트</h3>
+            <p>게스트 후기 2~3개를 슬라이드로 노출하면 신뢰 형성에 가장 빠르게 기여합니다.</p>
+          </article>
+        </div>
       </section>
     </div>
   )
