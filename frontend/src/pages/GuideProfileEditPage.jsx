@@ -216,7 +216,10 @@ export function GuideProfileEditPage() {
       setPreviewUrl(null)
       setPendingUploadFile(null)
       setImageDeleted(false)
-      addToast('변경사항이 반영됐어요.')
+      addToast('변경사항이 반영됐어요. 화면을 새로고침합니다.')
+      window.setTimeout(() => {
+        window.location.reload()
+      }, 220)
     } catch {
       addToast('네트워크 오류', 'error')
     } finally {

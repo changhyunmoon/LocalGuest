@@ -1024,3 +1024,199 @@
   color: #94a3b8;
   box-shadow: none;
 }
+
+/* ------------------------------------------------------------------ */
+/* Cool clean theme overrides (default) */
+/* ------------------------------------------------------------------ */
+.gmo {
+  padding: clamp(0.75rem, 2.5vw, 1.1rem) clamp(0.75rem, 2.5vw, 1.25rem) 2.5rem;
+  min-height: min(100vh, 100%);
+  background-color: #f4f7fa;
+  background-image:
+    radial-gradient(circle at 1px 1px, rgba(100, 116, 139, 0.28) 1px, transparent 0),
+    radial-gradient(circle at 1px 1px, rgba(100, 116, 139, 0.16) 1px, transparent 0);
+  background-size: 30px 30px, 30px 30px;
+  background-position: 0 0, 15px 15px;
+}
+
+.gmo-back--pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.38rem 0.9rem;
+  border-radius: 999px;
+  background: #fff;
+  border: 1px solid #dbe4ef;
+  font-weight: 800;
+  font-size: 0.8rem;
+  color: #334155;
+  text-decoration: none;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.08);
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.15s ease;
+}
+
+.gmo-back--pill:hover {
+  border-color: #bcd5ea;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.11);
+  transform: translateY(-1px);
+}
+
+.gmo-back--line {
+  background: #ffffff;
+  color: #0f766e;
+  border-color: #99f6e4;
+}
+
+.gmo-kicker {
+  color: #64748b;
+}
+
+.gmo-banner {
+  background: #eef6ff;
+  border-color: #bfdbfe;
+  color: #1e3a8a;
+}
+
+.gmo-watch-banner {
+  background: #f8fafc;
+  border-color: #dbe4ef;
+  color: #475569;
+}
+
+.gmo-watch-btn {
+  border-color: #dbe4ef;
+  color: #334155;
+}
+
+.gmo-arrived-banner {
+  background: #ecfeff;
+  border-color: #a5f3fc;
+  color: #155e75;
+}
+
+.gmo-hero {
+  background: #fff;
+  border-color: #dbe4ef;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+}
+
+.gmo-hero--clickable:hover {
+  border-color: #bcd5ea;
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.12);
+}
+
+.gmo-hero--clickable:focus-visible {
+  outline-color: #93c5fd;
+}
+
+.gmo-hero-name {
+  color: #0f172a;
+}
+
+.gmo-hero-meta,
+.gmo-hero-hint,
+.gmo-hero-quote {
+  color: #475569;
+}
+
+.gmo-preview,
+.gmo-price-panel {
+  border-color: #dbe4ef;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.07);
+}
+
+.gmo-price-panel h2,
+.gmo-price-value,
+.gmo-total strong {
+  color: #0f172a;
+}
+
+.gmo-price-lead,
+.gmo-price-label,
+.gmo-total {
+  color: #475569;
+}
+
+.gmo-price-highlight {
+  border-color: #dbe4ef;
+  background: #f8fafc;
+}
+
+.gmo-total {
+  border-top-color: #e2e8f0;
+}
+
+.gmo-map {
+  background: linear-gradient(160deg, #f8fafc, #eef2ff);
+}
+
+.gmo-map-overlay {
+  background: rgba(248, 250, 252, 0.78);
+}
+
+.gmo-lock {
+  background: #e0f2fe;
+  border-color: #bae6fd;
+}
+
+.gmo-lock-glyph,
+.gmo-lock-glyph::before {
+  border-color: #0369a1;
+}
+
+.gmo-map-title {
+  color: #0f172a;
+}
+
+.gmo-map-sub {
+  color: #64748b;
+}
+
+.gmo-half-preview {
+  border-color: #dbe4ef;
+  background: #ffffff;
+}
+
+.gmo-spot-preview-item {
+  border-color: #dbe4ef;
+}
+
+.gmo-spot-preview-time {
+  border-color: #dbe4ef;
+  background: #f8fafc;
+}
+
+.gmo-course-pending {
+  border-color: #bfdbfe;
+  background: #eff6ff;
+}
+
+.gmo-course-pending-dot {
+  background: #2563eb;
+}
+
+.gmo-course-pending-title {
+  color: #1e3a8a;
+}
+
+.gmo-course-pending-sub {
+  color: #475569;
+}
+
+.gmo-pay {
+  border-color: #0f766e;
+  background: #0d9488;
+  color: #ffffff;
+}
+
+.gmo-pay:not(:disabled):hover {
+  background: #0f766e;
+}
+
+.gmo-pay:disabled {
+  background: #e2e8f0;
+  border-color: #cbd5e1;
+  color: #94a3b8;
+}

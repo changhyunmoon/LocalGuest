@@ -4,6 +4,7 @@ import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { PageError, PageLoading } from '../components/PageStates.jsx'
 import { ReviewCarousel } from '../components/ReviewCarousel.jsx'
 import { apiRequest } from '../api/client'
+import { rememberRecentGuide } from '../lib/recentGuides.js'
 import { extractReviewListFromPage } from '../lib/reviewPage.js'
 import { fetchGuestPayments, pickLatestCompletedPaymentIdForRequest } from '../lib/matchingGuest.js'
 import { loadKakaoSdk } from '../lib/kakaoMapSdk.js'
@@ -307,6 +308,11 @@ export function GuideMatchOptionsPage() {
   }, [profileModalOpen, guideId])
 
   useEffect(() => {
+    if (!guideId) return
+    rememberRecentGuide(Number(guideId))
+  }, [guideId])
+
+  useEffect(() => {
     if (!proposalArrivedNotice) return
     const timer = setTimeout(() => setProposalArrivedNotice(false), 5000)
     return () => clearTimeout(timer)
@@ -426,14 +432,14 @@ export function GuideMatchOptionsPage() {
 
   if (loading) {
     return (
-      <div className="gmo gmo--journal">
+      <div className="gmo">
         <PageLoading />
       </div>
     )
   }
   if (error || !profile) {
     return (
-      <div className="gmo gmo--journal">
+      <div className="gmo">
         <PageError message={error || '가이드를 찾을 수 없습니다.'}>
           <Link to="/guides">가이드 목록</Link>
         </PageError>
@@ -442,7 +448,7 @@ export function GuideMatchOptionsPage() {
   }
 
   return (
-    <div className="gmo gmo--journal">
+    <div className="gmo">
       <div className="gmo-topbar">
         <Link to={`/guides/${guideId}`} className="gmo-back gmo-back--pill">
           ← 가이드 프로필
@@ -473,7 +479,7 @@ export function GuideMatchOptionsPage() {
       )}
 
       <header
-        className="gmo-hero gmo-hero--journal gmo-hero--clickable"
+        className="gmo-hero gmo-hero--clickable"
         role="button"
         tabIndex={0}
         aria-haspopup="dialog"
