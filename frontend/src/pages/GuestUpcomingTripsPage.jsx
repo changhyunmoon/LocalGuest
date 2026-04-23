@@ -181,7 +181,7 @@ function groupRows(rows) {
     { key: 'inprogress', title: '진행 중인 여행', rows: inProgress },
     { key: 'dday', title: '오늘 출발 (D-Day)', rows: dday },
     { key: 'd1', title: '내일 출발 (D-1)', rows: d1 },
-    { key: 'upcoming', title: '다가오는 로컬 동행', rows: upcoming },
+    { key: 'upcoming', title: '예정된 로컬 만남', rows: upcoming },
   ].filter((section) => section.rows.length > 0)
 }
 

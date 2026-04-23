@@ -82,7 +82,7 @@ function AppLayoutInner() {
           )}
           {!isGuide && (
             <NavLink to="/mypage/itinerary" className={pillClass('shell-pill-link--cta')}>
-              다가오는 로컬 동행
+              예정된 로컬 만남
             </NavLink>
           )}
           {isGuide && (
