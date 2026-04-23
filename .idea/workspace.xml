@@ -5,12 +5,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="84d1b3de-8103-452e-83cf-38ecd34993e7" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/frontend/src/pages/GuideFeedSchedulePage.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/GuideFeedSchedulePage.jsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/pages/GuideFeesPage.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/GuideFeesPage.jsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/pages/GuideIntroEditPage.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/GuideIntroEditPage.jsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/pages/GuideProfileEditPage.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/GuideProfileEditPage.jsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/pages/GuideSettingsPage.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/GuideSettingsPage.jsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/pages/MypagePrivacyPage.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/MypagePrivacyPage.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.cursor/rules/github-issue-pr-conventions.mdc" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -85,6 +81,7 @@
   &quot;keyToString&quot;: {
     &quot;Gradle.Build backend.executor&quot;: &quot;Run&quot;,
     &quot;Gradle.backend 빌드.executor&quot;: &quot;Run&quot;,
+    &quot;Gradle.소스 다운로드.executor&quot;: &quot;Run&quot;,
     &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
     &quot;RequestMappingsPanelOrder0&quot;: &quot;0&quot;,
     &quot;RequestMappingsPanelOrder1&quot;: &quot;1&quot;,
@@ -157,6 +154,8 @@
       <workItem from="1776729193782" duration="3364000" />
       <workItem from="1776770760643" duration="62000" />
       <workItem from="1776780245318" duration="3710000" />
+      <workItem from="1776815495208" duration="8977000" />
+      <workItem from="1776902392996" duration="2409000" />
     </task>
     <servers />
   </component>
