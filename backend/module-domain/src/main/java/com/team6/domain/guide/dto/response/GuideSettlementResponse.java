@@ -14,6 +14,6 @@ import java.math.BigDecimal;
 public class GuideSettlementResponse {
 
     private Long guideId;              // 가이드 프로필 ID
-    private BigDecimal expectedAmount; // 정산 예정 금액 (현재 stub: 0.00)
+    private BigDecimal expectedAmount; // 정산 예정 금액 — payment.status=COMPLETED 금액 합(수수료 공제 전)
     private String description;        // 안내 메시지
 }

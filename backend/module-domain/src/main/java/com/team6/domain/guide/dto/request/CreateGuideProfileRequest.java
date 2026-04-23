@@ -17,8 +17,6 @@ public class CreateGuideProfileRequest {
     @NotBlank
     private String nickname;        // 가이드 닉네임
 
-    private String profileImage;    // 프로필 이미지 URL (선택)
-
     private String bio;             // 자기소개 (선택)
 
     @NotBlank

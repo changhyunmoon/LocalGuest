@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="LocalGuest">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2dd4bf"/>
+      <stop offset="100%" stop-color="#14b8a6"/>
+    </linearGradient>
+  </defs>
+  <!-- 틸 배경 -->
+  <rect width="32" height="32" rx="7" fill="url(#bg)"/>
+  <!-- 바닥 그림자 -->
+  <ellipse cx="16" cy="26.2" rx="7.5" ry="2.1" fill="#0f7669" opacity="0.38"/>
+  <!-- 아래쪽 접힌 면 (어두운 그레이) -->
+  <path fill="#94a3b8" d="M16 15.2L7.2 20.8L16 23.2l8.8-2.4L16 15.2z"/>
+  <!-- 좌측 날개 -->
+  <path fill="#f1f5f9" d="M16 6.5L7.2 20.8L16 15.2L16 6.5z"/>
+  <!-- 우측 날개 -->
+  <path fill="#ffffff" d="M16 6.5l8.8 14.3L16 15.2L16 6.5z"/>
+</svg>

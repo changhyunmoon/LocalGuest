@@ -60,7 +60,6 @@ public class GuideProfileService {
         GuideProfile profile = GuideProfile.builder()
                 .memberId(guideMember.getId())
                 .nickname(request.getNickname())
-                .profileImage(request.getProfileImage())
                 .bio(request.getBio())
                 .region(request.getRegion())
                 .language(request.getLanguage())

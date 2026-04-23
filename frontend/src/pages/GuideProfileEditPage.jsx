@@ -259,6 +259,7 @@ export function GuideProfileEditPage() {
   const hasFallbackLanguage = !!(profile.language && !LANGUAGE_OPTIONS.includes(String(profile.language).trim()))
   const parsedResidenceYears = Number.parseInt(String(profile.residenceYears ?? '').replace(/[^\d]/g, ''), 10)
   const residenceYearsPreview = Number.isFinite(parsedResidenceYears) ? parsedResidenceYears : 0
+  const profilePreviewImage = imageDeleted ? null : (previewUrl ?? profile.profileImage ?? null)
 
   return (
     <div className="g-panel">
@@ -269,11 +270,8 @@ export function GuideProfileEditPage() {
       </section>
       <div className="gpv-profile-row">
         <div
-          className="gpv-photo"
-          style={(() => {
-            const img = imageDeleted ? null : (previewUrl ?? profile.profileImage ?? null)
-            return img ? { backgroundImage: `url(${img})` } : undefined
-          })()}
+          className={`gpv-photo${profilePreviewImage ? '' : ' is-empty'}`}
+          style={profilePreviewImage ? { backgroundImage: `url(${profilePreviewImage})` } : undefined}
         />
         <div className="gpv-photo-actions">
           <button type="button" className="gpv-photo-btn" onClick={() => photoInputRef.current?.click()}>

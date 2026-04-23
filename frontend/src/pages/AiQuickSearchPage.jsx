@@ -494,31 +494,33 @@ export function AiQuickSearchPage() {
   return (
     <div className={`ais ${hasSearched ? 'ais--after' : 'ais--hero'}`}>
       <form className="ais-prompt" onSubmit={(e) => void runSearch(e)} aria-label="AI 여행 요청">
-        <label className="ais-prompt-label" htmlFor="ais-input">
-          어디로, 어떤 여행을 떠나고 싶나요?
-        </label>
-        <div className="ais-prompt-bar">
-          <textarea
-            id="ais-input"
-            className="ais-input"
-            rows={5}
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-            onKeyDown={onPromptKeyDown}
-            placeholder={PLACEHOLDER}
-            disabled={loading}
-            aria-busy={loading}
-          />
-          <button type="submit" className="ais-send" disabled={loading || !prompt.trim()} title="추천 받기">
-            {loading ? (
-              <span className="ais-send-spinner" aria-hidden />
-            ) : (
-              <span className="ais-send-icon" aria-hidden>
-                ▶
-              </span>
-            )}
-            <span className="visually-hidden">추천 받기</span>
-          </button>
+        <div className="ais-prompt-wrap">
+          <label className="ais-prompt-label ais-hero-title" htmlFor="ais-input">
+            어떤 여행을 꿈꾸고 계신가요?
+          </label>
+          <div className="ais-prompt-bar ais-modern-paper-bar">
+            <textarea
+              id="ais-input"
+              className="ais-input"
+              rows={5}
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              onKeyDown={onPromptKeyDown}
+              placeholder={PLACEHOLDER}
+              disabled={loading}
+              aria-busy={loading}
+            />
+            <button type="submit" className="ais-send" disabled={loading || !prompt.trim()} title="추천 받기">
+              {loading ? (
+                <span className="ais-send-spinner" aria-hidden />
+              ) : (
+                <span className="ais-send-icon" aria-hidden>
+                  ➤
+                </span>
+              )}
+              <span className="visually-hidden">추천 받기</span>
+            </button>
+          </div>
         </div>
       </form>
 
@@ -554,10 +556,12 @@ export function AiQuickSearchPage() {
 
             {!loading && result && (
               <>
-                <section className="ais-panel ais-panel--ai" aria-labelledby="ais-ai-title">
-                  <span className="ais-tab" aria-hidden />
-                  <h2 id="ais-ai-title" className="ais-panel-title">
-                    ✨ AI 메이트의 추천
+                <section className="ais-panel ais-panel--ai ais-grid-bg" aria-labelledby="ais-ai-title">
+                  <span className="ais-ai-sparkle" aria-hidden>
+                    ✦
+                  </span>
+                  <h2 id="ais-ai-title" className="ais-panel-title ais-panel-title--narrative">
+                    LocalMate AI의 한마디
                   </h2>
                   <div className="ais-ai-body">
                     {streamText ? (
@@ -572,8 +576,11 @@ export function AiQuickSearchPage() {
                   className={`ais-panel ais-panel--guides ${showGuides ? 'is-visible' : ''}`}
                   aria-labelledby="ais-guides-title"
                 >
-                  <h2 id="ais-guides-title" className="ais-panel-title">
-                    📸 추천 로컬 가이드
+                  <h2 id="ais-guides-title" className="ais-panel-title ais-panel-title--row">
+                    <span className="ais-title-icon" aria-hidden>
+                      ▦
+                    </span>
+                    당신을 위해 선별한 베스트 가이드
                   </h2>
                   <p className="ais-sub">「{activityHint}」에 어울리는 가이드예요.</p>
                   {topGuides.length === 0 ? (
@@ -594,7 +601,7 @@ export function AiQuickSearchPage() {
                           null
                         const tags = tagsForGuide(g, keywords, (gid ? guideStyleById[gid] : '') || g.guideStyle)
                         return (
-                          <li key={g.guideId ?? idx} className="ais-guide-card">
+                          <li key={g.guideId ?? idx} className="ais-guide-card ais-polaroid-card">
                             <div className="ais-rank" aria-label={`추천 순위 ${idx + 1}위`}>
                               <span className="ais-rank-badge">{idx + 1}</span>
                               <span className="ais-rank-text">추천 {idx + 1}위</span>
@@ -744,8 +751,11 @@ export function AiQuickSearchPage() {
                   className={`ais-panel ais-panel--spots ${showSpots ? 'is-visible' : ''}`}
                   aria-labelledby="ais-spots-title"
                 >
-                  <h2 id="ais-spots-title" className="ais-panel-title">
-                    🌿 추천 스팟
+                  <h2 id="ais-spots-title" className="ais-panel-title ais-panel-title--row">
+                    <span className="ais-title-icon ais-title-icon--rose" aria-hidden>
+                      ◎
+                    </span>
+                    코스에 꼭 넣어야 할 스팟
                   </h2>
                   <p className="ais-sub">가이드와 함께하면 더 즐거운 곳들이에요.</p>
                   <div className="ais-spot-grid">

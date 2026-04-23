@@ -58,7 +58,11 @@ export function DashboardLayout() {
     <div className="dash">
       <aside className="dash-side">
         <div className="dash-profile">
-          <div className="dash-avatar" aria-hidden style={profileImageUrl ? { backgroundImage: `url(${profileImageUrl})` } : undefined} />
+          <div
+            className={`dash-avatar${profileImageUrl ? '' : ' is-empty'}`}
+            aria-hidden
+            style={profileImageUrl ? { backgroundImage: `url(${profileImageUrl})` } : undefined}
+          />
           <strong className="dash-name">{displayName}</strong>
           <span className="dash-email">{email ?? ''}</span>
           <div className="dash-local-note" role="note" aria-label="여행 성향 태그">

@@ -326,7 +326,7 @@ export function MypageScrapbookTicketDetailPage() {
         </p>
 
         {(formData?.meetingPoint || formData?.guideMessage) && (
-          <div className="gmc-pre-info">
+          <div className="gmc-pre-info gmc-pre-info--guest-rings">
             {formData?.meetingPoint && (
               <div className="gmc-pre-card">
                 <span className="gmc-pre-label">집합 장소</span>
@@ -338,6 +338,11 @@ export function MypageScrapbookTicketDetailPage() {
                 <span className="gmc-pre-label">가이드 안내</span>
                 <p className="gmc-pre-value">{formData.guideMessage}</p>
               </div>
+            )}
+            {formData?.meetingPoint && formData?.guideMessage && (
+              <>
+                <span className="gmc-pre-ring gmc-pre-ring--left" aria-hidden="true" />
+              </>
             )}
           </div>
         )}

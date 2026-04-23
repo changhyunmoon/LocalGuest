@@ -2,7 +2,7 @@
   max-width: 420px;
   margin: 0 auto;
   text-align: left;
-  color: #1f2328;
+  color: #0f172a;
   color-scheme: light;
 }
 
@@ -18,13 +18,28 @@
 }
 
 .form-card {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 0.85rem;
   padding: 1.25rem;
-  border: 1px solid #e0e0e0;
-  border-radius: 10px;
+  border: 1px solid #dbe4ef;
+  border-radius: 14px;
   background: #fff;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.09);
+}
+
+.form-card::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-2deg);
+  width: 60px;
+  height: 16px;
+  border-radius: 3px;
+  background: rgba(244, 114, 182, 0.38);
+  box-shadow: 0 2px 4px rgba(15, 23, 42, 0.14);
 }
 
 .form-role-switch {
@@ -36,9 +51,9 @@
 .form-role-btn {
   padding: 0.62rem 0.8rem;
   border-radius: 10px;
-  border: 1px solid #efbfd0;
-  background: #fff8fb;
-  color: #7a5f78;
+  border: 1px solid #dbe4ef;
+  background: #f8fafc;
+  color: #475569;
   font-size: 0.88rem;
   font-weight: 700;
   cursor: pointer;
@@ -47,9 +62,9 @@
 }
 
 .form-role-btn.is-on {
-  background: #f6d8e6;
-  border-color: #efbfd0;
-  color: #6d3f58;
+  background: #10b981;
+  border-color: #10b981;
+  color: #ffffff;
 }
 
 .field {
@@ -61,16 +76,16 @@
 
 .field span {
   font-weight: 600;
-  color: #333;
+  color: #334155;
 }
 
 .field input,
 .field textarea,
 .field select {
   padding: 0.5rem 0.6rem;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  background: #fff;
+  border: 1px solid #dbe4ef;
+  border-radius: 10px;
+  background: #f8fafc;
   color: #111827;
   caret-color: #111827;
   font: inherit;
@@ -100,8 +115,8 @@
 .form-success {
   padding: 1rem;
   border-radius: 8px;
-  background: #e8f5e9;
-  border: 1px solid #c8e6c9;
+  background: #ecfeff;
+  border: 1px solid #bae6fd;
   margin-bottom: 1rem;
 }
 
@@ -112,9 +127,9 @@
 .submit {
   margin-top: 0.25rem;
   padding: 0.6rem 1rem;
-  border-radius: 6px;
+  border-radius: 999px;
   border: none;
-  background: #1a1a1a;
+  background: #10b981;
   color: #fff;
   font-weight: 600;
   cursor: pointer;
@@ -126,20 +141,20 @@
 }
 
 .submit.ghost {
-  background: #f5f5f5;
-  color: #333;
-  border: 1px solid #ddd;
+  background: #fff;
+  color: #334155;
+  border: 1px solid #dbe4ef;
 }
 
 .form-login-submit {
-  border: 1px solid #efbfd0;
-  background: #f6d8e6;
-  color: #6d3f58;
+  border: 1px solid #10b981;
+  background: #10b981;
+  color: #ffffff;
   font-weight: 700;
 }
 
 .form-login-submit:hover:not(:disabled) {
-  background: #f2cddd;
+  background: #059669;
 }
 
 /* 로그인 / 구글 로그인 동일 폭·블록 버튼 */
@@ -173,9 +188,9 @@ button[type='submit'].form-login-submit.form-auth-primary-btn {
   align-items: center;
   justify-content: center;
   gap: 0.52rem;
-  border-color: #efbfd0 !important;
-  background: #fff8fb !important;
-  color: #8f4664 !important;
+  border-color: #dbe4ef !important;
+  background: #fff !important;
+  color: #334155 !important;
   font-weight: 700;
 }
 
@@ -186,9 +201,9 @@ button[type='submit'].form-login-submit.form-auth-primary-btn {
   width: 1.4rem;
   height: 1.4rem;
   border-radius: 999px;
-  border: 1px solid #efbfd0;
-  background: #fff;
-  color: #8f4664;
+  border: 1px solid #dbe4ef;
+  background: #f8fafc;
+  color: #047857;
   font-size: 0.86rem;
   font-weight: 800;
   line-height: 1;
@@ -197,7 +212,7 @@ button[type='submit'].form-login-submit.form-auth-primary-btn {
 .form-social {
   margin-top: 1.25rem;
   padding-top: 1rem;
-  border-top: 1px solid #eee;
+  border-top: 1px solid #e2e8f0;
 }
 
 .form-social p {
@@ -225,7 +240,7 @@ button[type='submit'].form-login-submit.form-auth-primary-btn {
   margin-top: 0.15rem;
   padding-top: 0.15rem;
   font-size: 0.82rem;
-  color: #6b7280;
+  color: #64748b;
 }
 
 .form-account-links__sep {
@@ -240,14 +255,14 @@ button[type='submit'].form-login-submit.form-auth-primary-btn {
   background: none;
   font: inherit;
   font-size: inherit;
-  color: #6b7280;
+  color: #64748b;
   text-decoration: underline;
   text-underline-offset: 2px;
   cursor: pointer;
 }
 
 .form-text-link:hover {
-  color: #374151;
+  color: #1e293b;
 }
 
 a.form-text-link {
