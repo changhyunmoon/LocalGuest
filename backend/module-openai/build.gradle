@@ -1,10 +1,14 @@
 /**
  * OpenAI(Spring AI) 연동 전용 모듈.
- * {@code api-server}에 아직 조립하지 않는 한 런타임에 영향을 주지 않는다.
+ * <p>{@code spring-ai-starter-model-openai}는 자동구성이 항상 classpath에 올라가 API 키 없이 부팅하기 어려워,
+ * {@code spring-ai-openai}만 사용하고 빈은 {@code localguest.openai.enabled=true}일 때만 등록한다.
  */
 dependencies {
     implementation platform('org.springframework.ai:spring-ai-bom:1.0.0')
-    implementation 'org.springframework.ai:spring-ai-starter-model-openai'
+    implementation 'org.springframework.ai:spring-ai-openai'
+    implementation 'org.springframework.boot:spring-boot-starter'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.retry:spring-retry'
 
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'

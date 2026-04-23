@@ -7,6 +7,12 @@ spring:
       max-file-size: 10MB
       max-request-size: 10MB
 
+# OpenAI(Spring AI) — 기본 비활성. 켤 때는 API 키(spring.ai.openai.api-key 등)가 필요하다.
+localguest:
+  openai:
+    enabled: false
+    model: gpt-4o-mini
+
 ---
 spring:
   config:
