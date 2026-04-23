@@ -231,7 +231,11 @@ export function GuideDetailPage() {
       const draft = snap?.matchRequestDraft ?? null
       if (!draft || typeof draft !== 'object') return
 
-      if (draft?.conceptSummary) setAiConceptSummary(String(draft.conceptSummary))
+      const summaryFromDraft =
+        (draft?.conceptSummary && String(draft.conceptSummary).trim()) ||
+        (draft?.concept && String(draft.concept).trim()) ||
+        ''
+      if (summaryFromDraft) setAiConceptSummary(summaryFromDraft)
       if (draft?.desiredBudget != null && draft.desiredBudget !== '') setAiDesiredBudget(Number(draft.desiredBudget))
       if (draft?.budgetMinWon != null && draft.budgetMinWon !== '') setAiBudgetMinWon(Number(draft.budgetMinWon))
       if (draft?.budgetMaxWon != null && draft.budgetMaxWon !== '') setAiBudgetMaxWon(Number(draft.budgetMaxWon))

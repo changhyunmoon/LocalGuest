@@ -266,8 +266,24 @@ export function AiQuickSearchPage() {
   const persistMatchDraftForGuide = useCallback(
     (guideId) => {
       try {
-        const draft = result?.matchRequestDraft ?? null
-        if (!draft || !guideId) return
+        if (guideId == null || guideId === '') return
+
+        const draft =
+          result?.matchRequestDraft != null && typeof result.matchRequestDraft === 'object'
+            ? { ...result.matchRequestDraft }
+            : {}
+
+        const topSummary = typeof result?.conceptSummary === 'string' ? String(result.conceptSummary).trim() : ''
+        if (topSummary && !String(draft.conceptSummary || '').trim()) {
+          draft.conceptSummary = topSummary
+        }
+        const region = result?.keywords?.region
+        if (region && !String(draft.destination || '').trim()) {
+          draft.destination = String(region).trim()
+        }
+
+        const hasPayload = Object.keys(draft).length > 0
+        if (!hasPayload) return
         sessionStorage.setItem(
           LS_AI_MATCH_DRAFT,
           JSON.stringify({
