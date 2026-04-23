@@ -4,6 +4,8 @@
  * {@code spring-ai-openai}만 사용하고 빈은 {@code localguest.openai.enabled=true}일 때만 등록한다.
  */
 dependencies {
+    implementation project(':module-ai')
+
     implementation platform('org.springframework.ai:spring-ai-bom:1.0.0')
     implementation 'org.springframework.ai:spring-ai-openai'
     implementation 'org.springframework.boot:spring-boot-starter'

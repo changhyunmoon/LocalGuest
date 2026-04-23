@@ -522,7 +522,9 @@ class AiRecommendationRegressionTest {
                 ai,
                 adjacent,
                 metrics,
-                scoring
+                scoring,
+                aiProps,
+                null
         );
     }
 

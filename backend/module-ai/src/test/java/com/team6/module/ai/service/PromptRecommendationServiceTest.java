@@ -56,7 +56,9 @@ class PromptRecommendationServiceTest {
                 aiRecommendationService,
                 adjacent,
                 metrics,
-                scoring
+                scoring,
+                aiProps,
+                null
         );
     }
 

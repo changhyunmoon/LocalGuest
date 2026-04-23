@@ -1,11 +1,14 @@
 package com.team6.module.openai.config;
 
+import com.team6.module.ai.spi.LlmPromptExtractor;
+import com.team6.module.openai.prompt.OpenAiLlmPromptExtractor;
 import io.micrometer.observation.ObservationRegistry;
 import org.springframework.ai.model.tool.DefaultToolCallingManager;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.api.OpenAiApi;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.ai.tool.execution.DefaultToolExecutionExceptionProcessor;
 import org.springframework.ai.tool.resolution.StaticToolCallbackResolver;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -74,6 +77,13 @@ public class LocalGuestOpenAiConfiguration {
                 openAiRetryTemplate,
                 ObservationRegistry.NOOP
         );
+    }
+
+    @Bean
+    @ConditionalOnBean(OpenAiChatModel.class)
+    @ConditionalOnProperty(prefix = "localguest.ai", name = "llm-prompt-extraction-enabled", havingValue = "true", matchIfMissing = false)
+    public LlmPromptExtractor llmPromptExtractor(OpenAiChatModel chatModel) {
+        return new OpenAiLlmPromptExtractor(chatModel);
     }
 
     private static String resolveApiKey(LocalGuestOpenAiProperties props, Environment env) {

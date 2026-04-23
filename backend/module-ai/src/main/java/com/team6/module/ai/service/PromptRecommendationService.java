@@ -2,8 +2,10 @@ package com.team6.module.ai.service;
 
 import com.team6.module.ai.dto.request.GuideRecommendRequest;
 import com.team6.module.ai.dto.response.GuideRecommendResponse;
+import com.team6.module.ai.config.LocalGuestAiProperties;
 import com.team6.module.ai.config.ScoringPolicySnapshot;
 import com.team6.module.ai.parser.PromptParser;
+import com.team6.module.ai.spi.LlmPromptExtractor;
 import com.team6.module.ai.support.AdjacentRegionProvider;
 import com.team6.module.ai.support.AiRecommendationMetrics;
 import com.team6.module.ai.support.AiRecommendationTuning;
@@ -11,6 +13,8 @@ import com.team6.module.ai.support.ConceptSummaryGenerator;
 import com.team6.module.ai.support.RecommendationNoticeCodes;
 import com.team6.module.ai.support.RegionCandidateExpansion;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 
 import com.team6.module.ai.dto.response.GuideRecommendItem;
@@ -22,6 +26,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -47,18 +52,27 @@ public class PromptRecommendationService {
     // 운영 중 조정 가능한 추천 임계값(low-signal 점수, fallback 개선폭 등) 스냅샷.
     private final ScoringPolicySnapshot scoringPolicy;
 
+    private final LocalGuestAiProperties aiProperties;
+
+    @Nullable
+    private final LlmPromptExtractor llmPromptExtractor;
+
     public PromptRecommendationService(
             PromptParser promptParser,
             AiRecommendationService aiRecommendationService,
             AdjacentRegionProvider adjacentRegionProvider,
             AiRecommendationMetrics metrics,
-            ScoringPolicySnapshot scoringPolicy
+            ScoringPolicySnapshot scoringPolicy,
+            LocalGuestAiProperties aiProperties,
+            @Autowired(required = false) @Nullable LlmPromptExtractor llmPromptExtractor
     ) {
         this.promptParser = promptParser;
         this.aiRecommendationService = aiRecommendationService;
         this.adjacentRegionProvider = adjacentRegionProvider;
         this.metrics = metrics;
         this.scoringPolicy = scoringPolicy;
+        this.aiProperties = aiProperties;
+        this.llmPromptExtractor = llmPromptExtractor;
     }
 
     private static final String NOTICE_REGION_REQUIRED =
@@ -119,7 +133,7 @@ public class PromptRecommendationService {
             Integer resolvedTopN = (topN == null || topN <= 0)
                     ? AiRecommendationTuning.DEFAULT_TOP_N
                     : topN;
-            GuideRecommendRequest parsed = promptParser.parse(prompt, resolvedTopN, guideCandidates);
+            GuideRecommendRequest parsed = parsePromptToRequest(prompt, resolvedTopN, guideCandidates);
 
             // 2) 지역이 없으면 추천 품질이 크게 떨어지기 때문에 여기서 바로 short-circuit 한다.
             // 대신 빈 응답만 보내지 않고 conceptSummary / keywords / matchRequestDraft는 같이 만들어
@@ -832,6 +846,25 @@ public class PromptRecommendationService {
         } catch (Exception e) {
             log.debug("[AI_RECOMMEND] logging skipped: {}", e.toString());
         }
+    }
+
+    private GuideRecommendRequest parsePromptToRequest(
+            String prompt,
+            int resolvedTopN,
+            List<GuideRecommendRequest.GuideCandidateDto> guideCandidates
+    ) {
+        if (Boolean.TRUE.equals(aiProperties.isLlmPromptExtractionEnabled()) && llmPromptExtractor != null) {
+            try {
+                Optional<GuideRecommendRequest> llm =
+                        llmPromptExtractor.tryExtract(prompt, resolvedTopN, guideCandidates);
+                if (llm.isPresent()) {
+                    return llm.get();
+                }
+            } catch (Exception e) {
+                log.warn("[AI_PROMPT] LLM 추출 실패, 룰 파서로 폴백: {}", e.toString());
+            }
+        }
+        return promptParser.parse(prompt, resolvedTopN, guideCandidates);
     }
 
     private static Long topGuideId(GuideRecommendResponse resp) {

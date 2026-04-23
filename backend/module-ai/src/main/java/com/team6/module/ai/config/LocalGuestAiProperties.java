@@ -62,6 +62,12 @@ public class LocalGuestAiProperties {
      */
     private DiversityRerankSettings diversityRerank = new DiversityRerankSettings();
 
+    /**
+     * {@code true}이면 {@link com.team6.module.ai.spi.LlmPromptExtractor} 빈이 있을 때 LLM 추출을 시도한다.
+     * empty·예외 시에는 항상 룰 기반 파서로 폴백한다({@code localguest.ai.llm-prompt-extraction-enabled}).
+     */
+    private boolean llmPromptExtractionEnabled = false;
+
     @Getter
     @Setter
     public static class ParserSettings {
