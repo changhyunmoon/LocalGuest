@@ -577,16 +577,7 @@ export function GuideScheduleSection({
             }
             if (isSelected && key != null) cls += ' gss3-day--selected'
 
-            if (key && cell.inMonth && !past && status === 'pending') {
-              const gid = pendingGroupByDate.get(key) ?? null
-              if (gid) {
-                const prev = pendingGroupByDate.get(addDaysKey(key, -1))
-                const next = pendingGroupByDate.get(addDaysKey(key, 1))
-                if (prev === gid || next === gid) cls += ' gss3-day--range'
-                if (prev !== gid) cls += ' gss3-day--range-start'
-                if (next !== gid) cls += ' gss3-day--range-end'
-              }
-            }
+            // 연속 일정이라도 캘린더는 "해당 날짜들이 예약(대기) 상태"임을 각 칸으로 명확히 보여준다.
 
             return (
               <button
