@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 
 import { apiRequest } from '../api/client.js'
 import { useGuidePendingRequests } from '../context/GuidePendingRequestsProvider.jsx'
@@ -290,21 +290,6 @@ export function GuideInboxPage() {
     navigate(`/guide/requests/${r.requestId}/course-editor?${params.toString()}`, {
       state: { schedule: schedulePayload, proposeAfterSave: true },
     })
-  }
-
-  if (!isGuide) {
-    return (
-      <div className="inbox">
-        <h1>매칭 요청</h1>
-        <p className="inbox-warn">
-          이 화면은 JWT 역할이 <strong>GUIDE</strong>일 때만 API가 허용합니다. 가이드 신청 직후라면{' '}
-          <strong>다시 로그인</strong>한 뒤 이용해 주세요.
-        </p>
-        <p>
-          <Link to="/auth/login">로그인</Link> · <Link to="/guide/register">가이드 신청</Link>
-        </p>
-      </div>
-    )
   }
 
   return (

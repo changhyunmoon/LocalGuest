@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, Navigate, NavLink, Outlet, useLocation } from 'react-router-dom'
+import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
 
 import { apiRequest } from '../api/client.js'
 import { useGuidePendingRequests } from '../context/GuidePendingRequestsProvider.jsx'
@@ -19,7 +19,7 @@ const NAV = [
 ]
 
 export function GuideDashboardLayout() {
-  const { email, logout, isGuide } = useAuth()
+  const { email, logout } = useAuth()
   const { pendingCount } = useGuidePendingRequests()
   const { pathname, search } = useLocation()
   const { guideId } = useResolvedGuideId()
@@ -58,10 +58,6 @@ export function GuideDashboardLayout() {
         .filter(Boolean),
     )].slice(0, 3)
   }, [guideStyleRaw])
-
-  if (!isGuide) {
-    return <Navigate to="/mypage" replace />
-  }
 
   return (
     <div className="g-dash">
