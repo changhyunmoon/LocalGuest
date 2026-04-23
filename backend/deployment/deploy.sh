@@ -6,35 +6,15 @@ DOCKER_DIR="$BASE_DIR/docker"
 NGINX_CONF_DIR="$BASE_DIR/nginx"
 
 COMPOSE_APP="$DOCKER_DIR/docker-compose.yml"
-COMPOSE_INFRA="$DOCKER_DIR/docker-compose.infra.yml"
 COMPOSE_MONITORING="$DOCKER_DIR/docker-compose.monitoring.yml"
 
 DOCKER_COMPOSE_APP="docker compose -f $COMPOSE_APP"
-DOCKER_COMPOSE_INFRA="docker compose -f $COMPOSE_INFRA"
 DOCKER_COMPOSE_MONITORING="docker compose -f $COMPOSE_MONITORING"
 
 echo "--- 🚀 멀티모듈(api-server) 배포 프로세스 시작 ---"
 cd "$DOCKER_DIR" || exit 1
 
-# 2. 인프라(Redis, MongoDB) 및 네트워크 점검
-echo "--- 📦 1. 인프라 환경 및 네트워크 점검 ---"
 
-if [ -f "$COMPOSE_INFRA" ]; then
-    $DOCKER_COMPOSE_INFRA up -d || { echo "❌ 인프라 실행 실패"; exit 1; }
-
-    RUNNING_REDIS=$(docker ps --filter "name=redis" --filter "status=running" -q)
-    RUNNING_MONGO=$(docker ps --filter "name=mongodb" --filter "status=running" -q)
-
-    if [ -n "$RUNNING_REDIS" ] && [ -n "$RUNNING_MONGO" ]; then
-        echo "✅ 인프라 컨테이너 가동 확인 완료."
-    else
-        echo "⏳ 인프라 안정화 대기 (15s)..."
-        sleep 15
-    fi
-else
-    echo "❌ 에러: $COMPOSE_INFRA 파일을 찾을 수 없습니다."
-    exit 1
-fi
 
 # 2-1. 모니터링(Prometheus, Grafana) 환경 점검
 echo "--- 📊 2. 모니터링 환경 점검 ---"
