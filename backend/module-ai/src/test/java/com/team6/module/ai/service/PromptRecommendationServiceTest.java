@@ -144,6 +144,14 @@ class PromptRecommendationServiceTest {
     }
 
     @Test
+    void mergeNotice_should_not_prefix_null() throws Exception {
+        var method = PromptRecommendationService.class.getDeclaredMethod("mergeNotice", String.class, String.class);
+        method.setAccessible(true);
+
+        assertThat((String) method.invoke(null, null, "지역 외 조건 신호가 적어")).isEqualTo("지역 외 조건 신호가 적어");
+    }
+
+    @Test
     void recommendByPrompt_when_exact_region_sparse_should_expand_adjacent_and_notice() {
         PromptRecommendationService service = createService();
 
