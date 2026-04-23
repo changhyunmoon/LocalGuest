@@ -856,10 +856,11 @@ public class PromptRecommendationService {
         if (!Boolean.TRUE.equals(aiProperties.isLlmPromptExtractionEnabled()) || llmPromptExtractor == null) {
             return promptParser.parse(prompt, resolvedTopN, guideCandidates);
         }
+        String llmPrompt = truncateForLlm(prompt);
         long t0 = System.nanoTime();
         try {
             Optional<GuideRecommendRequest> llm =
-                    llmPromptExtractor.tryExtract(prompt, resolvedTopN, guideCandidates);
+                    llmPromptExtractor.tryExtract(llmPrompt, resolvedTopN, guideCandidates);
             long elapsed = System.nanoTime() - t0;
             if (llm.isPresent()) {
                 metrics.recordLlmPromptExtraction("success", elapsed, POLICY_VERSION);
@@ -871,6 +872,22 @@ public class PromptRecommendationService {
             log.warn("[AI_PROMPT] LLM 추출 실패, 룰 파서로 폴백: {}", e.toString());
         }
         return promptParser.parse(prompt, resolvedTopN, guideCandidates);
+    }
+
+    /**
+     * LLM 전송 전 원문 길이 제한. 룰 파서 폴백에는 원문 전체를 그대로 쓴다.
+     */
+    private String truncateForLlm(String prompt) {
+        if (prompt == null) {
+            return null;
+        }
+        int max = aiProperties.getLlmPromptMaxChars();
+        if (max <= 0 || prompt.length() <= max) {
+            return prompt;
+        }
+        log.warn("[AI_PROMPT] LLM 입력 길이 제한으로 잘림: orig={} → sent={} chars (max={})",
+                prompt.length(), max, max);
+        return prompt.substring(0, max);
     }
 
     private static Long topGuideId(GuideRecommendResponse resp) {

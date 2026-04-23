@@ -68,6 +68,12 @@ public class LocalGuestAiProperties {
      */
     private boolean llmPromptExtractionEnabled = false;
 
+    /**
+     * LLM 프롬프트 추출에 넘기는 사용자 원문 최대 길이(Java {@link String#length()} 기준). 초과분은 잘린다.
+     * {@code localguest.ai.llm-prompt-max-chars}, 기본 6000. 0 이하이면 제한 없음.
+     */
+    private int llmPromptMaxChars = 6000;
+
     @Getter
     @Setter
     public static class ParserSettings {
