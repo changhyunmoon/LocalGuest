@@ -1,4 +1,4 @@
-package com.team6.module.openai.prompt;
+package com.team6.module.ai.llm;
 
 /**
  * LLM이 만든 가이드 노출용 문자열에서 흔한 PII 패턴만 얕게 가린다.

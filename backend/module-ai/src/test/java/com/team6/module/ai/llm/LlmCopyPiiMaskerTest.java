@@ -1,4 +1,4 @@
-package com.team6.module.openai.prompt;
+package com.team6.module.ai.llm;
 
 import org.junit.jupiter.api.Test;
 

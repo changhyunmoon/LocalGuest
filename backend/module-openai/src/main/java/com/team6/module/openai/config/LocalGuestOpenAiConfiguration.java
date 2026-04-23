@@ -14,6 +14,7 @@ import org.springframework.ai.tool.execution.DefaultToolExecutionExceptionProces
 import org.springframework.ai.tool.resolution.StaticToolCallbackResolver;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
 import org.springframework.retry.support.RetryTemplate;
@@ -82,7 +83,7 @@ public class LocalGuestOpenAiConfiguration {
 
     @Bean
     @ConditionalOnBean(OpenAiChatModel.class)
-    @ConditionalOnProperty(prefix = "localguest.ai", name = "llm-prompt-extraction-enabled", havingValue = "true", matchIfMissing = false)
+    @Conditional(OnOpenAiLlmExtractionProperties.class)
     public LlmPromptExtractor llmPromptExtractor(OpenAiChatModel chatModel, ObjectMapper objectMapper) {
         return new OpenAiLlmPromptExtractor(chatModel, objectMapper);
     }
