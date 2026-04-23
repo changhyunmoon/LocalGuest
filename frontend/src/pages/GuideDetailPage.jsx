@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Link, useParams, useLocation, useNavigate } from 'react-router-dom'
 
+import { LoginModal } from '../components/auth/LoginModal.jsx'
 import { PageEmpty, PageError, PageLoading } from '../components/PageStates.jsx'
 import { ReviewCarousel } from '../components/ReviewCarousel.jsx'
 import { apiRequest } from '../api/client'
@@ -219,6 +220,7 @@ export function GuideDetailPage() {
   const [submitErr, setSubmitErr] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [confirmModal, setConfirmModal] = useState(null)
+  const [loginModalOpen, setLoginModalOpen] = useState(false)
   const [reviews, setReviews] = useState(/** @type {Array<Record<string, unknown>>} */ ([]))
   const [reviewsLoading, setReviewsLoading] = useState(true)
 
@@ -836,15 +838,13 @@ export function GuideDetailPage() {
 
           {!isAuthenticated && (
             <p className="gdp-match-login">
-              <Link
-                to="/auth/login"
-                state={{
-                  returnTo: `/guides/${guideId}#match-request`,
-                  hint: '로그인 후 이 가이드에게 매칭 요청을 보낼 수 있어요.',
-                }}
+              <button
+                type="button"
+                className="gdp-match-login-btn"
+                onClick={() => setLoginModalOpen(true)}
               >
                 로그인하고 요청하기
-              </Link>
+              </button>
             </p>
           )}
 
@@ -1099,6 +1099,16 @@ export function GuideDetailPage() {
           </div>,
           document.body,
         )}
+
+      {guideId ? (
+        <LoginModal
+          open={loginModalOpen}
+          onClose={() => setLoginModalOpen(false)}
+          returnTo={`/guides/${guideId}#match-request`}
+          hint="로그인 후 이 가이드에게 매칭 요청을 보낼 수 있어요."
+          preferredRole="GUEST"
+        />
+      ) : null}
     </div>
   )
 }

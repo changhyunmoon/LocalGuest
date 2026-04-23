@@ -407,6 +407,7 @@ export function AiQuickSearchPage() {
       const sessionId = clientSessionIdRef.current
       const res = await apiRequest('/ai/recommend', {
         method: 'POST',
+        skipAuth: true,
         json: {
           prompt: q,
           topN,
