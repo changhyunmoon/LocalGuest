@@ -102,39 +102,37 @@ export function MypageReviewsPage() {
       )}
 
       {!loading && !error && rows.length > 0 ? (
-        <div className="mp-cards">
-          {rows.map((r) => (
-            <article key={r.id} className="mp-trip-card mp-trip-card--past">
-              <div className="mp-trip-card__meta">
-                <p className="mp-trip-detail" style={{ fontWeight: 700 }}>
-                  {stars(r.rating)} <span style={{ color: '#6b7280', fontWeight: 600 }}>({r.rating}/5)</span>
-                </p>
-                <p className="mp-trip-detail" style={{ whiteSpace: 'pre-wrap' }}>
-                  {r.content}
-                </p>
-                <p className="mp-trip-detail" style={{ fontSize: '0.8rem', color: '#6b7280' }}>
-                  작성: {formatDt(r.createdAt)}
-                </p>
+        <div className="mp-reviews-moodboard">
+          {rows.map((r, idx) => {
+            const tone = ['mint', 'amber', 'rose', 'indigo'][idx % 4]
+            return (
+              <article key={r.id} className={`mp-review-postit mp-review-postit--${tone}`}>
+                <span className="mp-review-postit__pin" aria-hidden />
+                <p className="mp-review-postit__stars">{stars(r.rating)}</p>
+                <p className="mp-review-postit__body">&ldquo;{r.content}&rdquo;</p>
+                <div className="mp-review-postit__foot">
+                  <span className="mp-review-postit__date">{formatDt(r.createdAt)}</span>
+                </div>
                 {r.matchRequestId != null ? (
-                  <p className="mp-trip-detail" style={{ marginTop: '0.25rem' }}>
+                  <p className="mp-review-postit__link">
                     <Link to={`/mypage/scrapbook/${r.matchRequestId}`} className="mp-review-scrap-link">
-                      작성한 스크랩북으로 이동
+                      스크랩북 보기
                     </Link>
                   </p>
                 ) : null}
-              </div>
-              <div className="mp-trip-actions" style={{ alignSelf: 'stretch' }}>
-                <button
-                  type="button"
-                  className="mp-btn mp-btn--danger"
-                  disabled={busyId != null}
-                  onClick={() => void onDelete(r.id)}
-                >
-                  {busyId === r.id ? '처리 중…' : '삭제'}
-                </button>
-              </div>
-            </article>
-          ))}
+                <div className="mp-review-postit__actions">
+                  <button
+                    type="button"
+                    className="mp-btn mp-btn--danger"
+                    disabled={busyId != null}
+                    onClick={() => void onDelete(r.id)}
+                  >
+                    {busyId === r.id ? '처리 중…' : '삭제'}
+                  </button>
+                </div>
+              </article>
+            )
+          })}
         </div>
       ) : null}
 

@@ -93,75 +93,93 @@ export function GuideReviewsManagePage() {
   }
 
   return (
-    <div className="g-panel">
-      <h1>🌟 가이드 리뷰</h1>
-
+    <div className="g-panel grv-mood">
       {loadError && (
         <PageError message={loadError} onRetry={() => guideId != null && void loadPage(guideId, page)} />
       )}
       {listLoading && <PageLoading label="목록을 불러오는 중…" />}
 
-      <section className="grv-wrap">
-        <header className="grv-head">
-          <div className="grv-title-chip">
-            <span className="grv-title-mark" />
-            <strong>✨ 가이드 리뷰</strong>
-          </div>
-          {summaryLoading ? (
-            <p style={{ fontSize: '13px', color: '#9ca3af' }}>로딩 중…</p>
-          ) : summary?.reviewCount === 0 || summary == null ? (
-            <p style={{ fontSize: '13px', color: '#9ca3af' }}>아직 받은 리뷰가 없어요</p>
-          ) : (
-            <article className="grv-score-card">
-              <p>나의 평균 평점</p>
-              <strong>
-                🌟 {Number(summary.averageRating).toFixed(1)}
-              </strong>
-              <span>리뷰 {summary.reviewCount}개</span>
-            </article>
-          )}
-        </header>
-
-        {!listLoading && rows.length === 0 && (
-          <PageEmpty title="등록된 리뷰가 없습니다">게스트가 남긴 후기가 있으면 여기에 표시됩니다.</PageEmpty>
-        )}
-
-        {rows.length > 0 && (
-          <div className="grv-grid">
-            {rows.map((review) => (
-              <article key={review.id} className="grv-wide">
-                <p className="grv-stars">{stars(review.rating)}</p>
-                <p className="grv-content">{review.content ?? '리뷰 내용이 없습니다.'}</p>
-                <p className="grv-meta">
-                  - 여행자 '{review.writeNickname ?? '익명'}' ({formatDt(review.createdAt)})
-                </p>
-              </article>
-            ))}
-          </div>
-        )}
-
-        <div className="gm-actions" style={{ marginTop: '0.9rem' }}>
-          <button
-            type="button"
-            className="gm-btn gm-btn--ghost"
-            disabled={page <= 0 || listLoading}
-            onClick={() => setPage((p) => Math.max(0, p - 1))}
-          >
-            이전 리뷰
-          </button>
-          <span style={{ fontSize: '13px', color: '#6b7280', alignSelf: 'center' }}>
-            {page + 1} / {totalPages} 페이지
-          </span>
-          <button
-            type="button"
-            className="gm-btn gm-btn--ghost"
-            disabled={last || listLoading}
-            onClick={() => setPage((p) => p + 1)}
-          >
-            다음 리뷰
-          </button>
+      <div className="grv-mood-hero">
+        <div>
+          <h1 className="grv-mood-title">게스트의 소중한 한마디 💌</h1>
+          <p className="grv-mood-sub">따뜻한 리뷰는 더 많은 게스트와의 인연을 만들어줍니다.</p>
         </div>
-      </section>
+        {summaryLoading ? (
+          <p className="grv-mood-loading">로딩 중…</p>
+        ) : summary == null || summary?.reviewCount === 0 ? (
+          <div className="grv-mood-empty-score">아직 받은 리뷰가 없어요</div>
+        ) : (
+          <div className="grv-mood-stats">
+            <div className="grv-mood-stat">
+              <p className="grv-mood-stat__label">평균 평점</p>
+              <p className="grv-mood-stat__val">
+                {Number(summary.averageRating).toFixed(1)} <span className="grv-mood-stat__unit">/ 5</span>
+              </p>
+            </div>
+            <div className="grv-mood-stat-div" aria-hidden />
+            <div className="grv-mood-stat">
+              <p className="grv-mood-stat__label">전체 리뷰</p>
+              <p className="grv-mood-stat__val">
+                {summary.reviewCount} <span className="grv-mood-stat__unit">건</span>
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {!listLoading && rows.length === 0 && (
+        <PageEmpty title="등록된 리뷰가 없습니다">게스트가 남긴 후기가 있으면 벽에 붙듯 모여요.</PageEmpty>
+      )}
+
+      {rows.length > 0 && (
+        <div className="grv-mood-grid">
+          {rows.map((review, idx) => {
+            const c = ['emerald', 'amber', 'rose', 'indigo', 'sky', 'fuchsia'][idx % 6]
+            return (
+              <article
+                key={review.id}
+                className={`grv-mood-tile grv-mood-tile--${c}`}
+              >
+                <span className="grv-mood-tile__pin" aria-hidden />
+                <p className="grv-mood-tile__stars">{stars(review.rating)}</p>
+                <p className="grv-mood-tile__quote">
+                  &ldquo;{review.content ?? '리뷰 내용이 없습니다.'}&rdquo;
+                </p>
+                <div className="grv-mood-tile__foot">
+                  <span className="grv-mood-tile__name">
+                    {review.writeNickname != null && String(review.writeNickname).trim() !== ''
+                      ? `${String(review.writeNickname).trim()}님`
+                      : '익명'}
+                  </span>
+                  <span className="grv-mood-tile__date">{formatDt(review.createdAt)}</span>
+                </div>
+              </article>
+            )
+          })}
+        </div>
+      )}
+
+      <div className="grv-mood-pager">
+        <button
+          type="button"
+          className="gm-btn gm-btn--ghost"
+          disabled={page <= 0 || listLoading}
+          onClick={() => setPage((p) => Math.max(0, p - 1))}
+        >
+          이전
+        </button>
+        <span className="grv-mood-pager__meta">
+          {page + 1} / {totalPages} 페이지
+        </span>
+        <button
+          type="button"
+          className="gm-btn gm-btn--ghost"
+          disabled={last || listLoading}
+          onClick={() => setPage((p) => p + 1)}
+        >
+          다음
+        </button>
+      </div>
     </div>
   )
 }

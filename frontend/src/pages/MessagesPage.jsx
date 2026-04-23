@@ -181,6 +181,46 @@ export function MessagesPage() {
     [selectedRoom, email, guideAvatarById, guideAvatarByNickname],
   )
 
+  const [roomDetailAvatar, setRoomDetailAvatar] = useState('')
+
+  useEffect(() => {
+    if (!selectedRoom) {
+      setRoomDetailAvatar('')
+      return
+    }
+    if (selectedRoomAvatar) {
+      setRoomDetailAvatar('')
+      return
+    }
+    const t = readString(selectedRoom.title)
+    const m = t.match(/LG-DM-GUIDE-(\d+)/i)
+    if (!m) {
+      setRoomDetailAvatar('')
+      return
+    }
+    const gid = Number(m[1])
+    if (!Number.isFinite(gid)) return
+    let cancelled = false
+    ;(async () => {
+      try {
+        const res = await apiRequest(`/guides/${gid}`, { method: 'GET', skipAuth: true })
+        const text = await res.text()
+        if (!res.ok || cancelled) return
+        const j = text ? JSON.parse(text) : null
+        const img = readString(j?.profileImage ?? j?.profileImageUrl)
+        if (img && !cancelled) setRoomDetailAvatar(img)
+        else if (!cancelled) setRoomDetailAvatar('')
+      } catch {
+        if (!cancelled) setRoomDetailAvatar('')
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [selectedRoom, selectedRoomAvatar])
+
+  const chatOpponentAvatar = selectedRoomAvatar || roomDetailAvatar
+
   useEffect(() => {
     let cancelled = false
     ;(async () => {
@@ -600,9 +640,9 @@ export function MessagesPage() {
       <section className="msg-panel">
         <header className="msg-header">
           <div
-            className={`msg-avatar${selectedRoomAvatar ? '' : ' is-empty'}`}
+            className={`msg-avatar${chatOpponentAvatar ? '' : ' is-empty'}`}
             aria-hidden
-            style={selectedRoomAvatar ? { backgroundImage: `url(${selectedRoomAvatar})` } : undefined}
+            style={chatOpponentAvatar ? { backgroundImage: `url(${chatOpponentAvatar})` } : undefined}
           />
           <div className="msg-header-meta">
             <strong>{selectedRoom?.title || '채팅방'}</strong>
@@ -648,7 +688,13 @@ export function MessagesPage() {
                 const mine = m.senderEmail === email
                 return (
                   <article key={m.id || `${m.createdAt}-${m.senderEmail}-${m.message.slice(0, 12)}`} className={`msg-bubble-wrap ${mine ? 'mine' : 'other'}`}>
-                    {!mine && <div className="msg-mini-avatar" />}
+                    {!mine && (
+                      <div
+                        className={`msg-mini-avatar${chatOpponentAvatar ? '' : ' is-empty'}`}
+                        style={chatOpponentAvatar ? { backgroundImage: `url(${chatOpponentAvatar})` } : undefined}
+                        aria-hidden
+                      />
+                    )}
                     <div className="msg-bubble-box">
                       <div className={`msg-bubble ${mine ? 'mine' : 'other'}`}>{m.message}</div>
                       <time className="msg-meta">

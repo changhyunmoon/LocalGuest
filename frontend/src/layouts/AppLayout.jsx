@@ -27,7 +27,7 @@ function AppLayoutInner() {
   const { isAuthenticated, email, isGuide, logout } = useAuth()
   const { pendingCount } = useGuidePendingRequests()
   const guideMypageActive = isGuide && pathname.startsWith('/guide/mypage')
-  const guestItineraryActive = !isGuide && (pathname.startsWith('/mypage/itinerary') || pathname.startsWith('/upcoming-trips'))
+  const guestItineraryActive = !isGuide && pathname.startsWith('/mypage/itinerary')
   const matchComplete = isGuidesMatchCompletePath(pathname)
   const focusMode = pathname.startsWith('/auth/signup') || pathname.startsWith('/onboarding')
   const baseTitleRef = useRef(typeof document !== 'undefined' ? document.title : 'LocalGuest')
@@ -82,7 +82,7 @@ function AppLayoutInner() {
             </NavLink>
           )}
           {!isGuide && (
-            <NavLink to="/upcoming-trips" className={pillClass('shell-pill-link--cta')}>
+            <NavLink to="/mypage/itinerary" className={pillClass('shell-pill-link--cta')}>
               앞으로의 여행 일정
             </NavLink>
           )}

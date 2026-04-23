@@ -1,9 +1,11 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Link, useParams, useLocation, useNavigate } from 'react-router-dom'
 
 import { PageEmpty, PageError, PageLoading } from '../components/PageStates.jsx'
+import { ReviewCarousel } from '../components/ReviewCarousel.jsx'
 import { apiRequest } from '../api/client'
+import { extractReviewListFromPage } from '../lib/reviewPage.js'
 import { useAuth } from '../context/useAuth.js'
 import { buildTravelDnaPreview, loadTravelDna } from '../lib/travelDna.js'
 
@@ -196,7 +198,9 @@ export function GuideDetailPage() {
 
   const [detail, setDetail] = useState(null)
   const [schedules, setSchedules] = useState([])
-  const [reviews, setReviews] = useState([])
+  const matchSectionRef = useRef(/** @type {HTMLElement | null} */ (null))
+  /** 매칭 요청 섹션이 뷰포트에 들어오면 true — 상단 떠다니는 안내 문구 숨김 */
+  const [matchSectionVisible, setMatchSectionVisible] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
 
@@ -213,6 +217,8 @@ export function GuideDetailPage() {
   const [submitErr, setSubmitErr] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [confirmModal, setConfirmModal] = useState(null)
+  const [reviews, setReviews] = useState(/** @type {Array<Record<string, unknown>>} */ ([]))
+  const [reviewsLoading, setReviewsLoading] = useState(true)
 
   useEffect(() => {
     // AI 검색 결과에서 넘어온 matchRequestDraft는 게스트에게 노출하지 않고, 전송 시에만 활용한다.
@@ -260,10 +266,7 @@ export function GuideDetailPage() {
         const p = data?.profile
         if (p?.region) setDestination(String(p.region).trim())
 
-        const [schRes, revRes] = await Promise.all([
-          apiRequest(`/guides/${guideId}/schedules`, { method: 'GET', skipAuth: true }),
-          apiRequest(`/reviews/guide/${guideId}?size=12&sort=createdAt,desc`, { method: 'GET', skipAuth: true }),
-        ])
+        const schRes = await apiRequest(`/guides/${guideId}/schedules`, { method: 'GET', skipAuth: true })
 
         const schText = await schRes.text()
         if (schRes.ok) {
@@ -289,17 +292,6 @@ export function GuideDetailPage() {
           setSelectedDateKey(ymd(new Date()))
         }
 
-        let revList = []
-        if (revRes.ok) {
-          try {
-            const revText = await revRes.text()
-            const revJson = revText ? JSON.parse(revText) : {}
-            revList = Array.isArray(revJson.content) ? revJson.content : []
-          } catch {
-            revList = []
-          }
-        }
-        if (!cancelled) setReviews(revList)
       } catch (e) {
         if (!cancelled) setError(e instanceof Error ? e.message : '오류')
       } finally {
@@ -312,12 +304,63 @@ export function GuideDetailPage() {
   }, [guideId])
 
   useEffect(() => {
-    if (!loading && detail?.profile && location.hash === '#match-request') {
-      requestAnimationFrame(() => {
-        document.getElementById('match-request')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      })
+    if (!guideId) return
+    let cancelled = false
+    setReviewsLoading(true)
+    void (async () => {
+      try {
+        const res = await apiRequest(`/reviews/guide/${guideId}?size=30&sort=id,desc`, {
+          method: 'GET',
+          skipAuth: true,
+        })
+        const text = await res.text()
+        if (cancelled) return
+        if (!res.ok) {
+          setReviews([])
+          return
+        }
+        const page = text ? JSON.parse(text) : {}
+        setReviews(extractReviewListFromPage(page))
+      } catch {
+        if (!cancelled) setReviews([])
+      } finally {
+        if (!cancelled) setReviewsLoading(false)
+      }
+    })()
+    return () => {
+      cancelled = true
     }
-  }, [loading, detail, location.hash])
+  }, [guideId])
+
+  useEffect(() => {
+    const el = matchSectionRef.current
+    if (!el || typeof IntersectionObserver === 'undefined') return
+    const onIntersect = (entries) => {
+      const e = entries[0]
+      if (!e) return
+      // 조금만 겹쳐도(모바일 주소창·레이아웃) 곧바로 사라지지 않게 비율 기준
+      const ratio = e.intersectionRatio
+      setMatchSectionVisible(ratio > 0.18)
+    }
+    const io = new IntersectionObserver(onIntersect, {
+      root: null,
+      rootMargin: '0px 0px 0px 0px',
+      threshold: [0, 0.05, 0.1, 0.15, 0.2, 0.35, 0.5, 0.75, 1],
+    })
+    io.observe(el)
+    return () => io.disconnect()
+  }, [detail?.profile, hideMatchRequest, loading])
+
+  /** 피드·공유 링크 `#match-request` — 달력 매칭 섹션으로 스크롤 */
+  useEffect(() => {
+    if (loading || hideMatchRequest) return
+    const h = (location.hash || '').trim()
+    if (h !== '#match-request') return
+    const t = window.setTimeout(() => {
+      matchSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 80)
+    return () => clearTimeout(t)
+  }, [loading, hideMatchRequest, location.hash, location.key, guideId])
 
   const tags = useMemo(() => parseGuideStyleTags(detail?.profile?.guideStyle), [detail])
 
@@ -439,9 +482,12 @@ export function GuideDetailPage() {
       }
       const data = t ? JSON.parse(t) : {}
       const rid = data?.requestId
-      navigate(`/guides/${guideId}/match`, {
+      navigate('/mypage/itinerary', {
         replace: false,
-        state: { requestId: rid != null ? Number(rid) : undefined },
+        state: {
+          matchRequestSubmitted: true,
+          requestId: rid != null ? Number(rid) : undefined,
+        },
       })
     } catch {
       setSubmitErr('네트워크 오류가 발생했습니다.')
@@ -552,7 +598,6 @@ export function GuideDetailPage() {
 
   const p = detail.profile
   const careers = Array.isArray(detail.careers) ? detail.careers : []
-  const images = Array.isArray(detail.images) ? detail.images : []
   const feeds = Array.isArray(detail.feeds) ? detail.feeds : []
   const avatarStyle = p.profileImage ? { backgroundImage: `url(${p.profileImage})` } : undefined
 
@@ -623,21 +668,35 @@ export function GuideDetailPage() {
           <h2 id="gdp-intro" className="gdp-section-title">
             소개
           </h2>
-          {p.bio && String(p.bio).trim() ? (
-            <p className="gdp-prose">{String(p.bio).trim()}</p>
-          ) : (
-            <p className="gdp-muted">등록된 한 줄 소개가 없어요. 피드와 후기를 참고해 주세요.</p>
-          )}
-          {storyBlocks.length > 0 && (
-            <dl className="gdp-dl" style={{ marginTop: '1rem' }}>
-              {storyBlocks.map((row) => (
-                <div key={row.label}>
-                  <dt>{row.label}</dt>
-                  <dd>{row.text}</dd>
-                </div>
-              ))}
-            </dl>
-          )}
+          <div className="gdp-intro-board">
+            <span className="gdp-intro-clip" aria-hidden>
+              <svg viewBox="0 0 24 24" width="22" height="22" focusable="false" aria-hidden>
+                <path
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.7"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M8.2 5.2v12.6a3.8 3.8 0 1 0 7.6 0V6.4a2.2 2.2 0 1 0-4.4 0v11.2"
+                />
+              </svg>
+            </span>
+            {p.bio && String(p.bio).trim() ? (
+              <p className="gdp-prose gdp-intro-bio">{String(p.bio).trim()}</p>
+            ) : (
+              <p className="gdp-muted gdp-intro-bio">등록된 한 줄 소개가 없어요. 피드와 후기를 참고해 주세요.</p>
+            )}
+            {storyBlocks.length > 0 && (
+              <dl className="gdp-intro-dl" style={{ marginTop: '1rem' }}>
+                {storyBlocks.map((row) => (
+                  <div key={row.label}>
+                    <dt>{row.label}</dt>
+                    <dd>{row.text}</dd>
+                  </div>
+                ))}
+              </dl>
+            )}
+          </div>
         </section>
       ) : null}
 
@@ -649,33 +708,16 @@ export function GuideDetailPage() {
           <ul className="gdp-careers">
             {careers.map((c) => (
               <li key={c.careerId ?? c.title} className="gdp-career">
-                <div className="gdp-career-title">{c.title ?? '경력'}</div>
-                {c.acquiredAt && <div className="gdp-career-date">{formatCareerDate(c.acquiredAt)}</div>}
-                {c.description && String(c.description).trim() ? (
-                  <p className="gdp-career-desc">{String(c.description).trim()}</p>
-                ) : null}
+                <div className="gdp-career-body">
+                  <div className="gdp-career-title">{c.title ?? '경력'}</div>
+                  {c.acquiredAt && <div className="gdp-career-date">{formatCareerDate(c.acquiredAt)}</div>}
+                  {c.description && String(c.description).trim() ? (
+                    <p className="gdp-career-desc">{String(c.description).trim()}</p>
+                  ) : null}
+                </div>
               </li>
             ))}
           </ul>
-        </section>
-      ) : null}
-
-      {images.length > 0 ? (
-        <section className="gdp-section" aria-labelledby="gdp-photos">
-          <h2 id="gdp-photos" className="gdp-section-title">
-            사진
-          </h2>
-          <div className="gdp-gallery">
-            {images.map((img) => (
-              <div
-                key={img.imageId ?? img.imageUrl}
-                className="gdp-gallery-item"
-                style={img.imageUrl ? { backgroundImage: `url(${img.imageUrl})` } : undefined}
-                role="img"
-                aria-label=""
-              />
-            ))}
-          </div>
         </section>
       ) : null}
 
@@ -714,31 +756,31 @@ export function GuideDetailPage() {
 
       <section className="gdp-section" aria-labelledby="gdp-reviews">
         <h2 id="gdp-reviews" className="gdp-section-title">
-          후기
+          가이드 후기
         </h2>
-        {reviews.length === 0 ? (
-          <p className="gdp-muted">아직 표시할 후기가 없어요.</p>
+        {reviewsLoading ? (
+          <p className="gdp-muted">후기를 불러오는 중…</p>
+        ) : reviews.length === 0 ? (
+          <p className="gdp-muted">아직 등록된 후기가 없어요. 투어를 완료한 뒤 스크랩북에서 리뷰를 남길 수 있어요.</p>
         ) : (
-          <ul className="gdp-reviews">
-            {reviews.map((r) => (
-              <li key={r.id} className="gdp-review">
-                <div className="gdp-review-head">
-                  <span className="gdp-review-name">{r.writeNickname ?? '여행자'}</span>
-                  <span className="gdp-review-stars">
-                    {'🌟'.repeat(Math.min(5, Math.max(0, Number(r.rating) || 0)))}
-                  </span>
-                </div>
-                {r.content && String(r.content).trim() ? (
-                  <p className="gdp-review-text">{String(r.content).trim()}</p>
-                ) : null}
-              </li>
-            ))}
-          </ul>
+          <ReviewCarousel reviews={reviews} variant="default" className="gdp-review-carousel" />
         )}
       </section>
 
+      {!hideMatchRequest &&
+        typeof document !== 'undefined' &&
+        createPortal(
+          <div
+            className={`gdp-float-hint${matchSectionVisible ? ' gdp-float-hint--hide' : ''}`}
+            role="status"
+          >
+            ⏱️ 전체 패키지는 부담, 하루만 완벽하게!
+          </div>,
+          document.body,
+        )}
+
       {!hideMatchRequest && (
-        <section className="gdp-match" id="match-request">
+        <section className="gdp-match" id="match-request" ref={matchSectionRef}>
           <h2>매칭 요청하기</h2>
           <p className="gdp-match-intro">
             날짜를 먼저 선택한 뒤 여행 지역과 원하는 여행 스타일을 적어 주세요. 입력한 정보가 가이드에게 그대로 전달됩니다.
@@ -763,10 +805,10 @@ export function GuideDetailPage() {
           )}
 
           {isAuthenticated && !isGuide && (
-            <form onSubmit={(e) => void onSubmitMatch(e)} className="gdp-match-form">
+            <form onSubmit={(e) => void onSubmitMatch(e)} className="gdp-match-form gdp-match-form--wide">
             <label className="gdp-match-field">
-              <span className="gdp-match-label">예약 날짜</span>
-              <div className="gdp-match-cal">
+              <span className="gdp-match-label">📅 예약 날짜</span>
+              <div className="gdp-match-cal gdp-match-cal--gss3">
                 <div className="gdp-match-cal-head">
                   <button
                     type="button"
@@ -850,7 +892,12 @@ export function GuideDetailPage() {
               </div>
             </label>
             <label className="gdp-match-field">
-              <span className="gdp-match-label">여행 지역</span>
+              <span className="gdp-match-label">
+                🗺️ 여행 지역(목적지){' '}
+                <span className="gdp-req" title="필수">
+                  *
+                </span>
+              </span>
               <input
                 className="gdp-match-input"
                 type="text"
@@ -861,7 +908,7 @@ export function GuideDetailPage() {
               />
             </label>
             <label className="gdp-match-field">
-              <span className="gdp-match-label">예산 범위 (선택)</span>
+              <span className="gdp-match-label">💰 예산 범위</span>
               <div className="gdp-match-budget-row">
                 <input
                   className="gdp-match-input"
@@ -886,7 +933,7 @@ export function GuideDetailPage() {
               <p className="gdp-match-budget-hint">한쪽만 입력하면 단일 금액으로 처리됩니다.</p>
             </label>
             <label className="gdp-match-field">
-              <span className="gdp-match-label">원하는 여행 스타일 (선택)</span>
+              <span className="gdp-match-label">🎨 원하는 여행 스타일</span>
               <textarea
                 className="gdp-match-textarea"
                 rows={3}
@@ -902,7 +949,7 @@ export function GuideDetailPage() {
                 className="gdp-match-submit"
                 disabled={submitting || !selectedDateKey || blockedDateSet.has(selectedDateKey) || reservedDateSet.has(selectedDateKey)}
               >
-                {submitting ? '요청 전송 중…' : '매칭 요청 보내기'}
+                {submitting ? '요청 전송 중…' : '매칭 요청 보내기 ✈️'}
               </button>
             </div>
             </form>

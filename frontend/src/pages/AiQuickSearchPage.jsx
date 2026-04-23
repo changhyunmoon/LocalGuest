@@ -14,20 +14,10 @@ const PLACEHOLDER =
 const LS_AI_SEARCH_SNAPSHOT = 'localguest_ai_search_snapshot_v1'
 const LS_AI_MATCH_DRAFT = 'localguest_ai_match_draft_v1'
 const LS_AI_CLIENT_SESSION = 'localguest_ai_client_session_v1'
-const AI_GUIDE_DEFAULT_SHOW = 3
-const AI_GUIDE_EXPANDED_SHOW = 5
-
-const JEJU_OREUM_SPOTS = [
-  { title: '아부오름', caption: '완만한 능선, 소풍 명소', tape: 'g' },
-  { title: '새별오름', caption: '노을·야경이 예쁜 곳', tape: 'b' },
-  { title: '안돌오름', caption: '한적한 산책 코스', tape: 'p' },
-]
-
-const DEFAULT_SPOTS = [
-  { title: '로컬 산책로', caption: '가이드와 함께 여유롭게', tape: 'g' },
-  { title: '숨은 뷰 포인트', caption: '사진·힐링에 좋아요', tape: 'b' },
-  { title: '동네 맛집 골목', caption: '현지인 픽 코스', tape: 'p' },
-]
+/** 상단 폴라로이드로 고정 노출 */
+const AI_TOP_POLAROID = 3
+/** API한번에 받아 둘 후보 수 (4위~ 더보기용) */
+const AI_FETCH_TOP_N = 20
 
 function buildNarrative(data) {
   if (!data) return ''
@@ -45,12 +35,6 @@ function buildNarrative(data) {
   }
   const text = parts.filter(Boolean).join('\n\n')
   return text.length > 2000 ? `${text.slice(0, 2000)}…` : text
-}
-
-function pickSpots(prompt, keywords) {
-  const blob = `${prompt ?? ''} ${keywords?.region ?? ''}`.toLowerCase()
-  if (blob.includes('제주')) return JEJU_OREUM_SPOTS
-  return DEFAULT_SPOTS
 }
 
 function styleTags(styleRaw) {
@@ -155,9 +139,10 @@ export function AiQuickSearchPage() {
   const [result, setResult] = useState(null)
   const [streamText, setStreamText] = useState('')
   const [showGuides, setShowGuides] = useState(false)
-  const [showSpots, setShowSpots] = useState(false)
   const [fallbackGuides, setFallbackGuides] = useState([])
-  const [expandedGuides, setExpandedGuides] = useState(false)
+  /** true면 상단 탑3 폴라로이드는 접고 4위~ 목록만 표시 */
+  const [showRestGuideList, setShowRestGuideList] = useState(false)
+  const [polaroidExit, setPolaroidExit] = useState(false)
   /** @type {Record<string, Array<{ feedId: number, imageUrl?: string, content?: string }>>} */
   const [guideFeedsById, setGuideFeedsById] = useState({})
   /** @type {Record<string, string>} */
@@ -200,21 +185,13 @@ export function AiQuickSearchPage() {
     }
   }, [])
 
-  const spotsTimerRef = useRef(null)
-
   const startTypewriter = useCallback(
     (full) => {
       stopTypewriter()
-      if (spotsTimerRef.current != null) {
-        clearTimeout(spotsTimerRef.current)
-        spotsTimerRef.current = null
-      }
       setStreamText('')
       setShowGuides(false)
-      setShowSpots(false)
       if (!full) {
         setShowGuides(true)
-        spotsTimerRef.current = setTimeout(() => setShowSpots(true), 400)
         return
       }
       let i = 0
@@ -225,7 +202,6 @@ export function AiQuickSearchPage() {
         if (next.length >= full.length) {
           stopTypewriter()
           setShowGuides(true)
-          spotsTimerRef.current = setTimeout(() => setShowSpots(true), 420)
         }
       }, 14)
     },
@@ -235,9 +211,6 @@ export function AiQuickSearchPage() {
   useEffect(
     () => () => {
       stopTypewriter()
-      if (spotsTimerRef.current != null) {
-        clearTimeout(spotsTimerRef.current)
-      }
     },
     [stopTypewriter],
   )
@@ -255,14 +228,14 @@ export function AiQuickSearchPage() {
       setPrompt(restoredPrompt)
       setResult(restoredResult)
       setFallbackGuides(restoredFallback)
-      setExpandedGuides(Boolean(snap.expandedGuides))
+      setShowRestGuideList(Boolean(snap.showRestGuideList))
+      setPolaroidExit(Boolean(snap.showRestGuideList))
       setHasSearched(Boolean(snap.hasSearched))
       // 뒤로가기 복원에서는 로딩/타이핑 없이 즉시 결과를 보여준다.
       setPanelOpen(false)
       const narrative = buildNarrative(restoredResult)
       setStreamText(narrative)
       setShowGuides(true)
-      setShowSpots(true)
       requestAnimationFrame(() => {
         requestAnimationFrame(() => setPanelOpen(true))
       })
@@ -282,13 +255,13 @@ export function AiQuickSearchPage() {
           panelOpen: true,
           result,
           fallbackGuides,
-          expandedGuides,
+          showRestGuideList,
         }),
       )
     } catch {
       /* ignore */
     }
-  }, [expandedGuides, fallbackGuides, hasSearched, prompt, result])
+  }, [showRestGuideList, fallbackGuides, hasSearched, prompt, result])
 
   const persistMatchDraftForGuide = useCallback(
     (guideId) => {
@@ -367,12 +340,13 @@ export function AiQuickSearchPage() {
   }, [recommendations, fallbackGuides])
 
   useEffect(() => {
-    if (recommendations.length === 0) {
+    const src = recommendations.length > 0 ? recommendations : fallbackGuides
+    if (src.length === 0) {
       setGuideFeedsById({})
       return
     }
-    const showMax = expandedGuides ? AI_GUIDE_EXPANDED_SHOW : AI_GUIDE_DEFAULT_SHOW
-    const ids = [...new Set(recommendations.slice(0, showMax).map((r) => r?.guideId).filter((id) => id != null))].map(String)
+    const slice = showRestGuideList ? src : src.slice(0, AI_TOP_POLAROID)
+    const ids = [...new Set(slice.map((r) => r?.guideId).filter((id) => id != null))].map(String)
     if (ids.length === 0) return
 
     let cancelled = false
@@ -398,19 +372,20 @@ export function AiQuickSearchPage() {
     return () => {
       cancelled = true
     }
-  }, [recommendations, expandedGuides])
+  }, [recommendations, fallbackGuides, showRestGuideList])
 
   const runSearch = async (e, options = {}) => {
     e?.preventDefault()
     const q = prompt.trim()
     if (!q || loading) return
-    const topN = Number(options?.topN ?? AI_GUIDE_DEFAULT_SHOW)
+    const topN = Number(options?.topN ?? AI_FETCH_TOP_N)
 
     setError('')
     setResult(null)
     setFallbackGuides([])
     setHasSearched(true)
-    setExpandedGuides(topN > AI_GUIDE_DEFAULT_SHOW)
+    setShowRestGuideList(false)
+    setPolaroidExit(false)
     setLoading(true)
     openPanelSoon()
 
@@ -477,19 +452,30 @@ export function AiQuickSearchPage() {
     }
   }
 
-  const showMax = expandedGuides ? AI_GUIDE_EXPANDED_SHOW : AI_GUIDE_DEFAULT_SHOW
-  const topGuides = recommendations.length > 0 ? recommendations.slice(0, showMax) : fallbackGuides.slice(0, showMax)
+  const allRecs = useMemo(() => {
+    if (recommendations.length > 0) return recommendations
+    return fallbackGuides
+  }, [recommendations, fallbackGuides])
+  const topPolaroidGuides = useMemo(() => allRecs.slice(0, AI_TOP_POLAROID), [allRecs])
+  const restGuideItems = useMemo(() => allRecs.slice(AI_TOP_POLAROID), [allRecs])
   const specialGuide = result?.specialSuggestion?.guide ?? null
   const specialClickRank =
     Array.isArray(result?.recommendations) && result.recommendations.length > 0
       ? result.recommendations.length + 1
       : 1
   const keywords = result?.keywords
-  const spots = pickSpots(prompt, keywords)
   const activityHint =
     keywords?.activityTags && keywords.activityTags.length > 0
       ? keywords.activityTags.slice(0, 2).join(', ')
       : '당신의 여행 스타일'
+
+  const onRevealRestGuides = useCallback(() => {
+    if (restGuideItems.length === 0) return
+    setPolaroidExit(true)
+    window.setTimeout(() => {
+      setShowRestGuideList(true)
+    }, 420)
+  }, [restGuideItems.length])
 
   return (
     <div className={`ais ${hasSearched ? 'ais--after' : 'ais--hero'}`}>
@@ -583,104 +569,182 @@ export function AiQuickSearchPage() {
                     당신을 위해 선별한 베스트 가이드
                   </h2>
                   <p className="ais-sub">「{activityHint}」에 어울리는 가이드예요.</p>
-                  {topGuides.length === 0 ? (
+                  {allRecs.length === 0 ? (
                     <p className="ais-muted">이번 요청에 맞는 가이드가 아직 없어요. 지역이나 일정을 넓혀 보면 어떨까요?</p>
                   ) : (
-                    <ul className="ais-guide-list">
-                      {topGuides.map((g, idx) => {
-                        const gid = g.guideId != null ? String(g.guideId) : ''
-                        const feeds = gid ? guideFeedsById[gid] ?? [] : []
-                        const rating =
-                          g.averageRating != null && g.averageRating !== ''
-                            ? Number(g.averageRating).toFixed(1)
-                            : '—'
-                        const rc = g.reviewCount != null ? g.reviewCount : 0
-                        const img =
-                          g.representativeImageUrl ||
-                          (Array.isArray(g.publicFeedThumbnailUrls) && g.publicFeedThumbnailUrls[0]) ||
-                          null
-                        const tags = tagsForGuide(g, keywords, (gid ? guideStyleById[gid] : '') || g.guideStyle)
-                        return (
-                          <li key={g.guideId ?? idx} className="ais-guide-card ais-polaroid-card">
-                            <div className="ais-rank" aria-label={`추천 순위 ${idx + 1}위`}>
-                              <span className="ais-rank-badge">{idx + 1}</span>
-                              <span className="ais-rank-text">추천 {idx + 1}위</span>
-                            </div>
-                            <div className="ais-guide-feeds" aria-label="가이드 피드">
-                              {feeds.length > 0 ? (
-                                feeds.slice(0, 6).map((f) => (
-                                  <Link
-                                    key={f.feedId}
-                                    to={`/guides/${g.guideId}#match-request`}
-                                    className="ais-feed-thumb"
-                                    title={f.content ? String(f.content).slice(0, 80) : '가이드 상세보기'}
-                                    onClick={() => onClickGuideDetail(g.guideId, idx + 1)}
-                                  >
-                                    <span
-                                      className="ais-feed-thumb-img"
-                                      style={f.imageUrl ? { backgroundImage: `url(${f.imageUrl})` } : undefined}
-                                    />
-                                    <span className="ais-feed-thumb-cap">코스</span>
-                                  </Link>
-                                ))
-                              ) : (
-                                <Link
-                                  to={`/guides/${g.guideId}#match-request`}
-                                  className="ais-feed-empty"
-                                  title="가이드 상세보기"
-                                  onClick={() => onClickGuideDetail(g.guideId, idx + 1)}
+                    <>
+                      {!showRestGuideList && topPolaroidGuides.length > 0 && (
+                        <div className={`ais-polaroid-strip${polaroidExit ? ' ais-polaroid-strip--exit' : ''}`}>
+                          <ul className="ais-polaroid-row">
+                            {topPolaroidGuides.map((g, idx) => {
+                              const gid = g.guideId != null ? String(g.guideId) : `i-${idx}`
+                              const img =
+                                g.representativeImageUrl ||
+                                (Array.isArray(g.publicFeedThumbnailUrls) && g.publicFeedThumbnailUrls[0]) ||
+                                null
+                              const rating =
+                                g.averageRating != null && g.averageRating !== ''
+                                  ? Number(g.averageRating).toFixed(1)
+                                  : '—'
+                              const rc = g.reviewCount != null ? g.reviewCount : 0
+                              return (
+                                <li
+                                  key={gid}
+                                  className={`ais-polaroid-tile ais-polaroid-tile--${idx % 3}`}
                                 >
-                                  <span
-                                    className="ais-feed-thumb-img"
+                                  <div className="ais-polaroid-frame">
+                                    <span className="ais-polaroid-pin" aria-hidden />
+                                    <Link
+                                      to={`/guides/${g.guideId}`}
+                                      className="ais-polaroid-link"
+                                      onClick={() => onClickGuideDetail(g.guideId, idx + 1)}
+                                    >
+                                      <div
+                                        className="ais-polaroid-photo"
+                                        style={img ? { backgroundImage: `url(${img})` } : undefined}
+                                      />
+                                      <div className="ais-polaroid-cap">
+                                        <span className="ais-polaroid-rank" aria-label={`추천 ${idx + 1}위`}>
+                                          {idx + 1}
+                                        </span>
+                                        <p className="ais-polaroid-name">{g.guideName ?? '가이드'}</p>
+                                        <p className="ais-polaroid-region">{g.region ?? ''}</p>
+                                        <p className="ais-polaroid-rating">
+                                          🌟 {rating} <span className="ais-polaroid-rc">({rc})</span>
+                                        </p>
+                                        {g.reason && String(g.reason).trim() ? (
+                                          <p className="ais-polaroid-reason" title={String(g.reason).trim()}>
+                                            {String(g.reason).trim().length > 120
+                                              ? `${String(g.reason).trim().slice(0, 120)}…`
+                                              : String(g.reason).trim()}
+                                          </p>
+                                        ) : (
+                                          <p className="ais-polaroid-reason ais-polaroid-reason--muted">
+                                            AI가 이 가이드를 추천한 이유가 아직 짧게만 전달돼요. 상세에서 프로필을
+                                            비교해 보세요.
+                                          </p>
+                                        )}
+                                      </div>
+                                    </Link>
+                                  </div>
+                                </li>
+                              )
+                            })}
+                          </ul>
+                          {restGuideItems.length > 0 && (
+                            <div className="ais-more-wrap">
+                              <button
+                                type="button"
+                                className="ais-more-guides"
+                                onClick={onRevealRestGuides}
+                              >
+                                가이드 더보기
+                                <span className="ais-more-guides-sub">
+                                  {' '}
+                                  · {restGuideItems.length}명 더보기
+                                </span>
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {showRestGuideList && restGuideItems.length > 0 && (
+                        <ul className="ais-guide-list ais-guide-list--rest is-enter" aria-label="추가 추천 가이드">
+                          {restGuideItems.map((g, idx) => {
+                            const gid = g.guideId != null ? String(g.guideId) : ''
+                            const rank = AI_TOP_POLAROID + idx + 1
+                            const feeds = gid ? guideFeedsById[gid] ?? [] : []
+                            const rating =
+                              g.averageRating != null && g.averageRating !== ''
+                                ? Number(g.averageRating).toFixed(1)
+                                : '—'
+                            const rc = g.reviewCount != null ? g.reviewCount : 0
+                            const img =
+                              g.representativeImageUrl ||
+                              (Array.isArray(g.publicFeedThumbnailUrls) && g.publicFeedThumbnailUrls[0]) ||
+                              null
+                            const tags = tagsForGuide(
+                              g,
+                              keywords,
+                              (gid ? guideStyleById[gid] : '') || g.guideStyle,
+                            )
+                            return (
+                              <li key={g.guideId ?? `r-${idx}`} className="ais-guide-card ais-polaroid-card">
+                                <div className="ais-rank" aria-label={`추천 순위 ${rank}위`}>
+                                  <span className="ais-rank-badge">{rank}</span>
+                                  <span className="ais-rank-text">추천 {rank}위</span>
+                                </div>
+                                <div className="ais-guide-feeds" aria-label="가이드 피드">
+                                  {feeds.length > 0 ? (
+                                    feeds.slice(0, 6).map((f) => (
+                                      <Link
+                                        key={f.feedId}
+                                        to={`/guides/${g.guideId}`}
+                                        className="ais-feed-thumb"
+                                        title={f.content ? String(f.content).slice(0, 80) : '가이드 상세보기'}
+                                        onClick={() => onClickGuideDetail(g.guideId, rank)}
+                                      >
+                                        <span
+                                          className="ais-feed-thumb-img"
+                                          style={f.imageUrl ? { backgroundImage: `url(${f.imageUrl})` } : undefined}
+                                        />
+                                        <span className="ais-feed-thumb-cap">코스</span>
+                                      </Link>
+                                    ))
+                                  ) : (
+                                    <Link
+                                      to={`/guides/${g.guideId}`}
+                                      className="ais-feed-empty"
+                                      title="가이드 상세보기"
+                                      onClick={() => onClickGuideDetail(g.guideId, rank)}
+                                    >
+                                      <span
+                                        className="ais-feed-thumb-img"
+                                        style={img ? { backgroundImage: `url(${img})` } : undefined}
+                                      />
+                                      <span className="ais-feed-thumb-cap">코스 상세</span>
+                                    </Link>
+                                  )}
+                                </div>
+                                <div className="ais-guide-row">
+                                  <div
+                                    className="ais-guide-photo"
                                     style={img ? { backgroundImage: `url(${img})` } : undefined}
                                   />
-                                  <span className="ais-feed-thumb-cap">코스 상세</span>
-                                </Link>
-                              )}
-                            </div>
-                            <div className="ais-guide-row">
-                              <div
-                                className="ais-guide-photo"
-                                style={img ? { backgroundImage: `url(${img})` } : undefined}
-                              />
-                              <div className="ais-guide-main">
-                                <p className="ais-guide-name">{g.guideName ?? '가이드'}</p>
-                                <p className="ais-guide-rating">
-                                  🌟 {rating} <span className="ais-guide-rc">({rc})</span>
-                                </p>
-                                <p className="ais-guide-region">{g.region ?? ''}</p>
-                                <p className="ais-guide-reason">{g.reason ? String(g.reason).slice(0, 120) : ''}</p>
-                                {tags.length > 0 && (
-                                  <div className="ais-guide-tags">
-                                    {tags.map((t) => (
-                                      <span key={t} className="ais-chip">
-                                        {t}
-                                      </span>
-                                    ))}
+                                  <div className="ais-guide-main">
+                                    <p className="ais-guide-name">{g.guideName ?? '가이드'}</p>
+                                    <p className="ais-guide-rating">
+                                      🌟 {rating} <span className="ais-guide-rc">({rc})</span>
+                                    </p>
+                                    <p className="ais-guide-region">{g.region ?? ''}</p>
+                                    <p className="ais-guide-reason">
+                                      {g.reason ? String(g.reason).slice(0, 120) : ''}
+                                    </p>
+                                    {tags.length > 0 && (
+                                      <div className="ais-guide-tags">
+                                        {tags.map((t) => (
+                                          <span key={t} className="ais-chip">
+                                            {t}
+                                          </span>
+                                        ))}
+                                      </div>
+                                    )}
                                   </div>
-                                )}
-                              </div>
-                              <Link
-                                to={`/guides/${g.guideId}#match-request`}
-                                className="ais-profile-btn ais-profile-btn--primary"
-                                onClick={() => onClickGuideDetail(g.guideId, idx + 1)}
-                              >
-                                가이드 상세보기
-                              </Link>
-                            </div>
-                          </li>
-                        )
-                      })}
-                    </ul>
-                  )}
-                  {!loading && !expandedGuides && recommendations.length > AI_GUIDE_DEFAULT_SHOW && (
-                    <button
-                      type="button"
-                      className="ais-more"
-                      onClick={() => void runSearch(null, { topN: AI_GUIDE_EXPANDED_SHOW })}
-                    >
-                      추천 가이드 더 보기
-                    </button>
+                                  <Link
+                                    to={`/guides/${g.guideId}`}
+                                    className="ais-profile-btn ais-profile-btn--primary"
+                                    onClick={() => onClickGuideDetail(g.guideId, rank)}
+                                  >
+                                    가이드 상세보기
+                                  </Link>
+                                </div>
+                              </li>
+                            )
+                          })}
+                        </ul>
+                      )}
+                    </>
                   )}
                 </section>
 
@@ -734,7 +798,7 @@ export function AiQuickSearchPage() {
                               )}
                             </div>
                             <Link
-                              to={`/guides/${sg.guideId}#match-request`}
+                              to={`/guides/${sg.guideId}`}
                               className="ais-profile-btn ais-profile-btn--primary"
                               onClick={() => onClickGuideDetail(sg.guideId, specialClickRank)}
                             >
@@ -746,29 +810,6 @@ export function AiQuickSearchPage() {
                     })()}
                   </section>
                 )}
-
-                <section
-                  className={`ais-panel ais-panel--spots ${showSpots ? 'is-visible' : ''}`}
-                  aria-labelledby="ais-spots-title"
-                >
-                  <h2 id="ais-spots-title" className="ais-panel-title ais-panel-title--row">
-                    <span className="ais-title-icon ais-title-icon--rose" aria-hidden>
-                      ◎
-                    </span>
-                    코스에 꼭 넣어야 할 스팟
-                  </h2>
-                  <p className="ais-sub">가이드와 함께하면 더 즐거운 곳들이에요.</p>
-                  <div className="ais-spot-grid">
-                    {spots.map((s) => (
-                      <article key={s.title} className="ais-spot">
-                        <span className={`ais-spot-tape ais-spot-tape--${s.tape}`} aria-hidden />
-                        <div className="ais-spot-img" />
-                        <h3 className="ais-spot-name">{s.title}</h3>
-                        <p className="ais-spot-cap">{s.caption}</p>
-                      </article>
-                    ))}
-                  </div>
-                </section>
               </>
             )}
           </div>

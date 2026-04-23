@@ -152,74 +152,41 @@ export function MypagePaymentsPage() {
           {filtered.length === 0 ? (
             <PageEmpty title="해당하는 결제 내역이 없습니다">다른 탭을 선택하거나 매칭 결제를 완료해 보세요.</PageEmpty>
           ) : (
-            <>
-          <div className="mp-pay-wrap">
-            <table className="mp-pay-table">
-              <thead>
-                <tr>
-                  <th>결제 일자 / 주문번호</th>
-                  <th>투어(매칭) 정보</th>
-                  <th>금액</th>
-                  <th>상태</th>
-                  <th>관리</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((p) => {
-                  const mr = requestsById[p.requestId]
-                  const when = p.paidAt ? new Date(p.paidAt).toLocaleDateString('ko-KR') : '—'
-                  const ord = p.pgOrderNo ?? `PAY-${p.paymentId}`
-                  return (
-                    <tr key={p.paymentId}>
-                      <td>
-                        {when}
-                        <div className="mp-pay-muted">{ord}</div>
-                      </td>
-                      <td>
-                        {mr ? (
-                          <>
-                            <strong>{mr.destination}</strong>
-                            <div className="mp-pay-muted">
-                              투어일 {mr.desiredDate ?? '—'} · 요청 #{p.requestId} · {p.paymentType}
-                            </div>
-                          </>
-                        ) : (
-                          <span className="mp-pay-muted">요청 #{p.requestId}</span>
-                        )}
-                      </td>
-                      <td>₩ {p.amount != null ? Number(p.amount).toLocaleString() : '—'}</td>
-                      <td>{statusLabel(p.status)}</td>
-                      <td>
-                        <button type="button" className="mp-btn mp-btn--line" style={{ padding: '0.3rem 0.65rem' }} onClick={() => void openDetail(p.paymentId)}>
-                          영수증/상세
-                        </button>
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
-
-          <div className="mp-pay-cards" aria-label="결제 카드 목록">
-            {filtered.map((p) => {
-              const mr = requestsById[p.requestId]
-              const when = p.paidAt ? new Date(p.paidAt).toLocaleString('ko-KR') : '—'
-              return (
-                <article key={`c-${p.paymentId}`} className="mp-pay-card">
-                  <strong>{mr?.destination ?? `요청 #${p.requestId}`}</strong>
-                  <p className="mp-pay-muted" style={{ margin: '0.35rem 0' }}>
-                    {when} · {p.pgOrderNo ?? `PAY-${p.paymentId}`}
-                  </p>
-                  <p style={{ margin: 0 }}>₩ {p.amount != null ? Number(p.amount).toLocaleString() : '—'} · {statusLabel(p.status)}</p>
-                  <button type="button" className="mp-btn mp-btn--line" style={{ marginTop: '0.5rem' }} onClick={() => void openDetail(p.paymentId)}>
-                    상세
-                  </button>
-                </article>
-              )
-            })}
-          </div>
-            </>
+            <div className="mp-pay-moodboard" aria-label="결제 포스트잇 목록">
+              {filtered.map((p, idx) => {
+                const mr = requestsById[p.requestId]
+                const when = p.paidAt ? new Date(p.paidAt).toLocaleString('ko-KR') : '—'
+                const ord = p.pgOrderNo ?? `PAY-${p.paymentId}`
+                const tone = ['mint', 'sun', 'sky', 'blossom'][idx % 4]
+                return (
+                  <article key={p.paymentId} className={`mp-pay-note mp-pay-note--${tone}`}>
+                    <span className="mp-pay-note__pin" aria-hidden />
+                    <p className="mp-pay-note__kicker">결제 {statusLabel(p.status)}</p>
+                    <h2 className="mp-pay-note__title">{mr?.destination ?? `요청 #${p.requestId}`}</h2>
+                    <p className="mp-pay-note__line">
+                      <span className="mp-pay-note__amount">
+                        ₩{p.amount != null ? Number(p.amount).toLocaleString('ko-KR') : '—'}
+                      </span>
+                    </p>
+                    <p className="mp-pay-note__meta">
+                      {when}
+                      <br />
+                      {ord} · 투어 {mr?.desiredDate ?? '—'}
+                    </p>
+                    {mr && (
+                      <p className="mp-pay-note__type">
+                        {String(p.paymentType ?? '—')} · 요청 #{p.requestId}
+                      </p>
+                    )}
+                    <div className="mp-pay-note__actions">
+                      <button type="button" className="mp-btn mp-btn--line" onClick={() => void openDetail(p.paymentId)}>
+                        영수증 / 상세
+                      </button>
+                    </div>
+                  </article>
+                )
+              })}
+            </div>
           )}
         </>
       )}
