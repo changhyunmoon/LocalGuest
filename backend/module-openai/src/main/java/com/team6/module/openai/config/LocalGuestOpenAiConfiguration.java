@@ -1,5 +1,6 @@
 package com.team6.module.openai.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.team6.module.ai.spi.LlmPromptExtractor;
 import com.team6.module.openai.prompt.OpenAiLlmPromptExtractor;
 import io.micrometer.observation.ObservationRegistry;
@@ -82,8 +83,8 @@ public class LocalGuestOpenAiConfiguration {
     @Bean
     @ConditionalOnBean(OpenAiChatModel.class)
     @ConditionalOnProperty(prefix = "localguest.ai", name = "llm-prompt-extraction-enabled", havingValue = "true", matchIfMissing = false)
-    public LlmPromptExtractor llmPromptExtractor(OpenAiChatModel chatModel) {
-        return new OpenAiLlmPromptExtractor(chatModel);
+    public LlmPromptExtractor llmPromptExtractor(OpenAiChatModel chatModel, ObjectMapper objectMapper) {
+        return new OpenAiLlmPromptExtractor(chatModel, objectMapper);
     }
 
     private static String resolveApiKey(LocalGuestOpenAiProperties props, Environment env) {
