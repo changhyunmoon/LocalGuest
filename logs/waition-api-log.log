@@ -4126,3 +4126,423 @@ Caused by: java.sql.SQLSyntaxErrorException: Duplicate key name 'UKhh9kg6jti4n1e
         and te1_0.deadline_at<?
 2026-04-23 15:32:00.012 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
 2026-04-23 15:32:00.013 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T15:32:00.006461100]
+2026-04-23 15:33:00.796 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 15:33:00.834 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 15:33:00.851 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T15:33:00.569831]
+2026-04-23 15:34:00.116 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 15:34:00.138 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 15:34:00.153 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T15:34:00.038790100]
+2026-04-23 15:35:00.245 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 15:35:00.287 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 15:35:00.301 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T15:35:00.093795700]
+2026-04-23 15:36:00.070 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 15:36:00.084 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 15:36:00.105 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T15:36:00.034827]
+2026-04-23 15:37:03.056 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 15:37:03.235 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 15:37:03.285 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T15:37:02.823837400]
+2026-04-23 15:38:00.250 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 15:38:00.272 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 15:38:00.281 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T15:38:00.154017100]
+2026-04-23 15:39:00.090 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 15:39:00.105 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 15:39:00.109 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T15:39:00.028561600]
+2026-04-23 15:40:02.444 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 15:40:02.551 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 15:40:02.563 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T15:40:00.124707400]
+2026-04-23 15:41:00.124 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 15:41:00.130 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 15:41:00.139 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T15:41:00.047456]
+2026-04-23 15:42:00.296 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 15:42:00.335 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 15:42:00.356 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T15:42:00.150828100]
+2026-04-23 15:43:00.084 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 15:43:00.090 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 15:43:00.092 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T15:43:00.073432500]
+2026-04-23 15:44:00.513 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 15:44:00.515 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 15:44:00.515 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T15:44:00.262270]
+2026-04-23 15:45:00.016 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 15:45:00.018 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 15:45:00.019 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T15:45:00.013857800]
+2026-04-23 15:46:00.083 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 15:46:00.090 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 15:46:00.095 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T15:46:00.018132400]
+2026-04-23 15:47:00.107 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 15:47:00.219 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 15:47:00.221 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T15:47:00.038550100]
+2026-04-23 15:48:00.005 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 15:48:00.009 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 15:48:00.009 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T15:48:00.002582700]
+2026-04-23 15:49:00.079 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 15:49:00.084 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 15:49:00.087 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T15:49:00.022583200]
+2026-04-23 15:50:00.057 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 15:50:00.075 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 15:50:00.081 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T15:50:00.041191]
+2026-04-23 15:51:00.244 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 15:51:01.618 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 15:51:01.631 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T15:51:00.083487700]
+2026-04-23 15:52:00.128 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 15:52:00.141 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 15:52:00.144 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T15:52:00.043630100]
+2026-04-23 15:53:00.082 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 15:53:00.091 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 15:53:00.097 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T15:53:00.054231100]
