@@ -11,3 +11,6 @@ backend/_tmp_localguest/
 out/
 gen/
 backend/.gradle-user
+
+# Runtime / local API logs (logback RollingFileAppender)
+logs/

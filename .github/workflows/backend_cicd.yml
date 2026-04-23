@@ -20,7 +20,6 @@ jobs:
           distribution: 'temurin'
           cache: gradle
 
-      # 멀티모듈 구조에서는 실행 주체인 api-server의 resources에 설정값을 넣어야 합니다.
       - name: Decode and Create application-prod.yml
         run: |
           mkdir -p backend/api-server/src/main/resources
@@ -29,7 +28,6 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x backend/gradlew
 
-      # 전체를 빌드하되, 실행 가능한 jar는 api-server에서만 생성되도록 합니다.
       - name: Build with Gradle
         working-directory: ./backend
         run: ./gradlew clean :api-server:build -x test
@@ -43,7 +41,6 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      # 3. Docker build context는 유지하되, Dockerfile에서 api-server의 jar를 참조하게 수정해야 합니다.
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
@@ -69,13 +66,18 @@ jobs:
           echo "BACKEND_IMAGE_NAME=${{ secrets.BACKEND_IMAGE_NAME }}" >> backend/deployment/.env
           echo "BACKEND_IMAGE_TAG=${{ github.sha }}" >> backend/deployment/.env
 
+      - name: Verify deployment files
+        run: |
+          echo "=== deployment files ==="
+          find backend/deployment -type f | sort
+
       - name: Copy deployment files to EC2
         uses: appleboy/scp-action@v1.0.0
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          source: "backend/deployment/*"
+          source: "backend/deployment/**"
           target: "/home/ubuntu/backend-deploy"
           strip_components: 2
           overwrite: true
@@ -86,14 +88,17 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          envs: DOCKER_IMAGE_TAG, DOCKERHUB_USERNAME, BACKEND_IMAGE_NAME, MONGO_ROOT_USER, MONGO_ROOT_PASSWORD
+          envs: DOCKER_IMAGE_TAG,DOCKERHUB_USERNAME,BACKEND_IMAGE_NAME,MONGO_ROOT_USER,MONGO_ROOT_PASSWORD
           script: |
             export DOCKER_IMAGE_TAG=${{ github.sha }}
             export DOCKERHUB_USERNAME=${{ secrets.DOCKERHUB_USERNAME }}
             export BACKEND_IMAGE_NAME=${{ secrets.BACKEND_IMAGE_NAME }}
             export MONGO_ROOT_USER=${{ secrets.MONGO_ROOT_USER }}
             export MONGO_ROOT_PASSWORD=${{ secrets.MONGO_ROOT_PASSWORD }}
-            
+
             cd /home/ubuntu/backend-deploy
+            echo "=== copied files on EC2 ==="
+            find . -type f | sort
+
             chmod +x deploy.sh
             ./deploy.sh

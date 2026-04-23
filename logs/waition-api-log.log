@@ -1,0 +1,2992 @@
+2026-04-23 09:00:36.040 INFO  [] o.h.validator.internal.util.Version - HV000001: Hibernate Validator 8.0.2.Final
+2026-04-23 09:00:36.121 INFO  [] c.t.apiserver.ApiServerApplication - Starting ApiServerApplication using Java 17.0.18 with PID 32000 (C:\Users\jangs\IdeaProjects\LocalGuest\backend\api-server\build\classes\java\main started by jangs in C:\Users\jangs\IdeaProjects\LocalGuest)
+2026-04-23 09:00:36.121 INFO  [] c.t.apiserver.ApiServerApplication - The following 1 profile is active: "local"
+2026-04-23 09:00:39.184 INFO  [] o.s.d.r.c.RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
+2026-04-23 09:00:39.186 INFO  [] o.s.d.r.c.RepositoryConfigurationDelegate - Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-04-23 09:00:39.430 INFO  [] o.s.d.r.c.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 232 ms. Found 13 JPA repository interfaces.
+2026-04-23 09:00:39.432 INFO  [] o.s.d.r.c.RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
+2026-04-23 09:00:39.432 INFO  [] o.s.d.r.c.RepositoryConfigurationDelegate - Bootstrapping Spring Data MongoDB repositories in DEFAULT mode.
+2026-04-23 09:00:39.439 INFO  [] o.s.d.r.c.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 5 ms. Found 1 MongoDB repository interface.
+2026-04-23 09:00:40.237 INFO  [] o.s.d.r.c.RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
+2026-04-23 09:00:40.240 INFO  [] o.s.d.r.c.RepositoryConfigurationDelegate - Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+2026-04-23 09:00:40.264 INFO  [] o.s.d.r.c.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 10 ms. Found 0 Redis repository interfaces.
+2026-04-23 09:00:40.498 WARN  [] o.m.s.mapper.ClassPathMapperScanner - No MyBatis mapper was found in '[com.team6.apiserver]' package. Please check your configuration.
+2026-04-23 09:00:42.723 INFO  [] o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port 8080 (http)
+2026-04-23 09:00:42.758 INFO  [] o.a.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-8080"]
+2026-04-23 09:00:42.764 INFO  [] o.a.catalina.core.StandardService - Starting service [Tomcat]
+2026-04-23 09:00:42.764 INFO  [] o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.40]
+2026-04-23 09:00:42.953 INFO  [] o.a.c.c.C.[.[localhost].[/api] - Initializing Spring embedded WebApplicationContext
+2026-04-23 09:00:42.954 INFO  [] o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 6766 ms
+2026-04-23 09:00:43.472 INFO  [] o.h.jpa.internal.util.LogHelper - HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-04-23 09:00:43.613 INFO  [] org.hibernate.Version - HHH000412: Hibernate ORM core version 6.6.13.Final
+2026-04-23 09:00:43.682 INFO  [] o.h.c.i.RegionFactoryInitiator - HHH000026: Second-level cache disabled
+2026-04-23 09:00:44.246 INFO  [] o.s.o.j.p.SpringPersistenceUnitInfo - No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-04-23 09:00:44.304 INFO  [] com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Starting...
+2026-04-23 09:00:44.722 INFO  [] com.zaxxer.hikari.pool.HikariPool - HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@67062a93
+2026-04-23 09:00:44.726 INFO  [] com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Start completed.
+2026-04-23 09:00:44.810 WARN  [] org.hibernate.orm.deprecation - HHH90000025: MySQLDialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+2026-04-23 09:00:44.839 INFO  [] o.hibernate.orm.connections.pooling - HHH10001005: Database info:
+	Database JDBC URL [Connecting through datasource 'HikariDataSource (HikariPool-1)']
+	Database driver: undefined/unknown
+	Database version: 8.0.44
+	Autocommit mode: undefined/unknown
+	Isolation level: undefined/unknown
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown
+2026-04-23 09:00:47.146 INFO  [] o.h.e.t.j.p.i.JtaPlatformInitiator - HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-04-23 09:00:47.172 DEBUG [] org.hibernate.SQL - 
+    alter table chat_participants 
+       drop 
+       foreign key FKk0pkxdxk2whcy4j9lovmexvkq
+2026-04-23 09:00:47.190 DEBUG [] org.hibernate.SQL - 
+    alter table guide_careers 
+       drop 
+       foreign key fk_guide_careers_guide
+2026-04-23 09:00:47.202 DEBUG [] org.hibernate.SQL - 
+    alter table guide_feeds 
+       drop 
+       foreign key FKl5ncbecyap26kipe8hbrrv259
+2026-04-23 09:00:47.212 DEBUG [] org.hibernate.SQL - 
+    alter table guide_images 
+       drop 
+       foreign key fk_guide_images_guide
+2026-04-23 09:00:47.222 DEBUG [] org.hibernate.SQL - 
+    alter table guide_schedules 
+       drop 
+       foreign key FK9a3cimgvlpika296h0fkluqbl
+2026-04-23 09:00:47.232 DEBUG [] org.hibernate.SQL - 
+    alter table payment 
+       drop 
+       foreign key fk_payment_match_req
+2026-04-23 09:00:47.247 DEBUG [] org.hibernate.SQL - 
+    alter table refund 
+       drop 
+       foreign key fk_refund_payment
+2026-04-23 09:00:47.256 DEBUG [] org.hibernate.SQL - 
+    alter table review 
+       drop 
+       foreign key FKk0ccx5i4ci2wd70vegug074w1
+2026-04-23 09:00:47.266 DEBUG [] org.hibernate.SQL - 
+    alter table tour_extension 
+       drop 
+       foreign key fk_extension_match_req
+2026-04-23 09:00:47.276 DEBUG [] org.hibernate.SQL - 
+    drop table if exists chat_participants
+2026-04-23 09:00:47.291 DEBUG [] org.hibernate.SQL - 
+    drop table if exists chat_rooms
+2026-04-23 09:00:47.305 DEBUG [] org.hibernate.SQL - 
+    drop table if exists guide_careers
+2026-04-23 09:00:47.320 DEBUG [] org.hibernate.SQL - 
+    drop table if exists guide_feeds
+2026-04-23 09:00:47.337 DEBUG [] org.hibernate.SQL - 
+    drop table if exists guide_images
+2026-04-23 09:00:47.353 DEBUG [] org.hibernate.SQL - 
+    drop table if exists guide_profiles
+2026-04-23 09:00:47.371 DEBUG [] org.hibernate.SQL - 
+    drop table if exists guide_schedules
+2026-04-23 09:00:47.386 DEBUG [] org.hibernate.SQL - 
+    drop table if exists match_request
+2026-04-23 09:00:47.404 DEBUG [] org.hibernate.SQL - 
+    drop table if exists member
+2026-04-23 09:00:47.433 WARN  [] o.h.t.s.i.ExceptionHandlerLoggedImpl - GenerationTarget encountered exception accepting command : Error executing DDL "
+    drop table if exists member" via JDBC [Cannot drop table 'member' referenced by a foreign key constraint 'FKsn2texaayj22xqa2s7fj0swkm' on table 'guest_profile'.]
+org.hibernate.tool.schema.spi.CommandAcceptanceException: Error executing DDL "
+    drop table if exists member" via JDBC [Cannot drop table 'member' referenced by a foreign key constraint 'FKsn2texaayj22xqa2s7fj0swkm' on table 'guest_profile'.]
+	at org.hibernate.tool.schema.internal.exec.GenerationTargetToDatabase.accept(GenerationTargetToDatabase.java:94)
+	at org.hibernate.tool.schema.internal.Helper.applySqlString(Helper.java:233)
+	at org.hibernate.tool.schema.internal.Helper.applySqlStrings(Helper.java:217)
+	at org.hibernate.tool.schema.internal.SchemaDropperImpl.dropTables(SchemaDropperImpl.java:384)
+	at org.hibernate.tool.schema.internal.SchemaDropperImpl.dropConstraintsTablesSequences(SchemaDropperImpl.java:256)
+	at org.hibernate.tool.schema.internal.SchemaDropperImpl.dropFromMetadata(SchemaDropperImpl.java:218)
+	at org.hibernate.tool.schema.internal.SchemaDropperImpl.performDrop(SchemaDropperImpl.java:186)
+	at org.hibernate.tool.schema.internal.SchemaDropperImpl.doDrop(SchemaDropperImpl.java:156)
+	at org.hibernate.tool.schema.internal.SchemaDropperImpl.doDrop(SchemaDropperImpl.java:116)
+	at org.hibernate.tool.schema.spi.SchemaManagementToolCoordinator.performDatabaseAction(SchemaManagementToolCoordinator.java:238)
+	at org.hibernate.tool.schema.spi.SchemaManagementToolCoordinator.lambda$process$5(SchemaManagementToolCoordinator.java:144)
+	at java.base/java.util.HashMap.forEach(HashMap.java:1421)
+	at org.hibernate.tool.schema.spi.SchemaManagementToolCoordinator.process(SchemaManagementToolCoordinator.java:141)
+	at org.hibernate.boot.internal.SessionFactoryObserverForSchemaExport.sessionFactoryCreated(SessionFactoryObserverForSchemaExport.java:37)
+	at org.hibernate.internal.SessionFactoryObserverChain.sessionFactoryCreated(SessionFactoryObserverChain.java:35)
+	at org.hibernate.internal.SessionFactoryImpl.<init>(SessionFactoryImpl.java:324)
+	at org.hibernate.boot.internal.SessionFactoryBuilderImpl.build(SessionFactoryBuilderImpl.java:463)
+	at org.hibernate.jpa.boot.internal.EntityManagerFactoryBuilderImpl.build(EntityManagerFactoryBuilderImpl.java:1517)
+	at org.springframework.orm.jpa.vendor.SpringHibernateJpaPersistenceProvider.createContainerEntityManagerFactory(SpringHibernateJpaPersistenceProvider.java:66)
+	at org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean.createNativeEntityManagerFactory(LocalContainerEntityManagerFactoryBean.java:390)
+	at org.springframework.orm.jpa.AbstractEntityManagerFactoryBean.buildNativeEntityManagerFactory(AbstractEntityManagerFactoryBean.java:419)
+	at org.springframework.orm.jpa.AbstractEntityManagerFactoryBean.afterPropertiesSet(AbstractEntityManagerFactoryBean.java:400)
+	at org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean.afterPropertiesSet(LocalContainerEntityManagerFactoryBean.java:366)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.invokeInitMethods(AbstractAutowireCapableBeanFactory.java:1865)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.initializeBean(AbstractAutowireCapableBeanFactory.java:1814)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.doCreateBean(AbstractAutowireCapableBeanFactory.java:607)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBean(AbstractAutowireCapableBeanFactory.java:529)
+	at org.springframework.beans.factory.support.AbstractBeanFactory.lambda$doGetBean$0(AbstractBeanFactory.java:339)
+	at org.springframework.beans.factory.support.DefaultSingletonBeanRegistry.getSingleton(DefaultSingletonBeanRegistry.java:371)
+	at org.springframework.beans.factory.support.AbstractBeanFactory.doGetBean(AbstractBeanFactory.java:337)
+	at org.springframework.beans.factory.support.AbstractBeanFactory.getBean(AbstractBeanFactory.java:207)
+	at org.springframework.context.support.AbstractApplicationContext.finishBeanFactoryInitialization(AbstractApplicationContext.java:970)
+	at org.springframework.context.support.AbstractApplicationContext.refresh(AbstractApplicationContext.java:627)
+	at org.springframework.boot.web.servlet.context.ServletWebServerApplicationContext.refresh(ServletWebServerApplicationContext.java:146)
+	at org.springframework.boot.SpringApplication.refresh(SpringApplication.java:753)
+	at org.springframework.boot.SpringApplication.refreshContext(SpringApplication.java:439)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:318)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1362)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1351)
+	at com.team6.apiserver.ApiServerApplication.main(ApiServerApplication.java:31)
+Caused by: java.sql.SQLException: Cannot drop table 'member' referenced by a foreign key constraint 'FKsn2texaayj22xqa2s7fj0swkm' on table 'guest_profile'.
+	at com.mysql.cj.jdbc.exceptions.SQLError.createSQLException(SQLError.java:121)
+	at com.mysql.cj.jdbc.exceptions.SQLExceptionsMapping.translateException(SQLExceptionsMapping.java:114)
+	at com.mysql.cj.jdbc.StatementImpl.executeInternal(StatementImpl.java:837)
+	at com.mysql.cj.jdbc.StatementImpl.execute(StatementImpl.java:685)
+	at com.zaxxer.hikari.pool.ProxyStatement.execute(ProxyStatement.java:94)
+	at com.zaxxer.hikari.pool.HikariProxyStatement.execute(HikariProxyStatement.java)
+	at org.hibernate.tool.schema.internal.exec.GenerationTargetToDatabase.accept(GenerationTargetToDatabase.java:80)
+	... 39 common frames omitted
+2026-04-23 09:00:47.435 DEBUG [] org.hibernate.SQL - 
+    drop table if exists payment
+2026-04-23 09:00:47.453 DEBUG [] org.hibernate.SQL - 
+    drop table if exists refund
+2026-04-23 09:00:47.472 DEBUG [] org.hibernate.SQL - 
+    drop table if exists review
+2026-04-23 09:00:47.488 DEBUG [] org.hibernate.SQL - 
+    drop table if exists scrapbooks
+2026-04-23 09:00:47.525 DEBUG [] org.hibernate.SQL - 
+    drop table if exists tour_extension
+2026-04-23 09:00:47.561 DEBUG [] org.hibernate.SQL - 
+    create table chat_participants (
+        is_alarm_on bit not null,
+        chat_room_id bigint,
+        created_at datetime(6) not null,
+        id bigint not null auto_increment,
+        last_read_at datetime(6),
+        updated_at datetime(6) not null,
+        user_id bigint,
+        user_email varchar(255) not null,
+        user_nickname varchar(255),
+        primary key (id)
+    ) engine=InnoDB
+2026-04-23 09:00:47.618 DEBUG [] org.hibernate.SQL - 
+    create table chat_rooms (
+        participant_count integer,
+        created_at datetime(6) not null,
+        id bigint not null auto_increment,
+        last_message_at datetime(6),
+        updated_at datetime(6) not null,
+        last_message varchar(255),
+        owner_email varchar(255),
+        room_id varchar(255) not null,
+        title varchar(255) not null,
+        primary key (id)
+    ) engine=InnoDB
+2026-04-23 09:00:47.670 DEBUG [] org.hibernate.SQL - 
+    create table guide_careers (
+        acquired_at date not null,
+        created_at datetime(6) not null,
+        guide_id bigint not null,
+        id bigint not null auto_increment,
+        updated_at datetime(6) not null,
+        title varchar(100) not null,
+        description TEXT,
+        primary key (id)
+    ) engine=InnoDB
+2026-04-23 09:00:47.695 DEBUG [] org.hibernate.SQL - 
+    create table guide_feeds (
+        is_deleted bit not null,
+        created_at datetime(6) not null,
+        guide_id bigint not null,
+        id bigint not null auto_increment,
+        updated_at datetime(6) not null,
+        content TEXT not null,
+        image_url LONGTEXT,
+        primary key (id)
+    ) engine=InnoDB
+2026-04-23 09:00:47.720 DEBUG [] org.hibernate.SQL - 
+    create table guide_images (
+        is_main bit not null,
+        sort_order integer not null,
+        created_at datetime(6) not null,
+        guide_id bigint not null,
+        id bigint not null auto_increment,
+        updated_at datetime(6) not null,
+        image_url varchar(500) not null,
+        primary key (id)
+    ) engine=InnoDB
+2026-04-23 09:00:47.746 DEBUG [] org.hibernate.SQL - 
+    create table guide_profiles (
+        average_rating decimal(3,2),
+        is_active bit not null,
+        is_approved bit not null,
+        price_per_hour decimal(10,2),
+        residence_years integer,
+        review_count integer not null,
+        created_at datetime(6) not null,
+        id bigint not null auto_increment,
+        member_id bigint not null,
+        updated_at datetime(6) not null,
+        nickname varchar(50) not null,
+        guide_style varchar(100),
+        language varchar(100),
+        region varchar(100) not null,
+        profile_image varchar(500),
+        bio TEXT,
+        default_course TEXT,
+        keywords TEXT,
+        local_story TEXT,
+        primary key (id)
+    ) engine=InnoDB
+2026-04-23 09:00:47.769 DEBUG [] org.hibernate.SQL - 
+    create table guide_schedules (
+        available_date date not null,
+        end_time time(6) not null,
+        is_paid bit not null,
+        start_time time(6) not null,
+        created_at datetime(6) not null,
+        guide_id bigint not null,
+        id bigint not null auto_increment,
+        match_request_id bigint,
+        updated_at datetime(6) not null,
+        meeting_point varchar(200),
+        course_detail TEXT,
+        guide_message TEXT,
+        status enum ('AVAILABLE','BLOCKED','BOOKED','PENDING') not null,
+        primary key (id)
+    ) engine=InnoDB
+2026-04-23 09:00:47.797 DEBUG [] org.hibernate.SQL - 
+    create table match_request (
+        budget_max_won integer,
+        budget_min_won integer,
+        desired_budget integer,
+        desired_date date not null,
+        created_at DATETIME(6) not null,
+        guest_id bigint not null,
+        guide_id bigint not null,
+        guide_schedule_id bigint not null,
+        id bigint not null auto_increment,
+        updated_at DATETIME(6) not null,
+        cancelled_by varchar(20),
+        cancel_reason TEXT,
+        concept TEXT,
+        concept_summary TEXT,
+        destination varchar(255) not null,
+        propose_message TEXT,
+        proposed_schedule TEXT,
+        status enum ('ACCEPTED','CANCELLED','COMPLETED','IN_PROGRESS','PAID','PENDING','REJECTED') not null,
+        primary key (id),
+        check (status IN ('PENDING','ACCEPTED','PAID','IN_PROGRESS','COMPLETED','CANCELLED','REJECTED'))
+    ) engine=InnoDB
+2026-04-23 09:00:47.823 DEBUG [] org.hibernate.SQL - 
+    create table member (
+        created_at DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6) not null,
+        id bigint not null auto_increment,
+        updated_at DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6) not null,
+        name varchar(100) not null,
+        nickname varchar(100),
+        profile_image_url varchar(1000),
+        email varchar(255) not null,
+        password varchar(255) not null,
+        role enum ('ADMIN','GUEST','GUIDE') not null,
+        social_type enum ('GOOGLE','KAKAO'),
+        status enum ('ACTIVE','WITHDRAWN') not null,
+        primary key (id)
+    ) engine=InnoDB
+2026-04-23 09:00:47.824 WARN  [] o.h.t.s.i.ExceptionHandlerLoggedImpl - GenerationTarget encountered exception accepting command : Error executing DDL "
+    create table member (
+        created_at DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6) not null,
+        id bigint not null auto_increment,
+        updated_at DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6) not null,
+        name varchar(100) not null,
+        nickname varchar(100),
+        profile_image_url varchar(1000),
+        email varchar(255) not null,
+        password varchar(255) not null,
+        role enum ('ADMIN','GUEST','GUIDE') not null,
+        social_type enum ('GOOGLE','KAKAO'),
+        status enum ('ACTIVE','WITHDRAWN') not null,
+        primary key (id)
+    ) engine=InnoDB" via JDBC [Table 'member' already exists]
+org.hibernate.tool.schema.spi.CommandAcceptanceException: Error executing DDL "
+    create table member (
+        created_at DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6) not null,
+        id bigint not null auto_increment,
+        updated_at DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6) not null,
+        name varchar(100) not null,
+        nickname varchar(100),
+        profile_image_url varchar(1000),
+        email varchar(255) not null,
+        password varchar(255) not null,
+        role enum ('ADMIN','GUEST','GUIDE') not null,
+        social_type enum ('GOOGLE','KAKAO'),
+        status enum ('ACTIVE','WITHDRAWN') not null,
+        primary key (id)
+    ) engine=InnoDB" via JDBC [Table 'member' already exists]
+	at org.hibernate.tool.schema.internal.exec.GenerationTargetToDatabase.accept(GenerationTargetToDatabase.java:94)
+	at org.hibernate.tool.schema.internal.Helper.applySqlString(Helper.java:233)
+	at org.hibernate.tool.schema.internal.Helper.applySqlStrings(Helper.java:217)
+	at org.hibernate.tool.schema.internal.SchemaCreatorImpl.createTables(SchemaCreatorImpl.java:430)
+	at org.hibernate.tool.schema.internal.SchemaCreatorImpl.createSequencesTablesConstraints(SchemaCreatorImpl.java:346)
+	at org.hibernate.tool.schema.internal.SchemaCreatorImpl.createFromMetadata(SchemaCreatorImpl.java:241)
+	at org.hibernate.tool.schema.internal.SchemaCreatorImpl.performCreation(SchemaCreatorImpl.java:174)
+	at org.hibernate.tool.schema.internal.SchemaCreatorImpl.doCreation(SchemaCreatorImpl.java:144)
+	at org.hibernate.tool.schema.internal.SchemaCreatorImpl.doCreation(SchemaCreatorImpl.java:120)
+	at org.hibernate.tool.schema.spi.SchemaManagementToolCoordinator.performDatabaseAction(SchemaManagementToolCoordinator.java:250)
+	at org.hibernate.tool.schema.spi.SchemaManagementToolCoordinator.lambda$process$5(SchemaManagementToolCoordinator.java:144)
+	at java.base/java.util.HashMap.forEach(HashMap.java:1421)
+	at org.hibernate.tool.schema.spi.SchemaManagementToolCoordinator.process(SchemaManagementToolCoordinator.java:141)
+	at org.hibernate.boot.internal.SessionFactoryObserverForSchemaExport.sessionFactoryCreated(SessionFactoryObserverForSchemaExport.java:37)
+	at org.hibernate.internal.SessionFactoryObserverChain.sessionFactoryCreated(SessionFactoryObserverChain.java:35)
+	at org.hibernate.internal.SessionFactoryImpl.<init>(SessionFactoryImpl.java:324)
+	at org.hibernate.boot.internal.SessionFactoryBuilderImpl.build(SessionFactoryBuilderImpl.java:463)
+	at org.hibernate.jpa.boot.internal.EntityManagerFactoryBuilderImpl.build(EntityManagerFactoryBuilderImpl.java:1517)
+	at org.springframework.orm.jpa.vendor.SpringHibernateJpaPersistenceProvider.createContainerEntityManagerFactory(SpringHibernateJpaPersistenceProvider.java:66)
+	at org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean.createNativeEntityManagerFactory(LocalContainerEntityManagerFactoryBean.java:390)
+	at org.springframework.orm.jpa.AbstractEntityManagerFactoryBean.buildNativeEntityManagerFactory(AbstractEntityManagerFactoryBean.java:419)
+	at org.springframework.orm.jpa.AbstractEntityManagerFactoryBean.afterPropertiesSet(AbstractEntityManagerFactoryBean.java:400)
+	at org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean.afterPropertiesSet(LocalContainerEntityManagerFactoryBean.java:366)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.invokeInitMethods(AbstractAutowireCapableBeanFactory.java:1865)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.initializeBean(AbstractAutowireCapableBeanFactory.java:1814)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.doCreateBean(AbstractAutowireCapableBeanFactory.java:607)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBean(AbstractAutowireCapableBeanFactory.java:529)
+	at org.springframework.beans.factory.support.AbstractBeanFactory.lambda$doGetBean$0(AbstractBeanFactory.java:339)
+	at org.springframework.beans.factory.support.DefaultSingletonBeanRegistry.getSingleton(DefaultSingletonBeanRegistry.java:371)
+	at org.springframework.beans.factory.support.AbstractBeanFactory.doGetBean(AbstractBeanFactory.java:337)
+	at org.springframework.beans.factory.support.AbstractBeanFactory.getBean(AbstractBeanFactory.java:207)
+	at org.springframework.context.support.AbstractApplicationContext.finishBeanFactoryInitialization(AbstractApplicationContext.java:970)
+	at org.springframework.context.support.AbstractApplicationContext.refresh(AbstractApplicationContext.java:627)
+	at org.springframework.boot.web.servlet.context.ServletWebServerApplicationContext.refresh(ServletWebServerApplicationContext.java:146)
+	at org.springframework.boot.SpringApplication.refresh(SpringApplication.java:753)
+	at org.springframework.boot.SpringApplication.refreshContext(SpringApplication.java:439)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:318)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1362)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1351)
+	at com.team6.apiserver.ApiServerApplication.main(ApiServerApplication.java:31)
+Caused by: java.sql.SQLSyntaxErrorException: Table 'member' already exists
+	at com.mysql.cj.jdbc.exceptions.SQLError.createSQLException(SQLError.java:112)
+	at com.mysql.cj.jdbc.exceptions.SQLExceptionsMapping.translateException(SQLExceptionsMapping.java:114)
+	at com.mysql.cj.jdbc.StatementImpl.executeInternal(StatementImpl.java:837)
+	at com.mysql.cj.jdbc.StatementImpl.execute(StatementImpl.java:685)
+	at com.zaxxer.hikari.pool.ProxyStatement.execute(ProxyStatement.java:94)
+	at com.zaxxer.hikari.pool.HikariProxyStatement.execute(HikariProxyStatement.java)
+	at org.hibernate.tool.schema.internal.exec.GenerationTargetToDatabase.accept(GenerationTargetToDatabase.java:80)
+	... 39 common frames omitted
+2026-04-23 09:00:47.825 DEBUG [] org.hibernate.SQL - 
+    create table payment (
+        amount integer not null,
+        created_at DATETIME(6) not null,
+        id bigint not null auto_increment,
+        match_request_id bigint not null,
+        paid_at DATETIME(6),
+        payer_id bigint not null,
+        refund_deadline DATETIME(6),
+        updated_at DATETIME(6) not null,
+        payment_type varchar(20) not null,
+        pg_order_no varchar(100) not null,
+        pg_transaction_id varchar(100),
+        status enum ('CANCELLED','COMPLETED','FAILED','PENDING','REFUNDED') not null,
+        primary key (id),
+        check (status IN ('PENDING','COMPLETED','REFUNDED','FAILED','CANCELLED') AND payment_type IN ('CHAT','ACCOMPANY','EXTENSION'))
+    ) engine=InnoDB
+2026-04-23 09:00:47.849 DEBUG [] org.hibernate.SQL - 
+    create table refund (
+        ai_processed bit not null,
+        created_at DATETIME(6) not null,
+        id bigint not null auto_increment,
+        payment_id bigint not null,
+        processed_at DATETIME(6),
+        requester_id bigint not null,
+        updated_at DATETIME(6) not null,
+        evidence_url varchar(500),
+        reason TEXT,
+        refund_type enum ('AUTO','CANCEL_GUEST','CANCEL_GUIDE','MANUAL') not null,
+        status enum ('APPROVED','PENDING','REJECTED') not null,
+        primary key (id),
+        check (status IN ('PENDING','APPROVED','REJECTED') AND refund_type IN ('AUTO','MANUAL','CANCEL_GUEST','CANCEL_GUIDE'))
+    ) engine=InnoDB
+2026-04-23 09:00:47.873 DEBUG [] org.hibernate.SQL - 
+    create table review (
+        deleted bit not null,
+        rating integer not null,
+        created_at DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6) not null,
+        deleted_at datetime(6),
+        guide_id bigint,
+        id bigint not null auto_increment,
+        match_request_id bigint not null,
+        member_id bigint not null,
+        updated_at DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6) not null,
+        content Text,
+        primary key (id)
+    ) engine=InnoDB
+2026-04-23 09:00:47.901 DEBUG [] org.hibernate.SQL - 
+    create table scrapbooks (
+        created_at datetime(6) not null,
+        guest_id bigint not null,
+        id bigint not null auto_increment,
+        match_request_id bigint not null,
+        updated_at datetime(6) not null,
+        title varchar(100) not null,
+        tags varchar(200),
+        main_image_url varchar(500),
+        content TEXT not null,
+        primary key (id)
+    ) engine=InnoDB
+2026-04-23 09:00:47.927 DEBUG [] org.hibernate.SQL - 
+    create table tour_extension (
+        extended_date date not null,
+        extended_price integer,
+        created_at DATETIME(6) not null,
+        deadline_at DATETIME(6) not null,
+        guest_id bigint not null,
+        guide_approved_at DATETIME(6),
+        id bigint not null auto_increment,
+        match_request_id bigint not null,
+        requested_at DATETIME(6) not null,
+        updated_at DATETIME(6) not null,
+        status enum ('AUTO_CANCELLED','GUIDE_APPROVED','PAID','REJECTED','REQUESTED') not null,
+        primary key (id),
+        check (status IN ('REQUESTED','GUIDE_APPROVED','PAID','REJECTED','AUTO_CANCELLED'))
+    ) engine=InnoDB
+2026-04-23 09:00:47.952 DEBUG [] org.hibernate.SQL - 
+    alter table chat_rooms 
+       add constraint UKtmf6ectlc88brf0myju8ry0yt unique (room_id)
+2026-04-23 09:00:47.967 DEBUG [] org.hibernate.SQL - 
+    alter table guide_profiles 
+       add constraint UKkbxalarf03km5aurrcpmc99s unique (member_id)
+2026-04-23 09:00:47.986 DEBUG [] org.hibernate.SQL - 
+    alter table guide_schedules 
+       add constraint uq_schedule_time unique (guide_id, available_date, start_time, end_time)
+2026-04-23 09:00:48.005 DEBUG [] org.hibernate.SQL - 
+    create index idx_match_guest 
+       on match_request (guest_id)
+2026-04-23 09:00:48.028 DEBUG [] org.hibernate.SQL - 
+    create index idx_match_guide 
+       on match_request (guide_id)
+2026-04-23 09:00:48.049 DEBUG [] org.hibernate.SQL - 
+    alter table member 
+       add constraint UKeqr1gnwwfupeqo38ju3by7dbf unique (email, role)
+2026-04-23 09:00:48.051 WARN  [] o.h.t.s.i.ExceptionHandlerLoggedImpl - GenerationTarget encountered exception accepting command : Error executing DDL "
+    alter table member 
+       add constraint UKeqr1gnwwfupeqo38ju3by7dbf unique (email, role)" via JDBC [Duplicate key name 'UKeqr1gnwwfupeqo38ju3by7dbf']
+org.hibernate.tool.schema.spi.CommandAcceptanceException: Error executing DDL "
+    alter table member 
+       add constraint UKeqr1gnwwfupeqo38ju3by7dbf unique (email, role)" via JDBC [Duplicate key name 'UKeqr1gnwwfupeqo38ju3by7dbf']
+	at org.hibernate.tool.schema.internal.exec.GenerationTargetToDatabase.accept(GenerationTargetToDatabase.java:94)
+	at org.hibernate.tool.schema.internal.Helper.applySqlString(Helper.java:233)
+	at org.hibernate.tool.schema.internal.Helper.applySqlStrings(Helper.java:217)
+	at org.hibernate.tool.schema.internal.SchemaCreatorImpl.createTableConstraints(SchemaCreatorImpl.java:402)
+	at org.hibernate.tool.schema.internal.SchemaCreatorImpl.createSequencesTablesConstraints(SchemaCreatorImpl.java:358)
+	at org.hibernate.tool.schema.internal.SchemaCreatorImpl.createFromMetadata(SchemaCreatorImpl.java:241)
+	at org.hibernate.tool.schema.internal.SchemaCreatorImpl.performCreation(SchemaCreatorImpl.java:174)
+	at org.hibernate.tool.schema.internal.SchemaCreatorImpl.doCreation(SchemaCreatorImpl.java:144)
+	at org.hibernate.tool.schema.internal.SchemaCreatorImpl.doCreation(SchemaCreatorImpl.java:120)
+	at org.hibernate.tool.schema.spi.SchemaManagementToolCoordinator.performDatabaseAction(SchemaManagementToolCoordinator.java:250)
+	at org.hibernate.tool.schema.spi.SchemaManagementToolCoordinator.lambda$process$5(SchemaManagementToolCoordinator.java:144)
+	at java.base/java.util.HashMap.forEach(HashMap.java:1421)
+	at org.hibernate.tool.schema.spi.SchemaManagementToolCoordinator.process(SchemaManagementToolCoordinator.java:141)
+	at org.hibernate.boot.internal.SessionFactoryObserverForSchemaExport.sessionFactoryCreated(SessionFactoryObserverForSchemaExport.java:37)
+	at org.hibernate.internal.SessionFactoryObserverChain.sessionFactoryCreated(SessionFactoryObserverChain.java:35)
+	at org.hibernate.internal.SessionFactoryImpl.<init>(SessionFactoryImpl.java:324)
+	at org.hibernate.boot.internal.SessionFactoryBuilderImpl.build(SessionFactoryBuilderImpl.java:463)
+	at org.hibernate.jpa.boot.internal.EntityManagerFactoryBuilderImpl.build(EntityManagerFactoryBuilderImpl.java:1517)
+	at org.springframework.orm.jpa.vendor.SpringHibernateJpaPersistenceProvider.createContainerEntityManagerFactory(SpringHibernateJpaPersistenceProvider.java:66)
+	at org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean.createNativeEntityManagerFactory(LocalContainerEntityManagerFactoryBean.java:390)
+	at org.springframework.orm.jpa.AbstractEntityManagerFactoryBean.buildNativeEntityManagerFactory(AbstractEntityManagerFactoryBean.java:419)
+	at org.springframework.orm.jpa.AbstractEntityManagerFactoryBean.afterPropertiesSet(AbstractEntityManagerFactoryBean.java:400)
+	at org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean.afterPropertiesSet(LocalContainerEntityManagerFactoryBean.java:366)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.invokeInitMethods(AbstractAutowireCapableBeanFactory.java:1865)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.initializeBean(AbstractAutowireCapableBeanFactory.java:1814)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.doCreateBean(AbstractAutowireCapableBeanFactory.java:607)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBean(AbstractAutowireCapableBeanFactory.java:529)
+	at org.springframework.beans.factory.support.AbstractBeanFactory.lambda$doGetBean$0(AbstractBeanFactory.java:339)
+	at org.springframework.beans.factory.support.DefaultSingletonBeanRegistry.getSingleton(DefaultSingletonBeanRegistry.java:371)
+	at org.springframework.beans.factory.support.AbstractBeanFactory.doGetBean(AbstractBeanFactory.java:337)
+	at org.springframework.beans.factory.support.AbstractBeanFactory.getBean(AbstractBeanFactory.java:207)
+	at org.springframework.context.support.AbstractApplicationContext.finishBeanFactoryInitialization(AbstractApplicationContext.java:970)
+	at org.springframework.context.support.AbstractApplicationContext.refresh(AbstractApplicationContext.java:627)
+	at org.springframework.boot.web.servlet.context.ServletWebServerApplicationContext.refresh(ServletWebServerApplicationContext.java:146)
+	at org.springframework.boot.SpringApplication.refresh(SpringApplication.java:753)
+	at org.springframework.boot.SpringApplication.refreshContext(SpringApplication.java:439)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:318)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1362)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1351)
+	at com.team6.apiserver.ApiServerApplication.main(ApiServerApplication.java:31)
+Caused by: java.sql.SQLSyntaxErrorException: Duplicate key name 'UKeqr1gnwwfupeqo38ju3by7dbf'
+	at com.mysql.cj.jdbc.exceptions.SQLError.createSQLException(SQLError.java:112)
+	at com.mysql.cj.jdbc.exceptions.SQLExceptionsMapping.translateException(SQLExceptionsMapping.java:114)
+	at com.mysql.cj.jdbc.StatementImpl.executeInternal(StatementImpl.java:837)
+	at com.mysql.cj.jdbc.StatementImpl.execute(StatementImpl.java:685)
+	at com.zaxxer.hikari.pool.ProxyStatement.execute(ProxyStatement.java:94)
+	at com.zaxxer.hikari.pool.HikariProxyStatement.execute(HikariProxyStatement.java)
+	at org.hibernate.tool.schema.internal.exec.GenerationTargetToDatabase.accept(GenerationTargetToDatabase.java:80)
+	... 39 common frames omitted
+2026-04-23 09:00:48.052 DEBUG [] org.hibernate.SQL - 
+    alter table member 
+       add constraint UKhh9kg6jti4n1eoiertn2k6qsc unique (nickname)
+2026-04-23 09:00:48.053 WARN  [] o.h.t.s.i.ExceptionHandlerLoggedImpl - GenerationTarget encountered exception accepting command : Error executing DDL "
+    alter table member 
+       add constraint UKhh9kg6jti4n1eoiertn2k6qsc unique (nickname)" via JDBC [Duplicate key name 'UKhh9kg6jti4n1eoiertn2k6qsc']
+org.hibernate.tool.schema.spi.CommandAcceptanceException: Error executing DDL "
+    alter table member 
+       add constraint UKhh9kg6jti4n1eoiertn2k6qsc unique (nickname)" via JDBC [Duplicate key name 'UKhh9kg6jti4n1eoiertn2k6qsc']
+	at org.hibernate.tool.schema.internal.exec.GenerationTargetToDatabase.accept(GenerationTargetToDatabase.java:94)
+	at org.hibernate.tool.schema.internal.Helper.applySqlString(Helper.java:233)
+	at org.hibernate.tool.schema.internal.Helper.applySqlStrings(Helper.java:217)
+	at org.hibernate.tool.schema.internal.SchemaCreatorImpl.createTableConstraints(SchemaCreatorImpl.java:402)
+	at org.hibernate.tool.schema.internal.SchemaCreatorImpl.createSequencesTablesConstraints(SchemaCreatorImpl.java:358)
+	at org.hibernate.tool.schema.internal.SchemaCreatorImpl.createFromMetadata(SchemaCreatorImpl.java:241)
+	at org.hibernate.tool.schema.internal.SchemaCreatorImpl.performCreation(SchemaCreatorImpl.java:174)
+	at org.hibernate.tool.schema.internal.SchemaCreatorImpl.doCreation(SchemaCreatorImpl.java:144)
+	at org.hibernate.tool.schema.internal.SchemaCreatorImpl.doCreation(SchemaCreatorImpl.java:120)
+	at org.hibernate.tool.schema.spi.SchemaManagementToolCoordinator.performDatabaseAction(SchemaManagementToolCoordinator.java:250)
+	at org.hibernate.tool.schema.spi.SchemaManagementToolCoordinator.lambda$process$5(SchemaManagementToolCoordinator.java:144)
+	at java.base/java.util.HashMap.forEach(HashMap.java:1421)
+	at org.hibernate.tool.schema.spi.SchemaManagementToolCoordinator.process(SchemaManagementToolCoordinator.java:141)
+	at org.hibernate.boot.internal.SessionFactoryObserverForSchemaExport.sessionFactoryCreated(SessionFactoryObserverForSchemaExport.java:37)
+	at org.hibernate.internal.SessionFactoryObserverChain.sessionFactoryCreated(SessionFactoryObserverChain.java:35)
+	at org.hibernate.internal.SessionFactoryImpl.<init>(SessionFactoryImpl.java:324)
+	at org.hibernate.boot.internal.SessionFactoryBuilderImpl.build(SessionFactoryBuilderImpl.java:463)
+	at org.hibernate.jpa.boot.internal.EntityManagerFactoryBuilderImpl.build(EntityManagerFactoryBuilderImpl.java:1517)
+	at org.springframework.orm.jpa.vendor.SpringHibernateJpaPersistenceProvider.createContainerEntityManagerFactory(SpringHibernateJpaPersistenceProvider.java:66)
+	at org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean.createNativeEntityManagerFactory(LocalContainerEntityManagerFactoryBean.java:390)
+	at org.springframework.orm.jpa.AbstractEntityManagerFactoryBean.buildNativeEntityManagerFactory(AbstractEntityManagerFactoryBean.java:419)
+	at org.springframework.orm.jpa.AbstractEntityManagerFactoryBean.afterPropertiesSet(AbstractEntityManagerFactoryBean.java:400)
+	at org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean.afterPropertiesSet(LocalContainerEntityManagerFactoryBean.java:366)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.invokeInitMethods(AbstractAutowireCapableBeanFactory.java:1865)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.initializeBean(AbstractAutowireCapableBeanFactory.java:1814)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.doCreateBean(AbstractAutowireCapableBeanFactory.java:607)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBean(AbstractAutowireCapableBeanFactory.java:529)
+	at org.springframework.beans.factory.support.AbstractBeanFactory.lambda$doGetBean$0(AbstractBeanFactory.java:339)
+	at org.springframework.beans.factory.support.DefaultSingletonBeanRegistry.getSingleton(DefaultSingletonBeanRegistry.java:371)
+	at org.springframework.beans.factory.support.AbstractBeanFactory.doGetBean(AbstractBeanFactory.java:337)
+	at org.springframework.beans.factory.support.AbstractBeanFactory.getBean(AbstractBeanFactory.java:207)
+	at org.springframework.context.support.AbstractApplicationContext.finishBeanFactoryInitialization(AbstractApplicationContext.java:970)
+	at org.springframework.context.support.AbstractApplicationContext.refresh(AbstractApplicationContext.java:627)
+	at org.springframework.boot.web.servlet.context.ServletWebServerApplicationContext.refresh(ServletWebServerApplicationContext.java:146)
+	at org.springframework.boot.SpringApplication.refresh(SpringApplication.java:753)
+	at org.springframework.boot.SpringApplication.refreshContext(SpringApplication.java:439)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:318)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1362)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1351)
+	at com.team6.apiserver.ApiServerApplication.main(ApiServerApplication.java:31)
+Caused by: java.sql.SQLSyntaxErrorException: Duplicate key name 'UKhh9kg6jti4n1eoiertn2k6qsc'
+	at com.mysql.cj.jdbc.exceptions.SQLError.createSQLException(SQLError.java:112)
+	at com.mysql.cj.jdbc.exceptions.SQLExceptionsMapping.translateException(SQLExceptionsMapping.java:114)
+	at com.mysql.cj.jdbc.StatementImpl.executeInternal(StatementImpl.java:837)
+	at com.mysql.cj.jdbc.StatementImpl.execute(StatementImpl.java:685)
+	at com.zaxxer.hikari.pool.ProxyStatement.execute(ProxyStatement.java:94)
+	at com.zaxxer.hikari.pool.HikariProxyStatement.execute(HikariProxyStatement.java)
+	at org.hibernate.tool.schema.internal.exec.GenerationTargetToDatabase.accept(GenerationTargetToDatabase.java:80)
+	... 39 common frames omitted
+2026-04-23 09:00:48.053 DEBUG [] org.hibernate.SQL - 
+    create index idx_payment_payer 
+       on payment (payer_id)
+2026-04-23 09:00:48.076 DEBUG [] org.hibernate.SQL - 
+    alter table payment 
+       add constraint uq_payment_unique unique (match_request_id, payment_type)
+2026-04-23 09:00:48.096 DEBUG [] org.hibernate.SQL - 
+    alter table payment 
+       add constraint UKljlo9vyedeereqhpwyr9tknqc unique (pg_order_no)
+2026-04-23 09:00:48.116 DEBUG [] org.hibernate.SQL - 
+    alter table review 
+       add constraint UKioc95svtshsmxvlxc8us5yelq unique (match_request_id)
+2026-04-23 09:00:48.137 DEBUG [] org.hibernate.SQL - 
+    alter table scrapbooks 
+       add constraint uq_scrapbook_match unique (match_request_id)
+2026-04-23 09:00:48.153 DEBUG [] org.hibernate.SQL - 
+    alter table chat_participants 
+       add constraint FKk0pkxdxk2whcy4j9lovmexvkq 
+       foreign key (chat_room_id) 
+       references chat_rooms (id)
+2026-04-23 09:00:48.226 DEBUG [] org.hibernate.SQL - 
+    alter table guide_careers 
+       add constraint fk_guide_careers_guide 
+       foreign key (guide_id) 
+       references guide_profiles (id)
+2026-04-23 09:00:48.295 DEBUG [] org.hibernate.SQL - 
+    alter table guide_feeds 
+       add constraint FKl5ncbecyap26kipe8hbrrv259 
+       foreign key (guide_id) 
+       references guide_profiles (id)
+2026-04-23 09:00:48.372 DEBUG [] org.hibernate.SQL - 
+    alter table guide_images 
+       add constraint fk_guide_images_guide 
+       foreign key (guide_id) 
+       references guide_profiles (id)
+2026-04-23 09:00:48.446 DEBUG [] org.hibernate.SQL - 
+    alter table guide_schedules 
+       add constraint FK9a3cimgvlpika296h0fkluqbl 
+       foreign key (guide_id) 
+       references guide_profiles (id)
+2026-04-23 09:00:48.523 DEBUG [] org.hibernate.SQL - 
+    alter table payment 
+       add constraint fk_payment_match_req 
+       foreign key (match_request_id) 
+       references match_request (id)
+2026-04-23 09:00:48.611 DEBUG [] org.hibernate.SQL - 
+    alter table refund 
+       add constraint fk_refund_payment 
+       foreign key (payment_id) 
+       references payment (id)
+2026-04-23 09:00:48.689 DEBUG [] org.hibernate.SQL - 
+    alter table review 
+       add constraint FKk0ccx5i4ci2wd70vegug074w1 
+       foreign key (member_id) 
+       references member (id)
+2026-04-23 09:00:48.764 DEBUG [] org.hibernate.SQL - 
+    alter table tour_extension 
+       add constraint fk_extension_match_req 
+       foreign key (match_request_id) 
+       references match_request (id)
+2026-04-23 09:00:48.841 INFO  [] o.s.o.j.LocalContainerEntityManagerFactoryBean - Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-04-23 09:00:50.352 INFO  [] o.s.d.j.r.query.QueryEnhancerFactory - Hibernate is in classpath; If applicable, HQL parser will be used.
+2026-04-23 09:00:51.763 INFO  [] org.mongodb.driver.client - MongoClient with metadata {"driver": {"name": "mongo-java-driver|sync|spring-boot", "version": "5.2.1"}, "os": {"type": "Windows", "name": "Windows 11", "architecture": "amd64", "version": "10.0"}, "platform": "Java/Amazon.com Inc./17.0.18+9-LTS"} created with settings MongoClientSettings{readPreference=primary, writeConcern=WriteConcern{w=null, wTimeout=null ms, journal=null}, retryWrites=true, retryReads=true, readConcern=ReadConcern{level=null}, credential=null, transportSettings=null, commandListeners=[io.micrometer.core.instrument.binder.mongodb.MongoMetricsCommandListener@240af9dc], codecRegistry=ProvidersCodecRegistry{codecProviders=[ValueCodecProvider{}, BsonValueCodecProvider{}, DBRefCodecProvider{}, DBObjectCodecProvider{}, DocumentCodecProvider{}, CollectionCodecProvider{}, IterableCodecProvider{}, MapCodecProvider{}, GeoJsonCodecProvider{}, GridFSFileCodecProvider{}, Jsr310CodecProvider{}, JsonObjectCodecProvider{}, BsonCodecProvider{}, EnumCodecProvider{}, com.mongodb.client.model.mql.ExpressionCodecProvider@6726245e, com.mongodb.Jep395RecordCodecProvider@66bd6746, com.mongodb.KotlinCodecProvider@65e3f3eb]}, loggerSettings=LoggerSettings{maxDocumentLength=1000}, clusterSettings={hosts=[localhost:27017], srvServiceName=mongodb, mode=SINGLE, requiredClusterType=UNKNOWN, requiredReplicaSetName='null', serverSelector='null', clusterListeners='[]', serverSelectionTimeout='30000 ms', localThreshold='15 ms'}, socketSettings=SocketSettings{connectTimeoutMS=10000, readTimeoutMS=0, receiveBufferSize=0, proxySettings=ProxySettings{host=null, port=null, username=null, password=null}}, heartbeatSocketSettings=SocketSettings{connectTimeoutMS=10000, readTimeoutMS=10000, receiveBufferSize=0, proxySettings=ProxySettings{host=null, port=null, username=null, password=null}}, connectionPoolSettings=ConnectionPoolSettings{maxSize=100, minSize=0, maxWaitTimeMS=120000, maxConnectionLifeTimeMS=0, maxConnectionIdleTimeMS=0, maintenanceInitialDelayMS=0, maintenanceFrequencyMS=60000, connectionPoolListeners=[io.micrometer.core.instrument.binder.mongodb.MongoMetricsConnectionPoolListener@3f63a9da], maxConnecting=2}, serverSettings=ServerSettings{heartbeatFrequencyMS=10000, minHeartbeatFrequencyMS=500, serverMonitoringMode=AUTO, serverListeners='[]', serverMonitorListeners='[]'}, sslSettings=SslSettings{enabled=false, invalidHostNameAllowed=false, context=null}, applicationName='null', compressorList=[], uuidRepresentation=JAVA_LEGACY, serverApi=null, autoEncryptionSettings=null, dnsClient=null, inetAddressResolver=null, contextProvider=null, timeoutMS=null}
+2026-04-23 09:00:51.774 INFO  [] org.mongodb.driver.cluster - Monitor thread successfully connected to server with description ServerDescription{address=localhost:27017, type=STANDALONE, cryptd=false, state=CONNECTED, ok=true, minWireVersion=0, maxWireVersion=27, maxDocumentSize=16777216, logicalSessionTimeoutMinutes=30, roundTripTimeNanos=23711100, minRoundTripTimeNanos=0}
+2026-04-23 09:00:52.293 WARN  [] o.s.b.a.o.j.JpaBaseConfiguration$JpaWebConfiguration - spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-04-23 09:00:52.738 INFO  [] o.s.b.a.e.web.EndpointLinksResolver - Exposing 1 endpoint beneath base path '/actuator'
+2026-04-23 09:00:52.888 WARN  [] o.s.s.c.a.web.builders.WebSecurity - You are asking Spring Security to ignore Deferred [Mvc [pattern='/actuator/**'], Ant [pattern='/actuator/**']]. This is not recommended -- please use permitAll via HttpSecurity#authorizeHttpRequests instead.
+2026-04-23 09:00:52.889 WARN  [] o.s.s.c.a.web.builders.WebSecurity - You are asking Spring Security to ignore Deferred [Mvc [pattern='/api/actuator/**'], Ant [pattern='/api/actuator/**']]. This is not recommended -- please use permitAll via HttpSecurity#authorizeHttpRequests instead.
+2026-04-23 09:00:52.889 WARN  [] o.s.s.c.a.web.builders.WebSecurity - You are asking Spring Security to ignore Deferred [Mvc [pattern='/v3/api-docs/**'], Ant [pattern='/v3/api-docs/**']]. This is not recommended -- please use permitAll via HttpSecurity#authorizeHttpRequests instead.
+2026-04-23 09:00:52.889 WARN  [] o.s.s.c.a.web.builders.WebSecurity - You are asking Spring Security to ignore Deferred [Mvc [pattern='/swagger-ui/**'], Ant [pattern='/swagger-ui/**']]. This is not recommended -- please use permitAll via HttpSecurity#authorizeHttpRequests instead.
+2026-04-23 09:00:52.889 WARN  [] o.s.s.c.a.web.builders.WebSecurity - You are asking Spring Security to ignore Deferred [Mvc [pattern='/api/v3/api-docs/**'], Ant [pattern='/api/v3/api-docs/**']]. This is not recommended -- please use permitAll via HttpSecurity#authorizeHttpRequests instead.
+2026-04-23 09:00:52.889 WARN  [] o.s.s.c.a.web.builders.WebSecurity - You are asking Spring Security to ignore Deferred [Mvc [pattern='/api/swagger-ui/**'], Ant [pattern='/api/swagger-ui/**']]. This is not recommended -- please use permitAll via HttpSecurity#authorizeHttpRequests instead.
+2026-04-23 09:00:53.545 INFO  [] o.s.m.s.b.SimpleBrokerMessageHandler - Starting...
+2026-04-23 09:00:53.545 INFO  [] o.s.m.s.b.SimpleBrokerMessageHandler - BrokerAvailabilityEvent[available=true, SimpleBrokerMessageHandler [org.springframework.messaging.simp.broker.DefaultSubscriptionRegistry@7eb6889c]]
+2026-04-23 09:00:53.546 INFO  [] o.s.m.s.b.SimpleBrokerMessageHandler - Started.
+2026-04-23 09:00:53.546 INFO  [] o.a.coyote.http11.Http11NioProtocol - Starting ProtocolHandler ["http-nio-8080"]
+2026-04-23 09:00:53.567 INFO  [] o.s.b.w.e.tomcat.TomcatWebServer - Tomcat started on port 8080 (http) with context path '/api'
+2026-04-23 09:00:54.070 INFO  [] c.t.apiserver.ApiServerApplication - Started ApiServerApplication in 18.83 seconds (process running for 25.245)
+2026-04-23 09:01:00.086 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 09:01:00.092 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 09:01:00.092 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T09:01:00.023781]
+2026-04-23 09:01:53.512 INFO  [] o.s.w.s.c.WebSocketMessageBrokerStats - WebSocketSession[0 current WS(0)-HttpStream(0)-HttpPoll(0), 0 total, 0 closed abnormally (0 connect failure, 0 send limit, 0 transport error)], stompSubProtocol[processed CONNECT(0)-CONNECTED(0)-DISCONNECT(0)], stompBrokerRelay[null], inboundChannel[pool size = 0, active threads = 0, queued tasks = 0, completed tasks = 0], outboundChannel[pool size = 0, active threads = 0, queued tasks = 0, completed tasks = 0], sockJsScheduler[pool size = 5, active threads = 1, queued tasks = 2, completed tasks = 2]
+2026-04-23 09:02:00.005 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 09:02:00.006 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 09:02:00.006 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T09:02:00.004159400]
+2026-04-23 09:03:00.002 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 09:03:00.002 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 09:03:00.002 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T09:03:00.000932300]
+2026-04-23 09:04:00.005 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 09:04:00.007 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 09:04:00.007 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T09:04:00.004860200]
+2026-04-23 09:05:00.011 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 09:05:00.012 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 09:05:00.012 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T09:05:00.011286900]
+2026-04-23 09:06:00.012 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 09:06:00.012 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 09:06:00.012 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T09:06:00.010968600]
+2026-04-23 09:07:00.017 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 09:07:00.017 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 09:07:00.017 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T09:07:00.015889600]
+2026-04-23 09:08:00.017 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 09:08:00.018 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 09:08:00.018 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T09:08:00.016621100]
+2026-04-23 09:09:00.010 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 09:09:00.010 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 09:09:00.010 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T09:09:00.009241800]
+2026-04-23 09:10:00.007 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 09:10:00.008 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 09:10:00.008 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T09:10:00.006740800]
+2026-04-23 09:11:00.007 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 09:11:00.008 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 09:11:00.008 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T09:11:00.006137700]
+2026-04-23 09:12:00.015 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 09:12:00.015 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 09:12:00.015 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T09:12:00.014952700]
+2026-04-23 09:13:00.012 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 09:13:00.013 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 09:13:00.013 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T09:13:00.011442700]
+2026-04-23 09:14:00.017 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 09:14:00.017 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 09:14:00.017 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T09:14:00.015650]
+2026-04-23 09:15:00.014 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 09:15:00.016 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 09:15:00.016 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T09:15:00.014504700]
+2026-04-23 09:16:00.009 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 09:16:00.009 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 09:16:00.009 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T09:16:00.007818900]
+2026-04-23 09:17:00.003 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 09:17:00.003 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 09:17:00.003 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T09:17:00.001753800]
+2026-04-23 09:18:00.010 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 09:18:00.010 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 09:18:00.010 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T09:18:00.009921400]
+2026-04-23 09:19:00.018 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 09:19:00.018 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 09:19:00.019 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T09:19:00.016522800]
+2026-04-23 09:20:00.011 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 09:20:00.011 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 09:20:00.011 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T09:20:00.010239500]
+2026-04-23 09:21:00.013 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 09:21:00.014 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 09:21:00.014 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T09:21:00.012983800]
+2026-04-23 09:22:00.016 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 09:22:00.016 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 09:22:00.016 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T09:22:00.015648300]
+2026-04-23 09:23:00.016 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 09:23:00.017 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 09:23:00.017 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T09:23:00.014796700]
+2026-04-23 09:24:00.010 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 09:24:00.010 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 09:24:00.010 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T09:24:00.008678800]
+2026-04-23 09:25:00.011 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 09:25:00.011 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 09:25:00.011 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T09:25:00.009461]
+2026-04-23 09:26:00.016 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 09:26:00.016 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 09:26:00.016 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T09:26:00.015821300]
+2026-04-23 09:27:00.015 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 09:27:00.015 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 09:27:00.015 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T09:27:00.014254100]
+2026-04-23 09:28:00.009 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 09:28:00.009 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 09:28:00.010 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T09:28:00.008213]
+2026-04-23 09:29:00.012 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 09:29:00.012 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 09:29:00.012 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T09:29:00.011702500]
+2026-04-23 09:30:00.006 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 09:30:00.006 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 09:30:00.006 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T09:30:00.005252800]
+2026-04-23 09:31:00.005 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 09:31:00.005 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 09:31:00.006 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T09:31:00.003694800]
+2026-04-23 09:31:53.521 INFO  [] o.s.w.s.c.WebSocketMessageBrokerStats - WebSocketSession[0 current WS(0)-HttpStream(0)-HttpPoll(0), 0 total, 0 closed abnormally (0 connect failure, 0 send limit, 0 transport error)], stompSubProtocol[processed CONNECT(0)-CONNECTED(0)-DISCONNECT(0)], stompBrokerRelay[null], inboundChannel[pool size = 0, active threads = 0, queued tasks = 0, completed tasks = 0], outboundChannel[pool size = 0, active threads = 0, queued tasks = 0, completed tasks = 0], sockJsScheduler[pool size = 12, active threads = 1, queued tasks = 2, completed tasks = 63]
+2026-04-23 09:32:00.006 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 09:32:00.006 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 09:32:00.006 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T09:32:00.005018]
+2026-04-23 09:33:00.004 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 09:33:00.004 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 09:33:00.004 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T09:33:00.003920700]
+2026-04-23 09:34:00.015 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 09:34:00.016 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 09:34:00.016 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T09:34:00.014075]
+2026-04-23 09:35:00.005 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 09:35:00.006 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 09:35:00.006 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T09:35:00.004085200]
+2026-04-23 09:36:00.006 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 09:36:00.007 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 09:36:00.007 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T09:36:00.006428200]
+2026-04-23 09:37:00.011 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 09:37:00.011 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 09:37:00.011 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T09:37:00.010962300]
+2026-04-23 09:38:00.006 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 09:38:00.006 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 09:38:00.006 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T09:38:00.005118500]
+2026-04-23 09:39:00.008 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 09:39:00.008 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 09:39:00.008 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T09:39:00.007371800]
+2026-04-23 09:40:00.010 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 09:40:00.011 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 09:40:00.011 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T09:40:00.009147500]
+2026-04-23 09:41:00.010 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 09:41:00.012 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 09:41:00.012 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T09:41:00.010558100]
+2026-04-23 09:42:00.007 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 09:42:00.008 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 09:42:00.008 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T09:42:00.006944600]
+2026-04-23 09:43:00.003 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 09:43:00.003 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 09:43:00.003 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T09:43:00.001688200]
+2026-04-23 09:44:00.004 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 09:44:00.004 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 09:44:00.004 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T09:44:00.003151600]
+2026-04-23 09:45:00.008 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 09:45:00.008 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 09:45:00.008 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T09:45:00.005452]
+2026-04-23 09:46:00.014 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 09:46:00.014 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 09:46:00.014 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T09:46:00.013532300]
+2026-04-23 09:47:00.003 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 09:47:00.003 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 09:47:00.003 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T09:47:00.002875300]
+2026-04-23 09:48:00.008 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 09:48:00.008 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 09:48:00.008 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T09:48:00.006969300]
+2026-04-23 09:48:13.053 INFO  [] o.s.b.w.e.tomcat.GracefulShutdown - Commencing graceful shutdown. Waiting for active requests to complete
+2026-04-23 09:48:13.198 INFO  [] o.s.b.w.e.tomcat.GracefulShutdown - Graceful shutdown complete
+2026-04-23 09:48:13.322 INFO  [] o.s.m.s.b.SimpleBrokerMessageHandler - Stopping...
+2026-04-23 09:48:13.324 INFO  [] o.s.m.s.b.SimpleBrokerMessageHandler - BrokerAvailabilityEvent[available=false, SimpleBrokerMessageHandler [org.springframework.messaging.simp.broker.DefaultSubscriptionRegistry@7eb6889c]]
+2026-04-23 09:48:13.324 INFO  [] o.s.m.s.b.SimpleBrokerMessageHandler - Stopped.
+2026-04-23 09:48:13.343 INFO  [] o.s.o.j.LocalContainerEntityManagerFactoryBean - Closing JPA EntityManagerFactory for persistence unit 'default'
+2026-04-23 09:48:13.348 INFO  [] com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Shutdown initiated...
+2026-04-23 09:48:13.353 INFO  [] com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Shutdown completed.
+2026-04-23 09:48:22.855 INFO  [] o.h.validator.internal.util.Version - HV000001: Hibernate Validator 8.0.2.Final
+2026-04-23 09:48:22.916 INFO  [] c.t.apiserver.ApiServerApplication - Starting ApiServerApplication using Java 17.0.18 with PID 27092 (C:\Users\jangs\IdeaProjects\LocalGuest\backend\api-server\build\classes\java\main started by jangs in C:\Users\jangs\IdeaProjects\LocalGuest)
+2026-04-23 09:48:22.917 INFO  [] c.t.apiserver.ApiServerApplication - The following 1 profile is active: "local"
+2026-04-23 09:48:23.868 INFO  [] o.s.d.r.c.RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
+2026-04-23 09:48:23.868 INFO  [] o.s.d.r.c.RepositoryConfigurationDelegate - Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-04-23 09:48:24.050 INFO  [] o.s.d.r.c.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 173 ms. Found 13 JPA repository interfaces.
+2026-04-23 09:48:24.051 INFO  [] o.s.d.r.c.RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
+2026-04-23 09:48:24.051 INFO  [] o.s.d.r.c.RepositoryConfigurationDelegate - Bootstrapping Spring Data MongoDB repositories in DEFAULT mode.
+2026-04-23 09:48:24.056 INFO  [] o.s.d.r.c.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 4 ms. Found 1 MongoDB repository interface.
+2026-04-23 09:48:24.510 INFO  [] o.s.d.r.c.RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
+2026-04-23 09:48:24.511 INFO  [] o.s.d.r.c.RepositoryConfigurationDelegate - Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+2026-04-23 09:48:24.523 INFO  [] o.s.d.r.c.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 5 ms. Found 0 Redis repository interfaces.
+2026-04-23 09:48:24.622 WARN  [] o.m.s.mapper.ClassPathMapperScanner - No MyBatis mapper was found in '[com.team6.apiserver]' package. Please check your configuration.
+2026-04-23 09:48:25.348 INFO  [] o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port 8080 (http)
+2026-04-23 09:48:25.364 INFO  [] o.a.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-8080"]
+2026-04-23 09:48:25.366 INFO  [] o.a.catalina.core.StandardService - Starting service [Tomcat]
+2026-04-23 09:48:25.367 INFO  [] o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.40]
+2026-04-23 09:48:25.437 INFO  [] o.a.c.c.C.[.[localhost].[/api] - Initializing Spring embedded WebApplicationContext
+2026-04-23 09:48:25.437 INFO  [] o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 2471 ms
+2026-04-23 09:48:25.755 INFO  [] o.h.jpa.internal.util.LogHelper - HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-04-23 09:48:25.843 INFO  [] org.hibernate.Version - HHH000412: Hibernate ORM core version 6.6.13.Final
+2026-04-23 09:48:25.888 INFO  [] o.h.c.i.RegionFactoryInitiator - HHH000026: Second-level cache disabled
+2026-04-23 09:48:26.265 INFO  [] o.s.o.j.p.SpringPersistenceUnitInfo - No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-04-23 09:48:26.304 INFO  [] com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Starting...
+2026-04-23 09:48:26.595 INFO  [] com.zaxxer.hikari.pool.HikariPool - HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@1c80f8dd
+2026-04-23 09:48:26.597 INFO  [] com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Start completed.
+2026-04-23 09:48:26.648 WARN  [] org.hibernate.orm.deprecation - HHH90000025: MySQLDialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+2026-04-23 09:48:26.668 INFO  [] o.hibernate.orm.connections.pooling - HHH10001005: Database info:
+	Database JDBC URL [Connecting through datasource 'HikariDataSource (HikariPool-1)']
+	Database driver: undefined/unknown
+	Database version: 8.0.44
+	Autocommit mode: undefined/unknown
+	Isolation level: undefined/unknown
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown
+2026-04-23 09:48:27.964 INFO  [] o.h.e.t.j.p.i.JtaPlatformInitiator - HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-04-23 09:48:27.984 DEBUG [] org.hibernate.SQL - 
+    alter table chat_participants 
+       drop 
+       foreign key FKk0pkxdxk2whcy4j9lovmexvkq
+2026-04-23 09:48:27.998 DEBUG [] org.hibernate.SQL - 
+    alter table guide_careers 
+       drop 
+       foreign key fk_guide_careers_guide
+2026-04-23 09:48:28.005 DEBUG [] org.hibernate.SQL - 
+    alter table guide_feeds 
+       drop 
+       foreign key FKl5ncbecyap26kipe8hbrrv259
+2026-04-23 09:48:28.011 DEBUG [] org.hibernate.SQL - 
+    alter table guide_images 
+       drop 
+       foreign key fk_guide_images_guide
+2026-04-23 09:48:28.017 DEBUG [] org.hibernate.SQL - 
+    alter table guide_schedules 
+       drop 
+       foreign key FK9a3cimgvlpika296h0fkluqbl
+2026-04-23 09:48:28.024 DEBUG [] org.hibernate.SQL - 
+    alter table payment 
+       drop 
+       foreign key fk_payment_match_req
+2026-04-23 09:48:28.034 DEBUG [] org.hibernate.SQL - 
+    alter table refund 
+       drop 
+       foreign key fk_refund_payment
+2026-04-23 09:48:28.042 DEBUG [] org.hibernate.SQL - 
+    alter table review 
+       drop 
+       foreign key FKk0ccx5i4ci2wd70vegug074w1
+2026-04-23 09:48:28.048 DEBUG [] org.hibernate.SQL - 
+    alter table tour_extension 
+       drop 
+       foreign key fk_extension_match_req
+2026-04-23 09:48:28.054 DEBUG [] org.hibernate.SQL - 
+    drop table if exists chat_participants
+2026-04-23 09:48:28.061 DEBUG [] org.hibernate.SQL - 
+    drop table if exists chat_rooms
+2026-04-23 09:48:28.068 DEBUG [] org.hibernate.SQL - 
+    drop table if exists guide_careers
+2026-04-23 09:48:28.076 DEBUG [] org.hibernate.SQL - 
+    drop table if exists guide_feeds
+2026-04-23 09:48:28.083 DEBUG [] org.hibernate.SQL - 
+    drop table if exists guide_images
+2026-04-23 09:48:28.091 DEBUG [] org.hibernate.SQL - 
+    drop table if exists guide_profiles
+2026-04-23 09:48:28.097 DEBUG [] org.hibernate.SQL - 
+    drop table if exists guide_schedules
+2026-04-23 09:48:28.105 DEBUG [] org.hibernate.SQL - 
+    drop table if exists match_request
+2026-04-23 09:48:28.115 DEBUG [] org.hibernate.SQL - 
+    drop table if exists member
+2026-04-23 09:48:28.138 WARN  [] o.h.t.s.i.ExceptionHandlerLoggedImpl - GenerationTarget encountered exception accepting command : Error executing DDL "
+    drop table if exists member" via JDBC [Cannot drop table 'member' referenced by a foreign key constraint 'FKsn2texaayj22xqa2s7fj0swkm' on table 'guest_profile'.]
+org.hibernate.tool.schema.spi.CommandAcceptanceException: Error executing DDL "
+    drop table if exists member" via JDBC [Cannot drop table 'member' referenced by a foreign key constraint 'FKsn2texaayj22xqa2s7fj0swkm' on table 'guest_profile'.]
+	at org.hibernate.tool.schema.internal.exec.GenerationTargetToDatabase.accept(GenerationTargetToDatabase.java:94)
+	at org.hibernate.tool.schema.internal.Helper.applySqlString(Helper.java:233)
+	at org.hibernate.tool.schema.internal.Helper.applySqlStrings(Helper.java:217)
+	at org.hibernate.tool.schema.internal.SchemaDropperImpl.dropTables(SchemaDropperImpl.java:384)
+	at org.hibernate.tool.schema.internal.SchemaDropperImpl.dropConstraintsTablesSequences(SchemaDropperImpl.java:256)
+	at org.hibernate.tool.schema.internal.SchemaDropperImpl.dropFromMetadata(SchemaDropperImpl.java:218)
+	at org.hibernate.tool.schema.internal.SchemaDropperImpl.performDrop(SchemaDropperImpl.java:186)
+	at org.hibernate.tool.schema.internal.SchemaDropperImpl.doDrop(SchemaDropperImpl.java:156)
+	at org.hibernate.tool.schema.internal.SchemaDropperImpl.doDrop(SchemaDropperImpl.java:116)
+	at org.hibernate.tool.schema.spi.SchemaManagementToolCoordinator.performDatabaseAction(SchemaManagementToolCoordinator.java:238)
+	at org.hibernate.tool.schema.spi.SchemaManagementToolCoordinator.lambda$process$5(SchemaManagementToolCoordinator.java:144)
+	at java.base/java.util.HashMap.forEach(HashMap.java:1421)
+	at org.hibernate.tool.schema.spi.SchemaManagementToolCoordinator.process(SchemaManagementToolCoordinator.java:141)
+	at org.hibernate.boot.internal.SessionFactoryObserverForSchemaExport.sessionFactoryCreated(SessionFactoryObserverForSchemaExport.java:37)
+	at org.hibernate.internal.SessionFactoryObserverChain.sessionFactoryCreated(SessionFactoryObserverChain.java:35)
+	at org.hibernate.internal.SessionFactoryImpl.<init>(SessionFactoryImpl.java:324)
+	at org.hibernate.boot.internal.SessionFactoryBuilderImpl.build(SessionFactoryBuilderImpl.java:463)
+	at org.hibernate.jpa.boot.internal.EntityManagerFactoryBuilderImpl.build(EntityManagerFactoryBuilderImpl.java:1517)
+	at org.springframework.orm.jpa.vendor.SpringHibernateJpaPersistenceProvider.createContainerEntityManagerFactory(SpringHibernateJpaPersistenceProvider.java:66)
+	at org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean.createNativeEntityManagerFactory(LocalContainerEntityManagerFactoryBean.java:390)
+	at org.springframework.orm.jpa.AbstractEntityManagerFactoryBean.buildNativeEntityManagerFactory(AbstractEntityManagerFactoryBean.java:419)
+	at org.springframework.orm.jpa.AbstractEntityManagerFactoryBean.afterPropertiesSet(AbstractEntityManagerFactoryBean.java:400)
+	at org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean.afterPropertiesSet(LocalContainerEntityManagerFactoryBean.java:366)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.invokeInitMethods(AbstractAutowireCapableBeanFactory.java:1865)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.initializeBean(AbstractAutowireCapableBeanFactory.java:1814)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.doCreateBean(AbstractAutowireCapableBeanFactory.java:607)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBean(AbstractAutowireCapableBeanFactory.java:529)
+	at org.springframework.beans.factory.support.AbstractBeanFactory.lambda$doGetBean$0(AbstractBeanFactory.java:339)
+	at org.springframework.beans.factory.support.DefaultSingletonBeanRegistry.getSingleton(DefaultSingletonBeanRegistry.java:371)
+	at org.springframework.beans.factory.support.AbstractBeanFactory.doGetBean(AbstractBeanFactory.java:337)
+	at org.springframework.beans.factory.support.AbstractBeanFactory.getBean(AbstractBeanFactory.java:207)
+	at org.springframework.context.support.AbstractApplicationContext.finishBeanFactoryInitialization(AbstractApplicationContext.java:970)
+	at org.springframework.context.support.AbstractApplicationContext.refresh(AbstractApplicationContext.java:627)
+	at org.springframework.boot.web.servlet.context.ServletWebServerApplicationContext.refresh(ServletWebServerApplicationContext.java:146)
+	at org.springframework.boot.SpringApplication.refresh(SpringApplication.java:753)
+	at org.springframework.boot.SpringApplication.refreshContext(SpringApplication.java:439)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:318)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1362)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1351)
+	at com.team6.apiserver.ApiServerApplication.main(ApiServerApplication.java:31)
+Caused by: java.sql.SQLException: Cannot drop table 'member' referenced by a foreign key constraint 'FKsn2texaayj22xqa2s7fj0swkm' on table 'guest_profile'.
+	at com.mysql.cj.jdbc.exceptions.SQLError.createSQLException(SQLError.java:121)
+	at com.mysql.cj.jdbc.exceptions.SQLExceptionsMapping.translateException(SQLExceptionsMapping.java:114)
+	at com.mysql.cj.jdbc.StatementImpl.executeInternal(StatementImpl.java:837)
+	at com.mysql.cj.jdbc.StatementImpl.execute(StatementImpl.java:685)
+	at com.zaxxer.hikari.pool.ProxyStatement.execute(ProxyStatement.java:94)
+	at com.zaxxer.hikari.pool.HikariProxyStatement.execute(HikariProxyStatement.java)
+	at org.hibernate.tool.schema.internal.exec.GenerationTargetToDatabase.accept(GenerationTargetToDatabase.java:80)
+	... 39 common frames omitted
+2026-04-23 09:48:28.140 DEBUG [] org.hibernate.SQL - 
+    drop table if exists payment
+2026-04-23 09:48:28.148 DEBUG [] org.hibernate.SQL - 
+    drop table if exists refund
+2026-04-23 09:48:28.155 DEBUG [] org.hibernate.SQL - 
+    drop table if exists review
+2026-04-23 09:48:28.160 DEBUG [] org.hibernate.SQL - 
+    drop table if exists scrapbooks
+2026-04-23 09:48:28.167 DEBUG [] org.hibernate.SQL - 
+    drop table if exists tour_extension
+2026-04-23 09:48:28.183 DEBUG [] org.hibernate.SQL - 
+    create table chat_participants (
+        is_alarm_on bit not null,
+        chat_room_id bigint,
+        created_at datetime(6) not null,
+        id bigint not null auto_increment,
+        last_read_at datetime(6),
+        updated_at datetime(6) not null,
+        user_id bigint,
+        user_email varchar(255) not null,
+        user_nickname varchar(255),
+        primary key (id)
+    ) engine=InnoDB
+2026-04-23 09:48:28.195 DEBUG [] org.hibernate.SQL - 
+    create table chat_rooms (
+        participant_count integer,
+        created_at datetime(6) not null,
+        id bigint not null auto_increment,
+        last_message_at datetime(6),
+        updated_at datetime(6) not null,
+        last_message varchar(255),
+        owner_email varchar(255),
+        room_id varchar(255) not null,
+        title varchar(255) not null,
+        primary key (id)
+    ) engine=InnoDB
+2026-04-23 09:48:28.207 DEBUG [] org.hibernate.SQL - 
+    create table guide_careers (
+        acquired_at date not null,
+        created_at datetime(6) not null,
+        guide_id bigint not null,
+        id bigint not null auto_increment,
+        updated_at datetime(6) not null,
+        title varchar(100) not null,
+        description TEXT,
+        primary key (id)
+    ) engine=InnoDB
+2026-04-23 09:48:28.220 DEBUG [] org.hibernate.SQL - 
+    create table guide_feeds (
+        is_deleted bit not null,
+        created_at datetime(6) not null,
+        guide_id bigint not null,
+        id bigint not null auto_increment,
+        updated_at datetime(6) not null,
+        content TEXT not null,
+        image_url LONGTEXT,
+        primary key (id)
+    ) engine=InnoDB
+2026-04-23 09:48:28.231 DEBUG [] org.hibernate.SQL - 
+    create table guide_images (
+        is_main bit not null,
+        sort_order integer not null,
+        created_at datetime(6) not null,
+        guide_id bigint not null,
+        id bigint not null auto_increment,
+        updated_at datetime(6) not null,
+        image_url varchar(500) not null,
+        primary key (id)
+    ) engine=InnoDB
+2026-04-23 09:48:28.244 DEBUG [] org.hibernate.SQL - 
+    create table guide_profiles (
+        average_rating decimal(3,2),
+        is_active bit not null,
+        is_approved bit not null,
+        price_per_hour decimal(10,2),
+        residence_years integer,
+        review_count integer not null,
+        created_at datetime(6) not null,
+        id bigint not null auto_increment,
+        member_id bigint not null,
+        updated_at datetime(6) not null,
+        nickname varchar(50) not null,
+        guide_style varchar(100),
+        language varchar(100),
+        region varchar(100) not null,
+        profile_image varchar(500),
+        bio TEXT,
+        default_course TEXT,
+        keywords TEXT,
+        local_story TEXT,
+        primary key (id)
+    ) engine=InnoDB
+2026-04-23 09:48:28.258 DEBUG [] org.hibernate.SQL - 
+    create table guide_schedules (
+        available_date date not null,
+        end_time time(6) not null,
+        is_paid bit not null,
+        start_time time(6) not null,
+        created_at datetime(6) not null,
+        guide_id bigint not null,
+        id bigint not null auto_increment,
+        match_request_id bigint,
+        updated_at datetime(6) not null,
+        meeting_point varchar(200),
+        course_detail TEXT,
+        guide_message TEXT,
+        status enum ('AVAILABLE','BLOCKED','BOOKED','PENDING') not null,
+        primary key (id)
+    ) engine=InnoDB
+2026-04-23 09:48:28.268 DEBUG [] org.hibernate.SQL - 
+    create table match_request (
+        budget_max_won integer,
+        budget_min_won integer,
+        desired_budget integer,
+        desired_date date not null,
+        created_at DATETIME(6) not null,
+        guest_id bigint not null,
+        guide_id bigint not null,
+        guide_schedule_id bigint not null,
+        id bigint not null auto_increment,
+        updated_at DATETIME(6) not null,
+        cancelled_by varchar(20),
+        cancel_reason TEXT,
+        concept TEXT,
+        concept_summary TEXT,
+        destination varchar(255) not null,
+        propose_message TEXT,
+        proposed_schedule TEXT,
+        status enum ('ACCEPTED','CANCELLED','COMPLETED','IN_PROGRESS','PAID','PENDING','REJECTED') not null,
+        primary key (id),
+        check (status IN ('PENDING','ACCEPTED','PAID','IN_PROGRESS','COMPLETED','CANCELLED','REJECTED'))
+    ) engine=InnoDB
+2026-04-23 09:48:28.284 DEBUG [] org.hibernate.SQL - 
+    create table member (
+        created_at DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6) not null,
+        id bigint not null auto_increment,
+        updated_at DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6) not null,
+        name varchar(100) not null,
+        nickname varchar(100),
+        profile_image_url varchar(1000),
+        email varchar(255) not null,
+        password varchar(255) not null,
+        role enum ('ADMIN','GUEST','GUIDE') not null,
+        social_type enum ('GOOGLE','KAKAO'),
+        status enum ('ACTIVE','WITHDRAWN') not null,
+        primary key (id)
+    ) engine=InnoDB
+2026-04-23 09:48:28.286 WARN  [] o.h.t.s.i.ExceptionHandlerLoggedImpl - GenerationTarget encountered exception accepting command : Error executing DDL "
+    create table member (
+        created_at DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6) not null,
+        id bigint not null auto_increment,
+        updated_at DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6) not null,
+        name varchar(100) not null,
+        nickname varchar(100),
+        profile_image_url varchar(1000),
+        email varchar(255) not null,
+        password varchar(255) not null,
+        role enum ('ADMIN','GUEST','GUIDE') not null,
+        social_type enum ('GOOGLE','KAKAO'),
+        status enum ('ACTIVE','WITHDRAWN') not null,
+        primary key (id)
+    ) engine=InnoDB" via JDBC [Table 'member' already exists]
+org.hibernate.tool.schema.spi.CommandAcceptanceException: Error executing DDL "
+    create table member (
+        created_at DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6) not null,
+        id bigint not null auto_increment,
+        updated_at DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6) not null,
+        name varchar(100) not null,
+        nickname varchar(100),
+        profile_image_url varchar(1000),
+        email varchar(255) not null,
+        password varchar(255) not null,
+        role enum ('ADMIN','GUEST','GUIDE') not null,
+        social_type enum ('GOOGLE','KAKAO'),
+        status enum ('ACTIVE','WITHDRAWN') not null,
+        primary key (id)
+    ) engine=InnoDB" via JDBC [Table 'member' already exists]
+	at org.hibernate.tool.schema.internal.exec.GenerationTargetToDatabase.accept(GenerationTargetToDatabase.java:94)
+	at org.hibernate.tool.schema.internal.Helper.applySqlString(Helper.java:233)
+	at org.hibernate.tool.schema.internal.Helper.applySqlStrings(Helper.java:217)
+	at org.hibernate.tool.schema.internal.SchemaCreatorImpl.createTables(SchemaCreatorImpl.java:430)
+	at org.hibernate.tool.schema.internal.SchemaCreatorImpl.createSequencesTablesConstraints(SchemaCreatorImpl.java:346)
+	at org.hibernate.tool.schema.internal.SchemaCreatorImpl.createFromMetadata(SchemaCreatorImpl.java:241)
+	at org.hibernate.tool.schema.internal.SchemaCreatorImpl.performCreation(SchemaCreatorImpl.java:174)
+	at org.hibernate.tool.schema.internal.SchemaCreatorImpl.doCreation(SchemaCreatorImpl.java:144)
+	at org.hibernate.tool.schema.internal.SchemaCreatorImpl.doCreation(SchemaCreatorImpl.java:120)
+	at org.hibernate.tool.schema.spi.SchemaManagementToolCoordinator.performDatabaseAction(SchemaManagementToolCoordinator.java:250)
+	at org.hibernate.tool.schema.spi.SchemaManagementToolCoordinator.lambda$process$5(SchemaManagementToolCoordinator.java:144)
+	at java.base/java.util.HashMap.forEach(HashMap.java:1421)
+	at org.hibernate.tool.schema.spi.SchemaManagementToolCoordinator.process(SchemaManagementToolCoordinator.java:141)
+	at org.hibernate.boot.internal.SessionFactoryObserverForSchemaExport.sessionFactoryCreated(SessionFactoryObserverForSchemaExport.java:37)
+	at org.hibernate.internal.SessionFactoryObserverChain.sessionFactoryCreated(SessionFactoryObserverChain.java:35)
+	at org.hibernate.internal.SessionFactoryImpl.<init>(SessionFactoryImpl.java:324)
+	at org.hibernate.boot.internal.SessionFactoryBuilderImpl.build(SessionFactoryBuilderImpl.java:463)
+	at org.hibernate.jpa.boot.internal.EntityManagerFactoryBuilderImpl.build(EntityManagerFactoryBuilderImpl.java:1517)
+	at org.springframework.orm.jpa.vendor.SpringHibernateJpaPersistenceProvider.createContainerEntityManagerFactory(SpringHibernateJpaPersistenceProvider.java:66)
+	at org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean.createNativeEntityManagerFactory(LocalContainerEntityManagerFactoryBean.java:390)
+	at org.springframework.orm.jpa.AbstractEntityManagerFactoryBean.buildNativeEntityManagerFactory(AbstractEntityManagerFactoryBean.java:419)
+	at org.springframework.orm.jpa.AbstractEntityManagerFactoryBean.afterPropertiesSet(AbstractEntityManagerFactoryBean.java:400)
+	at org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean.afterPropertiesSet(LocalContainerEntityManagerFactoryBean.java:366)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.invokeInitMethods(AbstractAutowireCapableBeanFactory.java:1865)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.initializeBean(AbstractAutowireCapableBeanFactory.java:1814)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.doCreateBean(AbstractAutowireCapableBeanFactory.java:607)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBean(AbstractAutowireCapableBeanFactory.java:529)
+	at org.springframework.beans.factory.support.AbstractBeanFactory.lambda$doGetBean$0(AbstractBeanFactory.java:339)
+	at org.springframework.beans.factory.support.DefaultSingletonBeanRegistry.getSingleton(DefaultSingletonBeanRegistry.java:371)
+	at org.springframework.beans.factory.support.AbstractBeanFactory.doGetBean(AbstractBeanFactory.java:337)
+	at org.springframework.beans.factory.support.AbstractBeanFactory.getBean(AbstractBeanFactory.java:207)
+	at org.springframework.context.support.AbstractApplicationContext.finishBeanFactoryInitialization(AbstractApplicationContext.java:970)
+	at org.springframework.context.support.AbstractApplicationContext.refresh(AbstractApplicationContext.java:627)
+	at org.springframework.boot.web.servlet.context.ServletWebServerApplicationContext.refresh(ServletWebServerApplicationContext.java:146)
+	at org.springframework.boot.SpringApplication.refresh(SpringApplication.java:753)
+	at org.springframework.boot.SpringApplication.refreshContext(SpringApplication.java:439)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:318)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1362)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1351)
+	at com.team6.apiserver.ApiServerApplication.main(ApiServerApplication.java:31)
+Caused by: java.sql.SQLSyntaxErrorException: Table 'member' already exists
+	at com.mysql.cj.jdbc.exceptions.SQLError.createSQLException(SQLError.java:112)
+	at com.mysql.cj.jdbc.exceptions.SQLExceptionsMapping.translateException(SQLExceptionsMapping.java:114)
+	at com.mysql.cj.jdbc.StatementImpl.executeInternal(StatementImpl.java:837)
+	at com.mysql.cj.jdbc.StatementImpl.execute(StatementImpl.java:685)
+	at com.zaxxer.hikari.pool.ProxyStatement.execute(ProxyStatement.java:94)
+	at com.zaxxer.hikari.pool.HikariProxyStatement.execute(HikariProxyStatement.java)
+	at org.hibernate.tool.schema.internal.exec.GenerationTargetToDatabase.accept(GenerationTargetToDatabase.java:80)
+	... 39 common frames omitted
+2026-04-23 09:48:28.287 DEBUG [] org.hibernate.SQL - 
+    create table payment (
+        amount integer not null,
+        created_at DATETIME(6) not null,
+        id bigint not null auto_increment,
+        match_request_id bigint not null,
+        paid_at DATETIME(6),
+        payer_id bigint not null,
+        refund_deadline DATETIME(6),
+        updated_at DATETIME(6) not null,
+        payment_type varchar(20) not null,
+        pg_order_no varchar(100) not null,
+        pg_transaction_id varchar(100),
+        status enum ('CANCELLED','COMPLETED','FAILED','PENDING','REFUNDED') not null,
+        primary key (id),
+        check (status IN ('PENDING','COMPLETED','REFUNDED','FAILED','CANCELLED') AND payment_type IN ('CHAT','ACCOMPANY','EXTENSION'))
+    ) engine=InnoDB
+2026-04-23 09:48:28.298 DEBUG [] org.hibernate.SQL - 
+    create table refund (
+        ai_processed bit not null,
+        created_at DATETIME(6) not null,
+        id bigint not null auto_increment,
+        payment_id bigint not null,
+        processed_at DATETIME(6),
+        requester_id bigint not null,
+        updated_at DATETIME(6) not null,
+        evidence_url varchar(500),
+        reason TEXT,
+        refund_type enum ('AUTO','CANCEL_GUEST','CANCEL_GUIDE','MANUAL') not null,
+        status enum ('APPROVED','PENDING','REJECTED') not null,
+        primary key (id),
+        check (status IN ('PENDING','APPROVED','REJECTED') AND refund_type IN ('AUTO','MANUAL','CANCEL_GUEST','CANCEL_GUIDE'))
+    ) engine=InnoDB
+2026-04-23 09:48:28.310 DEBUG [] org.hibernate.SQL - 
+    create table review (
+        deleted bit not null,
+        rating integer not null,
+        created_at DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6) not null,
+        deleted_at datetime(6),
+        guide_id bigint,
+        id bigint not null auto_increment,
+        match_request_id bigint not null,
+        member_id bigint not null,
+        updated_at DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6) not null,
+        content Text,
+        primary key (id)
+    ) engine=InnoDB
+2026-04-23 09:48:28.320 DEBUG [] org.hibernate.SQL - 
+    create table scrapbooks (
+        created_at datetime(6) not null,
+        guest_id bigint not null,
+        id bigint not null auto_increment,
+        match_request_id bigint not null,
+        updated_at datetime(6) not null,
+        title varchar(100) not null,
+        tags varchar(200),
+        main_image_url varchar(500),
+        content TEXT not null,
+        primary key (id)
+    ) engine=InnoDB
+2026-04-23 09:48:28.331 DEBUG [] org.hibernate.SQL - 
+    create table tour_extension (
+        extended_date date not null,
+        extended_price integer,
+        created_at DATETIME(6) not null,
+        deadline_at DATETIME(6) not null,
+        guest_id bigint not null,
+        guide_approved_at DATETIME(6),
+        id bigint not null auto_increment,
+        match_request_id bigint not null,
+        requested_at DATETIME(6) not null,
+        updated_at DATETIME(6) not null,
+        status enum ('AUTO_CANCELLED','GUIDE_APPROVED','PAID','REJECTED','REQUESTED') not null,
+        primary key (id),
+        check (status IN ('REQUESTED','GUIDE_APPROVED','PAID','REJECTED','AUTO_CANCELLED'))
+    ) engine=InnoDB
+2026-04-23 09:48:28.343 DEBUG [] org.hibernate.SQL - 
+    alter table chat_rooms 
+       add constraint UKtmf6ectlc88brf0myju8ry0yt unique (room_id)
+2026-04-23 09:48:28.351 DEBUG [] org.hibernate.SQL - 
+    alter table guide_profiles 
+       add constraint UKkbxalarf03km5aurrcpmc99s unique (member_id)
+2026-04-23 09:48:28.359 DEBUG [] org.hibernate.SQL - 
+    alter table guide_schedules 
+       add constraint uq_schedule_time unique (guide_id, available_date, start_time, end_time)
+2026-04-23 09:48:28.368 DEBUG [] org.hibernate.SQL - 
+    create index idx_match_guest 
+       on match_request (guest_id)
+2026-04-23 09:48:28.378 DEBUG [] org.hibernate.SQL - 
+    create index idx_match_guide 
+       on match_request (guide_id)
+2026-04-23 09:48:28.388 DEBUG [] org.hibernate.SQL - 
+    alter table member 
+       add constraint UKeqr1gnwwfupeqo38ju3by7dbf unique (email, role)
+2026-04-23 09:48:28.390 WARN  [] o.h.t.s.i.ExceptionHandlerLoggedImpl - GenerationTarget encountered exception accepting command : Error executing DDL "
+    alter table member 
+       add constraint UKeqr1gnwwfupeqo38ju3by7dbf unique (email, role)" via JDBC [Duplicate key name 'UKeqr1gnwwfupeqo38ju3by7dbf']
+org.hibernate.tool.schema.spi.CommandAcceptanceException: Error executing DDL "
+    alter table member 
+       add constraint UKeqr1gnwwfupeqo38ju3by7dbf unique (email, role)" via JDBC [Duplicate key name 'UKeqr1gnwwfupeqo38ju3by7dbf']
+	at org.hibernate.tool.schema.internal.exec.GenerationTargetToDatabase.accept(GenerationTargetToDatabase.java:94)
+	at org.hibernate.tool.schema.internal.Helper.applySqlString(Helper.java:233)
+	at org.hibernate.tool.schema.internal.Helper.applySqlStrings(Helper.java:217)
+	at org.hibernate.tool.schema.internal.SchemaCreatorImpl.createTableConstraints(SchemaCreatorImpl.java:402)
+	at org.hibernate.tool.schema.internal.SchemaCreatorImpl.createSequencesTablesConstraints(SchemaCreatorImpl.java:358)
+	at org.hibernate.tool.schema.internal.SchemaCreatorImpl.createFromMetadata(SchemaCreatorImpl.java:241)
+	at org.hibernate.tool.schema.internal.SchemaCreatorImpl.performCreation(SchemaCreatorImpl.java:174)
+	at org.hibernate.tool.schema.internal.SchemaCreatorImpl.doCreation(SchemaCreatorImpl.java:144)
+	at org.hibernate.tool.schema.internal.SchemaCreatorImpl.doCreation(SchemaCreatorImpl.java:120)
+	at org.hibernate.tool.schema.spi.SchemaManagementToolCoordinator.performDatabaseAction(SchemaManagementToolCoordinator.java:250)
+	at org.hibernate.tool.schema.spi.SchemaManagementToolCoordinator.lambda$process$5(SchemaManagementToolCoordinator.java:144)
+	at java.base/java.util.HashMap.forEach(HashMap.java:1421)
+	at org.hibernate.tool.schema.spi.SchemaManagementToolCoordinator.process(SchemaManagementToolCoordinator.java:141)
+	at org.hibernate.boot.internal.SessionFactoryObserverForSchemaExport.sessionFactoryCreated(SessionFactoryObserverForSchemaExport.java:37)
+	at org.hibernate.internal.SessionFactoryObserverChain.sessionFactoryCreated(SessionFactoryObserverChain.java:35)
+	at org.hibernate.internal.SessionFactoryImpl.<init>(SessionFactoryImpl.java:324)
+	at org.hibernate.boot.internal.SessionFactoryBuilderImpl.build(SessionFactoryBuilderImpl.java:463)
+	at org.hibernate.jpa.boot.internal.EntityManagerFactoryBuilderImpl.build(EntityManagerFactoryBuilderImpl.java:1517)
+	at org.springframework.orm.jpa.vendor.SpringHibernateJpaPersistenceProvider.createContainerEntityManagerFactory(SpringHibernateJpaPersistenceProvider.java:66)
+	at org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean.createNativeEntityManagerFactory(LocalContainerEntityManagerFactoryBean.java:390)
+	at org.springframework.orm.jpa.AbstractEntityManagerFactoryBean.buildNativeEntityManagerFactory(AbstractEntityManagerFactoryBean.java:419)
+	at org.springframework.orm.jpa.AbstractEntityManagerFactoryBean.afterPropertiesSet(AbstractEntityManagerFactoryBean.java:400)
+	at org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean.afterPropertiesSet(LocalContainerEntityManagerFactoryBean.java:366)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.invokeInitMethods(AbstractAutowireCapableBeanFactory.java:1865)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.initializeBean(AbstractAutowireCapableBeanFactory.java:1814)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.doCreateBean(AbstractAutowireCapableBeanFactory.java:607)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBean(AbstractAutowireCapableBeanFactory.java:529)
+	at org.springframework.beans.factory.support.AbstractBeanFactory.lambda$doGetBean$0(AbstractBeanFactory.java:339)
+	at org.springframework.beans.factory.support.DefaultSingletonBeanRegistry.getSingleton(DefaultSingletonBeanRegistry.java:371)
+	at org.springframework.beans.factory.support.AbstractBeanFactory.doGetBean(AbstractBeanFactory.java:337)
+	at org.springframework.beans.factory.support.AbstractBeanFactory.getBean(AbstractBeanFactory.java:207)
+	at org.springframework.context.support.AbstractApplicationContext.finishBeanFactoryInitialization(AbstractApplicationContext.java:970)
+	at org.springframework.context.support.AbstractApplicationContext.refresh(AbstractApplicationContext.java:627)
+	at org.springframework.boot.web.servlet.context.ServletWebServerApplicationContext.refresh(ServletWebServerApplicationContext.java:146)
+	at org.springframework.boot.SpringApplication.refresh(SpringApplication.java:753)
+	at org.springframework.boot.SpringApplication.refreshContext(SpringApplication.java:439)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:318)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1362)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1351)
+	at com.team6.apiserver.ApiServerApplication.main(ApiServerApplication.java:31)
+Caused by: java.sql.SQLSyntaxErrorException: Duplicate key name 'UKeqr1gnwwfupeqo38ju3by7dbf'
+	at com.mysql.cj.jdbc.exceptions.SQLError.createSQLException(SQLError.java:112)
+	at com.mysql.cj.jdbc.exceptions.SQLExceptionsMapping.translateException(SQLExceptionsMapping.java:114)
+	at com.mysql.cj.jdbc.StatementImpl.executeInternal(StatementImpl.java:837)
+	at com.mysql.cj.jdbc.StatementImpl.execute(StatementImpl.java:685)
+	at com.zaxxer.hikari.pool.ProxyStatement.execute(ProxyStatement.java:94)
+	at com.zaxxer.hikari.pool.HikariProxyStatement.execute(HikariProxyStatement.java)
+	at org.hibernate.tool.schema.internal.exec.GenerationTargetToDatabase.accept(GenerationTargetToDatabase.java:80)
+	... 39 common frames omitted
+2026-04-23 09:48:28.391 DEBUG [] org.hibernate.SQL - 
+    alter table member 
+       add constraint UKhh9kg6jti4n1eoiertn2k6qsc unique (nickname)
+2026-04-23 09:48:28.392 WARN  [] o.h.t.s.i.ExceptionHandlerLoggedImpl - GenerationTarget encountered exception accepting command : Error executing DDL "
+    alter table member 
+       add constraint UKhh9kg6jti4n1eoiertn2k6qsc unique (nickname)" via JDBC [Duplicate key name 'UKhh9kg6jti4n1eoiertn2k6qsc']
+org.hibernate.tool.schema.spi.CommandAcceptanceException: Error executing DDL "
+    alter table member 
+       add constraint UKhh9kg6jti4n1eoiertn2k6qsc unique (nickname)" via JDBC [Duplicate key name 'UKhh9kg6jti4n1eoiertn2k6qsc']
+	at org.hibernate.tool.schema.internal.exec.GenerationTargetToDatabase.accept(GenerationTargetToDatabase.java:94)
+	at org.hibernate.tool.schema.internal.Helper.applySqlString(Helper.java:233)
+	at org.hibernate.tool.schema.internal.Helper.applySqlStrings(Helper.java:217)
+	at org.hibernate.tool.schema.internal.SchemaCreatorImpl.createTableConstraints(SchemaCreatorImpl.java:402)
+	at org.hibernate.tool.schema.internal.SchemaCreatorImpl.createSequencesTablesConstraints(SchemaCreatorImpl.java:358)
+	at org.hibernate.tool.schema.internal.SchemaCreatorImpl.createFromMetadata(SchemaCreatorImpl.java:241)
+	at org.hibernate.tool.schema.internal.SchemaCreatorImpl.performCreation(SchemaCreatorImpl.java:174)
+	at org.hibernate.tool.schema.internal.SchemaCreatorImpl.doCreation(SchemaCreatorImpl.java:144)
+	at org.hibernate.tool.schema.internal.SchemaCreatorImpl.doCreation(SchemaCreatorImpl.java:120)
+	at org.hibernate.tool.schema.spi.SchemaManagementToolCoordinator.performDatabaseAction(SchemaManagementToolCoordinator.java:250)
+	at org.hibernate.tool.schema.spi.SchemaManagementToolCoordinator.lambda$process$5(SchemaManagementToolCoordinator.java:144)
+	at java.base/java.util.HashMap.forEach(HashMap.java:1421)
+	at org.hibernate.tool.schema.spi.SchemaManagementToolCoordinator.process(SchemaManagementToolCoordinator.java:141)
+	at org.hibernate.boot.internal.SessionFactoryObserverForSchemaExport.sessionFactoryCreated(SessionFactoryObserverForSchemaExport.java:37)
+	at org.hibernate.internal.SessionFactoryObserverChain.sessionFactoryCreated(SessionFactoryObserverChain.java:35)
+	at org.hibernate.internal.SessionFactoryImpl.<init>(SessionFactoryImpl.java:324)
+	at org.hibernate.boot.internal.SessionFactoryBuilderImpl.build(SessionFactoryBuilderImpl.java:463)
+	at org.hibernate.jpa.boot.internal.EntityManagerFactoryBuilderImpl.build(EntityManagerFactoryBuilderImpl.java:1517)
+	at org.springframework.orm.jpa.vendor.SpringHibernateJpaPersistenceProvider.createContainerEntityManagerFactory(SpringHibernateJpaPersistenceProvider.java:66)
+	at org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean.createNativeEntityManagerFactory(LocalContainerEntityManagerFactoryBean.java:390)
+	at org.springframework.orm.jpa.AbstractEntityManagerFactoryBean.buildNativeEntityManagerFactory(AbstractEntityManagerFactoryBean.java:419)
+	at org.springframework.orm.jpa.AbstractEntityManagerFactoryBean.afterPropertiesSet(AbstractEntityManagerFactoryBean.java:400)
+	at org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean.afterPropertiesSet(LocalContainerEntityManagerFactoryBean.java:366)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.invokeInitMethods(AbstractAutowireCapableBeanFactory.java:1865)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.initializeBean(AbstractAutowireCapableBeanFactory.java:1814)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.doCreateBean(AbstractAutowireCapableBeanFactory.java:607)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBean(AbstractAutowireCapableBeanFactory.java:529)
+	at org.springframework.beans.factory.support.AbstractBeanFactory.lambda$doGetBean$0(AbstractBeanFactory.java:339)
+	at org.springframework.beans.factory.support.DefaultSingletonBeanRegistry.getSingleton(DefaultSingletonBeanRegistry.java:371)
+	at org.springframework.beans.factory.support.AbstractBeanFactory.doGetBean(AbstractBeanFactory.java:337)
+	at org.springframework.beans.factory.support.AbstractBeanFactory.getBean(AbstractBeanFactory.java:207)
+	at org.springframework.context.support.AbstractApplicationContext.finishBeanFactoryInitialization(AbstractApplicationContext.java:970)
+	at org.springframework.context.support.AbstractApplicationContext.refresh(AbstractApplicationContext.java:627)
+	at org.springframework.boot.web.servlet.context.ServletWebServerApplicationContext.refresh(ServletWebServerApplicationContext.java:146)
+	at org.springframework.boot.SpringApplication.refresh(SpringApplication.java:753)
+	at org.springframework.boot.SpringApplication.refreshContext(SpringApplication.java:439)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:318)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1362)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1351)
+	at com.team6.apiserver.ApiServerApplication.main(ApiServerApplication.java:31)
+Caused by: java.sql.SQLSyntaxErrorException: Duplicate key name 'UKhh9kg6jti4n1eoiertn2k6qsc'
+	at com.mysql.cj.jdbc.exceptions.SQLError.createSQLException(SQLError.java:112)
+	at com.mysql.cj.jdbc.exceptions.SQLExceptionsMapping.translateException(SQLExceptionsMapping.java:114)
+	at com.mysql.cj.jdbc.StatementImpl.executeInternal(StatementImpl.java:837)
+	at com.mysql.cj.jdbc.StatementImpl.execute(StatementImpl.java:685)
+	at com.zaxxer.hikari.pool.ProxyStatement.execute(ProxyStatement.java:94)
+	at com.zaxxer.hikari.pool.HikariProxyStatement.execute(HikariProxyStatement.java)
+	at org.hibernate.tool.schema.internal.exec.GenerationTargetToDatabase.accept(GenerationTargetToDatabase.java:80)
+	... 39 common frames omitted
+2026-04-23 09:48:28.393 DEBUG [] org.hibernate.SQL - 
+    create index idx_payment_payer 
+       on payment (payer_id)
+2026-04-23 09:48:28.403 DEBUG [] org.hibernate.SQL - 
+    alter table payment 
+       add constraint uq_payment_unique unique (match_request_id, payment_type)
+2026-04-23 09:48:28.413 DEBUG [] org.hibernate.SQL - 
+    alter table payment 
+       add constraint UKljlo9vyedeereqhpwyr9tknqc unique (pg_order_no)
+2026-04-23 09:48:28.424 DEBUG [] org.hibernate.SQL - 
+    alter table review 
+       add constraint UKioc95svtshsmxvlxc8us5yelq unique (match_request_id)
+2026-04-23 09:48:28.433 DEBUG [] org.hibernate.SQL - 
+    alter table scrapbooks 
+       add constraint uq_scrapbook_match unique (match_request_id)
+2026-04-23 09:48:28.441 DEBUG [] org.hibernate.SQL - 
+    alter table chat_participants 
+       add constraint FKk0pkxdxk2whcy4j9lovmexvkq 
+       foreign key (chat_room_id) 
+       references chat_rooms (id)
+2026-04-23 09:48:28.505 DEBUG [] org.hibernate.SQL - 
+    alter table guide_careers 
+       add constraint fk_guide_careers_guide 
+       foreign key (guide_id) 
+       references guide_profiles (id)
+2026-04-23 09:48:28.535 DEBUG [] org.hibernate.SQL - 
+    alter table guide_feeds 
+       add constraint FKl5ncbecyap26kipe8hbrrv259 
+       foreign key (guide_id) 
+       references guide_profiles (id)
+2026-04-23 09:48:28.566 DEBUG [] org.hibernate.SQL - 
+    alter table guide_images 
+       add constraint fk_guide_images_guide 
+       foreign key (guide_id) 
+       references guide_profiles (id)
+2026-04-23 09:48:28.599 DEBUG [] org.hibernate.SQL - 
+    alter table guide_schedules 
+       add constraint FK9a3cimgvlpika296h0fkluqbl 
+       foreign key (guide_id) 
+       references guide_profiles (id)
+2026-04-23 09:48:28.635 DEBUG [] org.hibernate.SQL - 
+    alter table payment 
+       add constraint fk_payment_match_req 
+       foreign key (match_request_id) 
+       references match_request (id)
+2026-04-23 09:48:28.681 DEBUG [] org.hibernate.SQL - 
+    alter table refund 
+       add constraint fk_refund_payment 
+       foreign key (payment_id) 
+       references payment (id)
+2026-04-23 09:48:28.720 DEBUG [] org.hibernate.SQL - 
+    alter table review 
+       add constraint FKk0ccx5i4ci2wd70vegug074w1 
+       foreign key (member_id) 
+       references member (id)
+2026-04-23 09:48:28.753 DEBUG [] org.hibernate.SQL - 
+    alter table tour_extension 
+       add constraint fk_extension_match_req 
+       foreign key (match_request_id) 
+       references match_request (id)
+2026-04-23 09:48:28.794 INFO  [] o.s.o.j.LocalContainerEntityManagerFactoryBean - Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-04-23 09:48:29.986 INFO  [] o.s.d.j.r.query.QueryEnhancerFactory - Hibernate is in classpath; If applicable, HQL parser will be used.
+2026-04-23 09:48:31.451 INFO  [] org.mongodb.driver.client - MongoClient with metadata {"driver": {"name": "mongo-java-driver|sync|spring-boot", "version": "5.2.1"}, "os": {"type": "Windows", "name": "Windows 11", "architecture": "amd64", "version": "10.0"}, "platform": "Java/Amazon.com Inc./17.0.18+9-LTS"} created with settings MongoClientSettings{readPreference=primary, writeConcern=WriteConcern{w=null, wTimeout=null ms, journal=null}, retryWrites=true, retryReads=true, readConcern=ReadConcern{level=null}, credential=null, transportSettings=null, commandListeners=[io.micrometer.core.instrument.binder.mongodb.MongoMetricsCommandListener@2563d994], codecRegistry=ProvidersCodecRegistry{codecProviders=[ValueCodecProvider{}, BsonValueCodecProvider{}, DBRefCodecProvider{}, DBObjectCodecProvider{}, DocumentCodecProvider{}, CollectionCodecProvider{}, IterableCodecProvider{}, MapCodecProvider{}, GeoJsonCodecProvider{}, GridFSFileCodecProvider{}, Jsr310CodecProvider{}, JsonObjectCodecProvider{}, BsonCodecProvider{}, EnumCodecProvider{}, com.mongodb.client.model.mql.ExpressionCodecProvider@43900101, com.mongodb.Jep395RecordCodecProvider@57c09e37, com.mongodb.KotlinCodecProvider@cb02e46]}, loggerSettings=LoggerSettings{maxDocumentLength=1000}, clusterSettings={hosts=[localhost:27017], srvServiceName=mongodb, mode=SINGLE, requiredClusterType=UNKNOWN, requiredReplicaSetName='null', serverSelector='null', clusterListeners='[]', serverSelectionTimeout='30000 ms', localThreshold='15 ms'}, socketSettings=SocketSettings{connectTimeoutMS=10000, readTimeoutMS=0, receiveBufferSize=0, proxySettings=ProxySettings{host=null, port=null, username=null, password=null}}, heartbeatSocketSettings=SocketSettings{connectTimeoutMS=10000, readTimeoutMS=10000, receiveBufferSize=0, proxySettings=ProxySettings{host=null, port=null, username=null, password=null}}, connectionPoolSettings=ConnectionPoolSettings{maxSize=100, minSize=0, maxWaitTimeMS=120000, maxConnectionLifeTimeMS=0, maxConnectionIdleTimeMS=0, maintenanceInitialDelayMS=0, maintenanceFrequencyMS=60000, connectionPoolListeners=[io.micrometer.core.instrument.binder.mongodb.MongoMetricsConnectionPoolListener@6f99ed9f], maxConnecting=2}, serverSettings=ServerSettings{heartbeatFrequencyMS=10000, minHeartbeatFrequencyMS=500, serverMonitoringMode=AUTO, serverListeners='[]', serverMonitorListeners='[]'}, sslSettings=SslSettings{enabled=false, invalidHostNameAllowed=false, context=null}, applicationName='null', compressorList=[], uuidRepresentation=JAVA_LEGACY, serverApi=null, autoEncryptionSettings=null, dnsClient=null, inetAddressResolver=null, contextProvider=null, timeoutMS=null}
+2026-04-23 09:48:31.464 INFO  [] org.mongodb.driver.cluster - Monitor thread successfully connected to server with description ServerDescription{address=localhost:27017, type=STANDALONE, cryptd=false, state=CONNECTED, ok=true, minWireVersion=0, maxWireVersion=27, maxDocumentSize=16777216, logicalSessionTimeoutMinutes=30, roundTripTimeNanos=28186400, minRoundTripTimeNanos=0}
+2026-04-23 09:48:32.098 WARN  [] o.s.b.a.o.j.JpaBaseConfiguration$JpaWebConfiguration - spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-04-23 09:48:32.619 INFO  [] o.s.b.a.e.web.EndpointLinksResolver - Exposing 1 endpoint beneath base path '/actuator'
+2026-04-23 09:48:32.781 WARN  [] o.s.s.c.a.web.builders.WebSecurity - You are asking Spring Security to ignore Deferred [Mvc [pattern='/actuator/**'], Ant [pattern='/actuator/**']]. This is not recommended -- please use permitAll via HttpSecurity#authorizeHttpRequests instead.
+2026-04-23 09:48:32.781 WARN  [] o.s.s.c.a.web.builders.WebSecurity - You are asking Spring Security to ignore Deferred [Mvc [pattern='/api/actuator/**'], Ant [pattern='/api/actuator/**']]. This is not recommended -- please use permitAll via HttpSecurity#authorizeHttpRequests instead.
+2026-04-23 09:48:32.781 WARN  [] o.s.s.c.a.web.builders.WebSecurity - You are asking Spring Security to ignore Deferred [Mvc [pattern='/v3/api-docs/**'], Ant [pattern='/v3/api-docs/**']]. This is not recommended -- please use permitAll via HttpSecurity#authorizeHttpRequests instead.
+2026-04-23 09:48:32.781 WARN  [] o.s.s.c.a.web.builders.WebSecurity - You are asking Spring Security to ignore Deferred [Mvc [pattern='/swagger-ui/**'], Ant [pattern='/swagger-ui/**']]. This is not recommended -- please use permitAll via HttpSecurity#authorizeHttpRequests instead.
+2026-04-23 09:48:32.781 WARN  [] o.s.s.c.a.web.builders.WebSecurity - You are asking Spring Security to ignore Deferred [Mvc [pattern='/api/v3/api-docs/**'], Ant [pattern='/api/v3/api-docs/**']]. This is not recommended -- please use permitAll via HttpSecurity#authorizeHttpRequests instead.
+2026-04-23 09:48:32.781 WARN  [] o.s.s.c.a.web.builders.WebSecurity - You are asking Spring Security to ignore Deferred [Mvc [pattern='/api/swagger-ui/**'], Ant [pattern='/api/swagger-ui/**']]. This is not recommended -- please use permitAll via HttpSecurity#authorizeHttpRequests instead.
+2026-04-23 09:48:33.464 INFO  [] o.s.m.s.b.SimpleBrokerMessageHandler - Starting...
+2026-04-23 09:48:33.464 INFO  [] o.s.m.s.b.SimpleBrokerMessageHandler - BrokerAvailabilityEvent[available=true, SimpleBrokerMessageHandler [org.springframework.messaging.simp.broker.DefaultSubscriptionRegistry@287f0369]]
+2026-04-23 09:48:33.464 INFO  [] o.s.m.s.b.SimpleBrokerMessageHandler - Started.
+2026-04-23 09:48:33.465 INFO  [] o.a.coyote.http11.Http11NioProtocol - Starting ProtocolHandler ["http-nio-8080"]
+2026-04-23 09:48:33.491 INFO  [] o.s.b.w.e.tomcat.TomcatWebServer - Tomcat started on port 8080 (http) with context path '/api'
+2026-04-23 09:48:33.947 INFO  [] c.t.apiserver.ApiServerApplication - Started ApiServerApplication in 11.664 seconds (process running for 12.218)
+2026-04-23 09:48:34.578 INFO  [] o.a.c.c.C.[.[localhost].[/api] - Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-04-23 09:48:34.578 INFO  [] o.s.web.servlet.DispatcherServlet - Initializing Servlet 'dispatcherServlet'
+2026-04-23 09:48:34.581 INFO  [] o.s.web.servlet.DispatcherServlet - Completed initialization in 3 ms
+2026-04-23 09:48:56.529 DEBUG [7c780894] org.hibernate.SQL - 
+    /* <criteria> */ select
+        gp1_0.id,
+        gp1_0.average_rating,
+        gp1_0.bio,
+        gp1_0.created_at,
+        gp1_0.default_course,
+        gp1_0.guide_style,
+        gp1_0.is_active,
+        gp1_0.is_approved,
+        gp1_0.keywords,
+        gp1_0.language,
+        gp1_0.local_story,
+        gp1_0.member_id,
+        gp1_0.nickname,
+        gp1_0.price_per_hour,
+        gp1_0.profile_image,
+        gp1_0.region,
+        gp1_0.residence_years,
+        gp1_0.review_count,
+        gp1_0.updated_at 
+    from
+        guide_profiles gp1_0 
+    where
+        gp1_0.is_approved 
+        and gp1_0.is_active
+2026-04-23 09:48:56.576 INFO  [7fa1b3bc] c.t.a.logging.MdcLoggingFilter - [HTTP] 요청 완료 - statusCode: 401, latencyMs: 257, requestUri: /api/matching/requests/guide/list, method: GET
+2026-04-23 09:48:56.595 INFO  [e7ecb629] c.t.a.logging.MdcLoggingFilter - [HTTP] 요청 완료 - statusCode: 401, latencyMs: 6, requestUri: /api/matching/requests/guide/list, method: GET
+2026-04-23 09:48:56.657 INFO  [7c780894] c.t.a.logging.MdcLoggingFilter - [HTTP] 요청 완료 - statusCode: 200, latencyMs: 339, requestUri: /api/guides, method: GET
+2026-04-23 09:48:56.664 DEBUG [70c8d14e] org.hibernate.SQL - 
+    /* <criteria> */ select
+        gp1_0.id,
+        gp1_0.average_rating,
+        gp1_0.bio,
+        gp1_0.created_at,
+        gp1_0.default_course,
+        gp1_0.guide_style,
+        gp1_0.is_active,
+        gp1_0.is_approved,
+        gp1_0.keywords,
+        gp1_0.language,
+        gp1_0.local_story,
+        gp1_0.member_id,
+        gp1_0.nickname,
+        gp1_0.price_per_hour,
+        gp1_0.profile_image,
+        gp1_0.region,
+        gp1_0.residence_years,
+        gp1_0.review_count,
+        gp1_0.updated_at 
+    from
+        guide_profiles gp1_0 
+    where
+        gp1_0.is_approved 
+        and gp1_0.is_active
+2026-04-23 09:48:56.669 INFO  [70c8d14e] c.t.a.logging.MdcLoggingFilter - [HTTP] 요청 완료 - statusCode: 200, latencyMs: 10, requestUri: /api/guides, method: GET
+2026-04-23 09:49:00.024 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 09:49:00.026 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 09:49:00.026 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T09:49:00.011624600]
+2026-04-23 09:49:14.996 DEBUG [12d51a3a] org.hibernate.SQL - 
+    /* <criteria> */ select
+        gp1_0.id,
+        gp1_0.average_rating,
+        gp1_0.bio,
+        gp1_0.created_at,
+        gp1_0.default_course,
+        gp1_0.guide_style,
+        gp1_0.is_active,
+        gp1_0.is_approved,
+        gp1_0.keywords,
+        gp1_0.language,
+        gp1_0.local_story,
+        gp1_0.member_id,
+        gp1_0.nickname,
+        gp1_0.price_per_hour,
+        gp1_0.profile_image,
+        gp1_0.region,
+        gp1_0.residence_years,
+        gp1_0.review_count,
+        gp1_0.updated_at 
+    from
+        guide_profiles gp1_0 
+    where
+        gp1_0.is_approved 
+        and gp1_0.is_active
+2026-04-23 09:49:14.999 INFO  [12d51a3a] c.t.a.logging.MdcLoggingFilter - [HTTP] 요청 완료 - statusCode: 200, latencyMs: 7, requestUri: /api/guides, method: GET
+2026-04-23 09:49:15.006 DEBUG [b568eb53] org.hibernate.SQL - 
+    /* <criteria> */ select
+        gp1_0.id,
+        gp1_0.average_rating,
+        gp1_0.bio,
+        gp1_0.created_at,
+        gp1_0.default_course,
+        gp1_0.guide_style,
+        gp1_0.is_active,
+        gp1_0.is_approved,
+        gp1_0.keywords,
+        gp1_0.language,
+        gp1_0.local_story,
+        gp1_0.member_id,
+        gp1_0.nickname,
+        gp1_0.price_per_hour,
+        gp1_0.profile_image,
+        gp1_0.region,
+        gp1_0.residence_years,
+        gp1_0.review_count,
+        gp1_0.updated_at 
+    from
+        guide_profiles gp1_0 
+    where
+        gp1_0.is_approved 
+        and gp1_0.is_active
+2026-04-23 09:49:15.009 INFO  [b568eb53] c.t.a.logging.MdcLoggingFilter - [HTTP] 요청 완료 - statusCode: 200, latencyMs: 6, requestUri: /api/guides, method: GET
+2026-04-23 09:49:33.441 INFO  [] o.s.w.s.c.WebSocketMessageBrokerStats - WebSocketSession[0 current WS(0)-HttpStream(0)-HttpPoll(0), 0 total, 0 closed abnormally (0 connect failure, 0 send limit, 0 transport error)], stompSubProtocol[processed CONNECT(0)-CONNECTED(0)-DISCONNECT(0)], stompBrokerRelay[null], inboundChannel[pool size = 0, active threads = 0, queued tasks = 0, completed tasks = 0], outboundChannel[pool size = 0, active threads = 0, queued tasks = 0, completed tasks = 0], sockJsScheduler[pool size = 5, active threads = 1, queued tasks = 2, completed tasks = 2]
+2026-04-23 09:50:00.008 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 09:50:00.009 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 09:50:00.009 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T09:50:00.007127200]
+2026-04-23 09:51:00.014 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 09:51:00.015 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 09:51:00.015 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T09:51:00.013710500]
+2026-04-23 09:52:00.005 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 09:52:00.006 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 09:52:00.006 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T09:52:00.004987200]
+2026-04-23 09:53:00.016 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 09:53:00.017 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 09:53:00.017 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T09:53:00.015855]
+2026-04-23 09:54:00.006 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 09:54:00.006 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 09:54:00.006 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T09:54:00.004688900]
+2026-04-23 09:55:00.006 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 09:55:00.007 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 09:55:00.007 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T09:55:00.005215800]
+2026-04-23 09:56:00.011 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 09:56:00.012 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 09:56:00.012 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T09:56:00.010781700]
+2026-04-23 09:57:00.003 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 09:57:00.004 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 09:57:00.004 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T09:57:00.002022700]
+2026-04-23 09:58:00.012 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 09:58:00.012 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 09:58:00.012 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T09:58:00.011717]
+2026-04-23 09:59:00.017 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 09:59:00.018 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 09:59:00.018 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T09:59:00.017195700]
+2026-04-23 10:00:00.006 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 10:00:00.006 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 10:00:00.006 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T10:00:00.004037600]
+2026-04-23 10:01:00.014 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 10:01:00.014 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 10:01:00.014 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T10:01:00.013134400]
+2026-04-23 10:02:00.003 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 10:02:00.003 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 10:02:00.003 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T10:02:00.001265100]
+2026-04-23 10:03:00.005 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 10:03:00.005 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 10:03:00.005 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T10:03:00.002653300]
+2026-04-23 10:04:00.009 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 10:04:00.009 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 10:04:00.009 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T10:04:00.008383300]
+2026-04-23 10:05:00.015 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 10:05:00.016 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 10:05:00.016 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T10:05:00.014662900]
+2026-04-23 10:06:00.008 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 10:06:00.009 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 10:06:00.009 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T10:06:00.006872700]
+2026-04-23 10:07:00.012 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 10:07:00.013 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 10:07:00.013 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T10:07:00.012344]
+2026-04-23 10:08:00.015 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 10:08:00.015 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 10:08:00.015 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T10:08:00.014469200]
+2026-04-23 10:09:00.010 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 10:09:00.011 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 10:09:00.011 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T10:09:00.009636100]
+2026-04-23 10:10:00.014 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 10:10:00.014 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 10:10:00.014 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T10:10:00.012886200]
+2026-04-23 10:11:00.003 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 10:11:00.003 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 10:11:00.003 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T10:11:00.002809200]
+2026-04-23 10:12:00.005 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 10:12:00.005 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 10:12:00.005 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T10:12:00.004681600]
+2026-04-23 10:13:00.013 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 10:13:00.013 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 10:13:00.013 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T10:13:00.012361]
+2026-04-23 10:14:00.007 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 10:14:00.007 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 10:14:00.007 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T10:14:00.006814]
+2026-04-23 10:15:00.004 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 10:15:00.004 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 10:15:00.004 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T10:15:00.002613800]
+2026-04-23 10:16:00.004 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 10:16:00.005 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 10:16:00.005 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T10:16:00.003125900]
+2026-04-23 10:17:00.016 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 10:17:00.017 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 10:17:00.017 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T10:17:00.015066900]
+2026-04-23 10:18:00.002 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 10:18:00.002 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 10:18:00.003 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T10:18:00.001646400]
