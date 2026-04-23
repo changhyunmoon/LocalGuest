@@ -20,12 +20,22 @@ import com.team6.module.ai.policy.RegionMatchPolicy;
 import com.team6.module.ai.policy.StyleMatchPolicy;
 import com.team6.module.ai.support.AiRecommendationMetrics;
 import com.team6.module.ai.support.AiRecommendationTuning;
+import com.team6.module.ai.spi.LlmPromptExtractor;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 class PromptRecommendationServiceTest {
 
@@ -162,5 +172,64 @@ class PromptRecommendationServiceTest {
                 RecommendationNoticeCodes.SPARSE_GUIDE_POOL
         );
         assertThat(response.getRecommendations().get(0).getGuideId()).isEqualTo(99L);
+    }
+
+    @Test
+    void recommendByPrompt_whenLlmEnabled_truncatesPromptSentToExtractor() {
+        LlmPromptExtractor extractor = mock(LlmPromptExtractor.class);
+        when(extractor.tryExtract(anyString(), anyInt(), any())).thenReturn(Optional.empty());
+
+        SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
+        LocalGuestAiProperties aiProps = new LocalGuestAiProperties();
+        aiProps.setLlmPromptExtractionEnabled(true);
+        aiProps.setLlmPromptMaxChars(4);
+        ScoringPolicySnapshot scoring = ScoringPolicySnapshot.defaults();
+        AdjacentRegionProvider adjacent = new AdjacentRegionProvider(aiProps);
+        AiRecommendationMetrics metrics = new AiRecommendationMetrics(meterRegistry);
+        ScoreCalculator scoreCalculator = new ScoreCalculator(
+                new RegionMatchPolicy(adjacent, scoring),
+                new StyleMatchPolicy(scoring),
+                new BudgetMatchPolicy(scoring),
+                new ActivityMatchPolicy(scoring),
+                new LanguageMatchPolicy(scoring),
+                new FeedbackMatchPolicy(scoring),
+                new ComboMatchPolicy(scoring),
+                metrics
+        );
+        ReasonGenerator reasonGenerator = new ReasonGenerator(adjacent, scoring);
+        AiRecommendationService aiRecommendationService =
+                new AiRecommendationServiceImpl(
+                        new MatchingEngine(scoreCalculator, reasonGenerator, adjacent, DiversityRerankSnapshot.defaults(),
+                                metrics, scoring));
+
+        PromptRecommendationService service = new PromptRecommendationService(
+                new PromptParser(aiProps),
+                aiRecommendationService,
+                adjacent,
+                metrics,
+                scoring,
+                aiProps,
+                extractor
+        );
+
+        service.recommendByPrompt(
+                "제주도여행가고싶어",
+                2,
+                List.of(
+                        GuideRecommendRequest.GuideCandidateDto.builder()
+                                .guideId(1L)
+                                .guideName("가")
+                                .region("제주")
+                                .guideStyle("감성")
+                                .priceLevel("중간")
+                                .specialtyTags(List.of("카페"))
+                                .languages(List.of("한국어"))
+                                .build()
+                )
+        );
+
+        ArgumentCaptor<String> promptSent = ArgumentCaptor.forClass(String.class);
+        verify(extractor).tryExtract(promptSent.capture(), eq(2), any());
+        assertThat(promptSent.getValue()).isEqualTo("제주도여");
     }
 }
