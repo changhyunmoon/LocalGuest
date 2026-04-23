@@ -105,7 +105,7 @@ public final class ConceptSummaryGenerator {
         }
         if (StringUtils.hasText(specialRequests)) {
             if (sb.length() > 0) {
-                sb.append("\n\n");
+                sb.append('\n');
             }
             sb.append(specialRequests.trim());
         }
