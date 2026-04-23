@@ -33,6 +33,18 @@ const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토']
 const WEEKDAYS_SHORT = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT']
 const MONTHS_KO = ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월']
 
+function addDaysKey(key, deltaDays) {
+  if (!key) return null
+  try {
+    const base = new Date(`${String(key)}T00:00:00`)
+    if (Number.isNaN(base.getTime())) return null
+    base.setDate(base.getDate() + Number(deltaDays || 0))
+    return ymd(base)
+  } catch {
+    return null
+  }
+}
+
 function getDayStatus(dayKey, scheduleByDate, blockedDates) {
   if (blockedDates.has(dayKey)) return 'blocked'
   const daySchedules = scheduleByDate.get(dayKey) ?? []
@@ -386,6 +398,19 @@ export function GuideScheduleSection({
     return map
   }, [schedules, pendingSchedules])
 
+  /** 같은 matchRequestId의 연속 PENDING을 캘린더에서 범위로 표시 */
+  const pendingGroupByDate = useMemo(() => {
+    const map = new Map()
+    for (const [dateKey, list] of scheduleByDate.entries()) {
+      if (!dateKey || !Array.isArray(list) || list.length === 0) continue
+      const pending = list.find((s) => String(s?.status ?? '').toUpperCase() === 'PENDING' && s?.matchRequestId != null)
+      if (pending?.matchRequestId != null) {
+        map.set(dateKey, String(pending.matchRequestId))
+      }
+    }
+    return map
+  }, [scheduleByDate])
+
   const monthKey = `${calendarMonth.getFullYear()}-${String(calendarMonth.getMonth() + 1).padStart(2, '0')}`
   const thisMonthBooked = mergedSchedules.filter((s) => s.availableDate?.startsWith(monthKey) && s.status === 'BOOKED').length
   const thisMonthPending = pendingSchedules.filter((s) => s.availableDate?.startsWith(monthKey)).length
@@ -541,6 +566,17 @@ export function GuideScheduleSection({
               else if (status === 'neutral') cls += ' gss3-day--neutral'
             }
             if (isSelected && key != null) cls += ' gss3-day--selected'
+
+            if (key && cell.inMonth && !past && status === 'pending') {
+              const gid = pendingGroupByDate.get(key) ?? null
+              if (gid) {
+                const prev = pendingGroupByDate.get(addDaysKey(key, -1))
+                const next = pendingGroupByDate.get(addDaysKey(key, 1))
+                if (prev === gid || next === gid) cls += ' gss3-day--range'
+                if (prev !== gid) cls += ' gss3-day--range-start'
+                if (next !== gid) cls += ' gss3-day--range-end'
+              }
+            }
 
             return (
               <button

@@ -3513,6 +3513,26 @@
   font-weight: 700;
 }
 
+/* 연속 PENDING(같은 매칭 요청) — 범위처럼 연결 */
+.gss3-cal-grid .gss3-day--pending.gss3-day--range {
+  background: rgba(250, 204, 21, 0.22);
+}
+
+.gss3-cal-grid .gss3-day--pending.gss3-day--range-start,
+.gss3-cal-grid .gss3-day--pending.gss3-day--range-end {
+  background: #fffbeb;
+}
+
+.gss3-cal-grid .gss3-day--pending.gss3-day--range-start {
+  border-top-left-radius: 999px;
+  border-bottom-left-radius: 999px;
+}
+
+.gss3-cal-grid .gss3-day--pending.gss3-day--range-end {
+  border-top-right-radius: 999px;
+  border-bottom-right-radius: 999px;
+}
+
 .gss3-cal-grid .gss3-day--blocked {
   background: #f8fafc;
   border-color: #e5e7eb;
