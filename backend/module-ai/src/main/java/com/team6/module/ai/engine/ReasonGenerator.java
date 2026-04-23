@@ -44,6 +44,12 @@ public class ReasonGenerator {
             "지역 조건이 그대로 맞아 떨어집니다"
     );
 
+    private static final List<String> COPY_REGION_EXACT_ROMANTIC = List.of(
+            "{region}에서 분위기 있는 코스를 원하신다면 잘 맞아요",
+            "{region} 감성 여행에 어울리는 지역 가이드입니다",
+            "{region}에서 낭만적인 동선으로 즐기기 좋아요"
+    );
+
     private static final List<String> COPY_REGION_ADJACENT = List.of(
             "희망 지역과 인접한 지역에서 활동합니다",
             "바로 옆 지역(인접)에서 안내 가능합니다",
@@ -162,17 +168,25 @@ public class ReasonGenerator {
         List<Segment> segments = new ArrayList<>();
 
         if (safeEquals(pref.getRegion(), guide.getRegion())) {
+            String shell = pickVariant(
+                    seed,
+                    CODE_REGION_MATCH,
+                    isRomanticStyle(pref.getTravelStyle()) ? COPY_REGION_EXACT_ROMANTIC : COPY_REGION_EXACT
+            );
+            String display = shell.replace("{region}", safeToken(guide.getRegion()));
             segments.add(new Segment(
                     CODE_REGION_MATCH,
                     RecommendReasonEvidenceSlots.REGION,
-                    pickVariant(seed, CODE_REGION_MATCH, COPY_REGION_EXACT),
+                    display,
                     listNonNull(guide.getRegion())
             ));
         } else if (adjacentRegionProvider.isAdjacentTo(pref.getRegion(), guide.getRegion())) {
+            String shell = pickVariant(seed, CODE_REGION_ADJACENT, COPY_REGION_ADJACENT);
+            String display = shell.replace("{region}", safeToken(guide.getRegion()));
             segments.add(new Segment(
                     CODE_REGION_ADJACENT,
                     RecommendReasonEvidenceSlots.REGION_ADJACENT,
-                    pickVariant(seed, CODE_REGION_ADJACENT, COPY_REGION_ADJACENT),
+                    display,
                     listNonNull(guide.getRegion())
             ));
         }
@@ -316,6 +330,21 @@ public class ReasonGenerator {
      */
     private static long variantSeed(GuideAiProfile guide) {
         return guide != null && guide.getGuideId() != null ? guide.getGuideId() : 0L;
+    }
+
+    private static boolean isRomanticStyle(String travelStyle) {
+        if (travelStyle == null) {
+            return false;
+        }
+        String s = travelStyle.replace(" ", "");
+        return s.contains("감성")
+                || s.contains("낭만")
+                || s.contains("로맨틱")
+                || s.contains("힐링");
+    }
+
+    private static String safeToken(String s) {
+        return (s == null || s.isBlank()) ? "해당 지역" : s;
     }
 
     private static String pickVariant(long seed, String code, List<String> options) {
