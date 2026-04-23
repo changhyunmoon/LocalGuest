@@ -63,6 +63,8 @@ public class SecurityConfig {
                         .requestMatchers("/login/**").permitAll()
                         // 가이드 조회 API만 공개, 변경 API는 인증 필요
                         .requestMatchers(HttpMethod.GET, "/guides/**").permitAll()
+                        // AI 프롬프트 추천: 비로그인 탐색 후 로그인 유도(매칭 등은 별도 인증)
+                        .requestMatchers(HttpMethod.POST, "/ai/recommend", "/api/ai/recommend").permitAll()
                         // Swagger UI + OpenAPI (springdoc). context-path 사용 시 환경에 따라 둘 다 허용
                         .requestMatchers(
                                 "/v3/api-docs",
