@@ -1,4 +1,4 @@
-package com.team6.module.openai.prompt;
+package com.team6.module.ai.llm;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Getter;

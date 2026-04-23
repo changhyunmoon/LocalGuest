@@ -1,0 +1,19 @@
+/**
+ * Google AI Studio(Gemini) REST API로 {@link com.team6.module.ai.spi.LlmPromptExtractor}를 제공한다.
+ * <p>Spring AI Vertex 모듈 대신 API 키만으로 부팅 가능한 최소 RestClient 구현을 쓴다.
+ */
+dependencies {
+    implementation project(':module-ai')
+
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter'
+
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+bootJar { enabled = false }
+jar { enabled = true }
