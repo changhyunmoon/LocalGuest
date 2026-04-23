@@ -36,4 +36,8 @@ public class LlmGuideRecommendJson {
     private List<String> excludedTravelStyles;
     private List<String> excludedLanguages;
     private List<String> softPenaltyActivityTags;
+    /** 가이드에게 보여줄 짧은 불릿(반말 한 줄씩). */
+    private List<String> guideBullets;
+    /** 특별 요청 등 문단으로 전달할 내용. */
+    private String specialRequests;
 }
