@@ -73,7 +73,8 @@ function formatDesiredDateRange(start, days) {
     const yyyy = end.getFullYear()
     const mm = String(end.getMonth() + 1).padStart(2, '0')
     const dd = String(end.getDate()).padStart(2, '0')
-    return `${s} ~ ${yyyy}-${mm}-${dd}`
+    const endKey = `${yyyy}-${mm}-${dd}`
+    return { start: s, end: endKey }
   } catch {
     return s
   }
@@ -324,13 +325,23 @@ export function GuideCourseEditorPage() {
             </div>
             <div className="gce-guest-item">
               <span className="gce-label">희망 일정</span>
-              <span className="gce-value">
-                {formatDesiredDateRange(
+              {(() => {
+                const range = formatDesiredDateRange(
                   matchRow.desiredDate,
                   inferDurationDaysFromText(matchRow.conceptSummary) ??
                     inferDurationDaysFromText(matchRow.concept),
-                )}
-              </span>
+                )
+                if (range && typeof range === 'object') {
+                  return (
+                    <span className="gce-value gce-value--date-range">
+                      <span>{range.start}</span>
+                      <span className="gce-date-range-sep">~</span>
+                      <span>{range.end}</span>
+                    </span>
+                  )
+                }
+                return <span className="gce-value">{range}</span>
+              })()}
             </div>
             <div className="gce-guest-item">
               <span className="gce-label">목적지</span>
