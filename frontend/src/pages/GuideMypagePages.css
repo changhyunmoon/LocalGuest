@@ -3515,12 +3515,13 @@
 
 /* 연속 PENDING(같은 매칭 요청) — 범위처럼 연결 */
 .gss3-cal-grid .gss3-day--pending.gss3-day--range {
-  background: rgba(250, 204, 21, 0.22);
+  background: transparent;
+  border-color: transparent;
 }
 
 .gss3-cal-grid .gss3-day--pending.gss3-day--range-start,
 .gss3-cal-grid .gss3-day--pending.gss3-day--range-end {
-  background: #fffbeb;
+  background: transparent;
 }
 
 .gss3-cal-grid .gss3-day--pending.gss3-day--range-start {
@@ -3531,6 +3532,35 @@
 .gss3-cal-grid .gss3-day--pending.gss3-day--range-end {
   border-top-right-radius: 999px;
   border-bottom-right-radius: 999px;
+}
+
+.gss3-cal-grid .gss3-day--pending.gss3-day--range::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 6px;
+  bottom: 6px;
+  background: rgba(250, 204, 21, 0.22);
+  z-index: 0;
+}
+
+.gss3-cal-grid .gss3-day--pending.gss3-day--range-start::before {
+  left: 6px;
+  border-top-left-radius: 999px;
+  border-bottom-left-radius: 999px;
+}
+
+.gss3-cal-grid .gss3-day--pending.gss3-day--range-end::before {
+  right: 6px;
+  border-top-right-radius: 999px;
+  border-bottom-right-radius: 999px;
+}
+
+.gss3-cal-grid .gss3-day--pending.gss3-day--range-start.gss3-day--range-end::before {
+  left: 6px;
+  right: 6px;
+  border-radius: 999px;
 }
 
 .gss3-cal-grid .gss3-day--blocked {
