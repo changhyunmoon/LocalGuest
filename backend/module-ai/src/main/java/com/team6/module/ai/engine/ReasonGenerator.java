@@ -39,9 +39,9 @@ public class ReasonGenerator {
     public static final String CODE_FEEDBACK_VERY_LOW_RATING = "FEEDBACK_VERY_LOW_RATING";
 
     private static final List<String> COPY_REGION_EXACT = List.of(
-            "희망 지역과 가이드 활동 지역이 동일합니다",
-            "요청하신 지역에서 활동 중인 가이드입니다",
-            "지역 조건이 그대로 맞아 떨어집니다"
+            "{region}에서 안내 가능한 가이드예요",
+            "요청하신 {region}에서 활동 중인 가이드입니다",
+            "{region} 중심으로 동선을 잡기 좋아요"
     );
 
     private static final List<String> COPY_REGION_EXACT_ROMANTIC = List.of(
@@ -51,9 +51,9 @@ public class ReasonGenerator {
     );
 
     private static final List<String> COPY_REGION_ADJACENT = List.of(
-            "희망 지역과 인접한 지역에서 활동합니다",
-            "바로 옆 지역(인접)에서 안내 가능합니다",
-            "인접 지역 기준으로 추렸습니다"
+            "희망하신 지역과 가까운 곳에서 활동합니다({region})",
+            "{region} 근처에서 안내 가능해요(인접 지역)",
+            "요청 지역과 인접한 활동 지역 기준으로 추렸습니다({region})"
     );
 
     private static final List<String> COPY_ACTIVITY = List.of(
