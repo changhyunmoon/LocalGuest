@@ -454,7 +454,7 @@ export function GuideMatchOptionsPage() {
           ← 가이드 프로필
         </Link>
         <Link to="/mypage/itinerary" className="gmo-back gmo-back--pill gmo-back--line">
-          앞으로의 여행 일정
+          다가오는 로컬 동행
         </Link>
       </div>
       <p className="gmo-kicker" role="text">

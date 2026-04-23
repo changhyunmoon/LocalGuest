@@ -27,7 +27,6 @@ function AppLayoutInner() {
   const { isAuthenticated, email, isGuide, logout } = useAuth()
   const { pendingCount } = useGuidePendingRequests()
   const guideMypageActive = isGuide && pathname.startsWith('/guide/mypage')
-  const guestItineraryActive = !isGuide && pathname.startsWith('/mypage/itinerary')
   const matchComplete = isGuidesMatchCompletePath(pathname)
   const focusMode = pathname.startsWith('/auth/signup') || pathname.startsWith('/onboarding')
   const baseTitleRef = useRef(typeof document !== 'undefined' ? document.title : 'LocalGuest')
@@ -78,12 +77,12 @@ function AppLayoutInner() {
           </NavLink>
           {!isGuide && (
             <NavLink to="/mypage/scrapbook" className={pillClass()}>
-              나의 여행 기록
+              스크랩북
             </NavLink>
           )}
           {!isGuide && (
             <NavLink to="/mypage/itinerary" className={pillClass('shell-pill-link--cta')}>
-              앞으로의 여행 일정
+              다가오는 로컬 동행
             </NavLink>
           )}
           {isGuide && (
@@ -109,9 +108,7 @@ function AppLayoutInner() {
               <NavLink
                 to={isGuide ? '/guide/mypage/profile' : '/mypage'}
                 className={({ isActive }) => {
-                  const on = isGuide
-                    ? guideMypageActive || matchComplete
-                    : (isActive || matchComplete) && !guestItineraryActive
+                  const on = isGuide ? guideMypageActive || matchComplete : isActive || matchComplete
                   const parts = ['shell-btn', 'shell-btn--ghost']
                   if (on) parts.push('shell-btn--dark')
                   return parts.join(' ')
