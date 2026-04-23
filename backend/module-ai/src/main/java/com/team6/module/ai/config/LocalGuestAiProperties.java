@@ -62,6 +62,24 @@ public class LocalGuestAiProperties {
      */
     private DiversityRerankSettings diversityRerank = new DiversityRerankSettings();
 
+    /**
+     * {@code true}이면 {@link com.team6.module.ai.spi.LlmPromptExtractor} 빈이 있을 때 LLM 추출을 시도한다.
+     * empty·예외 시에는 항상 룰 기반 파서로 폴백한다({@code localguest.ai.llm-prompt-extraction-enabled}).
+     */
+    private boolean llmPromptExtractionEnabled = false;
+
+    /**
+     * LLM 백엔드. {@code openai}(기본)는 {@code module-openai}, {@code gemini}는 {@code module-gemini}(Google AI Studio API 키).
+     * {@code localguest.ai.llm-provider}
+     */
+    private String llmProvider = "openai";
+
+    /**
+     * LLM 프롬프트 추출에 넘기는 사용자 원문 최대 길이(Java {@link String#length()} 기준). 초과분은 잘린다.
+     * {@code localguest.ai.llm-prompt-max-chars}, 기본 6000. 0 이하이면 제한 없음.
+     */
+    private int llmPromptMaxChars = 6000;
+
     @Getter
     @Setter
     public static class ParserSettings {

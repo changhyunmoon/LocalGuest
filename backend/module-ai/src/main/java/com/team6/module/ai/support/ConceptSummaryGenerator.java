@@ -2,6 +2,7 @@ package com.team6.module.ai.support;
 
 import com.team6.module.ai.dto.request.GuideRecommendRequest;
 import com.team6.module.ai.parser.KeywordNormalizer;
+import org.springframework.util.StringUtils;
 
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -16,6 +17,13 @@ public final class ConceptSummaryGenerator {
     public static String generate(GuideRecommendRequest req) {
         if (req == null) {
             return null;
+        }
+
+        if (hasLlmGuideCopy(req)) {
+            String llm = formatLlmGuideCopy(req.getLlmGuideBullets(), req.getLlmSpecialRequests());
+            if (StringUtils.hasText(llm)) {
+                return llm;
+            }
         }
 
         StringBuilder sb = new StringBuilder();
@@ -74,6 +82,37 @@ public final class ConceptSummaryGenerator {
         return result.isBlank() ? null : result;
     }
 
+    private static boolean hasLlmGuideCopy(GuideRecommendRequest req) {
+        return (req.getLlmGuideBullets() != null && !req.getLlmGuideBullets().isEmpty())
+                || StringUtils.hasText(req.getLlmSpecialRequests());
+    }
+
+    /**
+     * LLM이 채운 불릿·특별 요청을 한 덩어리 요약 문자열로 만든다(가이드/응답 요약 공용).
+     */
+    public static String formatLlmGuideCopy(List<String> bullets, String specialRequests) {
+        StringBuilder sb = new StringBuilder();
+        if (bullets != null) {
+            for (String b : bullets) {
+                if (b == null || b.isBlank()) {
+                    continue;
+                }
+                if (sb.length() > 0) {
+                    sb.append('\n');
+                }
+                sb.append("• ").append(b.trim());
+            }
+        }
+        if (StringUtils.hasText(specialRequests)) {
+            if (sb.length() > 0) {
+                sb.append("\n\n");
+            }
+            sb.append(specialRequests.trim());
+        }
+        String out = sb.toString().trim();
+        return out.isBlank() ? null : out;
+    }
+
     public static String generateMatchRequestConcept(GuideRecommendRequest req) {
         if (req == null) {
             return null;
@@ -110,6 +149,15 @@ public final class ConceptSummaryGenerator {
         }
 
         String result = String.join(" / ", parts).trim();
+        if (hasLlmGuideCopy(req)) {
+            String llm = formatLlmGuideCopy(req.getLlmGuideBullets(), req.getLlmSpecialRequests());
+            if (StringUtils.hasText(llm)) {
+                if (StringUtils.hasText(result)) {
+                    return llm + "\n\n" + result;
+                }
+                return llm;
+            }
+        }
         return result.isBlank() ? null : result;
     }
 

@@ -648,6 +648,100 @@
   color: #111827;
 }
 
+.gmo-profile-dialog-intro-board {
+  position: relative;
+  margin-top: 0.1rem;
+  padding: 1.15rem 0.9rem 0.95rem 1.05rem;
+  border-radius: 10px;
+  border: 1px solid #6ee7b7;
+  background-color: #ecfdf5;
+  background-image: linear-gradient(rgba(16, 185, 129, 0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(16, 185, 129, 0.1) 1px, transparent 1px);
+  background-size: 10px 10px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55);
+  overflow: hidden;
+}
+
+.gmo-profile-dialog-clip {
+  position: absolute;
+  top: 0.4rem;
+  left: 0.45rem;
+  color: #047857;
+  opacity: 0.62;
+  line-height: 0;
+  pointer-events: none;
+  transform: rotate(-8deg);
+}
+
+.gmo-profile-dialog-bio-inner {
+  position: relative;
+  z-index: 0;
+  padding-top: 0.1rem;
+  padding-left: 0.1rem;
+}
+
+.gmo-profile-dialog-intro-board .gmo-profile-dialog-dl > div {
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(16, 185, 129, 0.26);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+.gmo-profile-dialog-intro-board .gmo-profile-dialog-dl dt {
+  text-transform: none;
+  color: #047857;
+  letter-spacing: 0.02em;
+}
+
+.gmo-profile-dialog-intro-board .gmo-profile-dialog-dl dd {
+  color: #14532d;
+}
+
+.gmo-profile-dialog-careers {
+  list-style: none;
+  margin: 0.35rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.gmo-profile-dialog-career {
+  margin: 0;
+  padding: 0.65rem 0.7rem 0.65rem 0.8rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fafafa;
+  border-left: 3px solid #10b981;
+  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.04);
+}
+
+.gmo-profile-dialog-career-title {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.35;
+}
+
+.gmo-profile-dialog-career-date {
+  margin: 0.2rem 0 0;
+  font-size: 0.68rem;
+  color: #64748b;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.gmo-profile-dialog-career-desc {
+  margin: 0.35rem 0 0;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: #475569;
+  white-space: pre-wrap;
+}
+
+.gmo-profile-review-carousel {
+  margin: 0.2rem 0 0;
+}
+
 .gmo-profile-dialog-prose {
   margin: 0;
   font-size: 0.86rem;
@@ -810,3 +904,123 @@
   text-decoration: underline;
 }
 
+/* 스크랩북/무드보드 톤 (게스트 마이페이지·일정과 통일) */
+.gmo--journal {
+  max-width: min(960px, 100%);
+  margin: 0 auto;
+  padding: clamp(0.75rem, 2.5vw, 1.15rem) clamp(0.75rem, 2.5vw, 1.25rem) 2.5rem;
+  box-sizing: border-box;
+  min-height: min(100vh, 100%);
+  background-color: #faf8f2;
+  background-image:
+    linear-gradient(rgba(100, 90, 70, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(100, 90, 70, 0.07) 1px, transparent 1px);
+  background-size: 22px 22px;
+  border-radius: 0;
+}
+
+.gmo-topbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.65rem;
+  margin-bottom: 0.5rem;
+}
+
+.gmo--journal .gmo-back--pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.38rem 0.9rem;
+  border-radius: 999px;
+  background: #fff;
+  border: 1px solid #d6d3c2;
+  font-weight: 800;
+  font-size: 0.8rem;
+  color: #3f2f28;
+  text-decoration: none;
+  box-shadow: 0 4px 14px rgba(71, 59, 40, 0.08);
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.15s ease;
+}
+
+.gmo--journal .gmo-back--pill:hover {
+  border-color: #c4b8a0;
+  box-shadow: 0 6px 18px rgba(71, 59, 40, 0.1);
+  transform: translateY(-1px);
+}
+
+.gmo--journal .gmo-back--line {
+  background: #ffffff;
+  color: #0f766e;
+  border-color: #99f6e4;
+}
+
+.gmo-kicker {
+  margin: 0 0 0.65rem;
+  font-size: 0.75rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(100, 90, 80, 0.65);
+}
+
+.gmo-hero--journal {
+  background: #fffef8;
+  border-color: #d6d3c2;
+  box-shadow: 0 12px 28px rgba(71, 59, 40, 0.1);
+  position: relative;
+  overflow: visible;
+  padding-top: 1.35rem;
+}
+
+.gmo-hero--journal::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-1.6deg);
+  width: 90px;
+  height: 16px;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #99f6e4, #5eead4, #2dd4bf);
+  box-shadow: 0 2px 8px rgba(15, 118, 110, 0.22);
+  z-index: 1;
+  pointer-events: none;
+}
+
+.gmo-hero--journal .gmo-hero-body,
+.gmo-hero--journal .gmo-hero-ph {
+  position: relative;
+  z-index: 2;
+}
+
+.gmo--journal .gmo-preview,
+.gmo--journal .gmo-price-panel {
+  background: #fff;
+  border-color: #d6d3c2;
+  box-shadow: 0 10px 22px rgba(71, 59, 40, 0.09);
+}
+
+.gmo--journal .gmo-pay {
+  border-radius: 999px;
+  background: linear-gradient(180deg, #14b8a6, #0d9488);
+  border: 1px solid #0f766e;
+  color: #ffffff;
+  font-weight: 900;
+  box-shadow: 0 8px 20px rgba(13, 148, 136, 0.25);
+}
+
+.gmo--journal .gmo-pay:not(:disabled):hover {
+  background: linear-gradient(180deg, #0d9488, #0f766e);
+  border-color: #0f766e;
+  color: #ffffff;
+}
+
+.gmo--journal .gmo-pay:disabled {
+  background: #e2e8f0;
+  border-color: #cbd5e1;
+  color: #94a3b8;
+  box-shadow: none;
+}

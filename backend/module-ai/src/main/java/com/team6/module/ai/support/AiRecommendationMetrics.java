@@ -24,6 +24,7 @@ import java.util.concurrent.TimeUnit;
  *   <li>{@code .debiased_click_used(policy_version=...,used=true|false)} — 디바이어스 클릭 신호 사용 여부(가이드별)</li>
  *   <li>{@code .negative_filter(reason=region|style|language,policy_version=...)} — 부정 의도로 제외된 후보 수</li>
  *   <li>{@code .budget_range_match(result=match|miss,policy_version=...)} — 범위 예산 매칭 분기(비교 가능 후보에 한함)</li>
+ *   <li>{@code .llm_prompt_extraction(result=success|empty|error,policy_version=...,llm_provider=openai|gemini|unknown)} — LLM 프롬프트 추출 시도 결과</li>
  * </ul>
  * <b>Timer / Summary</b> (태그 {@code policy_version} 권장)
  * <ul>
@@ -32,6 +33,7 @@ import java.util.concurrent.TimeUnit;
  *   <li>{@code .effective_pool_size} — 확장 후 후보 풀 크기</li>
  *   <li>{@code .feedback_penalty_magnitude} — 후보별 피드백 감점 절댓값(룰 점수에서 깎인 양, 단위: 점)</li>
  *   <li>{@code .diversity_penalty_magnitude} — Top-N에서 2번째 슬롯부터 선택 시 적용된 유사도×λ 패널티(점수 스케일)</li>
+ *   <li>{@code .llm_prompt_extraction_latency} — LLM 추출 호출 지연(카운터와 동일 태그: {@code policy_version}, {@code result}, {@code llm_provider})</li>
  * </ul>
  */
 @Component
@@ -206,5 +208,36 @@ public class AiRecommendationMetrics {
         String result = matched ? "match" : "miss";
         registry.counter(PREFIX + ".budget_range_match", Tags.of("policy_version", pv, "result", result))
                 .increment();
+    }
+
+    /**
+     * {@link com.team6.module.ai.spi.LlmPromptExtractor} 호출 1회당 기록한다.
+     *
+     * @param result {@code success}(비어 있지 않은 요청), {@code empty}(Optional.empty로 룰 파서 폴백),
+     *               {@code error}(예외 후 룰 파서 폴백)
+     * @param nanos  LLM 호출 구간 소요 시간
+     * @param llmProvider {@code localguest.ai.llm-provider}에 대응하는 태그 값({@code openai}, {@code gemini}, 그 외는 {@code unknown})
+     */
+    public void recordLlmPromptExtraction(String result, long nanos, String policyVersion, String llmProvider) {
+        String pv = policyVersion == null ? "unknown" : policyVersion;
+        String r = result == null || result.isBlank() ? "unknown" : result;
+        String prov = sanitizeLlmProviderTag(llmProvider);
+        Tags tags = Tags.of("policy_version", pv, "result", r, "llm_provider", prov);
+        registry.counter(PREFIX + ".llm_prompt_extraction", tags).increment();
+        registry.timer(PREFIX + ".llm_prompt_extraction_latency", tags).record(Math.max(0L, nanos), TimeUnit.NANOSECONDS);
+    }
+
+    private static String sanitizeLlmProviderTag(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return "unknown";
+        }
+        String s = raw.trim().toLowerCase();
+        if ("openai".equals(s)) {
+            return "openai";
+        }
+        if ("gemini".equals(s)) {
+            return "gemini";
+        }
+        return "unknown";
     }
 }

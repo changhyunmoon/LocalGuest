@@ -106,3 +106,39 @@ export function pickLatestCompletedPaymentIdForRequest(payments, requestId) {
   }
   return best
 }
+
+/** 결제 완료 직후 게스트 취소 가능 시간(백엔드 정책과 맞춤: 2시간) */
+export const GUEST_CANCEL_WINDOW_MS = 2 * 60 * 60 * 1000
+
+/**
+ * 동일 requestId·COMPLETED 결제 중 가장 최근 paidAt(밀리초).
+ * @param {unknown[]} payments
+ * @param {number} requestId
+ * @returns {number | null}
+ */
+export function latestCompletedPaymentPaidAtMs(payments, requestId) {
+  const rid = Number(requestId)
+  if (Number.isNaN(rid)) return null
+  let best = null
+  for (const p of Array.isArray(payments) ? payments : []) {
+    if (Number(p.requestId) !== rid) continue
+    if (String(p.status).toUpperCase() !== 'COMPLETED') continue
+    if (p.paidAt == null) continue
+    const t = new Date(p.paidAt).getTime()
+    if (Number.isNaN(t)) continue
+    if (best == null || t > best) best = t
+  }
+  return best
+}
+
+/**
+ * @param {{ status?: string }} row
+ * @param {number | null} paidAtMs
+ */
+export function guestCanCancelByPolicy(row, paidAtMs) {
+  const st = String(row?.status ?? '').toUpperCase()
+  if (st === 'ACCEPTED') return true
+  if (st !== 'PAID') return false
+  if (paidAtMs == null) return false
+  return Date.now() < paidAtMs + GUEST_CANCEL_WINDOW_MS
+}

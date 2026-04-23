@@ -7,6 +7,23 @@ spring:
       max-file-size: 10MB
       max-request-size: 10MB
 
+# OpenAI(Spring AI) — 기본 비활성. 켤 때는 API 키(spring.ai.openai.api-key 등)가 필요하다.
+# Gemini(Google AI Studio API 키) — module-gemini. llm-provider=gemini 일 때 localguest.gemini.enabled 필요.
+localguest:
+  openai:
+    enabled: false
+    model: gpt-4o-mini
+  gemini:
+    enabled: false
+    model: gemini-2.0-flash
+  ai:
+    # LLM 프롬프트 추출(LlmPromptExtractor 빈 + 백엔드 활성 시). 스텁 단계에서는 false 권장.
+    llm-prompt-extraction-enabled: false
+    # openai(기본) | gemini — 각각 localguest.openai.enabled / localguest.gemini.enabled 와 함께 켠다.
+    llm-provider: openai
+    # LLM 경로에만 적용. 0 이하이면 제한 없음.
+    llm-prompt-max-chars: 6000
+
 ---
 spring:
   config:

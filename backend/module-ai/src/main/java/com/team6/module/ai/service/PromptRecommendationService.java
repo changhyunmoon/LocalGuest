@@ -2,8 +2,10 @@ package com.team6.module.ai.service;
 
 import com.team6.module.ai.dto.request.GuideRecommendRequest;
 import com.team6.module.ai.dto.response.GuideRecommendResponse;
+import com.team6.module.ai.config.LocalGuestAiProperties;
 import com.team6.module.ai.config.ScoringPolicySnapshot;
 import com.team6.module.ai.parser.PromptParser;
+import com.team6.module.ai.spi.LlmPromptExtractor;
 import com.team6.module.ai.support.AdjacentRegionProvider;
 import com.team6.module.ai.support.AiRecommendationMetrics;
 import com.team6.module.ai.support.AiRecommendationTuning;
@@ -11,6 +13,8 @@ import com.team6.module.ai.support.ConceptSummaryGenerator;
 import com.team6.module.ai.support.RecommendationNoticeCodes;
 import com.team6.module.ai.support.RegionCandidateExpansion;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 
 import com.team6.module.ai.dto.response.GuideRecommendItem;
@@ -22,6 +26,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -47,18 +52,27 @@ public class PromptRecommendationService {
     // 운영 중 조정 가능한 추천 임계값(low-signal 점수, fallback 개선폭 등) 스냅샷.
     private final ScoringPolicySnapshot scoringPolicy;
 
+    private final LocalGuestAiProperties aiProperties;
+
+    @Nullable
+    private final LlmPromptExtractor llmPromptExtractor;
+
     public PromptRecommendationService(
             PromptParser promptParser,
             AiRecommendationService aiRecommendationService,
             AdjacentRegionProvider adjacentRegionProvider,
             AiRecommendationMetrics metrics,
-            ScoringPolicySnapshot scoringPolicy
+            ScoringPolicySnapshot scoringPolicy,
+            LocalGuestAiProperties aiProperties,
+            @Autowired(required = false) @Nullable LlmPromptExtractor llmPromptExtractor
     ) {
         this.promptParser = promptParser;
         this.aiRecommendationService = aiRecommendationService;
         this.adjacentRegionProvider = adjacentRegionProvider;
         this.metrics = metrics;
         this.scoringPolicy = scoringPolicy;
+        this.aiProperties = aiProperties;
+        this.llmPromptExtractor = llmPromptExtractor;
     }
 
     private static final String NOTICE_REGION_REQUIRED =
@@ -119,7 +133,9 @@ public class PromptRecommendationService {
             Integer resolvedTopN = (topN == null || topN <= 0)
                     ? AiRecommendationTuning.DEFAULT_TOP_N
                     : topN;
-            GuideRecommendRequest parsed = promptParser.parse(prompt, resolvedTopN, guideCandidates);
+            ParsedPrompt parsedPrompt = parsePromptToRequest(prompt, resolvedTopN, guideCandidates);
+            GuideRecommendRequest parsed = parsedPrompt.request();
+            LlmParseTrace llmParseTrace = parsedPrompt.llmTrace();
 
             // 2) 지역이 없으면 추천 품질이 크게 떨어지기 때문에 여기서 바로 short-circuit 한다.
             // 대신 빈 응답만 보내지 않고 conceptSummary / keywords / matchRequestDraft는 같이 만들어
@@ -139,7 +155,8 @@ public class PromptRecommendationService {
                         true,
                         false,
                         poolSize(parsed.getGuideCandidates()),
-                        0
+                        0,
+                        llmParseTrace
                 );
                 metrics.recordNoRegionShortCircuit();
                 metrics.recordOutcome("no_region");
@@ -257,7 +274,8 @@ public class PromptRecommendationService {
                     false,
                     expansion.expansionUsed(),
                     poolSize(expansion.candidates()),
-                    expansion.exactCount()
+                    expansion.exactCount(),
+                    llmParseTrace
             );
 
             // 11) 최종 응답을 만든다.
@@ -789,7 +807,8 @@ public class PromptRecommendationService {
             boolean noRegionShortCircuit,
             boolean regionExpansionUsed,
             int effectivePoolSize,
-            int expansionExactCount
+            int expansionExactCount,
+            LlmParseTrace llmParseTrace
     ) {
         try {
             // 추천 품질 이슈가 생겼을 때 promptHash, 후보 수, fallback 단계, Top1 reason code 등으로
@@ -801,7 +820,7 @@ public class PromptRecommendationService {
             String top1ReasonCodes = summarizeTopReasonCodes(finalBase);
             Long top1GuideId = topGuideId(finalBase);
 
-            log.info("[AI_RECOMMEND] policyVer={} promptHash={} topN={} candidates={} policy={{noRegionShortCircuit={},regionExpansion={},effectivePool={},expansionExact={}}} keywords={{region={},style={},budget={},companion={},headcount={},durationDays={},tags={},excluded={},softPenalty={},langs={}}} base={{count={},topScore={}}} final={{count={},topScore={},top1GuideId={},top1ReasonCodes={}}} fallback={{used={},stage={}}}",
+            log.info("[AI_RECOMMEND] policyVer={} promptHash={} topN={} candidates={} policy={{noRegionShortCircuit={},regionExpansion={},effectivePool={},expansionExact={}}} keywords={{region={},style={},budget={},companion={},headcount={},durationDays={},tags={},excluded={},softPenalty={},langs={}}} base={{count={},topScore={}}} final={{count={},topScore={},top1GuideId={},top1ReasonCodes={}}} fallback={{used={},stage={}}} llmParse={{cfgProvider={},extractorBean={},outcome={}}}",
                     AiRecommendationTuning.POLICY_VERSION,
                     promptHash,
                     request == null ? null : request.getTopN(),
@@ -827,11 +846,92 @@ public class PromptRecommendationService {
                     top1GuideId,
                     top1ReasonCodes,
                     fallback != null && fallback.attemptedRelaxChain(),
-                    fallback == null ? null : fallback.winningRelaxStage()
+                    fallback == null ? null : fallback.winningRelaxStage(),
+                    llmParseTrace == null ? null : llmParseTrace.cfgProvider(),
+                    llmParseTrace == null ? null : llmParseTrace.extractorBeanClass(),
+                    llmParseTrace == null ? null : llmParseTrace.outcome()
             );
         } catch (Exception e) {
             log.debug("[AI_RECOMMEND] logging skipped: {}", e.toString());
         }
+    }
+
+    private record ParsedPrompt(GuideRecommendRequest request, LlmParseTrace llmTrace) {}
+
+    /**
+     * @param cfgProvider      {@code localguest.ai.llm-provider} 정규화 값(로그용)
+     * @param extractorBeanClass 주입된 {@link LlmPromptExtractor} 구현 단순 클래스명, 없으면 {@code none}
+     * @param outcome          {@code SKIP_DISABLED} | {@code SKIP_NO_BEAN} | {@code LLM_SUCCESS} | {@code LLM_EMPTY} | {@code LLM_ERROR}
+     */
+    private record LlmParseTrace(String cfgProvider, String extractorBeanClass, String outcome) {}
+
+    private ParsedPrompt parsePromptToRequest(
+            String prompt,
+            int resolvedTopN,
+            List<GuideRecommendRequest.GuideCandidateDto> guideCandidates
+    ) {
+        String cfgProvider = normalizeCfgLlmProvider(aiProperties.getLlmProvider());
+        String extractorBean = llmPromptExtractor == null ? "none" : llmPromptExtractor.getClass().getSimpleName();
+
+        if (!Boolean.TRUE.equals(aiProperties.isLlmPromptExtractionEnabled())) {
+            return new ParsedPrompt(
+                    promptParser.parse(prompt, resolvedTopN, guideCandidates),
+                    new LlmParseTrace(cfgProvider, extractorBean, "SKIP_DISABLED")
+            );
+        }
+        if (llmPromptExtractor == null) {
+            return new ParsedPrompt(
+                    promptParser.parse(prompt, resolvedTopN, guideCandidates),
+                    new LlmParseTrace(cfgProvider, "none", "SKIP_NO_BEAN")
+            );
+        }
+
+        String llmPrompt = truncateForLlm(prompt);
+        long t0 = System.nanoTime();
+        try {
+            Optional<GuideRecommendRequest> llm =
+                    llmPromptExtractor.tryExtract(llmPrompt, resolvedTopN, guideCandidates);
+            long elapsed = System.nanoTime() - t0;
+            if (llm.isPresent()) {
+                metrics.recordLlmPromptExtraction("success", elapsed, POLICY_VERSION, cfgProvider);
+                return new ParsedPrompt(llm.get(), new LlmParseTrace(cfgProvider, extractorBean, "LLM_SUCCESS"));
+            }
+            metrics.recordLlmPromptExtraction("empty", elapsed, POLICY_VERSION, cfgProvider);
+            return new ParsedPrompt(
+                    promptParser.parse(prompt, resolvedTopN, guideCandidates),
+                    new LlmParseTrace(cfgProvider, extractorBean, "LLM_EMPTY")
+            );
+        } catch (Exception e) {
+            metrics.recordLlmPromptExtraction("error", System.nanoTime() - t0, POLICY_VERSION, cfgProvider);
+            log.warn("[AI_PROMPT] LLM 추출 실패, 룰 파서로 폴백: {}", e.toString());
+            return new ParsedPrompt(
+                    promptParser.parse(prompt, resolvedTopN, guideCandidates),
+                    new LlmParseTrace(cfgProvider, extractorBean, "LLM_ERROR")
+            );
+        }
+    }
+
+    private static String normalizeCfgLlmProvider(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return "unknown";
+        }
+        return raw.trim().toLowerCase(Locale.ROOT);
+    }
+
+    /**
+     * LLM 전송 전 원문 길이 제한. 룰 파서 폴백에는 원문 전체를 그대로 쓴다.
+     */
+    private String truncateForLlm(String prompt) {
+        if (prompt == null) {
+            return null;
+        }
+        int max = aiProperties.getLlmPromptMaxChars();
+        if (max <= 0 || prompt.length() <= max) {
+            return prompt;
+        }
+        log.warn("[AI_PROMPT] LLM 입력 길이 제한으로 잘림: orig={} → sent={} chars (max={})",
+                prompt.length(), max, max);
+        return prompt.substring(0, max);
     }
 
     private static Long topGuideId(GuideRecommendResponse resp) {
