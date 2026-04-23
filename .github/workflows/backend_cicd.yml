@@ -88,13 +88,11 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          envs: DOCKER_IMAGE_TAG,DOCKERHUB_USERNAME,BACKEND_IMAGE_NAME,MONGO_ROOT_USER,MONGO_ROOT_PASSWORD
+          envs: DOCKER_IMAGE_TAG,DOCKERHUB_USERNAME,BACKEND_IMAGE_NAME
           script: |
             export DOCKER_IMAGE_TAG=${{ github.sha }}
             export DOCKERHUB_USERNAME=${{ secrets.DOCKERHUB_USERNAME }}
             export BACKEND_IMAGE_NAME=${{ secrets.BACKEND_IMAGE_NAME }}
-            export MONGO_ROOT_USER=${{ secrets.MONGO_ROOT_USER }}
-            export MONGO_ROOT_PASSWORD=${{ secrets.MONGO_ROOT_PASSWORD }}
 
             cd /home/ubuntu/backend-deploy
             echo "=== copied files on EC2 ==="
