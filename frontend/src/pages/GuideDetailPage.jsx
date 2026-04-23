@@ -195,6 +195,7 @@ export function GuideDetailPage() {
   const [aiBudgetMinWon, setAiBudgetMinWon] = useState(null)
   const [aiBudgetMaxWon, setAiBudgetMaxWon] = useState(null)
   const [aiHiddenConcept, setAiHiddenConcept] = useState(null)
+  const [aiDurationDays, setAiDurationDays] = useState(null)
 
   const [detail, setDetail] = useState(null)
   const [schedules, setSchedules] = useState([])
@@ -239,6 +240,7 @@ export function GuideDetailPage() {
       if (draft?.desiredBudget != null && draft.desiredBudget !== '') setAiDesiredBudget(Number(draft.desiredBudget))
       if (draft?.budgetMinWon != null && draft.budgetMinWon !== '') setAiBudgetMinWon(Number(draft.budgetMinWon))
       if (draft?.budgetMaxWon != null && draft.budgetMaxWon !== '') setAiBudgetMaxWon(Number(draft.budgetMaxWon))
+      if (draft?.durationDays != null && draft.durationDays !== '') setAiDurationDays(Number(draft.durationDays))
       if (draft?.budgetMinWon != null && draft.budgetMinWon !== '') setBudgetMinWonInput(String(Number(draft.budgetMinWon)))
       if (draft?.budgetMaxWon != null && draft.budgetMaxWon !== '') setBudgetMaxWonInput(String(Number(draft.budgetMaxWon)))
       if (draft?.concept) setAiHiddenConcept(String(draft.concept))
@@ -406,6 +408,38 @@ export function GuideDetailPage() {
     return set
   }, [schedules])
 
+  const effectiveDurationDays = useMemo(() => {
+    const n = aiDurationDays != null ? Number(aiDurationDays) : NaN
+    if (!Number.isFinite(n) || n <= 1) return 1
+    return Math.min(14, Math.max(1, Math.floor(n)))
+  }, [aiDurationDays])
+
+  const selectedRangeKeys = useMemo(() => {
+    if (!selectedDateKey) return []
+    if (effectiveDurationDays <= 1) return [selectedDateKey]
+    const out = []
+    const base = new Date(selectedDateKey)
+    if (Number.isNaN(base.getTime())) return [selectedDateKey]
+    for (let i = 0; i < effectiveDurationDays; i += 1) {
+      const d = new Date(base)
+      d.setDate(d.getDate() + i)
+      out.push(ymd(d))
+    }
+    return out
+  }, [effectiveDurationDays, selectedDateKey])
+
+  const isSelectedRangeValid = useMemo(() => {
+    if (!selectedDateKey) return true
+    if (selectedRangeKeys.length <= 1) return true
+    return selectedRangeKeys.every((k) => {
+      if (!k) return false
+      if (isPastDateKey(k)) return false
+      if (blockedDateSet.has(k)) return false
+      if (reservedDateSet.has(k)) return false
+      return true
+    })
+  }, [blockedDateSet, reservedDateSet, selectedDateKey, selectedRangeKeys])
+
   const availableByDate = useMemo(() => {
     /** @type {Map<string, any[]>} */
     const map = new Map()
@@ -518,6 +552,10 @@ export function GuideDetailPage() {
     }
     if (isPastDateKey(selectedDateKey)) {
       setSubmitErr('지난 날짜에는 요청할 수 없습니다.')
+      return
+    }
+    if (!isSelectedRangeValid) {
+      setSubmitErr(`선택한 시작일로 ${effectiveDurationDays}일 연속 일정이 어렵습니다. 다른 시작일을 선택해 주세요.`)
       return
     }
     if (blockedDateSet.has(selectedDateKey)) {
@@ -849,13 +887,37 @@ export function GuideDetailPage() {
                     const hasSchedule = availableByDate.has(key)
                     const selectable = inMonth && !isPast && !isBlocked && !isReserved
                     const selected = selectable && key === selectedDateKey
+                    const inRange = selectedRangeKeys.includes(key)
+                    const isRangeStart = inRange && key === selectedDateKey
+                    const isRangeEnd =
+                      inRange && selectedRangeKeys.length > 0 && key === selectedRangeKeys[selectedRangeKeys.length - 1]
                     return (
                       <button
                         key={cell.key}
                         type="button"
-                        className={`gdp-match-day${!inMonth ? ' is-out' : ''}${isPast ? ' is-past' : ''}${selectable ? ' is-on' : ''}${isBlocked ? ' is-blocked' : ''}${isReserved ? ' is-reserved' : ''}${selected ? ' is-selected' : ''}`}
+                        className={`gdp-match-day${!inMonth ? ' is-out' : ''}${isPast ? ' is-past' : ''}${selectable ? ' is-on' : ''}${isBlocked ? ' is-blocked' : ''}${isReserved ? ' is-reserved' : ''}${selected ? ' is-selected' : ''}${inRange ? ' is-range' : ''}${isRangeStart ? ' is-range-start' : ''}${isRangeEnd ? ' is-range-end' : ''}`}
                         disabled={!selectable}
                         onClick={() => {
+                          setSubmitErr('')
+                          if (effectiveDurationDays > 1) {
+                            const rangeKeys = []
+                            for (let i = 0; i < effectiveDurationDays; i += 1) {
+                              const d = new Date(cell.date)
+                              d.setDate(d.getDate() + i)
+                              rangeKeys.push(ymd(d))
+                            }
+                            const bad = rangeKeys.find((k) => {
+                              if (!k) return true
+                              if (isPastDateKey(k)) return true
+                              if (blockedDateSet.has(k)) return true
+                              if (reservedDateSet.has(k)) return true
+                              return false
+                            })
+                            if (bad) {
+                              setSubmitErr(`선택한 시작일로 ${effectiveDurationDays}일 연속 일정이 어렵습니다. 다른 시작일을 선택해 주세요.`)
+                              return
+                            }
+                          }
                           setSelectedDateKey(key)
                           const picks = availableByDate.get(key) ?? []
                           if (picks.length > 0) setSelectedScheduleId(Number(picks[0].scheduleId))
@@ -951,7 +1013,7 @@ export function GuideDetailPage() {
               <button
                 type="submit"
                 className="gdp-match-submit"
-                disabled={submitting || !selectedDateKey || blockedDateSet.has(selectedDateKey) || reservedDateSet.has(selectedDateKey)}
+                disabled={submitting || !selectedDateKey || !isSelectedRangeValid || blockedDateSet.has(selectedDateKey) || reservedDateSet.has(selectedDateKey)}
               >
                 {submitting ? '요청 전송 중…' : '매칭 요청 보내기 ✈️'}
               </button>
