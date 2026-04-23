@@ -149,15 +149,6 @@ public final class ConceptSummaryGenerator {
         }
 
         String result = String.join(" / ", parts).trim();
-        if (hasLlmGuideCopy(req)) {
-            String llm = formatLlmGuideCopy(req.getLlmGuideBullets(), req.getLlmSpecialRequests());
-            if (StringUtils.hasText(llm)) {
-                if (StringUtils.hasText(result)) {
-                    return llm + "\n\n" + result;
-                }
-                return llm;
-            }
-        }
         return result.isBlank() ? null : result;
     }
 
