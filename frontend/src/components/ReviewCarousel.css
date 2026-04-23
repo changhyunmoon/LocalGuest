@@ -19,14 +19,6 @@
   --rev-text: #334155;
 }
 
-.rev-carousel-chrome {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-  margin-bottom: 0.5rem;
-}
-
 .rev-carousel-btn {
   flex-shrink: 0;
   width: 2.1rem;
@@ -65,10 +57,31 @@
 }
 
 .rev-carousel-viewport {
+  position: relative;
   overflow: hidden;
   border-radius: 10px;
   border: 1px solid var(--rev-brd);
   background: var(--rev-bg);
+}
+
+.rev-carousel-viewport .rev-carousel-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.12);
+  background: rgba(255, 255, 255, 0.94);
+}
+
+.rev-carousel-viewport .rev-carousel-btn--prev {
+  left: 0.45rem;
+}
+
+.rev-carousel-viewport .rev-carousel-btn--next {
+  right: 0.45rem;
 }
 
 .rev-carousel-track {
@@ -86,6 +99,11 @@
   box-sizing: border-box;
   flex-shrink: 0;
   padding: 0.85rem 1rem;
+}
+
+.rev-carousel--has-nav .rev-carousel-slide {
+  padding-left: 2.6rem;
+  padding-right: 2.6rem;
 }
 
 .rev-slide {
@@ -128,12 +146,20 @@
   white-space: pre-wrap;
 }
 
+.rev-carousel-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  margin-top: 0.55rem;
+}
+
 .rev-carousel-dots {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
   gap: 0.4rem;
-  margin-top: 0.6rem;
+  margin-top: 0;
 }
 
 .rev-carousel-dot {
@@ -170,12 +196,4 @@
   width: 1.95rem;
   height: 1.95rem;
   font-size: 1.1rem;
-}
-
-/* 단일 슬라이드: 껍질 없이 */
-.rev-carousel:has(.rev-carousel-slides) .rev-carousel-slides {
-  border: 1px solid var(--rev-brd);
-  border-radius: 10px;
-  background: var(--rev-bg);
-  padding: 0.85rem 1rem;
 }

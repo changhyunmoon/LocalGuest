@@ -93,36 +93,27 @@ export function GuideReviewsManagePage() {
   }
 
   return (
-    <div className="g-panel grv-mood">
+    <div className="g-panel mp-member">
       {loadError && (
         <PageError message={loadError} onRetry={() => guideId != null && void loadPage(guideId, page)} />
       )}
       {listLoading && <PageLoading label="목록을 불러오는 중…" />}
 
-      <div className="grv-mood-hero">
+      <div className="mp-scrap-hero" style={{ marginBottom: '0.85rem' }}>
         <div>
-          <h1 className="grv-mood-title">게스트의 소중한 한마디 💌</h1>
-          <p className="grv-mood-sub">따뜻한 리뷰는 더 많은 게스트와의 인연을 만들어줍니다.</p>
+          <h1 style={{ margin: 0 }}>🌟 게스트 리뷰</h1>
+          <p className="sub" style={{ marginTop: '0.25rem' }}>
+            게스트 리뷰 페이지와 같은 카드 UX로 확인할 수 있어요.
+          </p>
         </div>
         {summaryLoading ? (
-          <p className="grv-mood-loading">로딩 중…</p>
+          <p className="mp-trip-detail">로딩 중…</p>
         ) : summary == null || summary?.reviewCount === 0 ? (
-          <div className="grv-mood-empty-score">아직 받은 리뷰가 없어요</div>
+          <div className="mp-trip-detail">아직 받은 리뷰가 없어요</div>
         ) : (
-          <div className="grv-mood-stats">
-            <div className="grv-mood-stat">
-              <p className="grv-mood-stat__label">평균 평점</p>
-              <p className="grv-mood-stat__val">
-                {Number(summary.averageRating).toFixed(1)} <span className="grv-mood-stat__unit">/ 5</span>
-              </p>
-            </div>
-            <div className="grv-mood-stat-div" aria-hidden />
-            <div className="grv-mood-stat">
-              <p className="grv-mood-stat__label">전체 리뷰</p>
-              <p className="grv-mood-stat__val">
-                {summary.reviewCount} <span className="grv-mood-stat__unit">건</span>
-              </p>
-            </div>
+          <div className="mp-review-summary-inline">
+            <span>평균 {Number(summary.averageRating).toFixed(1)} / 5</span>
+            <span>리뷰 {summary.reviewCount}건</span>
           </div>
         )}
       </div>
@@ -132,26 +123,26 @@ export function GuideReviewsManagePage() {
       )}
 
       {rows.length > 0 && (
-        <div className="grv-mood-grid">
+        <div className="mp-reviews-moodboard">
           {rows.map((review, idx) => {
-            const c = ['emerald', 'amber', 'rose', 'indigo', 'sky', 'fuchsia'][idx % 6]
+            const c = ['mint', 'amber', 'rose', 'indigo'][idx % 4]
             return (
               <article
                 key={review.id}
-                className={`grv-mood-tile grv-mood-tile--${c}`}
+                className={`mp-review-postit mp-review-postit--${c}`}
               >
-                <span className="grv-mood-tile__pin" aria-hidden />
-                <p className="grv-mood-tile__stars">{stars(review.rating)}</p>
-                <p className="grv-mood-tile__quote">
+                <span className="mp-review-postit__pin" aria-hidden />
+                <p className="mp-review-postit__stars">{stars(review.rating)}</p>
+                <p className="mp-review-postit__body">
                   &ldquo;{review.content ?? '리뷰 내용이 없습니다.'}&rdquo;
                 </p>
-                <div className="grv-mood-tile__foot">
-                  <span className="grv-mood-tile__name">
+                <div className="mp-review-postit__foot">
+                  <span className="mp-review-postit__date">
                     {review.writeNickname != null && String(review.writeNickname).trim() !== ''
                       ? `${String(review.writeNickname).trim()}님`
                       : '익명'}
                   </span>
-                  <span className="grv-mood-tile__date">{formatDt(review.createdAt)}</span>
+                  <span className="mp-review-postit__date">{formatDt(review.createdAt)}</span>
                 </div>
               </article>
             )
@@ -159,21 +150,21 @@ export function GuideReviewsManagePage() {
         </div>
       )}
 
-      <div className="grv-mood-pager">
+      <div className="grv-mood-pager" style={{ marginTop: '1rem' }}>
         <button
           type="button"
-          className="gm-btn gm-btn--ghost"
+          className="mp-btn mp-btn--line"
           disabled={page <= 0 || listLoading}
           onClick={() => setPage((p) => Math.max(0, p - 1))}
         >
           이전
         </button>
-        <span className="grv-mood-pager__meta">
+        <span className="grv-mood-pager__meta" style={{ color: '#64748b', fontSize: '0.84rem' }}>
           {page + 1} / {totalPages} 페이지
         </span>
         <button
           type="button"
-          className="gm-btn gm-btn--ghost"
+          className="mp-btn mp-btn--line"
           disabled={last || listLoading}
           onClick={() => setPage((p) => p + 1)}
         >

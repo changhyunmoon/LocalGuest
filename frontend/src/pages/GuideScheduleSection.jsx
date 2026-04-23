@@ -82,6 +82,8 @@ function ScheduleDrawer({
   const navigate = useNavigate()
   /** 'receive' | 'block' — 적용 전 선택만 반영 */
   const [pick, setPick] = useState('receive')
+  const receiveRadioRef = useRef(null)
+  const blockRadioRef = useRef(null)
 
   const status = selectedKey ? getDayStatus(selectedKey, scheduleByDate, blockedDates) : 'receiving'
   const daySchedules = selectedKey ? (scheduleByDate.get(selectedKey) ?? []) : []
@@ -91,6 +93,16 @@ function ScheduleDrawer({
     if (status === 'blocked') setPick('block')
     else setPick('receive')
   }, [selectedKey, status])
+
+  useEffect(() => {
+    if (!selectedKey) return
+    const target = pick === 'block' ? blockRadioRef.current : receiveRadioRef.current
+    if (!target) return
+    const t = window.setTimeout(() => {
+      target.focus()
+    }, 0)
+    return () => window.clearTimeout(t)
+  }, [selectedKey, pick])
 
   if (!selectedKey) return null
 
@@ -137,14 +149,14 @@ function ScheduleDrawer({
 
           <div className="gss3-pick" role="radiogroup" aria-label="예약 수신 방식">
             <label className={`gss3-pick__row ${pick === 'receive' ? 'gss3-pick__row--on' : ''}`}>
-              <input type="radio" name="gss3-day-pick" checked={pick === 'receive'} onChange={() => setPick('receive')} />
+              <input ref={receiveRadioRef} type="radio" name="gss3-day-pick" checked={pick === 'receive'} onChange={() => setPick('receive')} />
               <div className="gss3-pick__text">
                 <span className="gss3-pick__label">예약 받기</span>
                 <span className="gss3-pick__hint">종일 슬롯 · 게스트가 요청 가능</span>
               </div>
             </label>
             <label className={`gss3-pick__row ${pick === 'block' ? 'gss3-pick__row--on' : ''}`}>
-              <input type="radio" name="gss3-day-pick" checked={pick === 'block'} onChange={() => setPick('block')} />
+              <input ref={blockRadioRef} type="radio" name="gss3-day-pick" checked={pick === 'block'} onChange={() => setPick('block')} />
               <div className="gss3-pick__text">
                 <span className="gss3-pick__label">예약 안 받기</span>
                 <span className="gss3-pick__hint">이 날짜 요청 차단</span>
