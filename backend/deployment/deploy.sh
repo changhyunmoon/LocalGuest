@@ -53,8 +53,8 @@ else
 fi
 
 # 3. 사전 환경 검사
-if [ -z "$DOCKER_IMAGE_TAG" ] || [ -z "$DOCKERHUB_USERNAME" ] || [ -z "$MONGO_ROOT_USER" ]; then
-    echo "❌ 환경변수 누락 (TAG, USERNAME, 혹은 MONGO_ROOT_USER)"
+if [ -z "$DOCKER_IMAGE_TAG" ] || [ -z "$DOCKERHUB_USERNAME" ] ; then
+    echo "❌ 환경변수 누락 (TAG, USERNAME)"
     exit 1
 fi
 
