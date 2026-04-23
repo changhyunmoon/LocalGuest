@@ -2,6 +2,7 @@ package com.team6.module.openai.prompt;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.team6.module.ai.dto.request.GuideRecommendRequest;
+import com.team6.module.ai.support.ConceptSummaryGenerator;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -33,7 +34,7 @@ class OpenAiLlmPromptExtractorTest {
         when(chatModel.getDefaultOptions()).thenReturn(def);
         when(chatModel.call(any(Prompt.class))).thenReturn(ChatResponse.builder()
                 .generations(List.of(new Generation(new AssistantMessage(
-                        "{\"region\":\"제주\",\"activityTags\":[\"맛집\"]}"
+                        "{\"region\":\"제주\",\"activityTags\":[\"맛집\"],\"guideBullets\":[\"맛집 위주로 돌아다니고 싶어\"]}"
                 ))))
                 .build());
 
@@ -50,6 +51,24 @@ class OpenAiLlmPromptExtractorTest {
         assertThat(out.get().getTopN()).isEqualTo(5);
         assertThat(out.get().getGuideCandidates()).containsExactly(c);
         assertThat(out.get().getActivityTags()).containsExactly("맛집");
+        assertThat(ConceptSummaryGenerator.generate(out.get())).contains("• 맛집");
+    }
+
+    @Test
+    void tryExtract_masksPhoneInSpecialRequests() {
+        OpenAiChatOptions def = new OpenAiChatOptions();
+        def.setModel("gpt-4o-mini");
+        when(chatModel.getDefaultOptions()).thenReturn(def);
+        when(chatModel.call(any(Prompt.class))).thenReturn(ChatResponse.builder()
+                .generations(List.of(new Generation(new AssistantMessage(
+                        "{\"region\":\"서울\",\"specialRequests\":\"연락 010-1234-5678\"}"
+                ))))
+                .build());
+
+        OpenAiLlmPromptExtractor ext = new OpenAiLlmPromptExtractor(chatModel, new ObjectMapper());
+        Optional<GuideRecommendRequest> out = ext.tryExtract("서울", 2, List.of());
+        assertThat(out).isPresent();
+        assertThat(out.get().getLlmSpecialRequests()).contains("[연락처 생략]");
     }
 
     @Test

@@ -50,6 +50,16 @@ public class GuideRecommendRequest {
      * 하드 제외가 아니라, 가이드가 해당 활동을 강하게 전문으로 내세울 때 점수를 깎는(soft) 태그.
      */
     private List<String> softPenaltyActivityTags;
+    /**
+     * LLM 전용: 가이드에게 보여줄 불릿 한 줄(반말). OpenAPI·일반 JSON 응답에는 실리지 않는다.
+     */
+    @JsonIgnore
+    private List<String> llmGuideBullets;
+    /**
+     * LLM 전용: 특별 요청 문단. OpenAPI·일반 JSON 응답에는 실리지 않는다.
+     */
+    @JsonIgnore
+    private String llmSpecialRequests;
     private Integer topN;
     private List<GuideCandidateDto> guideCandidates;
 
