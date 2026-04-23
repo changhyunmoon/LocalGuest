@@ -22,7 +22,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.regex.Pattern;
 
 /**
  * 가이드 스케줄 서비스 (F06-04)
@@ -35,6 +41,11 @@ public class GuideScheduleService {
     private final GuideScheduleRepository guideScheduleRepository;
     private final GuideProfileRepository guideProfileRepository;
     private final MatchRequestRepository matchRequestRepository;
+
+    private static final EnumSet<MatchRequestStatus> ACTIVE_MATCH_STATUSES =
+            EnumSet.of(MatchRequestStatus.PENDING, MatchRequestStatus.ACCEPTED, MatchRequestStatus.PAID, MatchRequestStatus.IN_PROGRESS);
+    private static final Pattern NIGHTS_DAYS = Pattern.compile("(\\d{1,2})\\s*박\\s*(\\d{1,2})\\s*일");
+    private static final Pattern DAYS_ONLY = Pattern.compile("(\\d{1,2})\\s*일\\s*일정");
 
     // 스케줄 등록 (F06-04)
     @Transactional
@@ -115,9 +126,100 @@ public class GuideScheduleService {
     // 스케줄 목록 조회 — 날짜 오름차순 (F06-04)
     @Transactional(readOnly = true)
     public List<GuideScheduleResponse> getSchedules(Long guideId) {
-        return guideScheduleRepository.findByGuideProfile_IdOrderByAvailableDateAsc(guideId).stream()
+        List<GuideScheduleResponse> base = guideScheduleRepository.findByGuideProfile_IdOrderByAvailableDateAsc(guideId).stream()
                 .map(GuideScheduleResponse::from)
                 .toList();
+
+        // 연속 일정(예: 1박2일/2박3일) 요청이 PENDING~IN_PROGRESS 상태일 때,
+        // 다른 사용자의 달력에서도 해당 기간이 예약 불가로 보이도록 "가상 PENDING" 엔트리를 덧붙인다.
+        Map<LocalDate, Long> reservedDateToRequestId = new LinkedHashMap<>();
+        for (MatchRequest mr : matchRequestRepository.findByGuideId(guideId)) {
+            if (mr == null || mr.getStatus() == null || !ACTIVE_MATCH_STATUSES.contains(mr.getStatus())) {
+                continue;
+            }
+            LocalDate start = mr.getDesiredDate();
+            if (start == null) {
+                continue;
+            }
+            int days = inferDurationDays(mr);
+            if (days <= 1) {
+                continue;
+            }
+            for (int i = 0; i < days; i++) {
+                reservedDateToRequestId.putIfAbsent(start.plusDays(i), mr.getId());
+            }
+        }
+
+        if (reservedDateToRequestId.isEmpty()) {
+            return base;
+        }
+
+        ArrayList<GuideScheduleResponse> out = new ArrayList<>(base);
+        for (Map.Entry<LocalDate, Long> e : reservedDateToRequestId.entrySet()) {
+            LocalDate d = e.getKey();
+            if (d == null) {
+                continue;
+            }
+            boolean alreadyReserved =
+                    base.stream().anyMatch(r ->
+                            d.equals(r.getAvailableDate())
+                                    && (r.getStatus() == GuideScheduleStatus.PENDING || r.getStatus() == GuideScheduleStatus.BOOKED)
+                    );
+            if (alreadyReserved) {
+                continue;
+            }
+            out.add(GuideScheduleResponse.builder()
+                    .scheduleId(null)
+                    .guideId(guideId)
+                    .availableDate(d)
+                    .startTime(null)
+                    .endTime(null)
+                    .status(GuideScheduleStatus.PENDING)
+                    .matchRequestId(e.getValue())
+                    .isPaid(false)
+                    .hasCourse(false)
+                    .createdAt(null)
+                    .updatedAt(null)
+                    .build());
+        }
+
+        out.sort(Comparator
+                .comparing(GuideScheduleResponse::getAvailableDate, Comparator.nullsLast(Comparator.naturalOrder()))
+                .thenComparing(GuideScheduleResponse::getStartTime, Comparator.nullsLast(Comparator.naturalOrder())));
+        return out;
+    }
+
+    private static int inferDurationDays(MatchRequest mr) {
+        String blob = ((mr.getConceptSummary() == null ? "" : mr.getConceptSummary()) + " " + (mr.getConcept() == null ? "" : mr.getConcept())).trim();
+        if (blob.isBlank()) {
+            return 1;
+        }
+        var m1 = NIGHTS_DAYS.matcher(blob);
+        if (m1.find()) {
+            int days = safeParseInt(m1.group(2));
+            return clampDays(days);
+        }
+        var m2 = DAYS_ONLY.matcher(blob);
+        if (m2.find()) {
+            int days = safeParseInt(m2.group(1));
+            return clampDays(days);
+        }
+        return 1;
+    }
+
+    private static int safeParseInt(String raw) {
+        try {
+            return Integer.parseInt(raw);
+        } catch (Exception e) {
+            return 0;
+        }
+    }
+
+    private static int clampDays(int days) {
+        if (days <= 1) {
+            return 1;
+        }
+        return Math.min(14, days);
     }
 
     // 스케줄 상태 변경 (AVAILABLE ↔ BLOCKED) (F06-04)
