@@ -1,0 +1,14 @@
+/**
+ * OpenAI(Spring AI) 연동 전용 모듈.
+ * {@code api-server}에 아직 조립하지 않는 한 런타임에 영향을 주지 않는다.
+ */
+dependencies {
+    implementation platform('org.springframework.ai:spring-ai-bom:1.0.0')
+    implementation 'org.springframework.ai:spring-ai-starter-model-openai'
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+bootJar { enabled = false }
+jar { enabled = true }
