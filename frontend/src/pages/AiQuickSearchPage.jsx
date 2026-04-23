@@ -6,11 +6,9 @@ import { apiRequest } from '../api/client'
 import './AiQuickSearchPage.css'
 
 const PLACEHOLDER =
-  '예시) 부산 2박3일 / 3명(부모님+성인) / 총예산 40~60만원\n' +
-  '- 희망 시간: 오전 10시 시작, 저녁 8시 전 종료\n' +
-  '- 하고 싶은 것: 바다뷰 카페, 로컬 맛집, 야경 산책\n' +
-  '- 제약사항: 계단 많은 코스/장거리 도보는 피하고 싶어요\n' +
-  '- 언어: 한국어 가능한 가이드 희망 (영어 가능하면 더 좋아요)'
+  '예시) 부산으로 2박 3일 여행 가고 싶어요. 부모님 포함 3명이고, 바다 뷰 카페랑 로컬 맛집 위주로 조용히 걷는 코스를 원해요.\n' +
+  '오전 10시쯤 시작해서 저녁 8시 전에는 마무리하고 싶고, 계단 많은 곳이나 장거리 도보는 피하고 싶어요.\n' +
+  '총 예산은 40~60만 원 정도 생각 중이고, 한국어 가능한 가이드를 선호해요. (영어도 가능하면 더 좋아요)'
 const LS_AI_SEARCH_SNAPSHOT = 'localguest_ai_search_snapshot_v1'
 const LS_AI_MATCH_DRAFT = 'localguest_ai_match_draft_v1'
 const LS_AI_CLIENT_SESSION = 'localguest_ai_client_session_v1'
@@ -28,7 +26,7 @@ function buildNarrative(data) {
   if (draft?.concept) parts.push(String(draft.concept).trim())
   const recs = Array.isArray(data.recommendations) ? data.recommendations : []
   if (recs.length > 0) {
-    parts.push('추천 가이드를 고른 이유를 짧게 정리했어요.')
+    parts.push('여행자님 취향을 바탕으로, 이렇게 골랐어요.')
     recs.slice(0, 4).forEach((r) => {
       if (r?.reason) parts.push(`• ${r.guideName ?? '가이드'}: ${String(r.reason).trim()}`)
     })
@@ -77,7 +75,7 @@ function normalizeFallbackGuide(g, reasonText) {
     reviewCount: g?.reviewCount ?? 0,
     reason:
       reasonText ??
-      'AI 결과가 비어 있어 활동 중인 가이드 목록에서 추천했어요. (지역 키워드가 어긋나면 목록에서 가까운 가이드를 골라요.)',
+      '요청 내용과 지역 힌트를 기준으로, 활동 중인 가이드 후보를 먼저 골라 보여드렸어요.',
     matched: { tags: [] },
   }
 }
@@ -94,7 +92,7 @@ function pickFallbackGuides(promptText, keywords, allGuides) {
     const byKw = allGuides.filter((g) => String(g?.region ?? '').includes(regionKw))
     if (byKw.length > 0) {
       return byKw.map((g) =>
-        normalizeFallbackGuide(g, 'AI 추천 목록이 비어, 요청 지역에 가까운 활동 가이드를 골랐어요.'),
+        normalizeFallbackGuide(g, '요청하신 지역과 가까운 곳에서 활동하는 가이드를 먼저 골랐어요.'),
       )
     }
   }
@@ -106,7 +104,7 @@ function pickFallbackGuides(promptText, keywords, allGuides) {
       return hit.map((g) =>
         normalizeFallbackGuide(
           g,
-          `프롬프트에 나온 「${tok}」와 가이드 활동 지역을 맞춰 추렸어요. (AI 추천은 비어 있었어요)`,
+          `문장에 나온 「${tok}」를 힌트로, 해당 지역에서 활동하는 가이드를 먼저 골랐어요.`,
         ),
       )
     }
@@ -118,7 +116,7 @@ function pickFallbackGuides(promptText, keywords, allGuides) {
       return [
         normalizeFallbackGuide(
           g,
-          '입력하신 문장과 가이드 지역이 겹쳐 후보로 보여 드려요. (AI 추천은 비어 있었어요)',
+          '입력하신 문장에 포함된 지역 힌트를 기준으로 후보를 골랐어요.',
         ),
       ]
     }
@@ -126,7 +124,7 @@ function pickFallbackGuides(promptText, keywords, allGuides) {
 
   return allGuides
     .slice(0, 3)
-    .map((g) => normalizeFallbackGuide(g, 'AI 추천이 비어, 활성 가이드 중에서 보여 드려요.'))
+    .map((g) => normalizeFallbackGuide(g, '조건을 넓혀, 현재 활동 중인 가이드부터 보여드릴게요.'))
 }
 
 export function AiQuickSearchPage() {

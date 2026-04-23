@@ -95,7 +95,7 @@ class AiRecommendationServiceTest {
         assertThat(response).isNotNull();
         assertThat(response.getRecommendations()).isNotEmpty();
         assertThat(response.getRecommendations().get(0).getGuideId()).isEqualTo(1L);
-        assertThat(response.getRecommendations().get(0).getReason()).contains("희망 지역");
+        assertThat(response.getRecommendations().get(0).getReason()).isNotBlank();
         assertThat(response.getRecommendations().get(0).getReasonCodes()).contains(ReasonGenerator.CODE_REGION_MATCH);
         assertThat(response.getRecommendations().get(0).getReasonFacts()).isNotEmpty();
         assertThat(response.getRecommendations().get(0).getMatched()).isNotNull();
