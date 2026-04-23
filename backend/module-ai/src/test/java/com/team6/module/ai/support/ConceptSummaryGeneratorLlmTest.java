@@ -33,4 +33,16 @@ class ConceptSummaryGeneratorLlmTest {
         assertThat(concept).contains("부산 여행");
         assertThat(concept).doesNotContain("야경 좋아해");
     }
+
+    @Test
+    void formatLlmGuideCopy_dedupes_bullets_against_specialRequests() {
+        String out = ConceptSummaryGenerator.formatLlmGuideCopy(
+                List.of("제주 반시계 방향으로 오름 투어", "마지막에 한라산(추정) 방문", "제주 반시계 방향으로 오름 투어"),
+                "2박 3일 동안 제주 반시계 방향으로 오름 투어를 하고 마지막에 한라산(추정)에 가고 싶어."
+        );
+
+        // specialRequests에 포함된 불릿은 제거되고, 중복 불릿도 제거된다.
+        assertThat(out).doesNotContain("• 제주 반시계 방향으로 오름 투어");
+        assertThat(out).contains("• 마지막에 한라산(추정) 방문");
+    }
 }
