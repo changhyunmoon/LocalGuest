@@ -81,4 +81,14 @@ class AiRecommendationMetricsTest {
         assertThat(registry.summary("localguest.ai.recommend.diversity_penalty_magnitude", "policy_version", "pv").count())
                 .isEqualTo(1);
     }
+
+    @Test
+    void llm_prompt_extraction_should_record_counter_and_timer() {
+        metrics.recordLlmPromptExtraction("success", 500_000, "pv");
+
+        assertThat(registry.counter("localguest.ai.recommend.llm_prompt_extraction",
+                "policy_version", "pv", "result", "success").count()).isEqualTo(1);
+        assertThat(registry.timer("localguest.ai.recommend.llm_prompt_extraction_latency",
+                "policy_version", "pv").count()).isEqualTo(1);
+    }
 }
