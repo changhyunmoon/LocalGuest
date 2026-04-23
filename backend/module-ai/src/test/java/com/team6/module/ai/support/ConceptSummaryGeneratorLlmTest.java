@@ -18,7 +18,7 @@ class ConceptSummaryGeneratorLlmTest {
                 .llmSpecialRequests("애매한 일정 조정 가능해")
                 .build();
 
-        assertThat(ConceptSummaryGenerator.generate(req)).isEqualTo("• 맛집 위주\n\n애매한 일정 조정 가능해");
+        assertThat(ConceptSummaryGenerator.generate(req)).isEqualTo("• 맛집 위주\n애매한 일정 조정 가능해");
     }
 
     @Test
