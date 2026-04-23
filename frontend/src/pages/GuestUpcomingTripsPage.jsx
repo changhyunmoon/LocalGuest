@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 
 import { PageEmpty, PageError, PageLoading } from '../components/PageStates.jsx'
 import { apiRequest } from '../api/client.js'
@@ -7,6 +7,9 @@ import {
   daysUntil,
   fetchGuestMatchRequests,
   fetchGuestPayments,
+  GUEST_CANCEL_WINDOW_MS,
+  guestCanCancelByPolicy,
+  latestCompletedPaymentPaidAtMs,
   loadGuideNicknames,
   pickLatestCompletedPaymentIdForRequest,
 } from '../lib/matchingGuest.js'
@@ -49,6 +52,25 @@ function statusText(status) {
   if (s === 'CANCELLED') return '취소됨'
   if (s === 'REJECTED') return '거절됨'
   return '상태 확인 필요'
+}
+
+function statusBadgeClass(status) {
+  const s = String(status ?? '').toUpperCase()
+  if (s === 'PENDING') return 'gut-status-badge--pending'
+  if (s === 'ACCEPTED') return 'gut-status-badge--pay'
+  if (s === 'PAID') return 'gut-status-badge--paid'
+  if (s === 'IN_PROGRESS') return 'gut-status-badge--live'
+  return 'gut-status-badge--muted'
+}
+
+/** 짧은 한글 뱃지(카드 푸터) */
+function statusBadgeLabel(status) {
+  const s = String(status ?? '').toUpperCase()
+  if (s === 'PENDING') return '가이드 응답 대기'
+  if (s === 'ACCEPTED') return '결제 전'
+  if (s === 'PAID') return '예약 확정'
+  if (s === 'IN_PROGRESS') return '여행 진행 중'
+  return statusText(status)
 }
 
 /** 한글 음절 받침 — 조사 와/과 */
@@ -113,6 +135,15 @@ function buildTripCardTitle(row, guideNickname) {
   return `${nicknameWithWaParticle(nick)} 함께하는 ${dest} ${act} 투어`
 }
 
+function formatCancelRemain(endsAtMs) {
+  const ms = endsAtMs - Date.now()
+  if (ms <= 0) return '0:00'
+  const s = Math.ceil(ms / 1000)
+  const m = Math.floor(s / 60)
+  const r = s % 60
+  return `${m}:${String(r).padStart(2, '0')}`
+}
+
 function groupRows(rows) {
   const paymentPending = []
   const inProgress = []
@@ -142,6 +173,7 @@ function groupRows(rows) {
 }
 
 export function GuestUpcomingTripsPage() {
+  const location = useLocation()
   const navigate = useNavigate()
   const [rows, setRows] = useState([])
   const [names, setNames] = useState({})
@@ -150,6 +182,8 @@ export function GuestUpcomingTripsPage() {
   const [toast, setToast] = useState('')
   const [busyId, setBusyId] = useState(null)
   const [paymentIdByRequest, setPaymentIdByRequest] = useState(() => ({}))
+  const [payments, setPayments] = useState(/** @type {unknown[]} */ ([]))
+  const [, setCancelTick] = useState(0)
 
   const reload = useCallback(async () => {
     const [all, paysRaw] = await Promise.all([
@@ -176,6 +210,7 @@ export function GuestUpcomingTripsPage() {
       if (pid != null) payMap[r.requestId] = pid
     }
     setPaymentIdByRequest(payMap)
+    setPayments(pays)
   }, [])
 
   useEffect(() => {
@@ -195,6 +230,26 @@ export function GuestUpcomingTripsPage() {
       cancelled = true
     }
   }, [reload])
+
+  const hasCancelCountdown = useMemo(() => {
+    return rows.some((r) => {
+      if (String(r.status) !== 'PAID') return false
+      const pm = latestCompletedPaymentPaidAtMs(payments, r.requestId)
+      return guestCanCancelByPolicy(r, pm)
+    })
+  }, [rows, payments])
+
+  useEffect(() => {
+    if (!hasCancelCountdown) return
+    const id = window.setInterval(() => setCancelTick((c) => c + 1), 1000)
+    return () => window.clearInterval(id)
+  }, [hasCancelCountdown])
+
+  useEffect(() => {
+    if (!location.state?.matchRequestSubmitted) return
+    setToast('매칭 요청이 등록됐어요.「일정 확인하기」를 누르면 가이드 응답·코스·지도를 이어서 볼 수 있어요.')
+    navigate('/mypage/itinerary', { replace: true, state: {} })
+  }, [location.state, navigate])
 
   const openMatchScreen = useCallback(
     (row) => {
@@ -276,20 +331,39 @@ export function GuestUpcomingTripsPage() {
                   const nick = names[row.guideId] ?? `가이드 #${row.guideId}`
                   const budget = formatBudgetRangeKrw(row.budgetMinWon, row.budgetMaxWon, row.desiredBudget)
                   const tripTitle = buildTripCardTitle(row, nick)
+                  const paidAtMs = latestCompletedPaymentPaidAtMs(payments, row.requestId)
+                  const canCancel = guestCanCancelByPolicy(row, paidAtMs)
+                  const cancelEnds =
+                    String(row.status) === 'PAID' && paidAtMs != null
+                      ? paidAtMs + GUEST_CANCEL_WINDOW_MS
+                      : null
+                  const cancelRemainStr =
+                    cancelEnds != null && canCancel ? formatCancelRemain(cancelEnds) : null
                   return (
                     <article key={row.requestId} className="gut-card gut-card--timeline">
                       <div className="gut-card-split">
                         <div className="gut-card-text">
                           <div className="gut-card-hero-row">
-                            {row.status === 'ACCEPTED' && <span className="gut-payment-need">결제 필요</span>}
                             <span className="gut-date gut-date--hero">{row.desiredDate ?? '—'}</span>
                           </div>
                           <h3 className="gut-title" title={tripTitle}>{tripTitle}</h3>
                           <p className="gut-line gut-line--sub">예산 {budget}</p>
+                          {String(row.status) === 'PAID' && paidAtMs != null && canCancel && cancelRemainStr && (
+                            <p className="gut-cancel-remain" role="status">
+                              취소 가능 <strong>{cancelRemainStr}</strong> 남음 (결제 완료 후 2시간)
+                            </p>
+                          )}
+                          {String(row.status) === 'PAID' && paidAtMs != null && !canCancel && (
+                            <p className="gut-cancel-closed" role="status">
+                              예약 취소는 결제 완료 후 2시간 이내에만 가능해요.
+                            </p>
+                          )}
                           <div className="gut-card-footer">
-                            <span className="gut-trail" aria-hidden="true">✈︎ 여행 준비 중</span>
+                            <span className={`gut-status-badge ${statusBadgeClass(row.status)}`} role="status">
+                              {statusBadgeLabel(row.status)}
+                            </span>
                             <div className="gut-card-actions">
-                              {(row.status === 'ACCEPTED' || row.status === 'PAID') && (
+                              {canCancel && (
                                 <button
                                   type="button"
                                   className="gut-cancel"
@@ -306,17 +380,21 @@ export function GuestUpcomingTripsPage() {
                           </div>
                         </div>
                         <div className="gut-card-preview-wrap">
-                          <div
-                            className="gut-trip-polaroid"
-                            role="img"
-                            aria-label={ddayLabel(d, row.status)}
-                          >
-                            <span className="gut-trip-polaroid__tape" />
-                            <span
-                              className={`gut-trip-polaroid__dday${d === 0 ? ' is-today' : d === 1 ? ' is-soon' : ''}`}
+                          <div className="gut-cal-peek" aria-hidden="true">
+                            <div className="gut-cal-peek__spring" />
+                            <div
+                              className={`gut-trip-polaroid gut-trip-polaroid--cal${d === 1 ? ' is-d1' : d === 0 ? ' is-dday' : ''}`}
+                              role="img"
+                              aria-label={ddayLabel(d, row.status)}
                             >
-                              {ddayLabel(d, row.status)}
-                            </span>
+                              <div className="gut-cal-peek__grid" />
+                              <span className="gut-trip-polaroid__tape" />
+                              <span
+                                className={`gut-trip-polaroid__dday${d === 0 ? ' is-today' : d === 1 ? ' is-soon' : ''}`}
+                              >
+                                {ddayLabel(d, row.status)}
+                              </span>
+                            </div>
                           </div>
                         </div>
                       </div>

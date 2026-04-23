@@ -2,7 +2,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 
 import { PageError, PageLoading } from '../components/PageStates.jsx'
+import { ReviewCarousel } from '../components/ReviewCarousel.jsx'
 import { apiRequest } from '../api/client'
+import { extractReviewListFromPage } from '../lib/reviewPage.js'
 import { fetchGuestPayments, pickLatestCompletedPaymentIdForRequest } from '../lib/matchingGuest.js'
 import { loadKakaoSdk } from '../lib/kakaoMapSdk.js'
 
@@ -232,6 +234,11 @@ export function GuideMatchOptionsPage() {
     return Array.isArray(feeds) ? feeds : []
   }, [guideDetail])
 
+  const modalCareers = useMemo(() => {
+    const rows = guideDetail?.careers
+    return Array.isArray(rows) ? rows : []
+  }, [guideDetail])
+
   const modalStoryBlocks = useMemo(() => {
     const p = profile
     if (!p) return []
@@ -273,7 +280,7 @@ export function GuideMatchOptionsPage() {
     let cancelled = false
     setModalReviewsLoading(true)
     setModalReviewsErr('')
-    void apiRequest(`/reviews/guide/${guideId}?size=15&sort=createdAt,desc`, { method: 'GET', skipAuth: true })
+    void apiRequest(`/reviews/guide/${guideId}?size=15&sort=id,desc`, { method: 'GET', skipAuth: true })
       .then(async (revRes) => {
         const revText = await revRes.text()
         if (cancelled) return
@@ -283,8 +290,7 @@ export function GuideMatchOptionsPage() {
           return
         }
         const page = revText ? JSON.parse(revText) : {}
-        const raw = page?.content
-        setModalReviews(Array.isArray(raw) ? raw : [])
+        setModalReviews(extractReviewListFromPage(page))
       })
       .catch(() => {
         if (!cancelled) {
@@ -420,14 +426,14 @@ export function GuideMatchOptionsPage() {
 
   if (loading) {
     return (
-      <div className="gmo">
+      <div className="gmo gmo--journal">
         <PageLoading />
       </div>
     )
   }
   if (error || !profile) {
     return (
-      <div className="gmo">
+      <div className="gmo gmo--journal">
         <PageError message={error || '가이드를 찾을 수 없습니다.'}>
           <Link to="/guides">가이드 목록</Link>
         </PageError>
@@ -436,10 +442,18 @@ export function GuideMatchOptionsPage() {
   }
 
   return (
-    <div className="gmo">
-      <Link to="/ai-search" className="gmo-back">
-        ← 검색으로 돌아가기
-      </Link>
+    <div className="gmo gmo--journal">
+      <div className="gmo-topbar">
+        <Link to={`/guides/${guideId}`} className="gmo-back gmo-back--pill">
+          ← 가이드 프로필
+        </Link>
+        <Link to="/mypage/itinerary" className="gmo-back gmo-back--pill gmo-back--line">
+          앞으로의 여행 일정
+        </Link>
+      </div>
+      <p className="gmo-kicker" role="text">
+        로컬 동행 · 코스 응답
+      </p>
 
       {requestId == null && (
         <p className="gmo-banner">
@@ -459,7 +473,7 @@ export function GuideMatchOptionsPage() {
       )}
 
       <header
-        className="gmo-hero gmo-hero--clickable"
+        className="gmo-hero gmo-hero--journal gmo-hero--clickable"
         role="button"
         tabIndex={0}
         aria-haspopup="dialog"
@@ -609,22 +623,64 @@ export function GuideMatchOptionsPage() {
               <h3 id="gmo-modal-intro" className="gmo-profile-dialog-h3">
                 소개
               </h3>
-              {profile.bio && String(profile.bio).trim() ? (
-                <p className="gmo-profile-dialog-prose">{String(profile.bio).trim()}</p>
-              ) : (
-                <p className="gmo-profile-dialog-muted">등록된 한 줄 소개가 없어요.</p>
-              )}
-              {modalStoryBlocks.length > 0 && (
-                <dl className="gmo-profile-dialog-dl">
-                  {modalStoryBlocks.map((row) => (
-                    <div key={row.label}>
-                      <dt>{row.label}</dt>
-                      <dd>{row.text}</dd>
-                    </div>
-                  ))}
-                </dl>
-              )}
+              <div className="gmo-profile-dialog-intro-board">
+                <span className="gmo-profile-dialog-clip" aria-hidden>
+                  <svg viewBox="0 0 24 24" width="20" height="20" focusable="false" aria-hidden>
+                    <path
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.7"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M8.2 5.2v12.6a3.8 3.8 0 1 0 7.6 0V6.4a2.2 2.2 0 1 0-4.4 0v11.2"
+                    />
+                  </svg>
+                </span>
+                {profile.bio && String(profile.bio).trim() ? (
+                  <p className="gmo-profile-dialog-prose gmo-profile-dialog-bio-inner">{String(profile.bio).trim()}</p>
+                ) : (
+                  <p className="gmo-profile-dialog-muted gmo-profile-dialog-bio-inner">등록된 한 줄 소개가 없어요.</p>
+                )}
+                {modalStoryBlocks.length > 0 && (
+                  <dl className="gmo-profile-dialog-dl" style={{ marginTop: '0.85rem' }}>
+                    {modalStoryBlocks.map((row) => (
+                      <div key={row.label}>
+                        <dt>{row.label}</dt>
+                        <dd>{row.text}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                )}
+              </div>
             </section>
+
+            {modalCareers.length > 0 ? (
+              <section className="gmo-profile-dialog-section" aria-labelledby="gmo-modal-career">
+                <h3 id="gmo-modal-career" className="gmo-profile-dialog-h3">
+                  경력 · 자격
+                </h3>
+                <ul className="gmo-profile-dialog-careers">
+                  {modalCareers.map((c) => {
+                    const title = c?.title != null && String(c.title).trim() !== '' ? String(c.title).trim() : '경력'
+                    const acq = c?.acquiredAt
+                    const acqText =
+                      acq != null && acq !== ''
+                        ? String(acq).length >= 10
+                          ? String(acq).slice(0, 10)
+                          : String(acq)
+                        : ''
+                    const desc = c?.description && String(c.description).trim() ? String(c.description).trim() : ''
+                    return (
+                      <li key={c.careerId ?? title} className="gmo-profile-dialog-career">
+                        <div className="gmo-profile-dialog-career-title">{title}</div>
+                        {acqText ? <div className="gmo-profile-dialog-career-date">{acqText}</div> : null}
+                        {desc ? <p className="gmo-profile-dialog-career-desc">{desc}</p> : null}
+                      </li>
+                    )
+                  })}
+                </ul>
+              </section>
+            ) : null}
 
             <section className="gmo-profile-dialog-section" aria-labelledby="gmo-modal-feeds">
               <h3 id="gmo-modal-feeds" className="gmo-profile-dialog-h3">
@@ -665,21 +721,7 @@ export function GuideMatchOptionsPage() {
               ) : modalReviews.length === 0 ? (
                 <p className="gmo-profile-dialog-muted">아직 등록된 후기가 없어요.</p>
               ) : (
-                <ul className="gmo-profile-dialog-reviews">
-                  {modalReviews.map((r) => (
-                    <li key={r.id} className="gmo-profile-dialog-review">
-                      <div className="gmo-profile-dialog-review-head">
-                        <span className="gmo-profile-dialog-review-name">{r.writeNickname ?? '여행자'}</span>
-                        <span className="gmo-profile-dialog-review-stars">
-                          {'🌟'.repeat(Math.min(5, Math.max(0, Number(r.rating) || 0)))}
-                        </span>
-                      </div>
-                      {r.content && String(r.content).trim() ? (
-                        <p className="gmo-profile-dialog-review-text">{String(r.content).trim()}</p>
-                      ) : null}
-                    </li>
-                  ))}
-                </ul>
+                <ReviewCarousel reviews={modalReviews} variant="dialog" className="gmo-profile-review-carousel" />
               )}
             </section>
 

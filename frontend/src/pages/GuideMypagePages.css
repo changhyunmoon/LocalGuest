@@ -3693,3 +3693,204 @@
   transform: none;
   box-shadow: none;
 }
+
+/* ------------------------------------------------------------------
+   GuideReviewsManage — Feedback moodboard
+------------------------------------------------------------------ */
+.grv-mood {
+  max-width: 56rem;
+}
+
+.grv-mood-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 1.1rem;
+  margin-bottom: 1.4rem;
+  padding-bottom: 1.1rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+@media (min-width: 720px) {
+  .grv-mood-hero {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+.grv-mood-title {
+  margin: 0 0 0.35rem;
+  font-size: 1.35rem;
+  font-weight: 900;
+  color: #0f172a;
+  font-family: var(--hand, 'Apple SD Gothic Neo', system-ui, sans-serif);
+  letter-spacing: -0.02em;
+}
+
+.grv-mood-sub {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.grv-mood-loading,
+.grv-mood-empty-score {
+  font-size: 0.86rem;
+  color: #9ca3af;
+  font-weight: 600;
+  align-self: center;
+}
+
+.grv-mood-stats {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.9rem 1.6rem;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 1.1rem;
+  padding: 0.75rem 1rem;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+}
+
+.grv-mood-stat__label {
+  margin: 0 0 0.15rem;
+  font-size: 0.58rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+.grv-mood-stat__val {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 900;
+  color: #0f172a;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+
+.grv-mood-stat__unit {
+  font-size: 0.9rem;
+  color: #cbd5e1;
+  font-weight: 800;
+}
+
+.grv-mood-stat-div {
+  width: 1px;
+  min-height: 2.1rem;
+  background: #e2e8f0;
+  align-self: stretch;
+}
+
+.grv-mood-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1.15rem;
+  position: relative;
+  padding: 0.25rem 0 0.5rem;
+}
+
+.grv-mood-tile {
+  position: relative;
+  padding: 1.1rem 1.05rem 0.9rem;
+  border-radius: 0.4rem;
+  min-height: 9.2rem;
+  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.1);
+  border: 1px solid rgba(15, 23, 42, 0.04);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.grv-mood-tile:nth-child(2n) {
+  transform: rotate(0.9deg);
+}
+.grv-mood-tile:nth-child(3n) {
+  transform: rotate(-0.65deg);
+}
+.grv-mood-tile:hover {
+  transform: rotate(0deg) scale(1.02);
+  z-index: 2;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.12);
+}
+
+.grv-mood-tile--emerald { background: #ecfdf5; }
+.grv-mood-tile--amber { background: #fffbeb; }
+.grv-mood-tile--rose { background: #fff1f2; }
+.grv-mood-tile--indigo { background: #eef2ff; }
+.grv-mood-tile--sky { background: #f0f9ff; }
+.grv-mood-tile--fuchsia { background: #fdf4ff; }
+
+.grv-mood-tile__pin {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 1.4rem;
+  height: 1.4rem;
+  border-radius: 999px;
+  background: #e2e8f0;
+  border: 3px solid #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+}
+
+.grv-mood-tile__pin::after {
+  content: '';
+  position: absolute;
+  inset: 5px;
+  border-radius: 999px;
+  background: #64748b;
+}
+
+.grv-mood-tile__stars {
+  margin: 0.4rem 0 0.45rem;
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
+.grv-mood-tile__quote {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: #1e293b;
+  font-family: var(--hand, 'Apple SD Gothic Neo', system-ui, sans-serif);
+  display: -webkit-box;
+  -webkit-line-clamp: 5;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.grv-mood-tile__foot {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.65rem;
+  padding-top: 0.45rem;
+  border-top: 1px solid rgba(15, 23, 42, 0.07);
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #64748b;
+}
+
+.grv-mood-tile__name {
+  color: #0f172a;
+}
+
+.grv-mood-pager {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-top: 1.1rem;
+}
+
+.grv-mood-pager__meta {
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: #64748b;
+}

@@ -17,6 +17,22 @@
   box-shadow: 0 12px 24px rgba(71, 59, 40, 0.1);
 }
 
+/* 상단 민트 테이프(한눈에 보기) */
+.gut-hero::before {
+  content: '';
+  position: absolute;
+  top: -7px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-1.8deg);
+  width: 86px;
+  height: 18px;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #99f6e4, #5eead4, #2dd4bf);
+  box-shadow: 0 2px 8px rgba(15, 118, 110, 0.25);
+  z-index: 3;
+  pointer-events: none;
+}
+
 .gut-hero-badge {
   display: inline-flex;
   align-items: center;
@@ -68,7 +84,7 @@
 .gut-section {
   border: 1px solid #d6d3c2;
   border-radius: 16px;
-  background: #fffef9;
+  background: #fff;
   padding: 0.9rem;
   box-shadow: 0 10px 22px rgba(71, 59, 40, 0.09);
 }
@@ -148,9 +164,9 @@
   position: relative;
   z-index: 1;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) clamp(5.5rem, 22vw, 8.1rem);
+  grid-template-columns: minmax(0, 1fr) 7.25rem;
   gap: 0.7rem 1rem;
-  align-items: stretch;
+  align-items: start;
 }
 
 .gut-card-text {
@@ -169,15 +185,20 @@
 
 .gut-card-preview-wrap {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
-  min-height: 6.25rem;
+  width: 7.25rem;
+  flex-shrink: 0;
+  padding-top: 0.15rem;
+  perspective: 520px;
 }
 
 .gut-trip-polaroid {
   position: relative;
-  width: 100%;
-  max-width: 7.85rem;
+  box-sizing: border-box;
+  width: 6.5rem;
+  min-width: 6.5rem;
+  max-width: 6.5rem;
   aspect-ratio: 4 / 5;
   border-radius: 2px;
   border: 1px solid #d6d3c2;
@@ -195,7 +216,7 @@
   padding: 0.2rem 0.35rem;
   text-align: center;
   font-family: var(--heading);
-  font-size: clamp(1.28rem, 4.8vmin, 1.62rem);
+  font-size: 1.34rem;
   font-weight: 900;
   letter-spacing: -0.06em;
   line-height: 1.1;
@@ -221,8 +242,106 @@
     0 0.08em 0.12em rgba(154, 52, 18, 0.12);
 }
 
+.gut-cal-peek {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+}
+
+.gut-cal-peek__spring {
+  width: 1.1rem;
+  height: 0.4rem;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #cbd5e1, #94a3b8);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.4);
+  animation: gutCalWobble 2.4s ease-in-out infinite;
+}
+
+.gut-cal-peek__grid {
+  position: absolute;
+  inset: 0.35rem 0.45rem 2.1rem 0.45rem;
+  border-radius: 4px;
+  background-image: linear-gradient(rgba(148, 163, 184, 0.12) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.12) 1px, transparent 1px);
+  background-size: 20% 25%;
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+.gut-trip-polaroid--cal {
+  animation: gutCalNudge 2.2s ease-in-out infinite;
+  transform-style: preserve-3d;
+}
+
+.gut-trip-polaroid--cal.is-d1 {
+  box-shadow: 0 10px 22px rgba(234, 88, 12, 0.18);
+  border-color: #fdba74;
+}
+
+.gut-trip-polaroid--cal.is-dday {
+  box-shadow: 0 10px 22px rgba(225, 29, 72, 0.16);
+}
+
 .gut-trip-polaroid__tape {
-  display: none;
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-2deg);
+  width: 28px;
+  height: 9px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #fbcfe8, #f9a8d4);
+  opacity: 0.9;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+  display: block;
+}
+
+.gut-cancel-remain {
+  margin: 0.35rem 0 0;
+  font-size: 0.76rem;
+  color: #0d9488;
+  font-weight: 700;
+}
+
+.gut-cancel-remain strong {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+.gut-cancel-closed {
+  margin: 0.35rem 0 0;
+  font-size: 0.74rem;
+  color: #64748b;
+  font-weight: 600;
+}
+
+@keyframes gutCalWobble {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(2px);
+  }
+}
+
+@keyframes gutCalNudge {
+  0%,
+  100% {
+    transform: rotate(-3.5deg) translateY(0);
+  }
+  50% {
+    transform: rotate(-2deg) translateY(-2px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gut-cal-peek__spring,
+  .gut-trip-polaroid--cal {
+    animation: none;
+  }
 }
 
 .gut-title {
@@ -256,12 +375,47 @@
   gap: 0.55rem;
 }
 
-.gut-trail {
+.gut-status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.32rem 0.6rem;
+  border-radius: 8px;
   font-size: 0.72rem;
-  font-weight: 900;
-  letter-spacing: -0.01em;
-  color: rgba(143, 70, 100, 0.55);
-  white-space: nowrap;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  border: 1px solid;
+  max-width: 100%;
+}
+
+.gut-status-badge--pending {
+  background: #fffbeb;
+  color: #92400e;
+  border-color: #fcd34d;
+}
+
+.gut-status-badge--pay {
+  background: #e0f2fe;
+  color: #075985;
+  border-color: #7dd3fc;
+}
+
+.gut-status-badge--paid {
+  background: #d1fae5;
+  color: #065f46;
+  border-color: #6ee7b7;
+}
+
+.gut-status-badge--live {
+  background: #ede9fe;
+  color: #5b21b6;
+  border-color: #c4b5fd;
+}
+
+.gut-status-badge--muted {
+  background: #f1f5f9;
+  color: #475569;
+  border-color: #e2e8f0;
 }
 
 .gut-card--timeline::before {
@@ -394,12 +548,15 @@
   }
 
   .gut-card-preview-wrap {
-    min-height: 0;
+    width: 100%;
+    padding-top: 0.35rem;
     padding-bottom: 0.15rem;
   }
 
   .gut-trip-polaroid {
-    max-width: 6.75rem;
+    width: 6.5rem;
+    min-width: 6.5rem;
+    max-width: 6.5rem;
     margin-inline: auto;
   }
 }
@@ -449,8 +606,10 @@
     align-items: stretch;
   }
 
-  .gut-trail {
+  .gut-status-badge {
     text-align: center;
+    justify-content: center;
+    width: 100%;
   }
 
   .gut-open {

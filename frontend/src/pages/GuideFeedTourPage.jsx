@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 
 import { PageEmpty, PageError, PageLoading } from '../components/PageStates.jsx'
@@ -36,14 +36,79 @@ async function fetchJson(path, { skipAuth = true } = {}) {
   return text ? JSON.parse(text) : null
 }
 
+/** Spring `Page<>` 및 변형 응답에서 리뷰 배열만 추출 */
+function extractPageContent(raw) {
+  if (raw == null) return []
+  if (Array.isArray(raw)) return raw
+  if (typeof raw !== 'object') return []
+  if (Array.isArray(raw.content)) return raw.content
+  const d = raw.data
+  if (d && typeof d === 'object' && Array.isArray(d.content)) return d.content
+  return []
+}
+
+function formatReviewWhen(iso) {
+  if (iso == null || iso === '') return ''
+  try {
+    return new Date(iso).toLocaleDateString('ko-KR', { year: 'numeric', month: 'short', day: 'numeric' })
+  } catch {
+    return ''
+  }
+}
+
 export function GuideFeedTourPage() {
   const { guideId, feedId } = useParams()
   const navigate = useNavigate()
   const { isAuthenticated } = useAuth()
   const [detail, setDetail] = useState(null)
   const [reviews, setReviews] = useState([])
+  const [reviewErr, setReviewErr] = useState('')
+  const [reviewReloadKey, setReviewReloadKey] = useState(0)
+  const [reviewsLoading, setReviewsLoading] = useState(true)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
+  const reviewTrackRef = useRef(/** @type {HTMLDivElement | null} */ (null))
+  const [reviewSlide, setReviewSlide] = useState(0)
+
+  const scrollReviewBy = useCallback((dir) => {
+    const el = reviewTrackRef.current
+    if (!el) return
+    const w = el.clientWidth
+    if (w <= 0) return
+    el.scrollBy({ left: dir * w, behavior: 'smooth' })
+  }, [])
+
+  useEffect(() => {
+    const el = reviewTrackRef.current
+    if (!el || reviews.length === 0) return
+    const onScroll = () => {
+      const w = el.clientWidth
+      if (w <= 0) return
+      setReviewSlide(Math.min(reviews.length - 1, Math.max(0, Math.round(el.scrollLeft / w))))
+    }
+    el.addEventListener('scroll', onScroll, { passive: true })
+    onScroll()
+    return () => el.removeEventListener('scroll', onScroll)
+  }, [reviews.length])
+
+  useEffect(() => {
+    setReviewSlide(0)
+    const el = reviewTrackRef.current
+    if (el) {
+      requestAnimationFrame(() => {
+        el.scrollTo({ left: 0, behavior: 'auto' })
+      })
+    }
+  }, [guideId, reviewReloadKey])
+
+  /** 후기 목록이 DOM에 그려진 직후 첫 슬라이드로 정렬 */
+  useLayoutEffect(() => {
+    if (reviewsLoading || reviews.length === 0) return
+    const el = reviewTrackRef.current
+    if (!el) return
+    el.scrollTo({ left: 0, behavior: 'auto' })
+    setReviewSlide(0)
+  }, [reviewsLoading, reviews.length, guideId, reviewReloadKey])
 
   useEffect(() => {
     let cancelled = false
@@ -51,17 +116,8 @@ export function GuideFeedTourPage() {
       setLoading(true)
       setError('')
       try {
-        const [d, revPage] = await Promise.all([
-          fetchJson(`/guides/${guideId}/detail`, { skipAuth: true }),
-          fetchJson(`/reviews/guide/${guideId}?size=6&sort=createdAt,desc`, { skipAuth: true }).catch(() => ({
-            content: [],
-          })),
-        ])
-        if (!cancelled) {
-          setDetail(d)
-          const raw = revPage?.content
-          setReviews(Array.isArray(raw) ? raw : [])
-        }
+        const d = await fetchJson(`/guides/${guideId}/detail`, { skipAuth: true })
+        if (!cancelled) setDetail(d)
       } catch (e) {
         if (!cancelled) setError(e instanceof Error ? e.message : '오류')
       } finally {
@@ -72,6 +128,44 @@ export function GuideFeedTourPage() {
       cancelled = true
     }
   }, [guideId])
+
+  useEffect(() => {
+    if (!guideId) return
+    let cancelled = false
+    setReviewsLoading(true)
+    setReviewErr('')
+    void (async () => {
+      try {
+        const res = await apiRequest(`/reviews/guide/${guideId}?size=50`, { method: 'GET', skipAuth: true })
+        const text = await res.text()
+        if (cancelled) return
+        if (!res.ok) {
+          setReviews([])
+          setReviewErr('후기 목록을 불러오지 못했어요. 네트워크를 확인한 뒤 다시 시도해 주세요.')
+          return
+        }
+        let json = null
+        try {
+          json = text && text.trim() ? JSON.parse(text) : null
+        } catch {
+          setReviews([])
+          setReviewErr('후기 응답을 해석할 수 없어요.')
+          return
+        }
+        setReviews(extractPageContent(json))
+      } catch {
+        if (!cancelled) {
+          setReviews([])
+          setReviewErr('후기를 불러오지 못했어요.')
+        }
+      } finally {
+        if (!cancelled) setReviewsLoading(false)
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [guideId, reviewReloadKey])
 
   const feed = useMemo(() => {
     const feeds = detail?.feeds
@@ -147,7 +241,7 @@ export function GuideFeedTourPage() {
   const chatState = isAuthenticated ? undefined : { returnTo: `/guides/${guideId}/feeds/${feedId}`, hint: '채팅은 로그인 후 이용할 수 있어요.' }
 
   return (
-    <div className="gft">
+    <div className="gft gft--journal">
       <button type="button" className="gft-back" onClick={() => goBack()}>
         ← 뒤로 가기
       </button>
@@ -180,7 +274,7 @@ export function GuideFeedTourPage() {
           ))}
         </aside>
 
-        <article className="gft-card">
+        <article className="gft-card gft-card--journal">
           <h1 className="gft-title">{tourTitle}</h1>
           <p className="gft-rating">
             🌟 {rating}{' '}
@@ -214,23 +308,77 @@ export function GuideFeedTourPage() {
           </section>
 
           <section className="gft-section" aria-labelledby="gft-rev">
-            <h2 id="gft-rev" className="gft-section-title">
+            <h2 id="gft-rev" className="gft-section-title gft-section-title--tape">
               생생한 후기 💌
             </h2>
-            {reviews.length === 0 ? (
+            {reviewsLoading ? (
+              <p className="gft-muted">후기를 불러오는 중…</p>
+            ) : reviewErr ? (
+              <p className="gft-err" role="alert">
+                {reviewErr}{' '}
+                <button type="button" className="gft-retry" onClick={() => setReviewReloadKey((k) => k + 1)}>
+                  다시 시도
+                </button>
+              </p>
+            ) : reviews.length === 0 && rc > 0 ? (
+              <p className="gft-muted">
+                집계상 <strong>{rc}건</strong>의 리뷰가 있으나, 목록이 비어 있어요. 서버·데이터를 확인하거나 잠시 후 다시 열어 주세요.
+              </p>
+            ) : reviews.length === 0 ? (
               <p className="gft-muted">아직 등록된 리뷰가 없어요.</p>
             ) : (
-              <ul className="gft-reviews">
-                {reviews.slice(0, 2).map((r) => (
-                  <li key={r.id} className="gft-review">
-                    <div className="gft-review-head">
-                      <span className="gft-review-name">{r.writeNickname ?? '여행자'}</span>
-                      <span className="gft-review-stars">{'🌟'.repeat(Math.min(5, Math.max(0, Number(r.rating) || 0)))}</span>
-                    </div>
-                    <p className="gft-review-text">{r.content}</p>
-                  </li>
-                ))}
-              </ul>
+              <div className="gft-review-carousel" aria-roledescription="carousel">
+                <div className="gft-review-carousel__chrome">
+                  <button
+                    type="button"
+                    className="gft-review-nav"
+                    aria-label="이전 후기"
+                    disabled={reviewSlide <= 0}
+                    onClick={() => scrollReviewBy(-1)}
+                  >
+                    ‹
+                  </button>
+                  <div className="gft-review-progress" aria-hidden>
+                    <div
+                      className="gft-review-progress__fill"
+                      style={{ width: `${((reviewSlide + 1) / reviews.length) * 100}%` }}
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    className="gft-review-nav"
+                    aria-label="다음 후기"
+                    disabled={reviewSlide >= reviews.length - 1}
+                    onClick={() => scrollReviewBy(1)}
+                  >
+                    ›
+                  </button>
+                </div>
+                <p className="gft-review-counter" aria-live="polite">
+                  {reviewSlide + 1} / {reviews.length}
+                </p>
+                <div className="gft-review-rail" ref={reviewTrackRef} tabIndex={0} role="region" aria-label="가이드 후기 슬라이드">
+                  {reviews.map((r, i) => {
+                    const id = r.id != null ? String(r.id) : `r-${i}`
+                    const stars = Math.min(5, Math.max(0, Math.round(Number(r.rating) || 0)))
+                    const when = formatReviewWhen(r.createdAt)
+                    return (
+                      <div key={id} className="gft-review-slide" aria-roledescription="slide">
+                        <div className="gft-review">
+                          <div className="gft-review-head">
+                            <span className="gft-review-name">{r.writeNickname ?? '여행자'}</span>
+                            <span className="gft-review-stars" aria-label={`${stars}점`}>
+                              {'🌟'.repeat(stars)}
+                            </span>
+                          </div>
+                          {when ? <p className="gft-review-when">{when}</p> : null}
+                          <p className="gft-review-text">{r.content != null && String(r.content).trim() !== '' ? r.content : '내용 없음'}</p>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
             )}
           </section>
         </article>
@@ -241,11 +389,14 @@ export function GuideFeedTourPage() {
           💬 1:1 채팅하기
         </Link>
         <Link
-          to={isAuthenticated ? '/mypage/itinerary' : '/auth/login'}
+          to={isAuthenticated ? `/guides/${guideId}#match-request` : '/auth/login'}
           state={
             isAuthenticated
-              ? { hint: '일정에서 매칭·요청 상태를 확인할 수 있어요.' }
-              : { returnTo: `/guides/${guideId}/feeds/${feedId}`, hint: '동행 요청은 로그인 후 마이페이지 일정에서 이어갈 수 있어요.' }
+              ? { hint: '아래로 스크롤되면「매칭 요청 보내기」로 일정을 등록할 수 있어요.' }
+              : {
+                  returnTo: `/guides/${guideId}#match-request`,
+                  hint: '로그인 후 달력이 있는 매칭 요청 섹션으로 이동해 이어갈 수 있어요.',
+                }
           }
           className="gft-btn gft-btn--primary"
         >

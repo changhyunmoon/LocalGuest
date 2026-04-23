@@ -15,7 +15,7 @@
 }
 
 .msg-rooms {
-  background: #fff;
+  background: #ffffff;
   border: 1px solid #dbe4ef;
   border-radius: 16px;
   padding: 1rem 0.85rem 0.85rem;
@@ -72,7 +72,7 @@
   text-align: left;
   border: 1px solid #dbe4ef;
   border-radius: 10px;
-  background: #fff;
+  background: #ffffff;
   padding: 0.55rem 0.65rem;
   cursor: pointer;
   transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, background-color 0.18s ease;
@@ -178,7 +178,7 @@
 }
 
 .msg-panel {
-  background: #fff;
+  background: #ffffff;
   border: 1px solid #dbe4ef;
   border-radius: 16px;
   overflow: hidden;
@@ -186,7 +186,7 @@
   flex-direction: column;
   height: min(74vh, 720px);
   min-height: 0; /* allow children to scroll instead of expanding page */
-  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.09);
   animation: scrapFloatSoft 5.8s ease-in-out infinite;
 }
 
@@ -340,11 +340,25 @@
 }
 
 .msg-mini-avatar {
+  flex-shrink: 0;
   width: 1.7rem;
   height: 1.7rem;
   border-radius: 50%;
-  background: #e5e7eb;
+  border: 1px solid #b7efd3;
   margin-top: 0.2rem;
+  background-color: #dff9ee;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: cover;
+}
+
+.msg-mini-avatar.is-empty {
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48' fill='none'%3E%3Ccircle cx='24' cy='17' r='8' fill='%23f3f7fb'/%3E%3Cpath d='M10 40c0-7.2 6.3-12 14-12s14 4.8 14 12' fill='%23f3f7fb'/%3E%3C/svg%3E"),
+    linear-gradient(150deg, #dff9ee, #d8f5e8);
+  background-repeat: no-repeat, no-repeat;
+  background-size: 52%, cover;
+  background-position: center, center;
 }
 
 .msg-bubble-box {
