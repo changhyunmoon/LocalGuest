@@ -1,0 +1,35 @@
+---
+alwaysApply: true
+---
+
+### 1) Trace ID / MDC
+- 모든 HTTP 요청은 `X-Request-Id`를 기준으로 추적한다.
+- 요청 헤더에 `X-Request-Id`가 없으면 서버가 생성(8~32자)하여 MDC `traceId`에 저장한다.
+- 응답 헤더에도 동일 `X-Request-Id`를 반드시 반환한다.
+- 요청 처리 종료 시 반드시 `MDC.clear()` 수행한다.
+- 비동기 실행 시(TaskExecutor 등) MDC 전파 전략(TaskDecorator)을 적용한다.
+### 2) 로그 레벨/계층 규칙
+- Controller: 요청 In/응답 Out은 `INFO`
+- Service: 상태 전이/생성/수정/삭제는 `INFO`, 분기 추적은 `DEBUG`
+- Repository/Infra: DB/외부연동 실패는 `ERROR`
+- Global Exception Handler: 비즈니스 예외 `WARN`, 시스템 예외 `ERROR`
+### 3) 공통 로그 포맷 키
+- 모든 주요 로그는 아래 키를 포함한다:
+  - `traceId`, `module`, `action`, `status`, `requestUri`, `method`, `latencyMs`
+- 권장 패턴:
+  - `[Module] 동작 - key: {}, status: {}, traceId: {}`
+- 문자열 결합 금지, 반드시 `{}` 슬롯 사용.
+### 4) 민감정보 금지
+- 아래는 로그 출력 금지(원문):
+  - `Authorization`, `Cookie`, `Set-Cookie`, Access/Refresh Token
+  - 비밀번호, 주민/결제 민감정보
+- 이메일/전화번호는 기본 마스킹 후 출력 (`ab***@domain.com`, `010-****-1234`).
+- 예외 로그는 `log.error("...", e)` 형태로 스택트레이스 포함.
+### 5) 성능 보호 규칙
+- 반복문 내부 상세 로그 금지(집계 1줄만 출력).
+- 고빈도 API의 `DEBUG`는 기본 비활성.
+- 대용량 객체 전체 덤프 로그 금지(요약 필드만 출력).
+### 6) 운영/모니터링
+- `dev`: 텍스트 로그, `prod`: JSON 구조화 로그 사용.
+- Actuator health/metrics는 운영에서 접근 제어 하에 노출.
+- 핵심 메트릭: `RPS`, `p95/p99 latency`, `error rate(4xx/5xx)`, `CPU/Mem`, DB 커넥션 사용률.
