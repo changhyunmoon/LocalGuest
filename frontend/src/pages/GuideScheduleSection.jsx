@@ -70,14 +70,24 @@ function calendarDayCaption(daySchedules, requestsByScheduleId) {
 
 function mergeSchedules(schedules, pendingSchedules) {
   const byId = new Map()
+  const extra = []
   for (const s of schedules) {
-    if (s?.scheduleId != null) byId.set(Number(s.scheduleId), s)
+    if (s?.scheduleId != null) {
+      byId.set(Number(s.scheduleId), s)
+      continue
+    }
+    // 백엔드가 연속 일정 차단을 위해 scheduleId 없는 가상 PENDING을 내려줄 수 있다.
+    // 이런 엔트리는 scheduleId로 dedupe가 불가능하므로 별도로 유지한다.
+    if (s?.availableDate && String(s?.status ?? '').toUpperCase() === 'PENDING') {
+      extra.push(s)
+    }
   }
   for (const s of pendingSchedules) {
     const id = Number(s.scheduleId)
     if (!Number.isNaN(id) && !byId.has(id)) byId.set(id, s)
   }
-  return [...byId.values()]
+  if (extra.length === 0) return [...byId.values()]
+  return [...byId.values(), ...extra]
 }
 
 function ScheduleDrawer({
