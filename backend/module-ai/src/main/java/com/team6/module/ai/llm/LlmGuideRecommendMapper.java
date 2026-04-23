@@ -10,6 +10,9 @@ import java.util.List;
  */
 public final class LlmGuideRecommendMapper {
 
+    /** DB·가이드 UI 과다 길이 방지(매칭 요약 등과 합쳐져도 TEXT 범위 내). */
+    private static final int MAX_SPECIAL_REQUESTS_CHARS = 500;
+
     private LlmGuideRecommendMapper() {
     }
 
@@ -42,7 +45,7 @@ public final class LlmGuideRecommendMapper {
                 .excludedLanguages(copyList(j.getExcludedLanguages()))
                 .softPenaltyActivityTags(copyList(j.getSoftPenaltyActivityTags()))
                 .llmGuideBullets(copyMaskedBulletList(j.getGuideBullets()))
-                .llmSpecialRequests(trimToNull(LlmCopyPiiMasker.mask(trimToNull(j.getSpecialRequests()))))
+                .llmSpecialRequests(limitSpecialRequests(trimToNull(LlmCopyPiiMasker.mask(trimToNull(j.getSpecialRequests())))))
                 .topN(topN)
                 .guideCandidates(guideCandidates)
                 .build();
@@ -54,6 +57,17 @@ public final class LlmGuideRecommendMapper {
         }
         String t = s.trim();
         return t.isEmpty() ? null : t;
+    }
+
+    private static String limitSpecialRequests(String s) {
+        if (s == null) {
+            return null;
+        }
+        if (s.length() <= MAX_SPECIAL_REQUESTS_CHARS) {
+            return s;
+        }
+        String cut = s.substring(0, MAX_SPECIAL_REQUESTS_CHARS).trim();
+        return cut.isEmpty() ? null : cut;
     }
 
     private static List<String> copyMaskedBulletList(List<String> raw) {
