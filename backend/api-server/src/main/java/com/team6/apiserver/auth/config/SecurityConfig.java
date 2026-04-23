@@ -120,7 +120,10 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new org.springframework.web.cors.CorsConfiguration();
 
-        configuration.addAllowedOrigin("http://localhost:5173"); // 리액트 주소
+        configuration.addAllowedOrigin("http://localhost:5173");          // 로컬 테스트용
+        configuration.addAllowedOrigin("https://bam-match.com");        // 실제 프론트 도메인
+        configuration.addAllowedOrigin("https://www.bam-match.com");    // www 포함 도메인
+
         configuration.addAllowedMethod("*"); // 모든 HTTP 메서드 허용 (GET, POST, OPTIONS 등)
         configuration.addAllowedHeader("*"); // 모든 헤더 허용
         configuration.setAllowCredentials(true); // 쿠키/인증 정보 포함 허용
