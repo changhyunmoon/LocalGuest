@@ -12,6 +12,9 @@ localguest:
   openai:
     enabled: false
     model: gpt-4o-mini
+  ai:
+    # LLM 프롬프트 추출(LlmPromptExtractor 빈 + OpenAI 활성 시). 스텁 단계에서는 false 권장.
+    llm-prompt-extraction-enabled: false
 
 ---
 spring:
