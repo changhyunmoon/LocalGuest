@@ -38,6 +38,6 @@ public class LlmGuideRecommendJson {
     private List<String> softPenaltyActivityTags;
     /** 가이드에게 보여줄 짧은 불릿(반말 한 줄씩). */
     private List<String> guideBullets;
-    /** 특별 요청 등 문단으로 전달할 내용. */
+    /** 가이드에게 보여줄 서술형 요약(한두 문장). LLM 시스템 프롬프트에서 우선 채우도록 유도한다. */
     private String specialRequests;
 }

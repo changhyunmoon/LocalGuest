@@ -3672,3 +3672,457 @@ Caused by: java.sql.SQLSyntaxErrorException: Duplicate key name 'UKhh9kg6jti4n1e
 2026-04-23 15:28:42.021 INFO  [] o.s.o.j.LocalContainerEntityManagerFactoryBean - Closing JPA EntityManagerFactory for persistence unit 'default'
 2026-04-23 15:28:42.119 INFO  [] com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Shutdown initiated...
 2026-04-23 15:28:42.294 INFO  [] com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Shutdown completed.
+2026-04-23 15:29:14.707 INFO  [] o.h.validator.internal.util.Version - HV000001: Hibernate Validator 8.0.2.Final
+2026-04-23 15:29:14.998 INFO  [] c.t.apiserver.ApiServerApplication - Starting ApiServerApplication using Java 17.0.18 with PID 70900 (C:\Users\dkwlr\IdeaProjects\LocalGuest\backend\api-server\build\classes\java\main started by dkwlr in C:\Users\dkwlr\IdeaProjects\LocalGuest)
+2026-04-23 15:29:15.001 INFO  [] c.t.apiserver.ApiServerApplication - The following 1 profile is active: "local"
+2026-04-23 15:29:20.161 INFO  [] o.s.d.r.c.RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
+2026-04-23 15:29:20.161 INFO  [] o.s.d.r.c.RepositoryConfigurationDelegate - Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-04-23 15:29:21.038 INFO  [] o.s.d.r.c.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 841 ms. Found 13 JPA repository interfaces.
+2026-04-23 15:29:21.044 INFO  [] o.s.d.r.c.RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
+2026-04-23 15:29:21.045 INFO  [] o.s.d.r.c.RepositoryConfigurationDelegate - Bootstrapping Spring Data MongoDB repositories in DEFAULT mode.
+2026-04-23 15:29:21.072 INFO  [] o.s.d.r.c.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 24 ms. Found 1 MongoDB repository interface.
+2026-04-23 15:29:23.234 INFO  [] o.s.d.r.c.RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
+2026-04-23 15:29:23.238 INFO  [] o.s.d.r.c.RepositoryConfigurationDelegate - Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+2026-04-23 15:29:23.296 INFO  [] o.s.d.r.c.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 25 ms. Found 0 Redis repository interfaces.
+2026-04-23 15:29:23.855 WARN  [] o.m.s.mapper.ClassPathMapperScanner - No MyBatis mapper was found in '[com.team6.apiserver]' package. Please check your configuration.
+2026-04-23 15:29:26.511 INFO  [] o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port 8080 (http)
+2026-04-23 15:29:26.579 INFO  [] o.a.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-8080"]
+2026-04-23 15:29:26.585 INFO  [] o.a.catalina.core.StandardService - Starting service [Tomcat]
+2026-04-23 15:29:26.586 INFO  [] o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.40]
+2026-04-23 15:29:26.926 INFO  [] o.a.c.c.C.[.[localhost].[/api] - Initializing Spring embedded WebApplicationContext
+2026-04-23 15:29:26.928 INFO  [] o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 11670 ms
+2026-04-23 15:29:28.196 INFO  [] o.h.jpa.internal.util.LogHelper - HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-04-23 15:29:28.543 INFO  [] org.hibernate.Version - HHH000412: Hibernate ORM core version 6.6.13.Final
+2026-04-23 15:29:28.751 INFO  [] o.h.c.i.RegionFactoryInitiator - HHH000026: Second-level cache disabled
+2026-04-23 15:29:30.379 INFO  [] o.s.o.j.p.SpringPersistenceUnitInfo - No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-04-23 15:29:30.558 INFO  [] com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Starting...
+2026-04-23 15:29:31.645 INFO  [] com.zaxxer.hikari.pool.HikariPool - HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@7137cd14
+2026-04-23 15:29:31.653 INFO  [] com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Start completed.
+2026-04-23 15:29:31.923 WARN  [] org.hibernate.orm.deprecation - HHH90000025: MySQLDialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+2026-04-23 15:29:32.052 INFO  [] o.hibernate.orm.connections.pooling - HHH10001005: Database info:
+	Database JDBC URL [Connecting through datasource 'HikariDataSource (HikariPool-1)']
+	Database driver: undefined/unknown
+	Database version: 8.0.34
+	Autocommit mode: undefined/unknown
+	Isolation level: undefined/unknown
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown
+2026-04-23 15:29:44.022 INFO  [] o.h.e.t.j.p.i.JtaPlatformInitiator - HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-04-23 15:29:44.710 DEBUG [] org.hibernate.SQL - 
+    alter table chat_participants 
+       drop 
+       foreign key FKk0pkxdxk2whcy4j9lovmexvkq
+2026-04-23 15:29:56.005 DEBUG [] org.hibernate.SQL - 
+    alter table guide_careers 
+       drop 
+       foreign key fk_guide_careers_guide
+2026-04-23 15:29:57.301 DEBUG [] org.hibernate.SQL - 
+    alter table guide_feeds 
+       drop 
+       foreign key FKl5ncbecyap26kipe8hbrrv259
+2026-04-23 15:29:58.100 DEBUG [] org.hibernate.SQL - 
+    alter table guide_images 
+       drop 
+       foreign key fk_guide_images_guide
+2026-04-23 15:29:58.798 DEBUG [] org.hibernate.SQL - 
+    alter table guide_schedules 
+       drop 
+       foreign key FK9a3cimgvlpika296h0fkluqbl
+2026-04-23 15:30:00.046 DEBUG [] org.hibernate.SQL - 
+    alter table payment 
+       drop 
+       foreign key fk_payment_match_req
+2026-04-23 15:30:04.755 DEBUG [] org.hibernate.SQL - 
+    alter table refund 
+       drop 
+       foreign key fk_refund_payment
+2026-04-23 15:30:05.296 DEBUG [] org.hibernate.SQL - 
+    alter table review 
+       drop 
+       foreign key FKk0ccx5i4ci2wd70vegug074w1
+2026-04-23 15:30:05.661 DEBUG [] org.hibernate.SQL - 
+    alter table tour_extension 
+       drop 
+       foreign key fk_extension_match_req
+2026-04-23 15:30:05.976 DEBUG [] org.hibernate.SQL - 
+    drop table if exists chat_participants
+2026-04-23 15:30:06.244 DEBUG [] org.hibernate.SQL - 
+    drop table if exists chat_rooms
+2026-04-23 15:30:06.400 DEBUG [] org.hibernate.SQL - 
+    drop table if exists guide_careers
+2026-04-23 15:30:06.545 DEBUG [] org.hibernate.SQL - 
+    drop table if exists guide_feeds
+2026-04-23 15:30:06.629 DEBUG [] org.hibernate.SQL - 
+    drop table if exists guide_images
+2026-04-23 15:30:06.808 DEBUG [] org.hibernate.SQL - 
+    drop table if exists guide_profiles
+2026-04-23 15:30:06.922 DEBUG [] org.hibernate.SQL - 
+    drop table if exists guide_schedules
+2026-04-23 15:30:07.037 DEBUG [] org.hibernate.SQL - 
+    drop table if exists match_request
+2026-04-23 15:30:07.105 DEBUG [] org.hibernate.SQL - 
+    drop table if exists member
+2026-04-23 15:30:07.177 DEBUG [] org.hibernate.SQL - 
+    drop table if exists payment
+2026-04-23 15:30:07.295 DEBUG [] org.hibernate.SQL - 
+    drop table if exists refund
+2026-04-23 15:30:07.435 DEBUG [] org.hibernate.SQL - 
+    drop table if exists review
+2026-04-23 15:30:07.479 DEBUG [] org.hibernate.SQL - 
+    drop table if exists scrapbooks
+2026-04-23 15:30:07.660 DEBUG [] org.hibernate.SQL - 
+    drop table if exists tour_extension
+2026-04-23 15:30:07.931 DEBUG [] org.hibernate.SQL - 
+    create table chat_participants (
+        is_alarm_on bit not null,
+        chat_room_id bigint,
+        created_at datetime(6) not null,
+        id bigint not null auto_increment,
+        last_read_at datetime(6),
+        updated_at datetime(6) not null,
+        user_id bigint,
+        user_email varchar(255) not null,
+        user_nickname varchar(255),
+        primary key (id)
+    ) engine=InnoDB
+2026-04-23 15:30:08.044 DEBUG [] org.hibernate.SQL - 
+    create table chat_rooms (
+        participant_count integer,
+        created_at datetime(6) not null,
+        id bigint not null auto_increment,
+        last_message_at datetime(6),
+        updated_at datetime(6) not null,
+        last_message varchar(255),
+        owner_email varchar(255),
+        room_id varchar(255) not null,
+        title varchar(255) not null,
+        primary key (id)
+    ) engine=InnoDB
+2026-04-23 15:30:08.122 DEBUG [] org.hibernate.SQL - 
+    create table guide_careers (
+        acquired_at date not null,
+        created_at datetime(6) not null,
+        guide_id bigint not null,
+        id bigint not null auto_increment,
+        updated_at datetime(6) not null,
+        title varchar(100) not null,
+        description TEXT,
+        primary key (id)
+    ) engine=InnoDB
+2026-04-23 15:30:08.229 DEBUG [] org.hibernate.SQL - 
+    create table guide_feeds (
+        is_deleted bit not null,
+        created_at datetime(6) not null,
+        guide_id bigint not null,
+        id bigint not null auto_increment,
+        updated_at datetime(6) not null,
+        content TEXT not null,
+        image_url LONGTEXT,
+        primary key (id)
+    ) engine=InnoDB
+2026-04-23 15:30:08.315 DEBUG [] org.hibernate.SQL - 
+    create table guide_images (
+        is_main bit not null,
+        sort_order integer not null,
+        created_at datetime(6) not null,
+        guide_id bigint not null,
+        id bigint not null auto_increment,
+        updated_at datetime(6) not null,
+        image_url varchar(500) not null,
+        primary key (id)
+    ) engine=InnoDB
+2026-04-23 15:30:08.365 DEBUG [] org.hibernate.SQL - 
+    create table guide_profiles (
+        average_rating decimal(3,2),
+        is_active bit not null,
+        is_approved bit not null,
+        price_per_hour decimal(10,2),
+        residence_years integer,
+        review_count integer not null,
+        created_at datetime(6) not null,
+        id bigint not null auto_increment,
+        member_id bigint not null,
+        updated_at datetime(6) not null,
+        nickname varchar(50) not null,
+        guide_style varchar(100),
+        language varchar(100),
+        region varchar(100) not null,
+        profile_image varchar(500),
+        bio TEXT,
+        default_course TEXT,
+        keywords TEXT,
+        local_story TEXT,
+        primary key (id)
+    ) engine=InnoDB
+2026-04-23 15:30:08.435 DEBUG [] org.hibernate.SQL - 
+    create table guide_schedules (
+        available_date date not null,
+        end_time time(6) not null,
+        is_paid bit not null,
+        start_time time(6) not null,
+        created_at datetime(6) not null,
+        guide_id bigint not null,
+        id bigint not null auto_increment,
+        match_request_id bigint,
+        updated_at datetime(6) not null,
+        meeting_point varchar(200),
+        course_detail TEXT,
+        guide_message TEXT,
+        status enum ('AVAILABLE','BLOCKED','BOOKED','PENDING') not null,
+        primary key (id)
+    ) engine=InnoDB
+2026-04-23 15:30:08.513 DEBUG [] org.hibernate.SQL - 
+    create table match_request (
+        budget_max_won integer,
+        budget_min_won integer,
+        desired_budget integer,
+        desired_date date not null,
+        created_at DATETIME(6) not null,
+        guest_id bigint not null,
+        guide_id bigint not null,
+        guide_schedule_id bigint not null,
+        id bigint not null auto_increment,
+        updated_at DATETIME(6) not null,
+        cancelled_by varchar(20),
+        cancel_reason TEXT,
+        concept TEXT,
+        concept_summary TEXT,
+        destination varchar(255) not null,
+        propose_message TEXT,
+        proposed_schedule TEXT,
+        status enum ('ACCEPTED','CANCELLED','COMPLETED','IN_PROGRESS','PAID','PENDING','REJECTED') not null,
+        primary key (id),
+        check (status IN ('PENDING','ACCEPTED','PAID','IN_PROGRESS','COMPLETED','CANCELLED','REJECTED'))
+    ) engine=InnoDB
+2026-04-23 15:30:08.589 DEBUG [] org.hibernate.SQL - 
+    create table member (
+        created_at DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6) not null,
+        id bigint not null auto_increment,
+        updated_at DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6) not null,
+        name varchar(100) not null,
+        nickname varchar(100),
+        profile_image_url varchar(1000),
+        email varchar(255) not null,
+        password varchar(255) not null,
+        role enum ('ADMIN','GUEST','GUIDE') not null,
+        social_type enum ('GOOGLE','KAKAO'),
+        status enum ('ACTIVE','WITHDRAWN') not null,
+        primary key (id)
+    ) engine=InnoDB
+2026-04-23 15:30:08.671 DEBUG [] org.hibernate.SQL - 
+    create table payment (
+        amount integer not null,
+        created_at DATETIME(6) not null,
+        id bigint not null auto_increment,
+        match_request_id bigint not null,
+        paid_at DATETIME(6),
+        payer_id bigint not null,
+        refund_deadline DATETIME(6),
+        updated_at DATETIME(6) not null,
+        payment_type varchar(20) not null,
+        pg_order_no varchar(100) not null,
+        pg_transaction_id varchar(100),
+        status enum ('CANCELLED','COMPLETED','FAILED','PENDING','REFUNDED') not null,
+        primary key (id),
+        check (status IN ('PENDING','COMPLETED','REFUNDED','FAILED','CANCELLED') AND payment_type IN ('CHAT','ACCOMPANY','EXTENSION'))
+    ) engine=InnoDB
+2026-04-23 15:30:08.742 DEBUG [] org.hibernate.SQL - 
+    create table refund (
+        ai_processed bit not null,
+        created_at DATETIME(6) not null,
+        id bigint not null auto_increment,
+        payment_id bigint not null,
+        processed_at DATETIME(6),
+        requester_id bigint not null,
+        updated_at DATETIME(6) not null,
+        evidence_url varchar(500),
+        reason TEXT,
+        refund_type enum ('AUTO','CANCEL_GUEST','CANCEL_GUIDE','MANUAL') not null,
+        status enum ('APPROVED','PENDING','REJECTED') not null,
+        primary key (id),
+        check (status IN ('PENDING','APPROVED','REJECTED') AND refund_type IN ('AUTO','MANUAL','CANCEL_GUEST','CANCEL_GUIDE'))
+    ) engine=InnoDB
+2026-04-23 15:30:08.792 DEBUG [] org.hibernate.SQL - 
+    create table review (
+        deleted bit not null,
+        rating integer not null,
+        created_at DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6) not null,
+        deleted_at datetime(6),
+        guide_id bigint,
+        id bigint not null auto_increment,
+        match_request_id bigint not null,
+        member_id bigint not null,
+        updated_at DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6) not null,
+        content Text,
+        primary key (id)
+    ) engine=InnoDB
+2026-04-23 15:30:08.854 DEBUG [] org.hibernate.SQL - 
+    create table scrapbooks (
+        created_at datetime(6) not null,
+        guest_id bigint not null,
+        id bigint not null auto_increment,
+        match_request_id bigint not null,
+        updated_at datetime(6) not null,
+        title varchar(100) not null,
+        tags varchar(200),
+        main_image_url varchar(500),
+        content TEXT not null,
+        primary key (id)
+    ) engine=InnoDB
+2026-04-23 15:30:08.910 DEBUG [] org.hibernate.SQL - 
+    create table tour_extension (
+        extended_date date not null,
+        extended_price integer,
+        created_at DATETIME(6) not null,
+        deadline_at DATETIME(6) not null,
+        guest_id bigint not null,
+        guide_approved_at DATETIME(6),
+        id bigint not null auto_increment,
+        match_request_id bigint not null,
+        requested_at DATETIME(6) not null,
+        updated_at DATETIME(6) not null,
+        status enum ('AUTO_CANCELLED','GUIDE_APPROVED','PAID','REJECTED','REQUESTED') not null,
+        primary key (id),
+        check (status IN ('REQUESTED','GUIDE_APPROVED','PAID','REJECTED','AUTO_CANCELLED'))
+    ) engine=InnoDB
+2026-04-23 15:30:08.966 DEBUG [] org.hibernate.SQL - 
+    alter table chat_rooms 
+       add constraint UKtmf6ectlc88brf0myju8ry0yt unique (room_id)
+2026-04-23 15:30:09.156 DEBUG [] org.hibernate.SQL - 
+    alter table guide_profiles 
+       add constraint UKkbxalarf03km5aurrcpmc99s unique (member_id)
+2026-04-23 15:30:09.218 DEBUG [] org.hibernate.SQL - 
+    alter table guide_schedules 
+       add constraint uq_schedule_time unique (guide_id, available_date, start_time, end_time)
+2026-04-23 15:30:09.412 DEBUG [] org.hibernate.SQL - 
+    create index idx_match_guest 
+       on match_request (guest_id)
+2026-04-23 15:30:09.508 DEBUG [] org.hibernate.SQL - 
+    create index idx_match_guide 
+       on match_request (guide_id)
+2026-04-23 15:30:09.709 DEBUG [] org.hibernate.SQL - 
+    alter table member 
+       add constraint UKeqr1gnwwfupeqo38ju3by7dbf unique (email, role)
+2026-04-23 15:30:09.783 DEBUG [] org.hibernate.SQL - 
+    alter table member 
+       add constraint UKhh9kg6jti4n1eoiertn2k6qsc unique (nickname)
+2026-04-23 15:30:09.845 DEBUG [] org.hibernate.SQL - 
+    create index idx_payment_payer 
+       on payment (payer_id)
+2026-04-23 15:30:09.905 DEBUG [] org.hibernate.SQL - 
+    alter table payment 
+       add constraint uq_payment_unique unique (match_request_id, payment_type)
+2026-04-23 15:30:09.955 DEBUG [] org.hibernate.SQL - 
+    alter table payment 
+       add constraint UKljlo9vyedeereqhpwyr9tknqc unique (pg_order_no)
+2026-04-23 15:30:10.005 DEBUG [] org.hibernate.SQL - 
+    alter table review 
+       add constraint UKioc95svtshsmxvlxc8us5yelq unique (match_request_id)
+2026-04-23 15:30:10.055 DEBUG [] org.hibernate.SQL - 
+    alter table scrapbooks 
+       add constraint uq_scrapbook_match unique (match_request_id)
+2026-04-23 15:30:10.118 DEBUG [] org.hibernate.SQL - 
+    alter table chat_participants 
+       add constraint FKk0pkxdxk2whcy4j9lovmexvkq 
+       foreign key (chat_room_id) 
+       references chat_rooms (id)
+2026-04-23 15:30:10.529 DEBUG [] org.hibernate.SQL - 
+    alter table guide_careers 
+       add constraint fk_guide_careers_guide 
+       foreign key (guide_id) 
+       references guide_profiles (id)
+2026-04-23 15:30:10.963 DEBUG [] org.hibernate.SQL - 
+    alter table guide_feeds 
+       add constraint FKl5ncbecyap26kipe8hbrrv259 
+       foreign key (guide_id) 
+       references guide_profiles (id)
+2026-04-23 15:30:11.408 DEBUG [] org.hibernate.SQL - 
+    alter table guide_images 
+       add constraint fk_guide_images_guide 
+       foreign key (guide_id) 
+       references guide_profiles (id)
+2026-04-23 15:30:11.813 DEBUG [] org.hibernate.SQL - 
+    alter table guide_schedules 
+       add constraint FK9a3cimgvlpika296h0fkluqbl 
+       foreign key (guide_id) 
+       references guide_profiles (id)
+2026-04-23 15:30:12.480 DEBUG [] org.hibernate.SQL - 
+    alter table payment 
+       add constraint fk_payment_match_req 
+       foreign key (match_request_id) 
+       references match_request (id)
+2026-04-23 15:30:13.989 DEBUG [] org.hibernate.SQL - 
+    alter table refund 
+       add constraint fk_refund_payment 
+       foreign key (payment_id) 
+       references payment (id)
+2026-04-23 15:30:15.221 DEBUG [] org.hibernate.SQL - 
+    alter table review 
+       add constraint FKk0ccx5i4ci2wd70vegug074w1 
+       foreign key (member_id) 
+       references member (id)
+2026-04-23 15:30:15.844 DEBUG [] org.hibernate.SQL - 
+    alter table tour_extension 
+       add constraint fk_extension_match_req 
+       foreign key (match_request_id) 
+       references match_request (id)
+2026-04-23 15:30:16.417 INFO  [] o.s.o.j.LocalContainerEntityManagerFactoryBean - Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-04-23 15:30:22.623 INFO  [] o.s.d.j.r.query.QueryEnhancerFactory - Hibernate is in classpath; If applicable, HQL parser will be used.
+2026-04-23 15:30:28.710 INFO  [] org.mongodb.driver.client - MongoClient with metadata {"driver": {"name": "mongo-java-driver|sync|spring-boot", "version": "5.2.1"}, "os": {"type": "Windows", "name": "Windows 11", "architecture": "amd64", "version": "10.0"}, "platform": "Java/Amazon.com Inc./17.0.18+9-LTS"} created with settings MongoClientSettings{readPreference=primary, writeConcern=WriteConcern{w=null, wTimeout=null ms, journal=null}, retryWrites=true, retryReads=true, readConcern=ReadConcern{level=null}, credential=null, transportSettings=null, commandListeners=[io.micrometer.core.instrument.binder.mongodb.MongoMetricsCommandListener@21302fe7], codecRegistry=ProvidersCodecRegistry{codecProviders=[ValueCodecProvider{}, BsonValueCodecProvider{}, DBRefCodecProvider{}, DBObjectCodecProvider{}, DocumentCodecProvider{}, CollectionCodecProvider{}, IterableCodecProvider{}, MapCodecProvider{}, GeoJsonCodecProvider{}, GridFSFileCodecProvider{}, Jsr310CodecProvider{}, JsonObjectCodecProvider{}, BsonCodecProvider{}, EnumCodecProvider{}, com.mongodb.client.model.mql.ExpressionCodecProvider@64ff7aaf, com.mongodb.Jep395RecordCodecProvider@54b70c50, com.mongodb.KotlinCodecProvider@778ebf6f]}, loggerSettings=LoggerSettings{maxDocumentLength=1000}, clusterSettings={hosts=[localhost:27017], srvServiceName=mongodb, mode=SINGLE, requiredClusterType=UNKNOWN, requiredReplicaSetName='null', serverSelector='null', clusterListeners='[]', serverSelectionTimeout='30000 ms', localThreshold='15 ms'}, socketSettings=SocketSettings{connectTimeoutMS=10000, readTimeoutMS=0, receiveBufferSize=0, proxySettings=ProxySettings{host=null, port=null, username=null, password=null}}, heartbeatSocketSettings=SocketSettings{connectTimeoutMS=10000, readTimeoutMS=10000, receiveBufferSize=0, proxySettings=ProxySettings{host=null, port=null, username=null, password=null}}, connectionPoolSettings=ConnectionPoolSettings{maxSize=100, minSize=0, maxWaitTimeMS=120000, maxConnectionLifeTimeMS=0, maxConnectionIdleTimeMS=0, maintenanceInitialDelayMS=0, maintenanceFrequencyMS=60000, connectionPoolListeners=[io.micrometer.core.instrument.binder.mongodb.MongoMetricsConnectionPoolListener@5f089575], maxConnecting=2}, serverSettings=ServerSettings{heartbeatFrequencyMS=10000, minHeartbeatFrequencyMS=500, serverMonitoringMode=AUTO, serverListeners='[]', serverMonitorListeners='[]'}, sslSettings=SslSettings{enabled=false, invalidHostNameAllowed=false, context=null}, applicationName='null', compressorList=[], uuidRepresentation=JAVA_LEGACY, serverApi=null, autoEncryptionSettings=null, dnsClient=null, inetAddressResolver=null, contextProvider=null, timeoutMS=null}
+2026-04-23 15:30:28.771 INFO  [] org.mongodb.driver.cluster - Monitor thread successfully connected to server with description ServerDescription{address=localhost:27017, type=STANDALONE, cryptd=false, state=CONNECTED, ok=true, minWireVersion=0, maxWireVersion=27, maxDocumentSize=16777216, logicalSessionTimeoutMinutes=30, roundTripTimeNanos=145702500, minRoundTripTimeNanos=0}
+2026-04-23 15:30:31.007 WARN  [] o.s.b.a.o.j.JpaBaseConfiguration$JpaWebConfiguration - spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-04-23 15:30:33.108 INFO  [] o.s.b.a.e.web.EndpointLinksResolver - Exposing 1 endpoint beneath base path '/actuator'
+2026-04-23 15:30:33.712 WARN  [] o.s.s.c.a.web.builders.WebSecurity - You are asking Spring Security to ignore Deferred [Mvc [pattern='/actuator/**'], Ant [pattern='/actuator/**']]. This is not recommended -- please use permitAll via HttpSecurity#authorizeHttpRequests instead.
+2026-04-23 15:30:33.713 WARN  [] o.s.s.c.a.web.builders.WebSecurity - You are asking Spring Security to ignore Deferred [Mvc [pattern='/api/actuator/**'], Ant [pattern='/api/actuator/**']]. This is not recommended -- please use permitAll via HttpSecurity#authorizeHttpRequests instead.
+2026-04-23 15:30:33.714 WARN  [] o.s.s.c.a.web.builders.WebSecurity - You are asking Spring Security to ignore Deferred [Mvc [pattern='/v3/api-docs/**'], Ant [pattern='/v3/api-docs/**']]. This is not recommended -- please use permitAll via HttpSecurity#authorizeHttpRequests instead.
+2026-04-23 15:30:33.715 WARN  [] o.s.s.c.a.web.builders.WebSecurity - You are asking Spring Security to ignore Deferred [Mvc [pattern='/swagger-ui/**'], Ant [pattern='/swagger-ui/**']]. This is not recommended -- please use permitAll via HttpSecurity#authorizeHttpRequests instead.
+2026-04-23 15:30:33.716 WARN  [] o.s.s.c.a.web.builders.WebSecurity - You are asking Spring Security to ignore Deferred [Mvc [pattern='/api/v3/api-docs/**'], Ant [pattern='/api/v3/api-docs/**']]. This is not recommended -- please use permitAll via HttpSecurity#authorizeHttpRequests instead.
+2026-04-23 15:30:33.717 WARN  [] o.s.s.c.a.web.builders.WebSecurity - You are asking Spring Security to ignore Deferred [Mvc [pattern='/api/swagger-ui/**'], Ant [pattern='/api/swagger-ui/**']]. This is not recommended -- please use permitAll via HttpSecurity#authorizeHttpRequests instead.
+2026-04-23 15:30:36.600 INFO  [] o.s.m.s.b.SimpleBrokerMessageHandler - Starting...
+2026-04-23 15:30:36.604 INFO  [] o.s.m.s.b.SimpleBrokerMessageHandler - BrokerAvailabilityEvent[available=true, SimpleBrokerMessageHandler [org.springframework.messaging.simp.broker.DefaultSubscriptionRegistry@36f5468d]]
+2026-04-23 15:30:36.605 INFO  [] o.s.m.s.b.SimpleBrokerMessageHandler - Started.
+2026-04-23 15:30:36.606 INFO  [] o.a.coyote.http11.Http11NioProtocol - Starting ProtocolHandler ["http-nio-8080"]
+2026-04-23 15:30:36.677 INFO  [] o.s.b.w.e.tomcat.TomcatWebServer - Tomcat started on port 8080 (http) with context path '/api'
+2026-04-23 15:30:38.552 INFO  [] c.t.apiserver.ApiServerApplication - Started ApiServerApplication in 86.762 seconds (process running for 90.539)
+2026-04-23 15:30:38.583 INFO  [] c.t.m.a.c.LlmPromptExtractorStartupDiagnostics - [AI_LLM] startup llmPromptExtractionEnabled=false llmProviderCfg=openai llmPromptExtractorBean=none
+2026-04-23 15:31:00.565 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 15:31:00.603 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 15:31:00.604 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T15:31:00.118421500]
+2026-04-23 15:31:36.497 INFO  [] o.s.w.s.c.WebSocketMessageBrokerStats - WebSocketSession[0 current WS(0)-HttpStream(0)-HttpPoll(0), 0 total, 0 closed abnormally (0 connect failure, 0 send limit, 0 transport error)], stompSubProtocol[processed CONNECT(0)-CONNECTED(0)-DISCONNECT(0)], stompBrokerRelay[null], inboundChannel[pool size = 0, active threads = 0, queued tasks = 0, completed tasks = 0], outboundChannel[pool size = 0, active threads = 0, queued tasks = 0, completed tasks = 0], sockJsScheduler[pool size = 5, active threads = 1, queued tasks = 2, completed tasks = 2]
+2026-04-23 15:32:00.011 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-23 15:32:00.012 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-23 15:32:00.013 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-23T15:32:00.006461100]

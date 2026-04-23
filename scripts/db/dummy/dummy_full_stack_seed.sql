@@ -36,7 +36,11 @@
 --   guide_feeds            871001 ~ 871075  (DELETE 는 ~871080 까지 여유)
 --   guide_careers          872001 ~ 872075  (DELETE 는 ~872080)
 --   guide_images           873001 ~ 873150  (가이드당 2행)
+<<<<<<< HEAD
 --   payment                880001 ~ 880550 (ACCOMPANY 880001~, CHAT 880301~)
+=======
+--   payment                880001 ~ (매칭 건수에 따라 상한 ~880250, 두 번째 블록은 880101~ 부근)
+>>>>>>> 3cf8fe4de887cc63bcbb73d7356fdd002a60e844
 --   refund                 881001 ~ 881005  (고정 VALUES)
 --   tour_extension         882001 ~ (조건 만족 매칭 건수만큼, 상한 ~882040)
 --   review                 INSERT 시 id 미지정 → AUTO_INCREMENT (DELETE 885001~885120 은 잔여 시드 정리용)
@@ -65,7 +69,11 @@ SET SESSION cte_max_recursion_depth = 400000;
 SET FOREIGN_KEY_CHECKS = 0;
 
 DELETE FROM refund WHERE id BETWEEN 881001 AND 881020;
+<<<<<<< HEAD
 DELETE FROM payment WHERE id BETWEEN 880001 AND 880550;
+=======
+DELETE FROM payment WHERE id BETWEEN 880001 AND 880400;
+>>>>>>> 3cf8fe4de887cc63bcbb73d7356fdd002a60e844
 DELETE FROM tour_extension WHERE id BETWEEN 882001 AND 882040;
 DELETE FROM review WHERE id BETWEEN 885001 AND 885120;
 DELETE FROM review WHERE match_request_id BETWEEN 862001 AND 862210;
@@ -491,7 +499,11 @@ INSERT INTO payment (
   updated_at
 )
 SELECT
+<<<<<<< HEAD
   880300 + ROW_NUMBER() OVER (ORDER BY id) AS rn,
+=======
+  880100 + ROW_NUMBER() OVER (ORDER BY id) AS rn,
+>>>>>>> 3cf8fe4de887cc63bcbb73d7356fdd002a60e844
   id,
   guest_id,
   30000,
