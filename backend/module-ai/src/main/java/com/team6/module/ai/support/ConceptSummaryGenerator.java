@@ -91,26 +91,66 @@ public final class ConceptSummaryGenerator {
      * LLM이 채운 불릿·특별 요청을 한 덩어리 요약 문자열로 만든다(가이드/응답 요약 공용).
      */
     public static String formatLlmGuideCopy(List<String> bullets, String specialRequests) {
+        String cleanedSpecial = normalizeGuideText(specialRequests);
+        List<String> cleanedBullets = normalizeBullets(bullets, cleanedSpecial);
+
         StringBuilder sb = new StringBuilder();
-        if (bullets != null) {
-            for (String b : bullets) {
-                if (b == null || b.isBlank()) {
-                    continue;
-                }
-                if (sb.length() > 0) {
-                    sb.append('\n');
-                }
-                sb.append("• ").append(b.trim());
-            }
-        }
-        if (StringUtils.hasText(specialRequests)) {
+        for (String b : cleanedBullets) {
             if (sb.length() > 0) {
                 sb.append('\n');
             }
-            sb.append(specialRequests.trim());
+            sb.append("• ").append(b);
+        }
+        if (StringUtils.hasText(cleanedSpecial)) {
+            if (sb.length() > 0) {
+                sb.append('\n');
+            }
+            sb.append(cleanedSpecial);
         }
         String out = sb.toString().trim();
         return out.isBlank() ? null : out;
+    }
+
+    private static String normalizeGuideText(String raw) {
+        if (!StringUtils.hasText(raw)) {
+            return null;
+        }
+        String s = raw.trim()
+                .replaceAll("[\\r\\t]+", " ")
+                .replaceAll(" +", " ")
+                .replaceAll("\\n{3,}", "\n\n")
+                .trim();
+        return s.isBlank() ? null : s;
+    }
+
+    private static List<String> normalizeBullets(List<String> raw, String specialRequests) {
+        if (raw == null || raw.isEmpty()) {
+            return List.of();
+        }
+        String special = specialRequests == null ? "" : specialRequests;
+        java.util.LinkedHashSet<String> set = new java.util.LinkedHashSet<>();
+        for (String b : raw) {
+            if (!StringUtils.hasText(b)) {
+                continue;
+            }
+            String t = b.trim()
+                    .replaceAll("^[-•\\s]+", "")
+                    .replaceAll("[\\r\\t]+", " ")
+                    .replaceAll(" +", " ")
+                    .trim();
+            if (!StringUtils.hasText(t)) {
+                continue;
+            }
+            // specialRequests에 그대로 포함된 불릿은 중복이므로 제거
+            if (StringUtils.hasText(special) && special.contains(t)) {
+                continue;
+            }
+            set.add(t);
+            if (set.size() >= 5) {
+                break;
+            }
+        }
+        return List.copyOf(set);
     }
 
     public static String generateMatchRequestConcept(GuideRecommendRequest req) {
