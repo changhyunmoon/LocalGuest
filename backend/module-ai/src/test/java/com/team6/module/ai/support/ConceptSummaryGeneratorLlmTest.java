@@ -22,7 +22,7 @@ class ConceptSummaryGeneratorLlmTest {
     }
 
     @Test
-    void generateMatchRequestConcept_prefixesLlmCopy() {
+    void generateMatchRequestConcept_doesNotDuplicateLlmCopy() {
         GuideRecommendRequest req = GuideRecommendRequest.builder()
                 .region("부산")
                 .llmGuideBullets(List.of("야경 좋아해"))
@@ -30,7 +30,7 @@ class ConceptSummaryGeneratorLlmTest {
                 .build();
 
         String concept = ConceptSummaryGenerator.generateMatchRequestConcept(req);
-        assertThat(concept).startsWith("• 야경 좋아해");
         assertThat(concept).contains("부산 여행");
+        assertThat(concept).doesNotContain("야경 좋아해");
     }
 }
