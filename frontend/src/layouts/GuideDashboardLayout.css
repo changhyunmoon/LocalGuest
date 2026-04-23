@@ -14,12 +14,14 @@
 }
 
 .g-dash-side {
-  background: #fffdfd;
-  border: 1px solid #f0dce4;
-  border-radius: 14px;
+  position: relative;
+  background: #ffffff;
+  border: 1px solid #dbe4ef;
+  border-radius: 16px;
   padding: 1.1rem 0.85rem;
   min-width: 0;
   max-width: 100%;
+  box-shadow: 0 14px 28px rgba(15, 23, 42, 0.08);
 }
 
 .g-dash-profile {
@@ -28,7 +30,7 @@
   align-items: center;
   text-align: center;
   padding: 0.35rem 0.5rem 1rem;
-  border-bottom: 1px solid #eef0f3;
+  border-bottom: 1px solid #dbe4ef;
   margin-bottom: 0.65rem;
 }
 
@@ -36,20 +38,31 @@
   width: 3.7rem;
   height: 3.7rem;
   border-radius: 50%;
-  background: #f9e8ee;
+  border: 1px solid #b7efd3;
+  background-color: #dff9ee;
+  background-repeat: no-repeat;
   background-size: cover;
   background-position: center;
   margin-bottom: 0.65rem;
 }
 
+.g-dash-avatar.is-empty {
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48' fill='none'%3E%3Ccircle cx='24' cy='17' r='8' fill='%23f3f7fb'/%3E%3Cpath d='M10 40c0-7.2 6.3-12 14-12s14 4.8 14 12' fill='%23f3f7fb'/%3E%3C/svg%3E"),
+    linear-gradient(150deg, #dff9ee, #d8f5e8);
+  background-repeat: no-repeat, no-repeat;
+  background-size: 52%, cover;
+  background-position: center, center;
+}
+
 .g-dash-name {
   font-size: 1rem;
-  color: #4a3c56;
+  color: #0f172a;
 }
 
 .g-dash-email {
   font-size: 0.78rem;
-  color: #9f90a7;
+  color: #64748b;
   margin-top: 0.2rem;
   word-break: break-all;
 }
@@ -66,9 +79,9 @@
   display: inline-flex;
   align-items: center;
   border-radius: 999px;
-  border: 1px solid #efbfd0;
-  background: #fff7fb;
-  color: #7a4f68;
+  border: 1px solid #a7f3d0;
+  background: #ecfdf5;
+  color: #047857;
   font-size: 0.72rem;
   font-weight: 700;
   padding: 0.2rem 0.55rem;
@@ -82,24 +95,75 @@
 }
 
 .g-dash-link {
+  position: relative;
   padding: 0.55rem 0.65rem;
   border-radius: 10px;
-  color: #7f6b82;
+  color: #475569;
   text-decoration: none;
   font-size: 0.84rem;
   line-height: 1.35;
   border-left: 3px solid transparent;
+  z-index: 0;
 }
 
 .g-dash-link:hover {
-  background: #fdeaf1;
+  background: #f1f5f9;
 }
 
 .g-dash-link.is-active {
-  background: #f8dce7;
   font-weight: 700;
-  color: #5a3c56;
-  border-left-color: #d17a9b;
+  color: #047857;
+  border-left-color: transparent;
+}
+
+.g-dash-link.is-active::before {
+  content: '';
+  position: absolute;
+  left: 0.35rem;
+  right: 0.35rem;
+  top: 50%;
+  height: 1.32rem;
+  transform: translateY(-50%) scaleX(1);
+  transform-origin: left center;
+  border-radius: 0.62rem;
+  background:
+    linear-gradient(
+      92deg,
+      rgba(209, 250, 229, 0.28) 0%,
+      rgba(167, 243, 208, 0.56) 24%,
+      rgba(153, 246, 228, 0.52) 54%,
+      rgba(196, 181, 253, 0.34) 100%
+    );
+  z-index: -1;
+  pointer-events: none;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.45) inset;
+  animation: gDashMarkerStroke 680ms cubic-bezier(0.2, 0.8, 0.25, 1) both;
+}
+
+.g-dash-link.is-active::after {
+  content: '';
+  position: absolute;
+  left: 0.6rem;
+  right: 0.6rem;
+  top: 50%;
+  height: 0.9rem;
+  transform: translateY(-50%);
+  border-radius: 0.8rem;
+  background: linear-gradient(96deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.04));
+  pointer-events: none;
+  z-index: -1;
+  opacity: 0.24;
+}
+
+@keyframes gDashMarkerStroke {
+  from {
+    transform: translateY(-50%) scaleX(0.06);
+    opacity: 0.26;
+  }
+  to {
+    transform: translateY(-50%) scaleX(1);
+    opacity: 1;
+  }
 }
 
 .g-dash-link-inner {
@@ -121,18 +185,18 @@
   height: 1.1rem;
   padding: 0 0.28rem;
   border-radius: 999px;
-  background: #d8799a;
+  background: #10b981;
   color: #fff;
   font-size: 0.62rem;
   font-weight: 800;
   line-height: 1.1rem;
   text-align: center;
-  border: 2px solid #fffdfd;
+  border: 2px solid #ffffff;
 }
 
 .g-dash-sep {
   margin: 1rem 0 0.45rem;
-  border-top: 1px solid #eef0f3;
+  border-top: 1px solid #dbe4ef;
 }
 
 .g-dash-logout {
@@ -144,13 +208,13 @@
   background: none;
   text-align: left;
   font-size: 0.84rem;
-  color: #b25f7f;
+  color: #475569;
   cursor: pointer;
   font-family: inherit;
 }
 
 .g-dash-logout:hover {
-  background: #fdeaf1;
+  background: #f1f5f9;
 }
 
 .g-dash-main {
@@ -159,24 +223,45 @@
 }
 
 .g-panel {
-  background: #fffdfd;
-  border: 1px solid #f0dce4;
+  position: relative;
+  background: #ffffff;
+  border: 1px solid #dbe4ef;
   border-radius: 16px;
   padding: clamp(1rem, 3vw, 1.35rem) clamp(0.85rem, 3vw, 1.5rem) clamp(1.1rem, 3vw, 1.5rem);
   max-width: min(760px, 100%);
   box-sizing: border-box;
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.08);
+  background-image: linear-gradient(#f1f5f9 1px, transparent 1px), linear-gradient(90deg, #f1f5f9 1px, transparent 1px);
+  background-size: 24px 24px;
+  overflow: visible;
+  isolation: isolate;
+}
+
+.g-panel::before {
+  content: '';
+  position: absolute;
+  top: -9px;
+  left: 50%;
+  width: 54px;
+  height: 16px;
+  border-radius: 2px;
+  background: rgba(16, 185, 129, 0.2);
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.16);
+  transform: translateX(-50%) rotate(-4deg);
+  z-index: var(--scrap-sticker-z);
+  pointer-events: none;
 }
 
 .g-panel h1 {
   margin: 0 0 1.25rem;
   font-size: 1.15rem;
   font-weight: 800;
-  color: #4a3c56;
+  color: #0f172a;
 }
 
 .g-section {
   padding: 1rem 0;
-  border-top: 1px solid #eef0f3;
+  border-top: 1px solid #dbe4ef;
 }
 
 .g-section:first-of-type {
@@ -188,7 +273,7 @@
   margin: 0 0 0.85rem;
   font-size: 0.95rem;
   font-weight: 700;
-  color: #374151;
+  color: #1e293b;
 }
 
 .g-row {
@@ -202,7 +287,8 @@
 .g-row p {
   margin: 0.15rem 0 0;
   font-size: 0.78rem;
-  color: #9aa0a6;
+  color: #64748b;
+  font-family: var(--hand);
 }
 
 .g-row strong {
@@ -247,7 +333,7 @@
 }
 
 .g-toggle input:checked + .g-toggle-ui {
-  background: #ff7a45;
+  background: #10b981;
 }
 
 .g-toggle input:checked + .g-toggle-ui::after {
@@ -288,8 +374,8 @@
   padding: 0.55rem 1.25rem;
   border-radius: 999px;
   border: none;
-  background: #f6d8e6;
-  color: #6d3f58;
+  background: #10b981;
+  color: #ffffff;
   font-weight: 700;
   font-size: 0.88rem;
   cursor: pointer;
@@ -304,7 +390,8 @@
 .g-hint {
   margin: 0.35rem 0 0;
   font-size: 0.78rem;
-  color: #9aa0a6;
+  color: #64748b;
+  font-family: var(--hand);
 }
 
 .g-error {

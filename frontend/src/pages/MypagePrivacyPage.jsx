@@ -78,6 +78,7 @@ export function MypagePrivacyPage() {
   const [imageError, setImageError] = useState('')
   const [withdrawBusy, setWithdrawBusy] = useState(false)
   const [withdrawErr, setWithdrawErr] = useState('')
+  const [withdrawModalOpen, setWithdrawModalOpen] = useState(false)
 
   useEffect(() => {
     const f = loadGuestPrivacyForm(email)
@@ -165,8 +166,6 @@ export function MypagePrivacyPage() {
   }
 
   const onWithdraw = async () => {
-    const ok = window.confirm('정말 탈퇴할까요? 탈퇴 후에는 복구가 어려울 수 있어요.')
-    if (!ok) return
     setWithdrawBusy(true)
     setWithdrawErr('')
     try {
@@ -193,28 +192,15 @@ export function MypagePrivacyPage() {
         <h2>기본 정보</h2>
         <div className="mp-privacy-field">
           <label className="field-label">프로필 이미지</label>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexWrap: 'wrap' }}>
+          <div className="mp-privacy-photo-row">
             <div
+              role="img"
               aria-label="프로필 이미지 미리보기"
+              className={`mp-privacy-photo-preview${profileImageUrl ? '' : ' is-empty'}`}
               style={{
-                width: '4.1rem',
-                height: '4.1rem',
-                borderRadius: '50%',
-                border: '1px solid #efbfd0',
-                backgroundColor: '#fff',
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-                backgroundImage: profileImageUrl ? `url(${profileImageUrl})` : 'none',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#7a4f68',
-                fontSize: '0.72rem',
-                fontWeight: 700,
+                ...(profileImageUrl ? { backgroundImage: `url(${profileImageUrl})` } : {}),
               }}
-            >
-              {profileImageUrl ? '' : 'No Img'}
-            </div>
+            />
             <input
               ref={photoInputRef}
               type="file"
@@ -274,7 +260,7 @@ export function MypagePrivacyPage() {
               이미지 삭제
             </button>
           </div>
-          {imageError && <p className="err" style={{ marginTop: '0.5rem' }}>{imageError}</p>}
+          {imageError && <p className="err mp-privacy-image-err">{imageError}</p>}
         </div>
         <div className="mp-privacy-field">
           <label className="field-label" htmlFor="mp-nick">
@@ -388,10 +374,42 @@ export function MypagePrivacyPage() {
           탈퇴 시 서비스 이용이 종료되며 복구가 어려울 수 있습니다. 로컬에만 있는 닉네임·알림 설정도 더 이상 쓰이지 않습니다.
         </p>
         {withdrawErr && <p className="err">{withdrawErr}</p>}
-        <button type="button" className="mp-btn mp-btn--danger" disabled={withdrawBusy} onClick={() => void onWithdraw()}>
+        <button
+          type="button"
+          className="mp-btn mp-btn--danger"
+          disabled={withdrawBusy}
+          onClick={() => setWithdrawModalOpen(true)}
+        >
           {withdrawBusy ? '처리 중…' : '회원 탈퇴'}
         </button>
       </section>
+      {withdrawModalOpen && (
+        <div className="mp-withdraw-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="mp-withdraw-title">
+          <div className="mp-withdraw-modal">
+            <p className="mp-withdraw-emoji" aria-hidden>
+              😢
+            </p>
+            <h3 id="mp-withdraw-title">로컬 게스트를 떠나신다니 아쉬워요.</h3>
+            <p>정말 탈퇴하시겠어요? 탈퇴 후에는 복구가 어려울 수 있어요.</p>
+            <div className="mp-withdraw-actions">
+              <button type="button" className="mp-btn mp-btn--line" onClick={() => setWithdrawModalOpen(false)} disabled={withdrawBusy}>
+                머무를게요
+              </button>
+              <button
+                type="button"
+                className="mp-btn mp-btn--danger"
+                disabled={withdrawBusy}
+                onClick={() => {
+                  setWithdrawModalOpen(false)
+                  void onWithdraw()
+                }}
+              >
+                {withdrawBusy ? '처리 중…' : '탈퇴할게요'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <Toast toasts={toasts} />
     </div>
   )

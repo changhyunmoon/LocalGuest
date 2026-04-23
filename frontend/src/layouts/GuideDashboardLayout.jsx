@@ -10,7 +10,7 @@ import './GuideDashboardLayout.css'
 
 const NAV = [
   { to: '/guide/mypage/profile', label: '📄 프로필 · 소개' },
-  { to: '/guide/mypage/feed-schedule?tab=feed', label: '💼 피드 등록', tab: 'feed' },
+  { to: '/guide/mypage/feed-schedule?tab=feed', label: '📸 피드 등록', tab: 'feed' },
   { to: '/guide/mypage/feed-schedule?tab=schedule', label: '📅 스케줄 관리', tab: 'schedule' },
   { to: '/guide/mypage/settlement', label: '💰 정산 예정 금액' },
   { to: '/guide/mypage/settings', label: '⚙️ 가이드 설정' },
@@ -68,7 +68,7 @@ export function GuideDashboardLayout() {
       <aside className="g-dash-side">
         <div className="g-dash-profile">
           <div
-            className="g-dash-avatar"
+            className={`g-dash-avatar${guideProfile?.profileImage ? '' : ' is-empty'}`}
             aria-hidden
             style={guideProfile?.profileImage ? { backgroundImage: `url(${guideProfile.profileImage})` } : undefined}
           />

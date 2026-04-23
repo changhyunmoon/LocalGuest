@@ -30,6 +30,98 @@ function nicknameFromEmail(email) {
   return head || '나'
 }
 
+function readString(value) {
+  if (typeof value !== 'string') return ''
+  const v = value.trim()
+  return v
+}
+
+function normalizeNick(value) {
+  return readString(value).toLowerCase().replace(/\s+/g, '')
+}
+
+function extractRoomAvatar(room, myEmail, guideAvatarById, guideAvatarByNickname) {
+  if (!room) return ''
+  const direct = [
+    room.opponentProfileImageUrl,
+    room.otherProfileImageUrl,
+    room.partnerProfileImageUrl,
+    room.counterpartProfileImageUrl,
+    room.counterpartyProfileImageUrl,
+    room.otherUserProfileImageUrl,
+    room.guideProfileImageUrl,
+    room.guestProfileImageUrl,
+    room.profileImageUrl,
+    room.profileImage,
+    room.avatarUrl,
+    room.ownerProfileImageUrl,
+    room.otherUserProfileImage,
+    room.opponentProfileImage,
+  ]
+    .map(readString)
+    .find(Boolean)
+  if (direct) return direct
+
+  const nestedDirect = [
+    room.opponent?.profileImageUrl,
+    room.otherUser?.profileImageUrl,
+    room.counterpart?.profileImageUrl,
+    room.partner?.profileImageUrl,
+    room.guide?.profileImage,
+    room.guest?.profileImageUrl,
+  ]
+    .map(readString)
+    .find(Boolean)
+  if (nestedDirect) return nestedDirect
+
+  const guideId = Number(room.guideId ?? room.counterpartGuideId ?? room.otherGuideId)
+  if (Number.isFinite(guideId) && guideAvatarById?.[guideId]) {
+    return guideAvatarById[guideId]
+  }
+
+  const titleRaw = readString(room.title)
+  if (titleRaw) {
+    const idHit =
+      titleRaw.match(/LG-DM-GUIDE-(\d+)/i) ||
+      titleRaw.match(/(?:채팅방|chat room)\s*#?\s*(\d+)/i) ||
+      titleRaw.match(/(\d+)\s*$/)
+    if (idHit) {
+      const titleId = Number(idHit[1])
+      if (Number.isFinite(titleId) && guideAvatarById?.[titleId]) return guideAvatarById[titleId]
+    }
+  }
+
+  const nicknameCandidates = [
+    room.opponentNickname,
+    room.otherNickname,
+    room.ownerNickname,
+    room.partnerNickname,
+    room.counterpartNickname,
+    room.title,
+  ]
+    .map((x) => readString(x).toLowerCase())
+    .filter(Boolean)
+  for (const nick of nicknameCandidates) {
+    if (guideAvatarByNickname?.[nick]) return guideAvatarByNickname[nick]
+  }
+  for (const nick of nicknameCandidates) {
+    if (!nick) continue
+    const hit = Object.entries(guideAvatarByNickname ?? {}).find(([key]) => key.includes(nick) || nick.includes(key))
+    if (hit?.[1]) return hit[1]
+  }
+
+  const members = Array.isArray(room.participants) ? room.participants : []
+  const me = String(myEmail ?? '').trim().toLowerCase()
+  const other = members.find((m) => String(m?.email ?? '').trim().toLowerCase() !== me) ?? members[0]
+  if (!other) return ''
+  return (
+    readString(other.profileImageUrl) ||
+    readString(other.avatarUrl) ||
+    readString(other.imageUrl) ||
+    ''
+  )
+}
+
 /**
  * @typedef {{ roomId: string, title: string, ownerEmail: string, participantCount: number, lastMessage: string | null, lastMessageAt: string | null, unreadCount: number }} ChatRoom
  * @typedef {{ id: string, roomId: string, senderEmail: string, senderNickname: string, message: string, unreadCount: number, createdAt: string }} ChatMessage
@@ -51,6 +143,8 @@ export function MessagesPage() {
   const [error, setError] = useState('')
   const [sending, setSending] = useState(false)
   const [roomMenuOpen, setRoomMenuOpen] = useState(false)
+  const [guideAvatarById, setGuideAvatarById] = useState(() => ({}))
+  const [guideAvatarByNickname, setGuideAvatarByNickname] = useState(() => ({}))
   const readUpdateTimerRef = useRef(/** @type {ReturnType<typeof setTimeout> | null} */ (null))
   const autoReadTimerRef = useRef(/** @type {ReturnType<typeof setTimeout> | null} */ (null))
   const roomMenuRef = useRef(/** @type {HTMLDivElement | null} */ (null))
@@ -82,6 +176,42 @@ export function MessagesPage() {
     () => rooms.find((r) => r.roomId === selectedRoomId) ?? null,
     [rooms, selectedRoomId],
   )
+  const selectedRoomAvatar = useMemo(
+    () => extractRoomAvatar(selectedRoom, email, guideAvatarById, guideAvatarByNickname),
+    [selectedRoom, email, guideAvatarById, guideAvatarByNickname],
+  )
+
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      try {
+        const res = await apiRequest('/guides', { method: 'GET', skipAuth: true })
+        const text = await res.text()
+        if (!res.ok || cancelled) return
+        const list = text ? JSON.parse(text) : []
+        if (!Array.isArray(list)) return
+        const byId = {}
+        const byNickname = {}
+        for (const g of list) {
+          const img = readString(g?.profileImage ?? g?.profileImageUrl)
+          if (!img) continue
+          const gid = Number(g?.guideId)
+          if (Number.isFinite(gid)) byId[gid] = img
+          const nick = normalizeNick(g?.nickname)
+          if (nick) byNickname[nick] = img
+        }
+        if (!cancelled) {
+          setGuideAvatarById(byId)
+          setGuideAvatarByNickname(byNickname)
+        }
+      } catch {
+        /* ignore avatar preload errors */
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   // 선택된 방은 목록에서 unreadCount를 0으로 유지한다(현재 보고 있으면 '안 읽음' 표시 X).
   useEffect(() => {
@@ -424,38 +554,56 @@ export function MessagesPage() {
     <div className="msg">
       <aside className="msg-rooms">
         <h2>대화 목록</h2>
-        {loadingRooms && <PageLoading className="page-state--tight" />}
-        {!loadingRooms && rooms.length === 0 && (
-          <PageEmpty className="page-state--tight" title="채팅방이 없습니다">
-            매칭 후 대화가 시작되면 여기에 표시됩니다.
-          </PageEmpty>
-        )}
-        <ul>
-          {rooms.map((room) => (
-            <li key={room.roomId}>
-              <button
-                type="button"
-                className={`msg-room-btn ${room.roomId === selectedRoomId ? 'is-on' : ''}`}
-                onClick={() => onPickRoom(room.roomId)}
-              >
-                <strong className="msg-room-title">
-                  <span className="msg-room-title-text">{room.title || '채팅방'}</span>
-                  {room.unreadCount > 0 ? (
-                    <span className="msg-room-badge" aria-label={`안 읽은 메시지 ${room.unreadCount}개`}>
-                      {room.unreadCount > 99 ? '99+' : String(room.unreadCount)}
-                    </span>
-                  ) : null}
-                </strong>
-                <span>{room.lastMessage || '대화를 시작해보세요.'}</span>
-              </button>
-            </li>
-          ))}
-        </ul>
+        <div className="msg-rooms-scroll">
+          {loadingRooms && <PageLoading className="page-state--tight" />}
+          {!loadingRooms && rooms.length === 0 && (
+            <PageEmpty className="page-state--tight" title="채팅방이 없습니다">
+              매칭 후 대화가 시작되면 여기에 표시됩니다.
+            </PageEmpty>
+          )}
+          <ul>
+            {rooms.map((room) => {
+              const avatarUrl = extractRoomAvatar(room, email, guideAvatarById, guideAvatarByNickname)
+              return (
+                <li key={room.roomId}>
+                  <button
+                    type="button"
+                    className={`msg-room-btn ${room.roomId === selectedRoomId ? 'is-on' : ''}`}
+                    onClick={() => onPickRoom(room.roomId)}
+                  >
+                    <div className="msg-room-main">
+                      <div
+                        className={`msg-room-avatar${avatarUrl ? '' : ' is-empty'}`}
+                        aria-hidden
+                        style={avatarUrl ? { backgroundImage: `url(${avatarUrl})` } : undefined}
+                      />
+                      <div className="msg-room-copy">
+                        <strong className="msg-room-title">
+                          <span className="msg-room-title-text">{room.title || '채팅방'}</span>
+                          {room.unreadCount > 0 ? (
+                            <span className="msg-room-badge" aria-label={`안 읽은 메시지 ${room.unreadCount}개`}>
+                              {room.unreadCount > 99 ? '99+' : String(room.unreadCount)}
+                            </span>
+                          ) : null}
+                        </strong>
+                        <span>{room.lastMessage || '대화를 시작해보세요.'}</span>
+                      </div>
+                    </div>
+                  </button>
+                </li>
+              )
+            })}
+          </ul>
+        </div>
       </aside>
 
       <section className="msg-panel">
         <header className="msg-header">
-          <div className="msg-avatar" />
+          <div
+            className={`msg-avatar${selectedRoomAvatar ? '' : ' is-empty'}`}
+            aria-hidden
+            style={selectedRoomAvatar ? { backgroundImage: `url(${selectedRoomAvatar})` } : undefined}
+          />
           <div className="msg-header-meta">
             <strong>{selectedRoom?.title || '채팅방'}</strong>
             <span>

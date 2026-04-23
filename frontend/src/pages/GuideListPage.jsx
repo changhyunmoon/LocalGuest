@@ -62,7 +62,7 @@ export function GuideListPage() {
 
   return (
     <div className="guide-list">
-      <h1 style={{ marginTop: 0 }}>가이드 목록</h1>
+      <h1 className="guide-list-title">가이드 목록</h1>
       <p className="guide-list-hint">승인·활성 가이드만 표시됩니다 (`GET /api/guides`).</p>
 
       {loading && <PageLoading />}

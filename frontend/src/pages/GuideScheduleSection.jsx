@@ -42,6 +42,20 @@ function getDayStatus(dayKey, scheduleByDate, blockedDates) {
   return 'receiving'
 }
 
+/** 캘린더 셀 한 줄 캡션: 확정·대기 일정이 있으면 목적지 축약 또는 건수 */
+function calendarDayCaption(daySchedules, requestsByScheduleId) {
+  if (!Array.isArray(daySchedules) || daySchedules.length === 0) return ''
+  const rows = daySchedules.filter((s) => s?.status === 'BOOKED' || s?.status === 'PENDING')
+  if (rows.length === 0) return ''
+  if (rows.length > 1) return `${rows.length}건`
+  const s = rows[0]
+  const req = requestsByScheduleId?.get?.(Number(s.scheduleId)) ?? null
+  const raw = String(req?.destination ?? '투어').trim()
+  if (!raw) return '투어'
+  const max = 5
+  return raw.length > max ? `${raw.slice(0, max)}…` : raw
+}
+
 function mergeSchedules(schedules, pendingSchedules) {
   const byId = new Map()
   for (const s of schedules) {
@@ -270,7 +284,11 @@ function BookingCard({ dateKey, info, req, isSelected, onClickCard, onOpenCourse
 
       <div className="gss3-bcard-body">
         <div className="gss3-bcard-top">
-          <span className="gss3-bcard-dest">{req?.destination ?? '로컬 투어'}</span>
+          <span
+            className={`gss3-bcard-dest gss3-bcard-dest--marker gss3-bcard-dest--${isPending ? 'pending' : 'booked'}`}
+          >
+            {req?.destination ?? '로컬 투어'}
+          </span>
           <span
             className={`gss3-badge ${isPending ? 'gss3-badge--pending' : 'gss3-badge--booked'}`}
             style={{ fontSize: '10px', padding: '2px 8px' }}
@@ -446,33 +464,31 @@ export function GuideScheduleSection({
 
       <div className="gss3-cal-card">
         <div className="gss3-cal-header">
+          <button
+            type="button"
+            className="gss3-nav-btn"
+            onClick={() => {
+              setCalendarMonth((p) => new Date(p.getFullYear(), p.getMonth() - 1, 1))
+              setSelectedKey(null)
+            }}
+            aria-label="이전 달"
+          >
+            ‹
+          </button>
           <span className="gss3-cal-title">
             {calendarMonth.getFullYear()}년 {calendarMonth.getMonth() + 1}월
           </span>
-          <div className="gss3-cal-nav">
-            <button
-              type="button"
-              className="gss3-nav-btn"
-              onClick={() => {
-                setCalendarMonth((p) => new Date(p.getFullYear(), p.getMonth() - 1, 1))
-                setSelectedKey(null)
-              }}
-              aria-label="이전 달"
-            >
-              ‹
-            </button>
-            <button
-              type="button"
-              className="gss3-nav-btn"
-              onClick={() => {
-                setCalendarMonth((p) => new Date(p.getFullYear(), p.getMonth() + 1, 1))
-                setSelectedKey(null)
-              }}
-              aria-label="다음 달"
-            >
-              ›
-            </button>
-          </div>
+          <button
+            type="button"
+            className="gss3-nav-btn"
+            onClick={() => {
+              setCalendarMonth((p) => new Date(p.getFullYear(), p.getMonth() + 1, 1))
+              setSelectedKey(null)
+            }}
+            aria-label="다음 달"
+          >
+            ›
+          </button>
         </div>
 
         <div className="gss3-cal-grid">
@@ -492,23 +508,39 @@ export function GuideScheduleSection({
             const key = cell.inMonth ? ymd(cell.date) : null
             const past = isPast(cell.date)
             const isToday = key === todayKey
-            const status = key ? getDayStatus(key, scheduleByDate, blockedDates) : 'receiving'
+            const status = key != null ? getDayStatus(key, scheduleByDate, blockedDates) : null
             const isSelected = key === selectedKey
             const daySchedules = key ? (scheduleByDate.get(key) ?? []) : []
             const hasUnwrittenCourse = daySchedules.some((s) => s.status === 'BOOKED' && !s.hasCourse)
+            const dayCap = key && cell.inMonth && !past ? calendarDayCaption(daySchedules, requestsByScheduleId) : ''
+            const showHighlighter =
+              cell.inMonth &&
+              !past &&
+              !isSelected &&
+              status != null &&
+              (status === 'booked' || status === 'pending')
+            const hlTone =
+              status === 'blocked'
+                ? 'blocked'
+                : status === 'pending'
+                  ? 'pending'
+                  : status === 'booked'
+                    ? 'booked'
+                    : status === 'receiving'
+                      ? 'open'
+                      : null
 
             let cls = 'gss3-day'
             if (!cell.inMonth || past) cls += ' gss3-day--dim'
-            if (cell.inMonth && !past) {
-              if (isToday) cls += ' gss3-day--today'
-              else if (status === 'booked') cls += ' gss3-day--booked'
+            if (cell.inMonth && !past && status != null) {
+              if (status === 'booked') cls += ' gss3-day--booked'
               else if (status === 'pending') cls += ' gss3-day--pending'
               else if (status === 'blocked') cls += ' gss3-day--blocked'
+              else if (isToday && status === 'receiving') cls += ' gss3-day--today'
               else if (status === 'receiving') cls += ' gss3-day--open'
               else if (status === 'neutral') cls += ' gss3-day--neutral'
             }
-            if (cell.inMonth && !past && isToday && status === 'receiving') cls += ' gss3-day--today-open'
-            if (isSelected) cls += ' gss3-day--selected'
+            if (isSelected && key != null) cls += ' gss3-day--selected'
 
             return (
               <button
@@ -518,29 +550,20 @@ export function GuideScheduleSection({
                 onClick={() => handleDayClick(cell)}
                 disabled={!cell.inMonth || past || busy}
               >
-                {isToday ? (
-                  <span className="gss3-today-circle">
+                <span className="gss3-day-stack">
+                  <span className="gss3-day-numwrap">
+                    {showHighlighter && hlTone ? (
+                      <span className={`gss3-day-highlighter gss3-day-highlighter--${hlTone}`} aria-hidden />
+                    ) : null}
                     <span className="gss3-day-num">{cell.date.getDate()}</span>
                   </span>
-                ) : (
-                  <span className="gss3-day-num">{cell.date.getDate()}</span>
-                )}
+                  {dayCap ? (
+                    <span className="gss3-day-cap" title={dayCap}>
+                      {dayCap}
+                    </span>
+                  ) : null}
+                </span>
                 {cell.inMonth && !past && status === 'blocked' && <span className="gss3-day-x">✕</span>}
-                {cell.inMonth &&
-                  !past &&
-                  status !== 'blocked' &&
-                  status !== 'neutral' &&
-                  (status === 'receiving' || status === 'booked' || status === 'pending') && (
-                  <span
-                    className={`gss3-day-dot ${
-                      status === 'pending'
-                        ? 'gss3-day-dot--pending'
-                        : status === 'booked'
-                          ? 'gss3-day-dot--booked'
-                          : 'gss3-day-dot--receiving'
-                    }`}
-                  />
-                )}
                 {cell.inMonth && !past && hasUnwrittenCourse && <span className="gss3-warn-dot" />}
               </button>
             )
@@ -550,31 +573,34 @@ export function GuideScheduleSection({
 
         <div className="gss3-legend">
           <span className="gss3-leg">
-            <span className="gss3-leg-today" />
+            <span className="gss3-leg-today" aria-hidden />
             오늘
           </span>
           <span className="gss3-leg">
-            <span className="gss3-leg-open" />
+            <span className="gss3-leg-strip gss3-leg-strip--open" aria-hidden />
             예약 받는 날
           </span>
           <span className="gss3-leg">
-            <span className="gss3-leg-booked" />
+            <span className="gss3-leg-strip gss3-leg-strip--booked" aria-hidden />
             예약 확정
           </span>
           <span className="gss3-leg">
-            <span className="gss3-leg-dot" style={{ background: '#854F0B' }} />
+            <span className="gss3-leg-strip gss3-leg-strip--pending" aria-hidden />
             수락 대기
           </span>
           <span className="gss3-leg">
-            <span className="gss3-leg-blocked" />
+            <span className="gss3-leg-strip gss3-leg-strip--blocked" aria-hidden />
             예약 안 받음
           </span>
           <span className="gss3-leg">
-            <span className="gss3-leg-dot" style={{ background: '#f59e0b' }} />
+            <span className="gss3-leg-dot" style={{ background: '#f59e0b' }} aria-hidden />
             코스 미작성
           </span>
         </div>
-        <p className="gss3-cal-hint">지난 날짜는 선택할 수 없어요 · 기본은 예약 가능이며, 원하지 않는 날짜만 &quot;예약 안 받기&quot;로 바꾸면 됩니다</p>
+        <p className="gss3-cal-hint">
+          지난 날짜는 선택할 수 없어요 · 기본은 예약 가능이며, 원하지 않는 날짜만 &quot;예약 안 받기&quot;로 바꾸면 됩니다 · 같은 날짜를 다시 누르면
+          선택이 해제되고 아래 패널이 닫혀요
+        </p>
 
         <div className={`gss3-drawer-wrap${selectedKey ? ' gss3-drawer-wrap--open' : ''}`}>
           {selectedKey && (

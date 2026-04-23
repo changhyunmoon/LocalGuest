@@ -14,7 +14,6 @@ export function GuideApplyPage() {
   const [nicknameChecked, setNicknameChecked] = useState(false)
   const [nicknameCheckBusy, setNicknameCheckBusy] = useState(false)
   const [nicknameCheckMsg, setNicknameCheckMsg] = useState('')
-  const [profileImage, setProfileImage] = useState('')
   const [bio, setBio] = useState('')
   const [region, setRegion] = useState('')
   const [language, setLanguage] = useState('')
@@ -68,7 +67,6 @@ export function GuideApplyPage() {
       }
       const body = {
         nickname: nickname.trim(),
-        profileImage: profileImage.trim() || undefined,
         bio: bio.trim() || undefined,
         region: region.trim(),
         language: language.trim(),
@@ -142,10 +140,6 @@ export function GuideApplyPage() {
               {nicknameCheckMsg}
             </p>
           )}
-        </label>
-        <label className="field">
-          <span>프로필 이미지 URL</span>
-          <input value={profileImage} onChange={(e) => setProfileImage(e.target.value)} />
         </label>
         <label className="field">
           <span>소개</span>

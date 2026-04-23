@@ -4,6 +4,7 @@
   max-width: 920px;
   margin: 0 auto;
   padding: 1rem 1rem 2.5rem;
+  position: relative;
 }
 
 .gdp-back {
@@ -17,9 +18,9 @@
 }
 
 .gdp-back-btn {
-  border: 1px solid #efbfd0;
-  background: linear-gradient(180deg, #fff6fb, #fff);
-  color: #7a5f78;
+  border: 1px solid #dbe4ef;
+  background: #ffffff;
+  color: #334155;
   border-radius: 999px;
   padding: 0.42rem 0.78rem;
   font-size: 0.86rem;
@@ -29,7 +30,7 @@
 }
 
 .gdp-back-btn:hover {
-  background: #fff8fb;
+  background: #f8fafc;
 }
 
 .gdp-back a:hover {
@@ -42,7 +43,7 @@
   gap: 1.25rem;
   align-items: start;
   padding: 1.25rem 0 1.5rem;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid #dbe4ef;
 }
 
 @media (max-width: 560px) {
@@ -97,8 +98,9 @@
   display: inline-block;
   padding: 0.2rem 0.55rem;
   border-radius: 999px;
-  background: #f3f4f6;
-  color: #374151;
+  background: #f1f5f9;
+  color: #334155;
+  border: 1px solid #dbe4ef;
   font-size: 0.8rem;
 }
 
@@ -116,9 +118,11 @@
 
 .gdp-prose {
   margin: 0;
-  color: #374151;
+  color: #334155;
   line-height: 1.65;
   white-space: pre-wrap;
+  font-family: var(--hand);
+  font-size: 0.96rem;
 }
 
 .gdp-dl {
@@ -300,23 +304,39 @@
 .gdp-match {
   margin-top: 2.25rem;
   padding: 1.3rem;
-  border: 1px solid #f0dce4;
+  border: 1px solid #dbe4ef;
   border-radius: 16px;
-  background: #fffbfd;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  box-shadow: 0 14px 32px rgba(15, 23, 42, 0.08);
+  position: relative;
+}
+
+.gdp-match::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-2deg);
+  width: 68px;
+  height: 16px;
+  border-radius: 3px;
+  background: rgba(244, 114, 182, 0.35);
+  box-shadow: 0 2px 4px rgba(15, 23, 42, 0.14);
 }
 
 .gdp-match h2 {
   margin: 0;
   font-size: 1.16rem;
-  color: #4a3c56;
+  color: #0f172a;
   letter-spacing: -0.01em;
 }
 
 .gdp-match-intro {
   margin: 0.55rem 0 0;
-  color: #7a6a80;
+  color: #475569;
   font-size: 0.92rem;
   line-height: 1.55;
+  font-family: var(--hand);
 }
 
 .gdp-match-login {
@@ -325,13 +345,13 @@
 }
 
 .gdp-match-login a {
-  color: #8f4664;
+  color: #047857;
   font-weight: 700;
 }
 
 .gdp-match-guide-warn {
   margin: 0.7rem 0 0;
-  color: #b15e81;
+  color: #dc2626;
   font-size: 0.88rem;
   font-weight: 600;
 }
@@ -349,13 +369,13 @@
 }
 
 .gdp-match-label {
-  color: #5a3c56;
+  color: #1e293b;
   font-size: 0.88rem;
   font-weight: 700;
 }
 
 .gdp-match-cal {
-  border: 1px solid #f0dce4;
+  border: 1px solid #dbe4ef;
   border-radius: 14px;
   background: #fff;
   padding: 0.82rem;
@@ -366,17 +386,17 @@
   align-items: center;
   justify-content: space-between;
   margin-bottom: 0.55rem;
-  color: #5a3c56;
+  color: #334155;
 }
 
 .gdp-match-nav {
-  border: 1px solid #efbfd0;
-  background: #fff7fa;
+  border: 1px solid #dbe4ef;
+  background: #ffffff;
   border-radius: 10px;
   width: 1.9rem;
   height: 1.9rem;
   cursor: pointer;
-  color: #8f4664;
+  color: #334155;
 }
 
 .gdp-match-week {
@@ -388,7 +408,7 @@
 
 .gdp-match-week span {
   font-size: 0.66rem;
-  color: #b397ae;
+  color: #64748b;
   text-align: center;
   font-weight: 700;
 }
@@ -401,18 +421,18 @@
 
 .gdp-match-day {
   position: relative;
-  border: 1px solid #efbfd0;
+  border: 1px solid #dbe4ef;
   border-radius: 8px;
   height: 2rem;
-  background: #fff7fa;
+  background: #ffffff;
   font-size: 0.82rem;
-  color: #8f4664;
+  color: #334155;
 }
 
 .gdp-match-day.is-on {
-  background: #fdeaf1;
-  border-color: #efbfd0;
-  color: #8f4664;
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  color: #047857;
   cursor: pointer;
 }
 
@@ -429,9 +449,9 @@
 }
 
 .gdp-match-day.is-selected {
-  background: #f6d8e6;
-  border-color: #efbfd0;
-  color: #6d3f58;
+  background: #10b981;
+  border-color: #10b981;
+  color: #ffffff;
   font-weight: 700;
 }
 
@@ -443,8 +463,9 @@
 .gdp-match-cal-hint {
   margin: 0.55rem 0 0;
   font-size: 0.76rem;
-  color: #8d7890;
+  color: #64748b;
   line-height: 1.5;
+  font-family: var(--hand);
 }
 
 .gdp-match-x {
@@ -463,43 +484,43 @@
 }
 
 .gdp-match-time {
-  border: 1px solid #efbfd0;
+  border: 1px solid #dbe4ef;
   border-radius: 999px;
-  background: #fff8fb;
-  color: #7a5f78;
+  background: #ffffff;
+  color: #334155;
   font-size: 0.76rem;
   padding: 0.25rem 0.65rem;
   cursor: pointer;
 }
 
 .gdp-match-time.is-selected {
-  border-color: #efbfd0;
-  background: #f6d8e6;
-  color: #6d3f58;
+  border-color: #10b981;
+  background: #10b981;
+  color: #ffffff;
 }
 
 .gdp-match-default-slot {
   margin: 0.55rem 0 0;
   font-size: 0.78rem;
-  color: #7f6b82;
+  color: #64748b;
 }
 
 .gdp-match-input,
 .gdp-match-textarea {
   width: 100%;
-  border: 1px solid #efbfd0;
-  background: #fffdfd;
+  border: 1px solid #dbe4ef;
+  background: #ffffff;
   border-radius: 10px;
   padding: 0.62rem 0.72rem;
   font: inherit;
   font-size: 0.9rem;
-  color: #5a3c56;
+  color: #334155;
   box-sizing: border-box;
 }
 
 .gdp-match-input::placeholder,
 .gdp-match-textarea::placeholder {
-  color: #b397ae;
+  color: #94a3b8;
 }
 
 .gdp-match-budget-row {
@@ -510,7 +531,7 @@
 }
 
 .gdp-match-budget-sep {
-  color: #9f90a7;
+  color: #64748b;
   font-weight: 700;
   font-size: 0.9rem;
 }
@@ -518,7 +539,8 @@
 .gdp-match-budget-hint {
   margin: 0;
   font-size: 0.74rem;
-  color: #9f90a7;
+  color: #64748b;
+  font-family: var(--hand);
 }
 
 .gdp-match-textarea {
@@ -529,7 +551,7 @@
 
 .gdp-match-error {
   margin: 0;
-  color: #b15e81;
+  color: #dc2626;
   font-size: 0.84rem;
   font-weight: 600;
 }
@@ -539,10 +561,10 @@
 }
 
 .gdp-match-submit {
-  border: 1px solid #efbfd0;
+  border: 1px solid #10b981;
   border-radius: 999px;
-  background: #f6d8e6;
-  color: #6d3f58;
+  background: #10b981;
+  color: #ffffff;
   font-size: 0.88rem;
   font-weight: 800;
   padding: 0.62rem 1.2rem;
@@ -556,7 +578,7 @@
 }
 
 .gdp-match-submit:hover:not(:disabled) {
-  background: #f2cddd;
+  background: #059669;
 }
 
 .gdp-confirm-overlay {
@@ -586,9 +608,9 @@
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #1d4ed8;
-  background: #eff6ff;
-  border: 1px solid #dbeafe;
+  color: #047857;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
   border-radius: 999px;
   padding: 0.14rem 0.5rem;
 }
@@ -663,12 +685,12 @@
 }
 
 .gdp-confirm-btn--solid {
-  border: 1px solid #0f172a;
-  background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+  border: 1px solid #10b981;
+  background: linear-gradient(180deg, #059669 0%, #10b981 100%);
   color: #fff;
 }
 
 .gdp-confirm-btn--solid:hover:not(:disabled) {
-  border-color: #020617;
-  background: linear-gradient(180deg, #111827 0%, #020617 100%);
+  border-color: #10b981;
+  background: linear-gradient(180deg, #047857 0%, #059669 100%);
 }

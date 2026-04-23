@@ -1,48 +1,29 @@
 .site-footer {
   position: relative;
-  overflow: hidden;
+  overflow: visible;
   margin-top: auto;
   background: transparent;
-  color: #715f73;
+  color: #334155;
   padding: 1.75rem 1.5rem 2rem;
   font-size: 0.875rem;
-  border-top: 1px solid #f0dce4;
+  border-top: 1px solid #dbe4ef;
 }
 
 .site-footer::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: -8px;
-  height: 64px;
-  pointer-events: none;
-  background:
-    radial-gradient(ellipse at 10% 72%, rgba(255, 214, 230, 0.92) 0 25%, transparent 28%),
-    radial-gradient(ellipse at 24% 66%, rgba(255, 231, 240, 0.92) 0 22%, transparent 25%),
-    radial-gradient(ellipse at 38% 74%, rgba(255, 205, 224, 0.86) 0 28%, transparent 31%),
-    radial-gradient(ellipse at 53% 67%, rgba(255, 230, 240, 0.94) 0 24%, transparent 27%),
-    radial-gradient(ellipse at 67% 73%, rgba(255, 214, 230, 0.9) 0 26%, transparent 29%),
-    radial-gradient(ellipse at 81% 65%, rgba(255, 235, 243, 0.95) 0 23%, transparent 26%),
-    radial-gradient(ellipse at 94% 72%, rgba(255, 206, 223, 0.84) 0 27%, transparent 30%);
-  opacity: 0.86;
+  content: none;
 }
 
 .site-footer::after {
   content: '';
   position: absolute;
-  inset: -20% -6% 30% -6%;
+  inset: 0;
   pointer-events: none;
-  opacity: 0.45;
+  opacity: 0.18;
   background-image:
-    radial-gradient(circle at 8% 6%, rgba(255, 214, 230, 0.92) 0 4px, transparent 5px),
-    radial-gradient(circle at 22% 24%, rgba(255, 236, 245, 0.9) 0 3px, transparent 4px),
-    radial-gradient(circle at 37% 13%, rgba(255, 206, 223, 0.88) 0 4px, transparent 5px),
-    radial-gradient(circle at 51% 8%, rgba(255, 231, 240, 0.9) 0 3px, transparent 4px),
-    radial-gradient(circle at 66% 22%, rgba(255, 212, 228, 0.9) 0 4px, transparent 5px),
-    radial-gradient(circle at 79% 10%, rgba(255, 237, 245, 0.9) 0 3px, transparent 4px),
-    radial-gradient(circle at 92% 24%, rgba(255, 206, 223, 0.88) 0 4px, transparent 5px);
-  animation: site-footer-petal-fall 13s linear infinite;
+    radial-gradient(circle at 12% 20%, rgba(16, 185, 129, 0.35) 0 4px, transparent 5px),
+    radial-gradient(circle at 36% 30%, rgba(52, 211, 153, 0.28) 0 4px, transparent 5px),
+    radial-gradient(circle at 64% 22%, rgba(110, 231, 183, 0.35) 0 4px, transparent 5px),
+    radial-gradient(circle at 84% 28%, rgba(16, 185, 129, 0.28) 0 4px, transparent 5px);
 }
 
 .site-footer__inner {
@@ -59,22 +40,23 @@
 
 .site-footer__brand {
   font-family: var(--logo-header);
-  font-weight: 700;
+  font-weight: 900;
   font-size: 1.5rem;
-  color: #8f4f6c;
+  color: #047857;
   letter-spacing: 0.01em;
 }
 
 .site-footer__copy {
   margin: 0.35rem 0 0;
-  color: #8e7b91;
+  color: #64748b;
   font-size: 0.8125rem;
+  font-family: var(--hand);
 }
 
 .site-footer__tel {
   margin: 0 0 0.35rem;
   font-weight: 600;
-  color: #6d4d6d;
+  color: #334155;
 }
 
 .site-footer__links {
@@ -85,24 +67,15 @@
 }
 
 .site-footer__links a {
-  color: #7d6780;
+  color: #475569;
   text-decoration: none;
 }
 
 .site-footer__links a:hover {
-  color: #6f576f;
+  color: #047857;
 }
 
 .site-footer__dot {
-  color: #b9a4be;
+  color: #94a3b8;
   user-select: none;
-}
-
-@keyframes site-footer-petal-fall {
-  from {
-    transform: translateY(-6%) translateX(0);
-  }
-  to {
-    transform: translateY(24%) translateX(-2%);
-  }
 }

@@ -552,7 +552,15 @@ export function GuideFeedSchedulePage() {
       <Toast toasts={toasts} />
       {currentTab === 'feed' ? (
         <section className="gfs-feed">
-          <div className="gfs-badge">📸 피드 등록</div>
+          <header className="gfs-feed-head">
+            <h2 className="gfs-feed-title">
+              <span className="gfs-feed-ico" aria-hidden="true">
+                📸
+              </span>
+              피드 등록
+            </h2>
+            <p className="gfs-feed-lead">투어 사진과 소개를 올리면 게스트에게 더 잘 보여요.</p>
+          </header>
 
           {/* 이미지 입력 방식 탭 */}
           <div className="gfi-mode-tabs">
