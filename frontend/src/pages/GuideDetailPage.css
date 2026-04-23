@@ -854,3 +854,24 @@
     sans-serif;
   font-size: 0.8rem;
 }
+
+.gdp-match-cal--gss3 .gdp-match-day.is-range {
+  background: rgba(13, 148, 136, 0.12);
+}
+
+.gdp-match-cal--gss3 .gdp-match-day.is-range.is-selected,
+.gdp-match-cal--gss3 .gdp-match-day.is-range-start,
+.gdp-match-cal--gss3 .gdp-match-day.is-range-end {
+  background: #0d9488;
+  color: #fff;
+}
+
+.gdp-match-cal--gss3 .gdp-match-day.is-range-start {
+  border-top-left-radius: 999px;
+  border-bottom-left-radius: 999px;
+}
+
+.gdp-match-cal--gss3 .gdp-match-day.is-range-end {
+  border-top-right-radius: 999px;
+  border-bottom-right-radius: 999px;
+}

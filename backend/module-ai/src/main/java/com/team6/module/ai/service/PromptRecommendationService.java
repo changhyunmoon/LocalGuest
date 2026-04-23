@@ -415,6 +415,9 @@ public class PromptRecommendationService {
     }
 
     private static String mergeNotice(String primary, String secondary) {
+        if (primary == null || primary.isBlank()) {
+            return (secondary == null || secondary.isBlank()) ? null : secondary;
+        }
         if (secondary == null || secondary.isBlank()) {
             return primary;
         }

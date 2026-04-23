@@ -133,6 +133,19 @@
   word-break: break-word;
 }
 
+.gce-value--date-range {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  align-items: baseline;
+  word-break: keep-all;
+}
+
+.gce-date-range-sep {
+  color: #9ca3af;
+  font-weight: 800;
+}
+
 .gce-concept {
   margin: 0.65rem 0 0;
   padding-top: 0.65rem;
