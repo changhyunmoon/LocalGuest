@@ -155,5 +155,17 @@ public class GuideRecommendRequest {
         /** LLM 순위용: 거주 연수(신뢰/로컬성 힌트). */
         @JsonIgnore
         private Integer residenceYears;
+
+        /** LLM 순위용: 최신 공개 피드 날짜(YYYY-MM-DD). */
+        @JsonIgnore
+        private String latestPublicFeedDate;
+
+        /** LLM 순위용: 리뷰가 거의 없는 콜드스타트인지(예: reviewCount=0). */
+        @JsonIgnore
+        private Boolean coldStart;
+
+        /** LLM 순위용: 핵심 전문 태그 상위 3개 요약(콤마 구분). */
+        @JsonIgnore
+        private String coreSpecialtyTagsTop3;
     }
 }

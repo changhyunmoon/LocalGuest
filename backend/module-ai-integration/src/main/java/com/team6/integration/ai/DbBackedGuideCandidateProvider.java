@@ -494,6 +494,9 @@ public class DbBackedGuideCandidateProvider implements GuideCandidateProvider {
                 .publicFeedCount(d.getPublicFeedCount())
                 .llmKeywordsSnippet(d.getLlmKeywordsSnippet())
                 .residenceYears(d.getResidenceYears())
+                .latestPublicFeedDate(d.getLatestPublicFeedDate())
+                .coldStart(d.getColdStart())
+                .coreSpecialtyTagsTop3(d.getCoreSpecialtyTagsTop3())
                 .build();
     }
 }

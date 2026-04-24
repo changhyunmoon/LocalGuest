@@ -547,6 +547,23 @@ public class PromptRecommendationService {
     }
 
     private static boolean budgetMentionedAmbiguous(String p) {
+        // "가성비"는 예산 규모(낮음/높음)보다 '가격 대비 만족'에 더 가깝다.
+        // 따라서 budgetLevel을 확정하지 못했더라도 가성비만 언급된 경우에는 예산 모호 notice를 띄우지 않는다.
+        boolean valueOnly = p.contains("가성비")
+                || p.contains("합리적")
+                || p.contains("가격 대비")
+                || p.contains("값 대비");
+        if (valueOnly) {
+            // 금액/총액/1인당/숫자 같은 "예산 확정 단서"가 없다면 가성비 맥락으로 보고 notice를 띄우지 않는다.
+            boolean numericBudgetCue = p.contains("1인당")
+                    || p.contains("총액")
+                    || p.matches(".*\\d+\\s*만\\s*원.*")
+                    || p.matches(".*\\d+\\s*만원.*")
+                    || p.matches(".*\\d+\\s*원.*");
+            if (!numericBudgetCue) {
+                return false;
+            }
+        }
         return p.contains("예산")
                 || p.contains("비용")
                 || p.contains("경비")
