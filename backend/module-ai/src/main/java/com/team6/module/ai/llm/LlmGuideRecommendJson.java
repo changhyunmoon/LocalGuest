@@ -1,7 +1,9 @@
 package com.team6.module.ai.llm;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -27,6 +29,8 @@ public class LlmGuideRecommendJson {
      * <p>예: "가족" 또는 ["가족"].
      */
     @JsonProperty("companionType")
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
     private Object companionTypeRaw;
     private List<String> activityTags;
     private List<String> requiredActivityTags;
@@ -67,5 +71,15 @@ public class LlmGuideRecommendJson {
 
     public void setCompanionType(String companionType) {
         this.companionTypeRaw = companionType;
+    }
+
+    @JsonIgnore
+    public Object getCompanionTypeRaw() {
+        return companionTypeRaw;
+    }
+
+    @JsonIgnore
+    public void setCompanionTypeRaw(Object companionTypeRaw) {
+        this.companionTypeRaw = companionTypeRaw;
     }
 }
