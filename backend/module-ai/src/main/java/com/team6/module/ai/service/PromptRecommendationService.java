@@ -1016,6 +1016,9 @@ public class PromptRecommendationService {
         if (t.isEmpty()) {
             return null;
         }
+        // LLM이 이유 끝에 [태그]를 붙여도 UI에서는 제거한다.
+        t = t.replaceAll("\\[[^\\]]{1,20}\\]", " ");
+        t = t.replaceAll("\\s{2,}", " ").strip();
         t = LlmCopyPiiMasker.mask(t);
         if (t.length() > LLM_REASON_MAX_CHARS) {
             t = t.substring(0, LLM_REASON_MAX_CHARS).strip() + "…";
