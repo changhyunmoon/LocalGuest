@@ -190,7 +190,8 @@ public class PromptRecommendationService {
                         parsed.getGuideCandidates(),
                         parsed.getRegion(),
                         adjacentRegionProvider::neighbors,
-                        Boolean.TRUE.equals(parsed.getAllowAdjacentRegion())
+                        Boolean.TRUE.equals(parsed.getAllowAdjacentRegion()),
+                        resolvedTopN
                 );
 
         // 4) 실제 점수 계산에 넣을 최종 요청 객체를 다시 만든다.
@@ -852,6 +853,90 @@ public class PromptRecommendationService {
                 || (req.getNiceToHaveActivityTags() != null && !req.getNiceToHaveActivityTags().isEmpty());
     }
 
+    /**
+     * LLM rank 품질 보호용: excludedActivityTags가 후보 카드 텍스트/태그에 강하게 드러나는 경우
+     * LLM에 넘길 풀에서 우선 제거한다(단, 전부 제거되면 원본 풀을 유지).
+     */
+    static List<GuideRecommendRequest.GuideCandidateDto> filterPoolByExcludedSignals(
+            List<String> excludedActivityTags,
+            List<GuideRecommendRequest.GuideCandidateDto> pool
+    ) {
+        if (pool == null || pool.isEmpty()) {
+            return List.of();
+        }
+        if (excludedActivityTags == null || excludedActivityTags.isEmpty()) {
+            return pool;
+        }
+        List<String> needles = excludedActivityTags.stream()
+                .filter(Objects::nonNull)
+                .map(String::trim)
+                .filter(s -> !s.isBlank())
+                .filter(s -> s.length() >= 2)
+                .map(s -> s.toLowerCase(Locale.ROOT))
+                .distinct()
+                .toList();
+        if (needles.isEmpty()) {
+            return pool;
+        }
+
+        List<GuideRecommendRequest.GuideCandidateDto> kept = new ArrayList<>();
+        for (GuideRecommendRequest.GuideCandidateDto c : pool) {
+            if (c == null) continue;
+            if (!violatesExcludedSignals(needles, c)) {
+                kept.add(c);
+            }
+        }
+        return kept.isEmpty() ? pool : kept;
+    }
+
+    private static boolean violatesExcludedSignals(List<String> needlesLower, GuideRecommendRequest.GuideCandidateDto c) {
+        if (needlesLower == null || needlesLower.isEmpty() || c == null) {
+            return false;
+        }
+        String hay = buildCandidateTextHaystackLower(c);
+        if (hay.isEmpty()) {
+            return false;
+        }
+        for (String n : needlesLower) {
+            if (n == null || n.isBlank()) continue;
+            if (hay.contains(n)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static String buildCandidateTextHaystackLower(GuideRecommendRequest.GuideCandidateDto c) {
+        StringBuilder sb = new StringBuilder();
+        appendIfPresent(sb, c.getGuideStyle());
+        appendIfPresent(sb, joinOrEmpty(c.getSpecialtyTags()));
+        appendIfPresent(sb, c.getLlmKeywordsSnippet());
+        appendIfPresent(sb, c.getLlmIntroSnippet());
+        if (c.getLlmFeedBodiesNewestFirst() != null) {
+            for (String s : c.getLlmFeedBodiesNewestFirst()) {
+                appendIfPresent(sb, s);
+            }
+        }
+        appendIfPresent(sb, c.getLlmDefaultCourseSnippet());
+        appendIfPresent(sb, c.getLlmCareerSnippet());
+        return sb.toString().toLowerCase(Locale.ROOT);
+    }
+
+    private static void appendIfPresent(StringBuilder sb, String text) {
+        if (sb == null) return;
+        if (text == null || text.isBlank()) return;
+        sb.append(' ').append(text.strip());
+    }
+
+    private static String joinOrEmpty(List<String> tags) {
+        if (tags == null || tags.isEmpty()) return "";
+        return tags.stream()
+                .filter(Objects::nonNull)
+                .map(String::trim)
+                .filter(s -> !s.isBlank())
+                .collect(Collectors.joining(" "));
+    }
+
     private void logRecommendation(
             String prompt,
             GuideRecommendRequest request,
@@ -930,7 +1015,9 @@ public class PromptRecommendationService {
         if (pool == null || pool.isEmpty()) {
             return finalBase;
         }
-        int poolSize = pool.size();
+        List<GuideRecommendRequest.GuideCandidateDto> filteredPool =
+                filterPoolByExcludedSignals(scoringRequest.getExcludedActivityTags(), pool);
+        int poolSize = filteredPool.size();
         long t0 = System.nanoTime();
         try {
             GuideRecommendRequest fullReq = scoringRequest.toBuilder()
@@ -941,15 +1028,21 @@ public class PromptRecommendationService {
                 metrics.recordLlmGuideRank("empty_rule_full", System.nanoTime() - t0, POLICY_VERSION);
                 return finalBase;
             }
-            long seed = LlmRankCardComposer.stableSeed(prompt, pool);
+            long seed = LlmRankCardComposer.stableSeed(prompt, filteredPool);
             Optional<LlmGuideRankResult> ranked =
-                    llmGuideRanker.tryRank(truncateForLlm(prompt), pool, resolvedTopN, seed);
+                    llmGuideRanker.tryRank(truncateForLlm(prompt), filteredPool, resolvedTopN, seed);
             if (ranked.isEmpty()) {
                 metrics.recordLlmGuideRank("empty", System.nanoTime() - t0, POLICY_VERSION);
                 log.info("[AI_RANK] llmRank=empty policyVer={} topN={} poolSize={}", POLICY_VERSION, resolvedTopN, poolSize);
                 return finalBase;
             }
-            GuideRecommendResponse merged = mergeLlmRankIntoResponse(fullRule, ranked.get(), resolvedTopN);
+            GuideRecommendResponse merged = mergeLlmRankIntoResponse(
+                    fullRule,
+                    ranked.get(),
+                    resolvedTopN,
+                    scoringRequest.getExcludedActivityTags(),
+                    filteredPool
+            );
             metrics.recordLlmGuideRank("success", System.nanoTime() - t0, POLICY_VERSION);
             log.info("[AI_RANK] llmRank=success policyVer={} topN={} poolSize={} orderedIds={}",
                     POLICY_VERSION,
@@ -963,6 +1056,60 @@ public class PromptRecommendationService {
             log.warn("[AI_RANK] LLM 순위 적용 실패, 룰 결과 유지: {}", e.toString());
             return finalBase;
         }
+    }
+
+    private static GuideRecommendResponse mergeLlmRankIntoResponse(
+            GuideRecommendResponse fullRule,
+            LlmGuideRankResult rank,
+            int topN,
+            List<String> excludedActivityTags,
+            List<GuideRecommendRequest.GuideCandidateDto> pool
+    ) {
+        // 2단 필터: LLM이 실수로 제외 후보를 앞에 두더라도, 최종 TopN에서는 제외 위반 후보를 한 번 더 걸러낸다.
+        // 단, 너무 과하게 걸러 empty가 되면 원본 머지 결과를 유지한다.
+        GuideRecommendResponse baselineMerged = mergeLlmRankIntoResponse(fullRule, rank, topN);
+        if (excludedActivityTags == null || excludedActivityTags.isEmpty() || pool == null || pool.isEmpty()) {
+            return baselineMerged;
+        }
+
+        Map<Long, GuideRecommendRequest.GuideCandidateDto> candidateById = pool.stream()
+                .filter(Objects::nonNull)
+                .filter(c -> c.getGuideId() != null)
+                .collect(Collectors.toMap(GuideRecommendRequest.GuideCandidateDto::getGuideId, c -> c, (a, b) -> a));
+        List<String> needles = excludedActivityTags.stream()
+                .filter(Objects::nonNull)
+                .map(String::trim)
+                .filter(s -> !s.isBlank())
+                .filter(s -> s.length() >= 2)
+                .map(s -> s.toLowerCase(Locale.ROOT))
+                .distinct()
+                .toList();
+        if (needles.isEmpty()) {
+            return baselineMerged;
+        }
+
+        List<GuideRecommendItem> src = baselineMerged.getRecommendations();
+        if (src == null || src.isEmpty()) {
+            return baselineMerged;
+        }
+        List<GuideRecommendItem> filtered = new ArrayList<>();
+        for (GuideRecommendItem it : src) {
+            if (filtered.size() >= topN) break;
+            if (it == null || it.getGuideId() == null) continue;
+            GuideRecommendRequest.GuideCandidateDto c = candidateById.get(it.getGuideId());
+            if (c != null && violatesExcludedSignals(needles, c)) {
+                continue;
+            }
+            filtered.add(it);
+        }
+        if (filtered.isEmpty()) {
+            return baselineMerged;
+        }
+        return GuideRecommendResponse.builder()
+                .policyVersion(POLICY_VERSION)
+                .totalCount(filtered.size())
+                .recommendations(filtered)
+                .build();
     }
 
     private static GuideRecommendResponse mergeLlmRankIntoResponse(
