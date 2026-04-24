@@ -83,7 +83,7 @@ public class PromptRecommendationService {
     private static final String NOTICE_SPARSE_GUIDE_POOL =
             "이 조건에 맞는 가이드가 한 분뿐이라 추천 선택 폭이 좁을 수 있어요.";
     private static final String NOTICE_PARSE_LOW =
-            "지역 외 조건 신호가 적어 해석 여지가 있어요. 예산·일정·원하는 활동을 조금만 더 적어주시면 정확해져요.";
+            "입력이 짧아 해석 여지가 있어요. 예산·일정·활동을 더 적어주시면 정확해져요.";
     private static final String NOTICE_BUDGET_VAGUE =
             "예산과 관련된 표현이 있는데 구간을 확정하지 못했어요. 금액이나 ‘가성비/럭셔리’처럼 알려주시면 좋아요.";
     private static final String NOTICE_DURATION_VAGUE =
@@ -237,7 +237,7 @@ public class PromptRecommendationService {
                     && notBlank(parsed.getRegion())) {
                 notice = mergeNotice(
                         "\"" + parsed.getRegion().trim()
-                                + "\" 지역에 등록된 가이드가 현재 없거나 적어, 주변·광역 지역 가이드도 함께 안내해 드렸어요.",
+                                + "\"에는 등록 가이드가 없어 주변·광역 권역 가이드를 보여드려요.",
                         notice
                 );
             }
@@ -673,15 +673,15 @@ public class PromptRecommendationService {
                 ? List.of(RecommendationNoticeCodes.FALLBACK_RELAXED_NO_MATCH)
                 : List.of(RecommendationNoticeCodes.FALLBACK_LOW_SCORE_RELAXED);
         String noticeIfExhausted = noResults
-                ? "활동·스타일·지역 순으로 조건을 단계적으로 완화해 찾아봤어요."
-                : "활동·스타일·지역 순으로 조건을 단계적으로 완화해 추천을 다시 구성해 봤어요.";
+                ? "조건을 순서대로 완화해 다시 찾아봤어요."
+                : "조건을 순서대로 완화해 추천을 다시 구성했어요.";
 
         StrategicChainResult chain = runStrategicRelaxationChain(effective, base, scoringPolicy);
         boolean improved = chain.winningStage() != RelaxStage.NONE;
         GuideRecommendResponse finalResp = improved ? chain.bestResponse() : base;
         boolean exhausted = !improved;
         String notice = improved
-                ? "일부 조건을 순서대로 완화해 다시 추천했어요."
+                ? "조건을 완화해 다시 추천했어요."
                 : noticeIfExhausted;
 
         return new FallbackOutcome(
