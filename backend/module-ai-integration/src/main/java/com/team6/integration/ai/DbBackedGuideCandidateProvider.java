@@ -487,6 +487,11 @@ public class DbBackedGuideCandidateProvider implements GuideCandidateProvider {
                 .chatStartCount(chatStartCount)
                 .representativeImageUrl(d.getRepresentativeImageUrl())
                 .publicFeedThumbnailUrls(d.getPublicFeedThumbnailUrls())
+                .llmIntroSnippet(d.getLlmIntroSnippet())
+                .llmFeedBodiesNewestFirst(d.getLlmFeedBodiesNewestFirst())
+                .llmCareerSnippet(d.getLlmCareerSnippet())
+                .llmDefaultCourseSnippet(d.getLlmDefaultCourseSnippet())
+                .publicFeedCount(d.getPublicFeedCount())
                 .build();
     }
 }

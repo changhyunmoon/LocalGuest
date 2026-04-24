@@ -1,7 +1,9 @@
 package com.team6.module.openai.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.team6.module.ai.spi.LlmGuideRanker;
 import com.team6.module.ai.spi.LlmPromptExtractor;
+import com.team6.module.openai.prompt.OpenAiLlmGuideRanker;
 import com.team6.module.openai.prompt.OpenAiLlmPromptExtractor;
 import io.micrometer.observation.ObservationRegistry;
 import org.springframework.ai.model.tool.DefaultToolCallingManager;
@@ -86,6 +88,13 @@ public class LocalGuestOpenAiConfiguration {
     @Conditional(OnOpenAiLlmExtractionProperties.class)
     public LlmPromptExtractor llmPromptExtractor(OpenAiChatModel chatModel, ObjectMapper objectMapper) {
         return new OpenAiLlmPromptExtractor(chatModel, objectMapper);
+    }
+
+    @Bean
+    @ConditionalOnBean(OpenAiChatModel.class)
+    @Conditional(OnOpenAiLlmRankProperties.class)
+    public LlmGuideRanker llmGuideRanker(OpenAiChatModel chatModel, ObjectMapper objectMapper) {
+        return new OpenAiLlmGuideRanker(chatModel, objectMapper);
     }
 
     private static String resolveApiKey(LocalGuestOpenAiProperties props, Environment env) {

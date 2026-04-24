@@ -8496,3 +8496,108 @@ Caused by: java.net.SocketTimeoutException: Read timed out
 2026-04-24 15:46:00.230 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
 2026-04-24 15:46:00.233 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-24T15:46:00.054642800]
 2026-04-24 15:46:00.312 INFO  [] c.t.a.l.RepositoryLoggingAspect - [DB] Completed - method: TourExtensionRepository.findByStatusAndDeadlineAtBefore(..), latencyMs: 256, status: success
+2026-04-24 15:47:01.553 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-24 15:47:01.658 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-24 15:47:01.667 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-24T15:47:01.012260700]
+2026-04-24 15:47:01.846 INFO  [] c.t.a.l.RepositoryLoggingAspect - [DB] Completed - method: TourExtensionRepository.findByStatusAndDeadlineAtBefore(..), latencyMs: 808, status: success
+2026-04-24 15:48:00.404 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-24 15:48:00.422 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-24 15:48:00.427 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-24T15:48:00.235230500]
+2026-04-24 15:48:00.482 INFO  [] c.t.a.l.RepositoryLoggingAspect - [DB] Completed - method: TourExtensionRepository.findByStatusAndDeadlineAtBefore(..), latencyMs: 241, status: success
+2026-04-24 15:49:00.066 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-24 15:49:00.085 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-24 15:49:00.098 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-24T15:49:00.020555]
+2026-04-24 15:49:00.125 INFO  [] c.t.a.l.RepositoryLoggingAspect - [DB] Completed - method: TourExtensionRepository.findByStatusAndDeadlineAtBefore(..), latencyMs: 99, status: success
+2026-04-24 15:50:01.695 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-24 15:50:01.773 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-24 15:50:01.782 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-24T15:50:00.946590500]
+2026-04-24 15:50:01.925 INFO  [] c.t.a.l.RepositoryLoggingAspect - [DB] Completed - method: TourExtensionRepository.findByStatusAndDeadlineAtBefore(..), latencyMs: 933, status: success
+2026-04-24 15:51:00.040 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-24 15:51:00.055 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-24 15:51:00.067 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-24T15:51:00.018653700]
+2026-04-24 15:51:00.103 INFO  [] c.t.a.l.RepositoryLoggingAspect - [DB] Completed - method: TourExtensionRepository.findByStatusAndDeadlineAtBefore(..), latencyMs: 84, status: success

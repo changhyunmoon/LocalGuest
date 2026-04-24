@@ -69,7 +69,7 @@ public class LocalGuestAiProperties {
     private boolean llmPromptExtractionEnabled = false;
 
     /**
-     * LLM 백엔드. {@code openai}(기본)는 {@code module-openai}, {@code gemini}는 {@code module-gemini}(Google AI Studio API 키).
+     * LLM 백엔드. {@code openai}(기본)는 {@code module-openai}. {@code gemini}는 별도 앱에서 {@code module-gemini}를 둘 때만 유효.
      * {@code localguest.ai.llm-provider}
      */
     private String llmProvider = "openai";
@@ -79,6 +79,12 @@ public class LocalGuestAiProperties {
      * {@code localguest.ai.llm-prompt-max-chars}, 기본 6000. 0 이하이면 제한 없음.
      */
     private int llmPromptMaxChars = 6000;
+
+    /**
+     * {@code true}이면 {@link com.team6.module.ai.spi.LlmGuideRanker} 빈이 있을 때 후보 풀에 대해 LLM 순위를 시도한다.
+     * 실패·빈 응답 시에는 룰 엔진 결과를 유지한다({@code localguest.ai.llm-rank-enabled}).
+     */
+    private boolean llmRankEnabled = false;
 
     @Getter
     @Setter
