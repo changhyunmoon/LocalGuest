@@ -8,8 +8,8 @@ import { getGuestDisplayName, loadTravelTags } from '../lib/guestMypagePrefs.js'
 import './DashboardLayout.css'
 
 const guestItems = [
-  { to: '/mypage/scrapbook', label: '📒 나의 여행 기록(스크랩북)' },
-  { to: '/mypage/itinerary', label: '📆 앞으로의 여행 일정' },
+  { to: '/mypage/scrapbook', label: '📒 스크랩북 (나의 여행 기록)' },
+  { to: '/mypage/itinerary', label: '📆 예정된 로컬 만남' },
   { to: '/mypage/payments', label: '💳 결제 내역' },
   { to: '/mypage/privacy', label: '⚙️ 개인정보 설정' },
   { to: '/mypage/tour', label: '🔁 투어 연장/환불 관리' },
