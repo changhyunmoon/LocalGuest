@@ -231,6 +231,16 @@ public class PromptRecommendationService {
             // 8) 사용자에게 보여줄 notice 문구를 조립한다.
             // 인접 지역 확장, 후보 수 부족, 파싱 애매함, fallback 재시도 여부를 합쳐 한 문장으로 만든다.
             String notice = fallback.fallbackNotice();
+            if (!expansion.expansionUsed()
+                    && expansion.exactCount() == 0
+                    && finalBase.getTotalCount() > 0
+                    && notBlank(parsed.getRegion())) {
+                notice = mergeNotice(
+                        "\"" + parsed.getRegion().trim()
+                                + "\" 지역에 등록된 가이드가 현재 없거나 적어, 주변·광역 지역 가이드도 함께 안내해 드렸어요.",
+                        notice
+                );
+            }
             if (expansion.expansionUsed()) {
                 notice = mergeNotice(NOTICE_ADJACENT_INCLUDED, notice);
                 metrics.recordRegionExpansion();
@@ -255,6 +265,8 @@ public class PromptRecommendationService {
             List<String> noticeCodes = buildNoticeCodes(
                     fallback,
                     expansion.expansionUsed(),
+                    expansion.exactCount(),
+                    parsed.getRegion(),
                     effectivePoolSizeForNotice,
                     finalBase.getTotalCount(),
                     parserHints,
@@ -427,6 +439,8 @@ public class PromptRecommendationService {
     private static List<String> buildNoticeCodes(
             FallbackOutcome fallback,
             boolean expansionUsed,
+            int expansionExactCount,
+            String regionForNotice,
             int effectivePoolSize,
             int resultCount,
             List<String> parserHints,
@@ -450,6 +464,10 @@ public class PromptRecommendationService {
         }
         if (expansionUsed) {
             codes.add(RecommendationNoticeCodes.ADJACENT_REGION_INCLUDED);
+        } else if (resultCount > 0
+                && expansionExactCount == 0
+                && notBlank(regionForNotice)) {
+            codes.add(RecommendationNoticeCodes.NO_EXACT_REGION_GUIDES_IN_POOL);
         }
         if (effectivePoolSize == 1 && resultCount > 0) {
             codes.add(RecommendationNoticeCodes.SPARSE_GUIDE_POOL);
