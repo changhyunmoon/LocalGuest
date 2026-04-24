@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.time.format.DateTimeFormatter;
 import java.util.stream.Collectors;
 
 /**
@@ -31,6 +32,8 @@ public final class GuideProfileAiCandidateMapper {
     private static final int LLM_FEED_MAX_ITEMS = 12;
     private static final int LLM_CAREER_SNIPPET_MAX = 650;
     private static final int LLM_DEFAULT_COURSE_MAX = 400;
+    private static final int LLM_KEYWORDS_MAX = 240;
+    private static final DateTimeFormatter DATE = DateTimeFormatter.ISO_LOCAL_DATE;
 
     public static GuideRecommendRequest.GuideCandidateDto toCandidate(
             GuideProfile profile,
@@ -41,6 +44,9 @@ public final class GuideProfileAiCandidateMapper {
                 GuideAiCandidateFeaturesExtractor.extract(profile, feeds, careers);
         PriceRange priceRange = approximateDailyPriceRangeFromHourly(profile.getPricePerHour());
         List<GuideFeed> visibleFeeds = visibleFeedsSorted(feeds);
+        String latestFeedDate = latestFeedDate(visibleFeeds);
+        boolean coldStart = profile != null && profile.getReviewCount() != null && profile.getReviewCount() == 0;
+        String coreTagsTop3 = joinTop3(features.specialtyTags());
         return GuideRecommendRequest.GuideCandidateDto.builder()
                 .guideId(profile.getId())
                 .guideName(profile.getNickname())
@@ -62,7 +68,36 @@ public final class GuideProfileAiCandidateMapper {
                 .llmCareerSnippet(buildLlmCareerSnippet(careers))
                 .llmDefaultCourseSnippet(truncate(profile == null ? null : profile.getDefaultCourse(), LLM_DEFAULT_COURSE_MAX))
                 .publicFeedCount(visibleFeeds.size())
+                .llmKeywordsSnippet(truncate(profile == null ? null : profile.getKeywords(), LLM_KEYWORDS_MAX))
+                .residenceYears(profile == null ? null : profile.getResidenceYears())
+                .latestPublicFeedDate(latestFeedDate)
+                .coldStart(coldStart)
+                .coreSpecialtyTagsTop3(coreTagsTop3)
                 .build();
+    }
+
+    private static String latestFeedDate(List<GuideFeed> visibleFeeds) {
+        if (visibleFeeds == null || visibleFeeds.isEmpty()) {
+            return "";
+        }
+        GuideFeed top = visibleFeeds.get(0);
+        if (top == null || top.getCreatedAt() == null) {
+            return "";
+        }
+        return top.getCreatedAt().toLocalDate().format(DATE);
+    }
+
+    private static String joinTop3(List<String> tags) {
+        if (tags == null || tags.isEmpty()) {
+            return "";
+        }
+        List<String> cleaned = tags.stream()
+                .filter(s -> s != null && !s.isBlank())
+                .map(String::strip)
+                .distinct()
+                .limit(3)
+                .toList();
+        return cleaned.isEmpty() ? "" : String.join(", ", cleaned);
     }
 
     private static List<GuideFeed> visibleFeedsSorted(List<GuideFeed> feeds) {
@@ -124,7 +159,24 @@ public final class GuideProfileAiCandidateMapper {
         if (maxChars <= 0 || s.length() <= maxChars) {
             return s;
         }
-        return s.substring(0, maxChars) + "…";
+        String cut = s.substring(0, maxChars);
+        int boundary = bestBoundaryIndex(cut);
+        if (boundary >= Math.max(20, (int) (maxChars * 0.6))) {
+            cut = cut.substring(0, boundary + 1);
+        }
+        return cut.strip() + "…";
+    }
+
+    private static int bestBoundaryIndex(String cut) {
+        if (cut == null || cut.isEmpty()) {
+            return -1;
+        }
+        int nl = cut.lastIndexOf('\n');
+        int dot = cut.lastIndexOf('.');
+        int ex = cut.lastIndexOf('!');
+        int q = cut.lastIndexOf('?');
+        int idx = Math.max(nl, Math.max(dot, Math.max(ex, q)));
+        return idx;
     }
 
     private static final class TextJoin {

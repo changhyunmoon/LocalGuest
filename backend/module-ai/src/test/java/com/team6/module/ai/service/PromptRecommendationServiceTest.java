@@ -34,6 +34,7 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -241,5 +242,63 @@ class PromptRecommendationServiceTest {
         ArgumentCaptor<String> promptSent = ArgumentCaptor.forClass(String.class);
         verify(extractor).tryExtract(promptSent.capture(), eq(2), any());
         assertThat(promptSent.getValue()).isEqualTo("제주도여");
+    }
+
+    @Test
+    void recommendByPrompt_whenLlmRankEnabled_skipsLlmPromptExtractionViaFastPath() {
+        LlmPromptExtractor extractor = mock(LlmPromptExtractor.class);
+
+        SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
+        LocalGuestAiProperties aiProps = new LocalGuestAiProperties();
+        aiProps.setLlmPromptExtractionEnabled(true);
+        aiProps.setLlmRankEnabled(true);
+        ScoringPolicySnapshot scoring = ScoringPolicySnapshot.defaults();
+        AdjacentRegionProvider adjacent = new AdjacentRegionProvider(aiProps);
+        AiRecommendationMetrics metrics = new AiRecommendationMetrics(meterRegistry);
+        ScoreCalculator scoreCalculator = new ScoreCalculator(
+                new RegionMatchPolicy(adjacent, scoring),
+                new StyleMatchPolicy(scoring),
+                new BudgetMatchPolicy(scoring),
+                new ActivityMatchPolicy(scoring),
+                new LanguageMatchPolicy(scoring),
+                new FeedbackMatchPolicy(scoring),
+                new ComboMatchPolicy(scoring),
+                metrics
+        );
+        ReasonGenerator reasonGenerator = new ReasonGenerator(adjacent, scoring);
+        AiRecommendationService aiRecommendationService =
+                new AiRecommendationServiceImpl(
+                        new MatchingEngine(scoreCalculator, reasonGenerator, adjacent, DiversityRerankSnapshot.defaults(),
+                                metrics, scoring));
+
+        PromptRecommendationService service = new PromptRecommendationService(
+                new PromptParser(aiProps),
+                aiRecommendationService,
+                adjacent,
+                metrics,
+                scoring,
+                aiProps,
+                extractor,
+                null
+        );
+
+        // 룰 파서만으로도 region/confidence가 충분한 케이스: LLM extractor 호출 없이 진행해야 한다.
+        service.recommendByPrompt(
+                "강릉 바다 근처 감성 카페 투어 가이드 추천해요",
+                2,
+                List.of(
+                        GuideRecommendRequest.GuideCandidateDto.builder()
+                                .guideId(1L)
+                                .guideName("가")
+                                .region("강릉")
+                                .guideStyle("감성")
+                                .priceLevel("중간")
+                                .specialtyTags(List.of("카페"))
+                                .languages(List.of("한국어"))
+                                .build()
+                )
+        );
+
+        verifyNoInteractions(extractor);
     }
 }
