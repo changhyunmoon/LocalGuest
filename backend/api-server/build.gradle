@@ -12,6 +12,7 @@ dependencies {
 
     // Web Server
     implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-aop'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
 
     // Runtime DB (H2 등 테스트용)
