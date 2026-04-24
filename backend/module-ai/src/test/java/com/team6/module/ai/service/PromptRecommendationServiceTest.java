@@ -68,6 +68,7 @@ class PromptRecommendationServiceTest {
                 metrics,
                 scoring,
                 aiProps,
+                null,
                 null
         );
     }
@@ -217,7 +218,8 @@ class PromptRecommendationServiceTest {
                 metrics,
                 scoring,
                 aiProps,
-                extractor
+                extractor,
+                null
         );
 
         service.recommendByPrompt(

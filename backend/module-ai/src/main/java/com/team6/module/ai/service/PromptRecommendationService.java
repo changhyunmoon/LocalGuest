@@ -5,6 +5,9 @@ import com.team6.module.ai.dto.response.GuideRecommendResponse;
 import com.team6.module.ai.config.LocalGuestAiProperties;
 import com.team6.module.ai.config.ScoringPolicySnapshot;
 import com.team6.module.ai.parser.PromptParser;
+import com.team6.module.ai.llm.LlmGuideRankResult;
+import com.team6.module.ai.llm.LlmRankCardComposer;
+import com.team6.module.ai.spi.LlmGuideRanker;
 import com.team6.module.ai.spi.LlmPromptExtractor;
 import com.team6.module.ai.support.AdjacentRegionProvider;
 import com.team6.module.ai.support.AiRecommendationMetrics;
@@ -27,6 +30,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -57,6 +61,9 @@ public class PromptRecommendationService {
     @Nullable
     private final LlmPromptExtractor llmPromptExtractor;
 
+    @Nullable
+    private final LlmGuideRanker llmGuideRanker;
+
     public PromptRecommendationService(
             PromptParser promptParser,
             AiRecommendationService aiRecommendationService,
@@ -64,7 +71,8 @@ public class PromptRecommendationService {
             AiRecommendationMetrics metrics,
             ScoringPolicySnapshot scoringPolicy,
             LocalGuestAiProperties aiProperties,
-            @Autowired(required = false) @Nullable LlmPromptExtractor llmPromptExtractor
+            @Autowired(required = false) @Nullable LlmPromptExtractor llmPromptExtractor,
+            @Autowired(required = false) @Nullable LlmGuideRanker llmGuideRanker
     ) {
         this.promptParser = promptParser;
         this.aiRecommendationService = aiRecommendationService;
@@ -73,6 +81,7 @@ public class PromptRecommendationService {
         this.scoringPolicy = scoringPolicy;
         this.aiProperties = aiProperties;
         this.llmPromptExtractor = llmPromptExtractor;
+        this.llmGuideRanker = llmGuideRanker;
     }
 
     private static final String NOTICE_REGION_REQUIRED =
@@ -219,7 +228,8 @@ public class PromptRecommendationService {
             // 6) 결과가 없거나 점수가 너무 약하면 활동 태그 -> 스타일 -> 지역 순으로
             // 한 단계씩만 완화하는 전략적 fallback을 시도한다.
             FallbackOutcome fallback = resolveFallbackWithStrategicRelaxation(effective, base);
-            GuideRecommendResponse finalBase = fallback.responseAfterFallback();
+            GuideRecommendResponse finalBase =
+                    applyLlmGuideRankIfEnabled(prompt, effective, resolvedTopN, fallback.responseAfterFallback());
 
             // 7) 파싱 결과가 얼마나 풍부한지(HIGH/MEDIUM/LOW), 어떤 모호함이 있었는지 계산한다.
             // 이 값들은 추천 점수 자체보다 notice/로그/운영 튜닝에 더 가깝게 쓰인다.
@@ -875,6 +885,96 @@ public class PromptRecommendationService {
         } catch (Exception e) {
             log.debug("[AI_RECOMMEND] logging skipped: {}", e.toString());
         }
+    }
+
+    private GuideRecommendResponse applyLlmGuideRankIfEnabled(
+            String prompt,
+            GuideRecommendRequest effective,
+            int resolvedTopN,
+            GuideRecommendResponse finalBase
+    ) {
+        if (llmGuideRanker == null || !aiProperties.isLlmRankEnabled()) {
+            return finalBase;
+        }
+        if (finalBase == null || finalBase.getRecommendations() == null || finalBase.getRecommendations().isEmpty()) {
+            return finalBase;
+        }
+        List<GuideRecommendRequest.GuideCandidateDto> pool = effective.getGuideCandidates();
+        if (pool == null || pool.isEmpty()) {
+            return finalBase;
+        }
+        int poolSize = pool.size();
+        long t0 = System.nanoTime();
+        try {
+            GuideRecommendRequest fullReq = effective.toBuilder()
+                    .topN(Math.max(poolSize, resolvedTopN))
+                    .build();
+            GuideRecommendResponse fullRule = aiRecommendationService.recommend(fullReq);
+            if (fullRule.getRecommendations() == null || fullRule.getRecommendations().isEmpty()) {
+                metrics.recordLlmGuideRank("empty_rule_full", System.nanoTime() - t0, POLICY_VERSION);
+                return finalBase;
+            }
+            long seed = LlmRankCardComposer.stableSeed(prompt, pool);
+            Optional<LlmGuideRankResult> ranked =
+                    llmGuideRanker.tryRank(truncateForLlm(prompt), pool, resolvedTopN, seed);
+            if (ranked.isEmpty()) {
+                metrics.recordLlmGuideRank("empty", System.nanoTime() - t0, POLICY_VERSION);
+                return finalBase;
+            }
+            GuideRecommendResponse merged = mergeLlmRankIntoResponse(fullRule, ranked.get(), resolvedTopN);
+            metrics.recordLlmGuideRank("success", System.nanoTime() - t0, POLICY_VERSION);
+            return merged;
+        } catch (Exception e) {
+            metrics.recordLlmGuideRank("error", System.nanoTime() - t0, POLICY_VERSION);
+            log.warn("[AI_RANK] LLM 순위 적용 실패, 룰 결과 유지: {}", e.toString());
+            return finalBase;
+        }
+    }
+
+    private static GuideRecommendResponse mergeLlmRankIntoResponse(
+            GuideRecommendResponse fullRule,
+            LlmGuideRankResult rank,
+            int topN
+    ) {
+        Map<Long, GuideRecommendItem> byId = fullRule.getRecommendations().stream()
+                .filter(it -> it.getGuideId() != null)
+                .collect(Collectors.toMap(GuideRecommendItem::getGuideId, it -> it, (a, b) -> a));
+        List<GuideRecommendItem> out = new ArrayList<>();
+        Set<Long> used = new LinkedHashSet<>();
+        Map<Long, String> reasonByGuideId = rank.reasonByGuideId();
+        for (Long id : rank.orderedGuideIds()) {
+            if (id == null || used.contains(id)) {
+                continue;
+            }
+            GuideRecommendItem it = byId.get(id);
+            if (it == null) {
+                continue;
+            }
+            String r = reasonByGuideId.get(id);
+            GuideRecommendItem built = r != null && !r.isBlank()
+                    ? it.toBuilder().reason(r).comparisonHint(null).build()
+                    : it.toBuilder().comparisonHint(null).build();
+            out.add(built);
+            used.add(id);
+            if (out.size() >= topN) {
+                break;
+            }
+        }
+        for (GuideRecommendItem x : fullRule.getRecommendations()) {
+            if (out.size() >= topN) {
+                break;
+            }
+            if (x.getGuideId() == null || used.contains(x.getGuideId())) {
+                continue;
+            }
+            out.add(x.toBuilder().comparisonHint(null).build());
+            used.add(x.getGuideId());
+        }
+        return GuideRecommendResponse.builder()
+                .policyVersion(POLICY_VERSION)
+                .totalCount(out.size())
+                .recommendations(out)
+                .build();
     }
 
     private record ParsedPrompt(GuideRecommendRequest request, LlmParseTrace llmTrace) {}

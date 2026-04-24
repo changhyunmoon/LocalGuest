@@ -80,6 +80,12 @@ public class LocalGuestAiProperties {
      */
     private int llmPromptMaxChars = 6000;
 
+    /**
+     * {@code true}이면 {@link com.team6.module.ai.spi.LlmGuideRanker} 빈이 있을 때 후보 풀에 대해 LLM 순위를 시도한다.
+     * 실패·빈 응답 시에는 룰 엔진 결과를 유지한다({@code localguest.ai.llm-rank-enabled}).
+     */
+    private boolean llmRankEnabled = false;
+
     @Getter
     @Setter
     public static class ParserSettings {
