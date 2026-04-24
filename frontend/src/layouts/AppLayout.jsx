@@ -16,9 +16,17 @@ function pillClass(...extra) {
   }
 }
 
-/** `/guides/:id/match/complete` — 일정·매칭 완료 흐름이므로 상단은 마이페이지 탭을 켠다(가이드 탭은 끔). */
+/** `/guides/:id/match/complete` — 일정·매칭 완료 흐름이므로 상단은 마이페이지 탭을 켠다(AI 검색 탭은 끔). */
 function isGuidesMatchCompletePath(pathname) {
   return /^\/guides\/[^/]+\/match\/complete(?:\/|$)/.test(pathname)
+}
+
+/** 가이드 목록·상세 등 `/guides*` 는 메뉴에서 빠졌지만, 상단에서는 AI 검색 흐름으로 간주해 같은 탭을 켠다. */
+function isAiSearchShellActive(pathname, matchComplete) {
+  if (matchComplete) return false
+  if (pathname === '/ai-search' || pathname.startsWith('/ai-search/')) return true
+  if (pathname === '/guides' || pathname.startsWith('/guides/')) return true
+  return false
 }
 
 function AppLayoutInner() {
@@ -59,17 +67,14 @@ function AppLayoutInner() {
             홈
           </NavLink>
           <NavLink
-            to="/guides"
+            to="/ai-search"
             className={({ isActive }) => {
-              const on = isActive && !matchComplete
-              const parts = ['shell-pill-link']
+              const on = (isActive || isAiSearchShellActive(pathname, matchComplete)) && !matchComplete
+              const parts = ['shell-pill-link', 'shell-pill-link--spark']
               if (on) parts.push('is-on')
               return parts.join(' ')
             }}
           >
-            가이드
-          </NavLink>
-          <NavLink to="/ai-search" className={pillClass('shell-pill-link--spark')}>
             AI 검색
           </NavLink>
           <NavLink to="/messages" className={pillClass()}>
