@@ -536,6 +536,130 @@
   border: 1px solid #e8eaed;
 }
 
+.gfi-feed-card-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 8px;
+  color: inherit;
+}
+
+.gfi-feed-card-main:hover:not(:disabled) {
+  background: rgba(99, 102, 241, 0.06);
+}
+
+.gfi-feed-card-main:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.gfi-feed-card-text {
+  flex: 1;
+  min-width: 0;
+}
+
+/* 피드 상세·수정 모달 */
+.gfd-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10050;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 1.25rem 0.75rem;
+  overflow: auto;
+}
+
+.gfd-sheet {
+  width: min(560px, 100%);
+  margin: 2vh auto;
+  background: #fffef8;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  box-shadow: 0 24px 48px rgba(15, 23, 42, 0.18);
+  padding: 1rem 1.1rem 1.15rem;
+}
+
+.gfd-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.gfd-head h3 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #1f2328;
+}
+
+.gfd-close {
+  flex-shrink: 0;
+  width: 2rem;
+  height: 2rem;
+  border: none;
+  border-radius: 999px;
+  background: #f3f4f6;
+  color: #374151;
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.gfd-close:hover:not(:disabled) {
+  background: #e5e7eb;
+}
+
+.gfd-close:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.gfd-lead {
+  margin: 0.45rem 0 0.85rem;
+  font-size: 0.8rem;
+  color: #6b7280;
+  line-height: 1.45;
+}
+
+.gfd-mode-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 0.5rem;
+}
+
+.gfd-thumb-grid {
+  margin-top: 0.35rem;
+}
+
+.gfd-preview {
+  margin-top: 0.35rem;
+}
+
+.gfd-fields {
+  margin-top: 0.85rem;
+}
+
+.gfd-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  flex-wrap: wrap;
+}
+
 .gfi-feed-thumb {
   width: 2.5rem;
   height: 2.5rem;
