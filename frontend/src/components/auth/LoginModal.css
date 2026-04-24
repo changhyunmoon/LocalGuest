@@ -1,0 +1,76 @@
+.login-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 10040;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  box-sizing: border-box;
+}
+
+.login-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  cursor: pointer;
+  background: rgba(15, 23, 42, 0.5);
+}
+
+.login-modal__panel {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 420px;
+  max-height: min(90vh, 720px);
+  overflow: auto;
+  border-radius: 16px;
+  background: #f8fafc;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35);
+  color: #0f172a;
+  color-scheme: light;
+  text-align: left;
+  padding: 1rem 1.15rem 1.25rem;
+}
+
+.login-modal__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.login-modal__title {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 800;
+}
+
+.login-modal__close {
+  flex-shrink: 0;
+  width: 2.25rem;
+  height: 2.25rem;
+  border: none;
+  border-radius: 10px;
+  background: #e2e8f0;
+  color: #334155;
+  font-size: 1.35rem;
+  line-height: 1;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.login-modal__close:hover {
+  background: #cbd5e1;
+}
+
+.login-modal__body .form-card {
+  margin-top: 0.25rem;
+}
+
+.login-modal__body .form-card::before {
+  display: none;
+}

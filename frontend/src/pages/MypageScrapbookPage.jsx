@@ -163,7 +163,7 @@ export function MypageScrapbookPage() {
 
   return (
     <div className="mp-member">
-      <h1>📒 나의 여행 기록 (스크랩북)</h1>
+      <h1>📒 스크랩북</h1>
       <p className="sub">투어가 완료된 매칭을 시간 순으로 모아 보여 줍니다.</p>
       {loading && <PageLoading />}
       {!loading && error && <PageError message={error} onRetry={() => void refetch()} />}

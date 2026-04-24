@@ -230,10 +230,11 @@ public class MatchRequest extends BaseTimeEntity {
         log.info("[F03-06] 게스트 제안 거절 — status=REJECTED, requestId={}", this.id);
     }
 
-    // 게스트 취소 처리 (F05-01)
+    // 게스트 취소 처리 (F05-01) — 가이드 응답 대기(PENDING)에서도 요청 철회 허용
     public void cancelByGuest(String reason) {
-        if (this.status != MatchRequestStatus.ACCEPTED &&
-                this.status != MatchRequestStatus.PAID) {
+        if (this.status != MatchRequestStatus.PENDING
+                && this.status != MatchRequestStatus.ACCEPTED
+                && this.status != MatchRequestStatus.PAID) {
             throw new MatchingException(MatchingErrorCode.MATCH_REQUEST_CANNOT_CANCEL);
         }
         this.status = MatchRequestStatus.CANCELLED;

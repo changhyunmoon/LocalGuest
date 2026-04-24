@@ -137,6 +137,7 @@ export function latestCompletedPaymentPaidAtMs(payments, requestId) {
  */
 export function guestCanCancelByPolicy(row, paidAtMs) {
   const st = String(row?.status ?? '').toUpperCase()
+  if (st === 'PENDING') return true
   if (st === 'ACCEPTED') return true
   if (st !== 'PAID') return false
   if (paidAtMs == null) return false

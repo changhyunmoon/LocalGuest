@@ -1,5 +1,6 @@
 import { Navigate } from 'react-router-dom'
 
+import { ProtectedGuideRoute } from '../components/ProtectedGuideRoute'
 import { ProtectedRoute } from '../components/ProtectedRoute'
 import { GuideDashboardLayout } from '../layouts/GuideDashboardLayout'
 import { GuideApplyPage } from '../pages/GuideApplyPage'
@@ -32,33 +33,33 @@ export const guideRoutes = [
   {
     path: 'guide/inbox',
     element: (
-      <ProtectedRoute>
+      <ProtectedGuideRoute>
         <GuideInboxPage />
-      </ProtectedRoute>
+      </ProtectedGuideRoute>
     ),
   },
   {
     path: 'guide/requests/:requestId/course-editor',
     element: (
-      <ProtectedRoute>
+      <ProtectedGuideRoute>
         <GuideCourseEditorPage />
-      </ProtectedRoute>
+      </ProtectedGuideRoute>
     ),
   },
   {
     path: 'guide/schedules/:scheduleId/course-editor',
     element: (
-      <ProtectedRoute>
+      <ProtectedGuideRoute>
         <GuideCourseEditorPage />
-      </ProtectedRoute>
+      </ProtectedGuideRoute>
     ),
   },
   {
     path: 'guide/mypage',
     element: (
-      <ProtectedRoute>
+      <ProtectedGuideRoute>
         <GuideDashboardLayout />
-      </ProtectedRoute>
+      </ProtectedGuideRoute>
     ),
     children: [
       { index: true, element: <Navigate to="profile" replace /> },

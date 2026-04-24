@@ -1,5 +1,7 @@
 const API_BASE = normalizeApiBase(import.meta.env.VITE_API_BASE_URL ?? '/api')
 
+window.API_URL_DEBUG = import.meta.env.VITE_API_BASE_URL;
+
 function normalizeApiBase(rawBase) {
   if (!rawBase) return '/api'
   const trimmed = rawBase.trim()

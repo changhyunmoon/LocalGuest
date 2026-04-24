@@ -42,6 +42,19 @@ function ddayLabel(days, status) {
   return `${Math.abs(days)}일 지남`
 }
 
+/**
+ * @param {{ status?: string }} row
+ * @param {number | null} _paidAtMs
+ * @param {boolean} canCancel
+ */
+function guestCancelDisabledTitle(row, _paidAtMs, canCancel) {
+  if (canCancel) return undefined
+  const st = String(row?.status ?? '').toUpperCase()
+  if (st === 'IN_PROGRESS') return '진행 중인 투어는 이 화면에서 취소할 수 없어요.'
+  if (st === 'PAID') return '예약 취소는 결제 완료 후 2시간 이내에만 가능해요.'
+  return '취소할 수 없는 상태예요.'
+}
+
 function statusText(status) {
   const s = String(status ?? '').toUpperCase()
   if (s === 'PENDING') return '요청 대기'
@@ -168,7 +181,7 @@ function groupRows(rows) {
     { key: 'inprogress', title: '진행 중인 여행', rows: inProgress },
     { key: 'dday', title: '오늘 출발 (D-Day)', rows: dday },
     { key: 'd1', title: '내일 출발 (D-1)', rows: d1 },
-    { key: 'upcoming', title: '다가오는 여행 일정', rows: upcoming },
+    { key: 'upcoming', title: '예정된 로컬 만남', rows: upcoming },
   ].filter((section) => section.rows.length > 0)
 }
 
@@ -273,11 +286,11 @@ export function GuestUpcomingTripsPage() {
     const rid = Number(row.requestId)
     if (!Number.isFinite(rid) || rid <= 0) return
     const st = String(row.status ?? '').toUpperCase()
-    if (!(st === 'ACCEPTED' || st === 'PAID')) return
+    if (!(st === 'PENDING' || st === 'ACCEPTED' || st === 'PAID')) return
 
-    const reason = window.prompt('예약 취소 사유를 입력해 주세요.', '개인 사정으로 일정이 변경되었습니다.')
+    const reason = window.prompt('취소 사유를 입력해 주세요.', '개인 사정으로 일정이 변경되었습니다.')
     if (!reason || !String(reason).trim()) return
-    if (!window.confirm(`요청 #${rid} 예약을 취소할까요?`)) return
+    if (!window.confirm(`요청 #${rid}을(를) 취소할까요?`)) return
 
     setBusyId(rid)
     setToast('')
@@ -288,7 +301,7 @@ export function GuestUpcomingTripsPage() {
       })
       const text = await res.text()
       if (!res.ok) throw new Error(text || '취소 실패')
-      setToast('예약을 취소했습니다.')
+      setToast('취소했습니다.')
       await reload()
     } catch (e) {
       setToast(e instanceof Error ? e.message : '취소 실패')
@@ -333,6 +346,7 @@ export function GuestUpcomingTripsPage() {
                   const tripTitle = buildTripCardTitle(row, nick)
                   const paidAtMs = latestCompletedPaymentPaidAtMs(payments, row.requestId)
                   const canCancel = guestCanCancelByPolicy(row, paidAtMs)
+                  const cancelDisabledTitle = guestCancelDisabledTitle(row, paidAtMs, canCancel)
                   const cancelEnds =
                     String(row.status) === 'PAID' && paidAtMs != null
                       ? paidAtMs + GUEST_CANCEL_WINDOW_MS
@@ -363,16 +377,18 @@ export function GuestUpcomingTripsPage() {
                               {statusBadgeLabel(row.status)}
                             </span>
                             <div className="gut-card-actions">
-                              {canCancel && (
-                                <button
-                                  type="button"
-                                  className="gut-cancel"
-                                  disabled={busyId != null}
-                                  onClick={() => void cancelTrip(row)}
-                                >
-                                  {busyId === row.requestId ? '취소 중…' : '예약 취소'}
-                                </button>
-                              )}
+                              <button
+                                type="button"
+                                className="gut-cancel"
+                                disabled={busyId != null || !canCancel}
+                                title={cancelDisabledTitle}
+                                onClick={() => {
+                                  if (!canCancel) return
+                                  void cancelTrip(row)
+                                }}
+                              >
+                                {busyId === row.requestId ? '취소 중…' : '취소하기'}
+                              </button>
                               <button type="button" className="gut-open" onClick={() => openMatchScreen(row)}>
                                 일정 확인하기
                               </button>

@@ -4,16 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="84d1b3de-8103-452e-83cf-38ecd34993e7" name="Changes" comment="Feat/fe#438: CloudFlare로 배포 방식 변경">
-      <change beforePath="$PROJECT_DIR$/.github/workflows/frontend_cicd.yml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/.env" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/.env" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/Dockerfile" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/deployment/deploy.sh" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/deployment/docker/docker-compose.yml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/deployment/nginx/fe_blue.inc" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/deployment/nginx/fe_green.inc" beforeDir="false" />
-    </list>
+    <list default="true" id="84d1b3de-8103-452e-83cf-38ecd34993e7" name="Changes" comment="Feat/fe#453: redis, mongodb 분리" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -52,7 +43,7 @@
   <component name="Git.Settings">
     <option name="RECENT_BRANCH_BY_REPOSITORY">
       <map>
-        <entry key="$PROJECT_DIR$" value="Feat/fe#438" />
+        <entry key="$PROJECT_DIR$" value="Feat/fe#446" />
       </map>
     </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
@@ -66,7 +57,7 @@
   <component name="GithubPullRequestsUISettings">{
   &quot;selectedUrlAndAccountId&quot;: {
     &quot;url&quot;: &quot;https://github.com/changhyunmoon/LocalGuest.git&quot;,
-    &quot;accountId&quot;: &quot;183f6da5-454f-4b08-95a4-31032f49ef56&quot;
+    &quot;accountId&quot;: &quot;ab2dd1a0-5e0b-4833-8ecb-19fd2fed9f7e&quot;
   }
 }</component>
   <component name="KubernetesApiPersistence">{}</component>
@@ -104,7 +95,7 @@
     "RunOnceActivity.typescript.service.memoryLimit.init": "true",
     "Spring Boot.ApiServerApplication.executor": "Run",
     "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
-    "git-widget-placeholder": "Feat/be#441",
+    "git-widget-placeholder": "Feat/fe#466",
     "junie.onboarding.icon.badge.shown": "true",
     "kotlin-language-version-configured": "true",
     "last_opened_file_path": "C:/Team6LocalGuest_4",
@@ -159,6 +150,7 @@
       <workItem from="1776729193782" duration="3364000" />
       <workItem from="1776770760643" duration="62000" />
       <workItem from="1776780245318" duration="3710000" />
+      <workItem from="1776940610378" duration="262000" />
     </task>
     <task id="LOCAL-00001" summary="Feat/be#417: 모니터링 배포 테스트">
       <option name="closed" value="true" />
@@ -176,7 +168,23 @@
       <option name="project" value="LOCAL" />
       <updated>1776920427464</updated>
     </task>
-    <option name="localTasksCounter" value="3" />
+    <task id="LOCAL-00003" summary="Feat/fe#438: CloudFlare로 배포 방식 변경">
+      <option name="closed" value="true" />
+      <created>1776925078649</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1776925078650</updated>
+    </task>
+    <task id="LOCAL-00004" summary="Feat/fe#453: redis, mongodb 분리">
+      <option name="closed" value="true" />
+      <created>1776928498040</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1776928498040</updated>
+    </task>
+    <option name="localTasksCounter" value="5" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -188,6 +196,7 @@
   <component name="VcsManagerConfiguration">
     <MESSAGE value="Feat/be#417: 모니터링 배포 테스트" />
     <MESSAGE value="Feat/fe#438: CloudFlare로 배포 방식 변경" />
-    <option name="LAST_COMMIT_MESSAGE" value="Feat/fe#438: CloudFlare로 배포 방식 변경" />
+    <MESSAGE value="Feat/fe#453: redis, mongodb 분리" />
+    <option name="LAST_COMMIT_MESSAGE" value="Feat/fe#453: redis, mongodb 분리" />
   </component>
 </project>

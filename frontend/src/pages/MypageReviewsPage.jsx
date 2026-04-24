@@ -88,7 +88,7 @@ export function MypageReviewsPage() {
       <h1>🌟 내 리뷰</h1>
       <p className="sub">
         내가 작성한 리뷰만 모아 보여 줍니다. 팀 정책상 <strong>작성 후 수정은 불가</strong>이며, 잘못 올린 경우{' '}
-        <strong>삭제</strong>만 가능합니다. 후기는 <strong>나의 여행 기록(스크랩북)</strong>에서만 작성할 수 있어요.
+        <strong>삭제</strong>만 가능합니다. 후기는 <strong>스크랩북</strong>에서만 작성할 수 있어요.
       </p>
 
       {actionErr && <p className="err">{actionErr}</p>}
@@ -97,7 +97,7 @@ export function MypageReviewsPage() {
 
       {!loading && !error && rows.length === 0 && (
         <PageEmpty title="작성한 리뷰가 없습니다">
-          나의 여행 기록(스크랩북)에서 후기를 남기면 여기에 표시됩니다.
+          스크랩북에서 후기를 남기면 여기에 표시됩니다.
         </PageEmpty>
       )}
 
