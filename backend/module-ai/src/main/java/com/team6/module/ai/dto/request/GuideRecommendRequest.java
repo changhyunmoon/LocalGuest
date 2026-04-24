@@ -147,5 +147,13 @@ public class GuideRecommendRequest {
         /** LLM 순위용: 삭제 제외 공개 피드 개수. */
         @JsonIgnore
         private Integer publicFeedCount;
+
+        /** LLM 순위용: AI 키워드(프로필 raw keywords) 스니펫. */
+        @JsonIgnore
+        private String llmKeywordsSnippet;
+
+        /** LLM 순위용: 거주 연수(신뢰/로컬성 힌트). */
+        @JsonIgnore
+        private Integer residenceYears;
     }
 }

@@ -5,6 +5,7 @@ import com.team6.module.ai.dto.response.GuideRecommendResponse;
 import com.team6.module.ai.config.LocalGuestAiProperties;
 import com.team6.module.ai.config.ScoringPolicySnapshot;
 import com.team6.module.ai.parser.PromptParser;
+import com.team6.module.ai.llm.LlmCopyPiiMasker;
 import com.team6.module.ai.llm.LlmGuideRankResult;
 import com.team6.module.ai.llm.LlmRankCardComposer;
 import com.team6.module.ai.spi.LlmGuideRanker;
@@ -973,9 +974,10 @@ public class PromptRecommendationService {
             if (it == null) {
                 continue;
             }
-            String r = reasonByGuideId.get(id);
-            GuideRecommendItem built = r != null && !r.isBlank()
-                    ? it.toBuilder().reason(r).comparisonHint(null).build()
+            String cleanedReason = sanitizeLlmReason(reasonByGuideId.get(id));
+            // LLM reason이 비었거나 너무 약하면 룰 reason을 유지한다.
+            GuideRecommendItem built = cleanedReason != null
+                    ? it.toBuilder().reason(cleanedReason).comparisonHint(null).build()
                     : it.toBuilder().comparisonHint(null).build();
             out.add(built);
             used.add(id);
@@ -998,6 +1000,113 @@ public class PromptRecommendationService {
                 .totalCount(out.size())
                 .recommendations(out)
                 .build();
+    }
+
+    private static final int LLM_REASON_MAX_CHARS = 160;
+
+    /**
+     * LLM이 만든 reason은 사용자 노출 문자열이므로 PII 마스킹/길이 상한을 적용한다.
+     * 너무 짧거나 공백뿐이면 null로 간주해 룰 reason을 유지한다.
+     */
+    private static String sanitizeLlmReason(String raw) {
+        if (raw == null) {
+            return null;
+        }
+        String t = raw.strip();
+        if (t.isEmpty()) {
+            return null;
+        }
+        // LLM이 이유 끝에 [태그]를 붙여도 UI에서는 제거한다.
+        t = t.replaceAll("\\[[^\\]]{1,20}\\]", " ");
+        t = t.replaceAll("\\s{2,}", " ").strip();
+        t = LlmCopyPiiMasker.mask(t);
+        if (t.length() > LLM_REASON_MAX_CHARS) {
+            t = t.substring(0, LLM_REASON_MAX_CHARS).strip() + "…";
+        }
+        // 최소 길이(노이즈 한 단어 방지)
+        if (t.length() < 6) {
+            return null;
+        }
+        if (isTooGenericReason(t)) {
+            return null;
+        }
+        if (!isPoliteTone(t)) {
+            return null;
+        }
+        if (containsHedgingOrGuess(t)) {
+            return null;
+        }
+        return t;
+    }
+
+    /**
+     * UI 톤 통일: 존댓말만 허용. 반말/명령형이면 룰 reason으로 폴백한다.
+     */
+    private static boolean isPoliteTone(String text) {
+        if (text == null) {
+            return false;
+        }
+        String t = text.strip();
+        // 존댓말 단서(완벽하진 않지만 실무에서 안정적으로 동작)
+        boolean hasPoliteEnding = t.contains("요.") || t.contains("요 ") || t.endsWith("요") || t.contains("습니다") || t.contains("하세요");
+        if (!hasPoliteEnding) {
+            return false;
+        }
+        // 흔한 반말/명령형(오탐을 줄이기 위해 보수적으로만)
+        String[] banmal = {"해줘", "해라", "하자", "가자", "싶어", "싫어", "야.", "거야", "맞아", "좋아"};
+        for (String b : banmal) {
+            if (t.contains(b)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * 과도한 추측(환각) 문구가 섞이면 사용자 신뢰를 해치므로 폴백한다.
+     */
+    private static boolean containsHedgingOrGuess(String text) {
+        if (text == null) {
+            return true;
+        }
+        String t = text.strip();
+        String[] hedges = {"아마", "추정", "추측", "같아요", "같습니다", "일 것", "일것", "일 수도", "일수도", "가능할 것", "가능할것"};
+        for (String h : hedges) {
+            if (t.contains(h)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * 너무 뻔한 문장(근거 없이 '잘 맞아요/추천해요')은 룰 reason으로 폴백한다.
+     */
+    private static boolean isTooGenericReason(String text) {
+        if (text == null) {
+            return true;
+        }
+        String t = text.strip();
+        if (t.isEmpty()) {
+            return true;
+        }
+        // 숫자/고유명/구체 근거가 전혀 없고, 일반 칭찬만 있는 경우를 걸러낸다.
+        boolean hasDigit = t.matches(".*\\d+.*");
+        boolean hasSpecificCue = t.contains("피드") || t.contains("리뷰") || t.contains("평점")
+                || t.contains("소개") || t.contains("경력") || t.contains("코스")
+                || t.contains("바다") || t.contains("야경") || t.contains("카페") || t.contains("산책");
+        if (hasDigit || hasSpecificCue) {
+            return false;
+        }
+        String[] genericPhrases = {
+                "잘 맞", "추천", "좋아요", "좋을", "완벽", "최적", "딱이", "적합", "만족", "훌륭", "최고"
+        };
+        for (String p : genericPhrases) {
+            if (t.contains(p)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private record ParsedPrompt(GuideRecommendRequest request, LlmParseTrace llmTrace) {}
