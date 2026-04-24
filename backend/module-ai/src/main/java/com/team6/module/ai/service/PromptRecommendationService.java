@@ -1036,7 +1036,13 @@ public class PromptRecommendationService {
                 log.info("[AI_RANK] llmRank=empty policyVer={} topN={} poolSize={}", POLICY_VERSION, resolvedTopN, poolSize);
                 return finalBase;
             }
-            GuideRecommendResponse merged = mergeLlmRankIntoResponse(fullRule, ranked.get(), resolvedTopN);
+            GuideRecommendResponse merged = mergeLlmRankIntoResponse(
+                    fullRule,
+                    ranked.get(),
+                    resolvedTopN,
+                    scoringRequest.getExcludedActivityTags(),
+                    filteredPool
+            );
             metrics.recordLlmGuideRank("success", System.nanoTime() - t0, POLICY_VERSION);
             log.info("[AI_RANK] llmRank=success policyVer={} topN={} poolSize={} orderedIds={}",
                     POLICY_VERSION,
@@ -1050,6 +1056,60 @@ public class PromptRecommendationService {
             log.warn("[AI_RANK] LLM 순위 적용 실패, 룰 결과 유지: {}", e.toString());
             return finalBase;
         }
+    }
+
+    private static GuideRecommendResponse mergeLlmRankIntoResponse(
+            GuideRecommendResponse fullRule,
+            LlmGuideRankResult rank,
+            int topN,
+            List<String> excludedActivityTags,
+            List<GuideRecommendRequest.GuideCandidateDto> pool
+    ) {
+        // 2단 필터: LLM이 실수로 제외 후보를 앞에 두더라도, 최종 TopN에서는 제외 위반 후보를 한 번 더 걸러낸다.
+        // 단, 너무 과하게 걸러 empty가 되면 원본 머지 결과를 유지한다.
+        GuideRecommendResponse baselineMerged = mergeLlmRankIntoResponse(fullRule, rank, topN);
+        if (excludedActivityTags == null || excludedActivityTags.isEmpty() || pool == null || pool.isEmpty()) {
+            return baselineMerged;
+        }
+
+        Map<Long, GuideRecommendRequest.GuideCandidateDto> candidateById = pool.stream()
+                .filter(Objects::nonNull)
+                .filter(c -> c.getGuideId() != null)
+                .collect(Collectors.toMap(GuideRecommendRequest.GuideCandidateDto::getGuideId, c -> c, (a, b) -> a));
+        List<String> needles = excludedActivityTags.stream()
+                .filter(Objects::nonNull)
+                .map(String::trim)
+                .filter(s -> !s.isBlank())
+                .filter(s -> s.length() >= 2)
+                .map(s -> s.toLowerCase(Locale.ROOT))
+                .distinct()
+                .toList();
+        if (needles.isEmpty()) {
+            return baselineMerged;
+        }
+
+        List<GuideRecommendItem> src = baselineMerged.getRecommendations();
+        if (src == null || src.isEmpty()) {
+            return baselineMerged;
+        }
+        List<GuideRecommendItem> filtered = new ArrayList<>();
+        for (GuideRecommendItem it : src) {
+            if (filtered.size() >= topN) break;
+            if (it == null || it.getGuideId() == null) continue;
+            GuideRecommendRequest.GuideCandidateDto c = candidateById.get(it.getGuideId());
+            if (c != null && violatesExcludedSignals(needles, c)) {
+                continue;
+            }
+            filtered.add(it);
+        }
+        if (filtered.isEmpty()) {
+            return baselineMerged;
+        }
+        return GuideRecommendResponse.builder()
+                .policyVersion(POLICY_VERSION)
+                .totalCount(filtered.size())
+                .recommendations(filtered)
+                .build();
     }
 
     private static GuideRecommendResponse mergeLlmRankIntoResponse(
