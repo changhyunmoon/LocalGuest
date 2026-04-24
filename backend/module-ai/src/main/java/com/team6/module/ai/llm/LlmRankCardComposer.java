@@ -87,11 +87,13 @@ public final class LlmRankCardComposer {
             sb.append("지역=").append(nullToEmpty(c.getRegion())).append('\n');
             sb.append("스타일=").append(nullToEmpty(c.getGuideStyle())).append('\n');
             sb.append("가격대=").append(nullToEmpty(c.getPriceLevel())).append('\n');
+            appendPriceRangeLine(sb, c.getPriceMinWon(), c.getPriceMaxWon(), c.getPriceScope());
             appendRatingLine(sb, c.getAverageRating(), c.getReviewCount());
             sb.append("공개피드수=").append(c.getPublicFeedCount() == null ? 0 : c.getPublicFeedCount()).append('\n');
             if (c.getResidenceYears() != null && c.getResidenceYears() > 0) {
                 sb.append("거주연수=").append(c.getResidenceYears()).append("년").append('\n');
             }
+            appendTrustSignalLine(sb, c);
             sb.append("태그=").append(joinTags(c.getSpecialtyTags())).append('\n');
             sb.append("언어=").append(joinTags(c.getLanguages())).append('\n');
             String kw = nullToEmpty(c.getLlmKeywordsSnippet());
@@ -114,6 +116,64 @@ public final class LlmRankCardComposer {
             sb.append('\n');
         }
         return sb.toString();
+    }
+
+    private static void appendPriceRangeLine(StringBuilder sb, Integer minWon, Integer maxWon, String scope) {
+        if (minWon == null && maxWon == null) {
+            return;
+        }
+        sb.append("가격범위=");
+        if (minWon != null) {
+            sb.append(minWon);
+        } else {
+            sb.append("-");
+        }
+        sb.append("~");
+        if (maxWon != null) {
+            sb.append(maxWon);
+        } else {
+            sb.append("-");
+        }
+        if (scope != null && !scope.isBlank()) {
+            sb.append(" (").append(scope.strip()).append(")");
+        }
+        sb.append('\n');
+    }
+
+    private static void appendTrustSignalLine(StringBuilder sb, GuideRecommendRequest.GuideCandidateDto c) {
+        if (c == null) {
+            return;
+        }
+        int refunds = c.getApprovedRefundCount() == null ? 0 : Math.max(0, c.getApprovedRefundCount());
+        int req = c.getMatchRequestCount() == null ? 0 : Math.max(0, c.getMatchRequestCount());
+        int prog = c.getProgressedMatchCount() == null ? 0 : Math.max(0, c.getProgressedMatchCount());
+        int chat = c.getChatStartCount() == null ? 0 : Math.max(0, c.getChatStartCount());
+        int clicks = c.getRecommendClickCount() == null ? 0 : Math.max(0, c.getRecommendClickCount());
+        int exposures = c.getRecommendExposureCount() == null ? 0 : Math.max(0, c.getRecommendExposureCount());
+        int debiased = c.getRecommendClickDebiasedScore() == null ? 0 : Math.max(0, c.getRecommendClickDebiasedScore());
+
+        if (refunds + req + prog + chat + clicks + exposures + debiased == 0) {
+            return;
+        }
+        sb.append("신뢰신호=");
+        boolean first = true;
+        if (refunds > 0) {
+            sb.append("환불승인 ").append(refunds);
+            first = false;
+        }
+        if (req > 0 || prog > 0 || chat > 0) {
+            if (!first) sb.append(", ");
+            sb.append("매칭요청 ").append(req).append("/진행 ").append(prog).append("/채팅 ").append(chat);
+            first = false;
+        }
+        if (exposures > 0 || clicks > 0 || debiased > 0) {
+            if (!first) sb.append(", ");
+            sb.append("노출 ").append(exposures).append("/클릭 ").append(clicks);
+            if (debiased > 0) {
+                sb.append(" (보정 ").append(debiased).append(")");
+            }
+        }
+        sb.append('\n');
     }
 
     private static void appendFeedSection(
