@@ -6840,3 +6840,795 @@ Caused by: java.net.SocketTimeoutException: Read timed out
     where
         not(r1_0.deleted)
 2026-04-24 10:17:02.410 INFO  [450abb39] c.t.a.logging.MdcLoggingFilter - [HTTP] 요청 완료 - statusCode: 200, latencyMs: 110, requestUri: /api/reviews, method: GET
+2026-04-24 10:18:00.011 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-24 10:18:00.011 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-24 10:18:00.012 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-24T10:18:00.008430800]
+2026-04-24 10:19:00.029 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-24 10:19:00.030 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-24 10:19:00.031 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-24T10:19:00.022088100]
+2026-04-24 10:20:00.072 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-24 10:20:00.079 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-24 10:20:00.082 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-24T10:20:00.023856800]
+2026-04-24 10:21:00.079 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-24 10:21:00.091 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-24 10:21:00.093 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-24T10:21:00.056872900]
+2026-04-24 10:22:00.074 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-24 10:22:00.087 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-24 10:22:00.088 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-24T10:22:00.031186100]
+2026-04-24 10:23:00.016 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-24 10:23:00.018 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-24 10:23:00.019 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-24T10:23:00.012702]
+2026-04-24 10:24:00.036 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-24 10:24:00.037 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-24 10:24:00.039 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-24T10:24:00.030041600]
+2026-04-24 10:25:00.059 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-24 10:25:00.066 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-24 10:25:00.067 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-24T10:25:00.012772500]
+2026-04-24 10:26:00.259 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-24 10:26:00.431 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-24 10:26:00.645 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-24T10:26:00.026550200]
+2026-04-24 10:27:00.389 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-24 10:27:00.429 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-24 10:27:00.438 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-24T10:27:00.123096800]
+2026-04-24 10:28:04.670 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-24 10:28:04.694 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-24 10:28:04.697 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-24T10:28:04.367095600]
+2026-04-24 10:29:00.016 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-24 10:29:00.018 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-24 10:29:00.019 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-24T10:29:00.012784600]
+2026-04-24 10:30:00.020 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-24 10:30:00.022 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-24 10:30:00.023 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-24T10:30:00.016927200]
+2026-04-24 10:31:00.006 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-24 10:31:00.008 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-24 10:31:00.008 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-24T10:31:00.003686500]
+2026-04-24 10:32:00.029 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-24 10:32:00.031 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-24 10:32:00.032 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-24T10:32:00.024365700]
+2026-04-24 10:33:00.008 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-24 10:33:00.009 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-24 10:33:00.010 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-24T10:33:00.005721900]
+2026-04-24 10:34:00.009 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-24 10:34:00.011 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-24 10:34:00.011 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-24T10:34:00.005681900]
+2026-04-24 10:34:50.208 INFO  [] o.s.w.s.c.WebSocketMessageBrokerStats - WebSocketSession[0 current WS(0)-HttpStream(0)-HttpPoll(0), 0 total, 0 closed abnormally (0 connect failure, 0 send limit, 0 transport error)], stompSubProtocol[processed CONNECT(0)-CONNECTED(0)-DISCONNECT(0)], stompBrokerRelay[null], inboundChannel[pool size = 0, active threads = 0, queued tasks = 0, completed tasks = 0], outboundChannel[pool size = 0, active threads = 0, queued tasks = 0, completed tasks = 0], sockJsScheduler[pool size = 16, active threads = 1, queued tasks = 2, completed tasks = 305]
+2026-04-24 10:34:50.259 DEBUG [000b57de] org.hibernate.SQL - 
+    /* <criteria> */ select
+        r1_0.id,
+        r1_0.content,
+        r1_0.created_at,
+        r1_0.deleted,
+        r1_0.deleted_at,
+        r1_0.guide_id,
+        r1_0.match_request_id,
+        r1_0.member_id,
+        m1_0.id,
+        m1_0.created_at,
+        m1_0.email,
+        m1_0.name,
+        m1_0.nickname,
+        m1_0.password,
+        m1_0.profile_image_url,
+        m1_0.role,
+        m1_0.social_type,
+        m1_0.status,
+        m1_0.updated_at,
+        r1_0.rating,
+        r1_0.updated_at 
+    from
+        review r1_0 
+    join
+        member m1_0 
+            on m1_0.id=r1_0.member_id 
+    where
+        not(r1_0.deleted) 
+    order by
+        r1_0.created_at desc 
+    limit
+        ?
+2026-04-24 10:34:50.261 TRACE [000b57de] org.hibernate.orm.jdbc.bind - binding parameter (1:INTEGER) <- [4]
+2026-04-24 10:34:50.294 DEBUG [000b57de] org.hibernate.SQL - 
+    /* <criteria> */ select
+        count(r1_0.id) 
+    from
+        review r1_0 
+    where
+        not(r1_0.deleted)
+2026-04-24 10:34:50.326 INFO  [000b57de] c.t.a.logging.MdcLoggingFilter - [HTTP] 요청 완료 - statusCode: 200, latencyMs: 146, requestUri: /api/reviews, method: GET
+2026-04-24 10:34:50.344 DEBUG [38e66730] org.hibernate.SQL - 
+    /* <criteria> */ select
+        r1_0.id,
+        r1_0.content,
+        r1_0.created_at,
+        r1_0.deleted,
+        r1_0.deleted_at,
+        r1_0.guide_id,
+        r1_0.match_request_id,
+        r1_0.member_id,
+        m1_0.id,
+        m1_0.created_at,
+        m1_0.email,
+        m1_0.name,
+        m1_0.nickname,
+        m1_0.password,
+        m1_0.profile_image_url,
+        m1_0.role,
+        m1_0.social_type,
+        m1_0.status,
+        m1_0.updated_at,
+        r1_0.rating,
+        r1_0.updated_at 
+    from
+        review r1_0 
+    join
+        member m1_0 
+            on m1_0.id=r1_0.member_id 
+    where
+        not(r1_0.deleted) 
+    order by
+        r1_0.created_at desc 
+    limit
+        ?
+2026-04-24 10:34:50.345 TRACE [38e66730] org.hibernate.orm.jdbc.bind - binding parameter (1:INTEGER) <- [4]
+2026-04-24 10:34:50.351 DEBUG [38e66730] org.hibernate.SQL - 
+    /* <criteria> */ select
+        count(r1_0.id) 
+    from
+        review r1_0 
+    where
+        not(r1_0.deleted)
+2026-04-24 10:34:50.358 INFO  [38e66730] c.t.a.logging.MdcLoggingFilter - [HTTP] 요청 완료 - statusCode: 200, latencyMs: 23, requestUri: /api/reviews, method: GET
+2026-04-24 10:34:54.823 DEBUG [9cbbfccd] org.hibernate.SQL - 
+    /* <criteria> */ select
+        m1_0.id,
+        m1_0.created_at,
+        m1_0.email,
+        m1_0.name,
+        m1_0.nickname,
+        m1_0.password,
+        m1_0.profile_image_url,
+        m1_0.role,
+        m1_0.social_type,
+        m1_0.status,
+        m1_0.updated_at 
+    from
+        member m1_0 
+    where
+        m1_0.email=? 
+        and m1_0.role=?
+2026-04-24 10:34:54.824 TRACE [9cbbfccd] org.hibernate.orm.jdbc.bind - binding parameter (1:VARCHAR) <- [guest04@localguest.com]
+2026-04-24 10:34:54.824 TRACE [9cbbfccd] org.hibernate.orm.jdbc.bind - binding parameter (2:ENUM) <- [GUEST]
+2026-04-24 10:34:56.421 INFO  [9cbbfccd] c.t.a.logging.MdcLoggingFilter - [HTTP] 요청 완료 - statusCode: 200, latencyMs: 2829, requestUri: /api/auth/login, method: POST
+2026-04-24 10:34:57.078 DEBUG [1de31b3d] org.hibernate.SQL - 
+    /* <criteria> */ select
+        m1_0.id,
+        m1_0.created_at,
+        m1_0.email,
+        m1_0.name,
+        m1_0.nickname,
+        m1_0.password,
+        m1_0.profile_image_url,
+        m1_0.role,
+        m1_0.social_type,
+        m1_0.status,
+        m1_0.updated_at 
+    from
+        member m1_0 
+    where
+        m1_0.email=? 
+        and m1_0.role=?
+2026-04-24 10:34:57.078 TRACE [1de31b3d] org.hibernate.orm.jdbc.bind - binding parameter (1:VARCHAR) <- [guest04@localGuest.com]
+2026-04-24 10:34:57.079 TRACE [1de31b3d] org.hibernate.orm.jdbc.bind - binding parameter (2:ENUM) <- [GUEST]
+2026-04-24 10:34:57.079 DEBUG [0c968491] org.hibernate.SQL - 
+    /* <criteria> */ select
+        m1_0.id,
+        m1_0.created_at,
+        m1_0.email,
+        m1_0.name,
+        m1_0.nickname,
+        m1_0.password,
+        m1_0.profile_image_url,
+        m1_0.role,
+        m1_0.social_type,
+        m1_0.status,
+        m1_0.updated_at 
+    from
+        member m1_0 
+    where
+        m1_0.email=? 
+        and m1_0.role=?
+2026-04-24 10:34:57.080 TRACE [0c968491] org.hibernate.orm.jdbc.bind - binding parameter (1:VARCHAR) <- [guest04@localGuest.com]
+2026-04-24 10:34:57.080 TRACE [0c968491] org.hibernate.orm.jdbc.bind - binding parameter (2:ENUM) <- [GUEST]
+2026-04-24 10:34:57.104 DEBUG [0c968491] org.hibernate.SQL - 
+    /* <criteria> */ select
+        mr1_0.id,
+        mr1_0.budget_max_won,
+        mr1_0.budget_min_won,
+        mr1_0.cancel_reason,
+        mr1_0.cancelled_by,
+        mr1_0.concept,
+        mr1_0.concept_summary,
+        mr1_0.created_at,
+        mr1_0.desired_budget,
+        mr1_0.desired_date,
+        mr1_0.destination,
+        mr1_0.guest_id,
+        mr1_0.guide_id,
+        mr1_0.guide_schedule_id,
+        mr1_0.propose_message,
+        mr1_0.proposed_schedule,
+        mr1_0.status,
+        mr1_0.updated_at 
+    from
+        match_request mr1_0 
+    where
+        mr1_0.guest_id=?
+2026-04-24 10:34:57.105 TRACE [0c968491] org.hibernate.orm.jdbc.bind - binding parameter (1:BIGINT) <- [941004]
+2026-04-24 10:34:57.120 INFO  [1de31b3d] c.t.a.logging.MdcLoggingFilter - [HTTP] 요청 완료 - statusCode: 200, latencyMs: 588, requestUri: /api/members/me/profile, method: GET
+2026-04-24 10:34:57.152 DEBUG [d332b148] org.hibernate.SQL - 
+    /* <criteria> */ select
+        m1_0.id,
+        m1_0.created_at,
+        m1_0.email,
+        m1_0.name,
+        m1_0.nickname,
+        m1_0.password,
+        m1_0.profile_image_url,
+        m1_0.role,
+        m1_0.social_type,
+        m1_0.status,
+        m1_0.updated_at 
+    from
+        member m1_0 
+    where
+        m1_0.email=? 
+        and m1_0.role=?
+2026-04-24 10:34:57.153 TRACE [d332b148] org.hibernate.orm.jdbc.bind - binding parameter (1:VARCHAR) <- [guest04@localGuest.com]
+2026-04-24 10:34:57.153 TRACE [d332b148] org.hibernate.orm.jdbc.bind - binding parameter (2:ENUM) <- [GUEST]
+2026-04-24 10:34:57.160 INFO  [d332b148] c.t.a.logging.MdcLoggingFilter - [HTTP] 요청 완료 - statusCode: 200, latencyMs: 29, requestUri: /api/members/me/profile, method: GET
+2026-04-24 10:34:57.166 INFO  [0c968491] c.t.d.matching.entity.MatchRequest - [Matching] 투어 진행 시작 — status=IN_PROGRESS, requestId=862074
+2026-04-24 10:34:57.189 DEBUG [80696ff9] org.hibernate.SQL - 
+    /* <criteria> */ select
+        m1_0.id,
+        m1_0.created_at,
+        m1_0.email,
+        m1_0.name,
+        m1_0.nickname,
+        m1_0.password,
+        m1_0.profile_image_url,
+        m1_0.role,
+        m1_0.social_type,
+        m1_0.status,
+        m1_0.updated_at 
+    from
+        member m1_0 
+    where
+        m1_0.email=? 
+        and m1_0.role=?
+2026-04-24 10:34:57.190 TRACE [80696ff9] org.hibernate.orm.jdbc.bind - binding parameter (1:VARCHAR) <- [guest04@localGuest.com]
+2026-04-24 10:34:57.190 TRACE [80696ff9] org.hibernate.orm.jdbc.bind - binding parameter (2:ENUM) <- [GUEST]
+2026-04-24 10:34:57.203 INFO  [80696ff9] c.t.a.logging.MdcLoggingFilter - [HTTP] 요청 완료 - statusCode: 200, latencyMs: 30, requestUri: /api/members/me/profile, method: GET
+2026-04-24 10:34:57.234 DEBUG [29f429fc] org.hibernate.SQL - 
+    /* <criteria> */ select
+        m1_0.id,
+        m1_0.created_at,
+        m1_0.email,
+        m1_0.name,
+        m1_0.nickname,
+        m1_0.password,
+        m1_0.profile_image_url,
+        m1_0.role,
+        m1_0.social_type,
+        m1_0.status,
+        m1_0.updated_at 
+    from
+        member m1_0 
+    where
+        m1_0.email=? 
+        and m1_0.role=?
+2026-04-24 10:34:57.235 TRACE [29f429fc] org.hibernate.orm.jdbc.bind - binding parameter (1:VARCHAR) <- [guest04@localGuest.com]
+2026-04-24 10:34:57.235 TRACE [29f429fc] org.hibernate.orm.jdbc.bind - binding parameter (2:ENUM) <- [GUEST]
+2026-04-24 10:34:57.243 INFO  [29f429fc] c.t.a.logging.MdcLoggingFilter - [HTTP] 요청 완료 - statusCode: 200, latencyMs: 26, requestUri: /api/members/me/profile, method: GET
+2026-04-24 10:34:57.403 DEBUG [0c968491] org.hibernate.SQL - 
+    /* update
+        for com.team6.domain.matching.entity.MatchRequest */update match_request 
+    set
+        budget_max_won=?,
+        budget_min_won=?,
+        cancel_reason=?,
+        cancelled_by=?,
+        concept=?,
+        concept_summary=?,
+        desired_budget=?,
+        desired_date=?,
+        destination=?,
+        guest_id=?,
+        guide_id=?,
+        guide_schedule_id=?,
+        propose_message=?,
+        proposed_schedule=?,
+        status=?,
+        updated_at=? 
+    where
+        id=?
+2026-04-24 10:34:57.423 TRACE [0c968491] org.hibernate.orm.jdbc.bind - binding parameter (1:INTEGER) <- [468000]
+2026-04-24 10:34:57.424 TRACE [0c968491] org.hibernate.orm.jdbc.bind - binding parameter (2:INTEGER) <- [150000]
+2026-04-24 10:34:57.425 TRACE [0c968491] org.hibernate.orm.jdbc.bind - binding parameter (3:VARCHAR) <- [null]
+2026-04-24 10:34:57.427 TRACE [0c968491] org.hibernate.orm.jdbc.bind - binding parameter (4:VARCHAR) <- [null]
+2026-04-24 10:34:57.429 TRACE [0c968491] org.hibernate.orm.jdbc.bind - binding parameter (5:VARCHAR) <- [#미식,#야경,#로컬 #가족동반 #걷기편함 #extra시장]
+2026-04-24 10:34:57.429 TRACE [0c968491] org.hibernate.orm.jdbc.bind - binding parameter (6:VARCHAR) <- [게스트 성향: 공통(미식·야경·로컬) + 역사 · trip#74]
+2026-04-24 10:34:57.430 TRACE [0c968491] org.hibernate.orm.jdbc.bind - binding parameter (7:INTEGER) <- [630000]
+2026-04-24 10:34:57.431 TRACE [0c968491] org.hibernate.orm.jdbc.bind - binding parameter (8:DATE) <- [2026-04-24]
+2026-04-24 10:34:57.435 TRACE [0c968491] org.hibernate.orm.jdbc.bind - binding parameter (9:VARCHAR) <- [천안 힐링산책]
+2026-04-24 10:34:57.435 TRACE [0c968491] org.hibernate.orm.jdbc.bind - binding parameter (10:BIGINT) <- [941004]
+2026-04-24 10:34:57.435 TRACE [0c968491] org.hibernate.orm.jdbc.bind - binding parameter (11:BIGINT) <- [841074]
+2026-04-24 10:34:57.436 TRACE [0c968491] org.hibernate.orm.jdbc.bind - binding parameter (12:BIGINT) <- [851074]
+2026-04-24 10:34:57.436 TRACE [0c968491] org.hibernate.orm.jdbc.bind - binding parameter (13:VARCHAR) <- [null]
+2026-04-24 10:34:57.436 TRACE [0c968491] org.hibernate.orm.jdbc.bind - binding parameter (14:VARCHAR) <- [null]
+2026-04-24 10:34:57.436 TRACE [0c968491] org.hibernate.orm.jdbc.bind - binding parameter (15:ENUM) <- [IN_PROGRESS]
+2026-04-24 10:34:57.437 TRACE [0c968491] org.hibernate.orm.jdbc.bind - binding parameter (16:TIMESTAMP) <- [2026-04-24T10:34:57.277456]
+2026-04-24 10:34:57.437 TRACE [0c968491] org.hibernate.orm.jdbc.bind - binding parameter (17:BIGINT) <- [862074]
+2026-04-24 10:34:57.577 INFO  [0c968491] c.t.a.logging.MdcLoggingFilter - [HTTP] 요청 완료 - statusCode: 200, latencyMs: 960, requestUri: /api/matching/requests/guest/list, method: GET
+2026-04-24 10:34:57.600 DEBUG [df53c16a] org.hibernate.SQL - 
+    /* <criteria> */ select
+        m1_0.id,
+        m1_0.created_at,
+        m1_0.email,
+        m1_0.name,
+        m1_0.nickname,
+        m1_0.password,
+        m1_0.profile_image_url,
+        m1_0.role,
+        m1_0.social_type,
+        m1_0.status,
+        m1_0.updated_at 
+    from
+        member m1_0 
+    where
+        m1_0.email=? 
+        and m1_0.role=?
+2026-04-24 10:34:57.600 TRACE [df53c16a] org.hibernate.orm.jdbc.bind - binding parameter (1:VARCHAR) <- [guest04@localGuest.com]
+2026-04-24 10:34:57.600 TRACE [df53c16a] org.hibernate.orm.jdbc.bind - binding parameter (2:ENUM) <- [GUEST]
+2026-04-24 10:34:57.606 DEBUG [df53c16a] org.hibernate.SQL - 
+    /* <criteria> */ select
+        mr1_0.id,
+        mr1_0.budget_max_won,
+        mr1_0.budget_min_won,
+        mr1_0.cancel_reason,
+        mr1_0.cancelled_by,
+        mr1_0.concept,
+        mr1_0.concept_summary,
+        mr1_0.created_at,
+        mr1_0.desired_budget,
+        mr1_0.desired_date,
+        mr1_0.destination,
+        mr1_0.guest_id,
+        mr1_0.guide_id,
+        mr1_0.guide_schedule_id,
+        mr1_0.propose_message,
+        mr1_0.proposed_schedule,
+        mr1_0.status,
+        mr1_0.updated_at 
+    from
+        match_request mr1_0 
+    where
+        mr1_0.guest_id=?
+2026-04-24 10:34:57.606 TRACE [df53c16a] org.hibernate.orm.jdbc.bind - binding parameter (1:BIGINT) <- [941004]
+2026-04-24 10:34:57.626 INFO  [df53c16a] c.t.a.logging.MdcLoggingFilter - [HTTP] 요청 완료 - statusCode: 200, latencyMs: 39, requestUri: /api/matching/requests/guest/list, method: GET
+2026-04-24 10:34:57.632 DEBUG [5d40cce4] org.hibernate.SQL - 
+    select
+        gp1_0.id,
+        gp1_0.average_rating,
+        gp1_0.bio,
+        gp1_0.created_at,
+        gp1_0.default_course,
+        gp1_0.guide_style,
+        gp1_0.is_active,
+        gp1_0.is_approved,
+        gp1_0.keywords,
+        gp1_0.language,
+        gp1_0.local_story,
+        gp1_0.member_id,
+        gp1_0.nickname,
+        gp1_0.price_per_hour,
+        gp1_0.profile_image,
+        gp1_0.region,
+        gp1_0.residence_years,
+        gp1_0.review_count,
+        gp1_0.updated_at 
+    from
+        guide_profiles gp1_0 
+    where
+        gp1_0.id=?
+2026-04-24 10:34:57.632 DEBUG [a1c59518] org.hibernate.SQL - 
+    select
+        gp1_0.id,
+        gp1_0.average_rating,
+        gp1_0.bio,
+        gp1_0.created_at,
+        gp1_0.default_course,
+        gp1_0.guide_style,
+        gp1_0.is_active,
+        gp1_0.is_approved,
+        gp1_0.keywords,
+        gp1_0.language,
+        gp1_0.local_story,
+        gp1_0.member_id,
+        gp1_0.nickname,
+        gp1_0.price_per_hour,
+        gp1_0.profile_image,
+        gp1_0.region,
+        gp1_0.residence_years,
+        gp1_0.review_count,
+        gp1_0.updated_at 
+    from
+        guide_profiles gp1_0 
+    where
+        gp1_0.id=?
+2026-04-24 10:34:57.632 TRACE [5d40cce4] org.hibernate.orm.jdbc.bind - binding parameter (1:BIGINT) <- [841049]
+2026-04-24 10:34:57.632 TRACE [a1c59518] org.hibernate.orm.jdbc.bind - binding parameter (1:BIGINT) <- [841004]
+2026-04-24 10:34:57.650 INFO  [5d40cce4] c.t.a.logging.MdcLoggingFilter - [HTTP] 요청 완료 - statusCode: 200, latencyMs: 45, requestUri: /api/guides/841049, method: GET
+2026-04-24 10:34:57.650 INFO  [a1c59518] c.t.a.logging.MdcLoggingFilter - [HTTP] 요청 완료 - statusCode: 200, latencyMs: 45, requestUri: /api/guides/841004, method: GET
+2026-04-24 10:34:57.664 DEBUG [0141218b] org.hibernate.SQL - 
+    select
+        gp1_0.id,
+        gp1_0.average_rating,
+        gp1_0.bio,
+        gp1_0.created_at,
+        gp1_0.default_course,
+        gp1_0.guide_style,
+        gp1_0.is_active,
+        gp1_0.is_approved,
+        gp1_0.keywords,
+        gp1_0.language,
+        gp1_0.local_story,
+        gp1_0.member_id,
+        gp1_0.nickname,
+        gp1_0.price_per_hour,
+        gp1_0.profile_image,
+        gp1_0.region,
+        gp1_0.residence_years,
+        gp1_0.review_count,
+        gp1_0.updated_at 
+    from
+        guide_profiles gp1_0 
+    where
+        gp1_0.id=?
+2026-04-24 10:34:57.665 TRACE [0141218b] org.hibernate.orm.jdbc.bind - binding parameter (1:BIGINT) <- [841004]
+2026-04-24 10:34:57.665 DEBUG [69cf929d] org.hibernate.SQL - 
+    select
+        gp1_0.id,
+        gp1_0.average_rating,
+        gp1_0.bio,
+        gp1_0.created_at,
+        gp1_0.default_course,
+        gp1_0.guide_style,
+        gp1_0.is_active,
+        gp1_0.is_approved,
+        gp1_0.keywords,
+        gp1_0.language,
+        gp1_0.local_story,
+        gp1_0.member_id,
+        gp1_0.nickname,
+        gp1_0.price_per_hour,
+        gp1_0.profile_image,
+        gp1_0.region,
+        gp1_0.residence_years,
+        gp1_0.review_count,
+        gp1_0.updated_at 
+    from
+        guide_profiles gp1_0 
+    where
+        gp1_0.id=?
+2026-04-24 10:34:57.666 TRACE [69cf929d] org.hibernate.orm.jdbc.bind - binding parameter (1:BIGINT) <- [841049]
+2026-04-24 10:34:57.672 INFO  [0141218b] c.t.a.logging.MdcLoggingFilter - [HTTP] 요청 완료 - statusCode: 200, latencyMs: 11, requestUri: /api/guides/841004, method: GET
+2026-04-24 10:34:57.674 INFO  [69cf929d] c.t.a.logging.MdcLoggingFilter - [HTTP] 요청 완료 - statusCode: 200, latencyMs: 13, requestUri: /api/guides/841049, method: GET
+2026-04-24 10:35:00.018 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-04-24 10:35:00.020 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-04-24 10:35:00.020 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-24T10:35:00.012480800]

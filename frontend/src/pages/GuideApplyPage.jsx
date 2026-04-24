@@ -103,13 +103,9 @@ export function GuideApplyPage() {
       {fromTerms && (
         <p className="form-success" style={{ marginBottom: '1rem' }}>
           약관 동의가 완료되었습니다. 아래에 프로필 정보를 입력해 주세요.
-          {location.state?.agreeMarketing ? ' (마케팅 수신 동의: 백엔드 필드 연동 예정)' : null}
         </p>
       )}
-      <p className="form-hint">
-        F01-03 · <code>POST /api/guides</code> — 성공 시 동일 이메일의 <strong>GUIDE 로그인 유형</strong>이 준비됩니다.
-        <strong> 재로그인</strong> 후 로그인 유형에서 GUIDE를 선택해 주세요.
-      </p>
+      <p className="form-hint">신청이 완료되면 가이드 전용 화면에서 활동을 이어갈 수 있어요. 이미 가입한 계정이면 로그인 시 &quot;가이드&quot; 유형을 선택해 주세요.</p>
 
       <form className="form-card" onSubmit={(e) => void handleSubmit(e)}>
         <label className="field">
