@@ -4,6 +4,7 @@ import { PageError, PageLoading } from '../components/PageStates.jsx'
 import { apiRequest } from '../api/client.js'
 import { DEFAULT_KOREA_CENTER, getUserLatLng, resolveLatLng } from '../lib/kakaoGeocode.js'
 import { loadKakaoSdk } from '../lib/kakaoMapSdk.js'
+import { fetchMyReviewsByMatchRequestId } from '../lib/guestMyReviews.js'
 import { fetchGuestMatchRequests } from '../lib/matchingGuest.js'
 import { parseCourseDetail } from './GuideCoursePanel.jsx'
 
@@ -49,25 +50,6 @@ function renderStaticFallbackMap(kakao, container, centerPoint, points) {
   })
 }
 
-async function fetchMyReviewMap() {
-  const map = {}
-  let page = 0
-  while (page < 20) {
-    const res = await apiRequest(`/reviews/me?page=${page}&size=50`, { method: 'GET' })
-    const text = await res.text()
-    if (!res.ok) throw new Error(parseApiErrorMessage(text))
-    const data = text ? JSON.parse(text) : {}
-    const content = Array.isArray(data.content) ? data.content : []
-    for (const row of content) {
-      const key = Number(row?.matchRequestId)
-      if (!Number.isNaN(key) && map[key] == null) map[key] = row
-    }
-    if (data.last === true) break
-    page += 1
-  }
-  return map
-}
-
 export function MypageScrapbookTicketDetailPage() {
   const { requestId } = useParams()
   const navigate = useNavigate()
@@ -92,7 +74,7 @@ export function MypageScrapbookTicketDetailPage() {
     if (!Number.isFinite(rid)) throw new Error('잘못된 여행 기록 ID입니다.')
     const [all, reviews] = await Promise.all([
       fetchGuestMatchRequests(apiRequest),
-      fetchMyReviewMap().catch(() => ({})),
+      fetchMyReviewsByMatchRequestId(apiRequest).catch(() => ({})),
     ])
     const completed = (Array.isArray(all) ? all : [])
       .filter((r) => r.status === 'COMPLETED')
@@ -160,7 +142,8 @@ export function MypageScrapbookTicketDetailPage() {
     }
     return parsed
   }, [courseText])
-  const hasReview = reviewByMatch[Number(row?.requestId)] != null
+  const myReview = reviewByMatch[Number(row?.requestId)]
+  const hasReview = myReview != null
 
   useEffect(() => {
     if (loading || !row) return
@@ -291,7 +274,7 @@ export function MypageScrapbookTicketDetailPage() {
       }
       setReviewModal(false)
       setContent('')
-      const reviews = await fetchMyReviewMap().catch(() => ({}))
+      const reviews = await fetchMyReviewsByMatchRequestId(apiRequest).catch(() => ({}))
       setReviewByMatch(reviews)
     } catch {
       setReviewError('리뷰 등록 중 네트워크 오류가 발생했습니다.')
@@ -376,7 +359,12 @@ export function MypageScrapbookTicketDetailPage() {
         {hasReview ? (
           <>
             <p className="mp-review-done">후기 작성 완료</p>
-            <Link to="/mypage/reviews" className="mp-btn mp-btn--line">내 후기 보기</Link>
+            <Link
+              to={myReview?.id != null ? `/mypage/reviews/${Number(myReview.id)}` : '/mypage/reviews'}
+              className="mp-btn mp-btn--line"
+            >
+              내 후기 보기
+            </Link>
           </>
         ) : (
           <button

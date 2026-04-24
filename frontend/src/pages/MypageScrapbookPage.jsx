@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { PageEmpty, PageError, PageLoading } from '../components/PageStates.jsx'
 import { apiRequest } from '../api/client.js'
 import { DEFAULT_KOREA_CENTER, resolveLatLng } from '../lib/kakaoGeocode.js'
 import { loadKakaoSdk } from '../lib/kakaoMapSdk.js'
+import { fetchMyReviewsByMatchRequestId } from '../lib/guestMyReviews.js'
 import { daysUntil, fetchGuestMatchRequests } from '../lib/matchingGuest.js'
 
 import './MypageMemberPages.css'
@@ -30,6 +31,15 @@ async function loadGuideNicknames(apiRequest, guideIds) {
   return map
 }
 
+function galleryCaption(row, review) {
+  const c = review?.content != null ? String(review.content).trim() : ''
+  if (c) {
+    const line = c.split(/\r?\n/).map((s) => s.trim()).find(Boolean) ?? c
+    return line.length > 72 ? `${line.slice(0, 69)}…` : line
+  }
+  return String(row.destination ?? '여행').trim() || '여행'
+}
+
 function parseRouteStops(proposedSchedule) {
   const raw = String(proposedSchedule ?? '').trim()
   if (!raw) return []
@@ -46,15 +56,20 @@ export function MypageScrapbookPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
   const [tearingRequestId, setTearingRequestId] = useState(null)
+  const [reviewByMatch, setReviewByMatch] = useState({})
   const overviewMapRef = useRef(null)
   const [overviewMapErr, setOverviewMapErr] = useState('')
 
   const loadScrapbook = useCallback(async () => {
-    const all = await fetchGuestMatchRequests(apiRequest)
+    const [all, reviews] = await Promise.all([
+      fetchGuestMatchRequests(apiRequest),
+      fetchMyReviewsByMatchRequestId(apiRequest).catch(() => ({})),
+    ])
     const completed = (Array.isArray(all) ? all : [])
       .filter((r) => r.status === 'COMPLETED')
       .sort((a, b) => String(b.desiredDate).localeCompare(String(a.desiredDate)))
     setRows(completed)
+    setReviewByMatch(reviews && typeof reviews === 'object' ? reviews : {})
     const gids = completed.map((r) => r.guideId)
     const nm = await loadGuideNicknames(apiRequest, gids)
     setNames(nm)
@@ -248,11 +263,24 @@ export function MypageScrapbookPage() {
             <>
               <h2 style={{ margin: '1.5rem 0 0.75rem', fontSize: '0.95rem', fontWeight: 800 }}>지난 여행 갤러리</h2>
               <div className="mp-gallery">
-                {rows.slice(0, 6).map((r, i) => (
-                  <div key={`g-${r.requestId}`} className="mp-polaroid" style={{ transform: `rotate(${i % 2 === 0 ? -2 : 2}deg)` }}>
-                    {r.destination}
-                  </div>
-                ))}
+                {rows.slice(0, 6).map((r, i) => {
+                  const rev = reviewByMatch[Number(r.requestId)]
+                  const caption = galleryCaption(r, rev)
+                  const to = rev?.id != null ? `/mypage/reviews/${Number(rev.id)}` : `/mypage/scrapbook/${r.requestId}`
+                  const aria =
+                    rev?.id != null ? `리뷰 상세 보기: ${caption}` : `여행 기록 보기: ${caption}`
+                  return (
+                    <Link
+                      key={`g-${r.requestId}`}
+                      to={to}
+                      className="mp-polaroid mp-polaroid--link"
+                      style={{ transform: `rotate(${i % 2 === 0 ? -2 : 2}deg)` }}
+                      aria-label={aria}
+                    >
+                      {caption}
+                    </Link>
+                  )
+                })}
               </div>
             </>
           )}

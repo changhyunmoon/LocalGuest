@@ -79,6 +79,15 @@ public class ReviewService {
                 .map(ReviewResponse::new);
     }
 
+    /** 마이페이지 상세: 본인이 작성한 리뷰 한 건 */
+    @Transactional(readOnly = true)
+    public ReviewResponse getMyReview(Long reviewId) {
+        Member member = getCurrentMember();
+        Review review = reviewRepository.findByIdAndMember(reviewId, member)
+                .orElseThrow(() -> new IllegalArgumentException("리뷰를 찾을 수 없습니다."));
+        return new ReviewResponse(review);
+    }
+
     // 리뷰 삭제
     @Transactional
     public void deleteReview(Long reviewId) {

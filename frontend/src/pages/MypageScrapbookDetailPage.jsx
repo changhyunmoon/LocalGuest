@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { PageError, PageLoading } from '../components/PageStates.jsx'
 import { apiRequest } from '../api/client.js'
+import { fetchMyReviewsByMatchRequestId } from '../lib/guestMyReviews.js'
 import { fetchGuestMatchRequests } from '../lib/matchingGuest.js'
 
 import './MypageMemberPages.css'
@@ -23,25 +24,6 @@ function parseRouteStops(proposedSchedule) {
     .split(/->|→|\r?\n|,/g)
     .map((s) => s.trim())
     .filter(Boolean)
-}
-
-async function fetchMyReviewMap() {
-  const map = {}
-  let page = 0
-  while (page < 20) {
-    const res = await apiRequest(`/reviews/me?page=${page}&size=50`, { method: 'GET' })
-    const text = await res.text()
-    if (!res.ok) throw new Error(parseApiErrorMessage(text))
-    const data = text ? JSON.parse(text) : {}
-    const content = Array.isArray(data.content) ? data.content : []
-    for (const row of content) {
-      const key = Number(row?.matchRequestId)
-      if (!Number.isNaN(key) && map[key] == null) map[key] = row
-    }
-    if (data.last === true) break
-    page += 1
-  }
-  return map
 }
 
 async function loadGuideNickname(guideId) {
@@ -79,7 +61,7 @@ export function MypageScrapbookDetailPage() {
     if (!Number.isFinite(rid)) throw new Error('잘못된 여행 기록 ID입니다.')
     const [all, reviews] = await Promise.all([
       fetchGuestMatchRequests(apiRequest),
-      fetchMyReviewMap().catch(() => ({})),
+      fetchMyReviewsByMatchRequestId(apiRequest).catch(() => ({})),
     ])
     const found = (Array.isArray(all) ? all : []).find((r) => Number(r.requestId) === rid)
     if (!found) throw new Error('해당 여행 기록을 찾을 수 없습니다.')
@@ -148,7 +130,7 @@ export function MypageScrapbookDetailPage() {
       setReviewModal(false)
       setContent('')
       setReviewPhotos([])
-      const reviews = await fetchMyReviewMap().catch(() => ({}))
+      const reviews = await fetchMyReviewsByMatchRequestId(apiRequest).catch(() => ({}))
       setReviewByMatch(reviews)
     } catch {
       setReviewError('리뷰 등록 중 네트워크 오류가 발생했습니다.')
