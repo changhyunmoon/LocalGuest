@@ -1030,7 +1030,53 @@ public class PromptRecommendationService {
         if (isTooGenericReason(t)) {
             return null;
         }
+        if (!isPoliteTone(t)) {
+            return null;
+        }
+        if (containsHedgingOrGuess(t)) {
+            return null;
+        }
         return t;
+    }
+
+    /**
+     * UI 톤 통일: 존댓말만 허용. 반말/명령형이면 룰 reason으로 폴백한다.
+     */
+    private static boolean isPoliteTone(String text) {
+        if (text == null) {
+            return false;
+        }
+        String t = text.strip();
+        // 존댓말 단서(완벽하진 않지만 실무에서 안정적으로 동작)
+        boolean hasPoliteEnding = t.contains("요.") || t.contains("요 ") || t.endsWith("요") || t.contains("습니다") || t.contains("하세요");
+        if (!hasPoliteEnding) {
+            return false;
+        }
+        // 흔한 반말/명령형(오탐을 줄이기 위해 보수적으로만)
+        String[] banmal = {"해줘", "해라", "하자", "가자", "싶어", "싫어", "야.", "거야", "맞아", "좋아"};
+        for (String b : banmal) {
+            if (t.contains(b)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * 과도한 추측(환각) 문구가 섞이면 사용자 신뢰를 해치므로 폴백한다.
+     */
+    private static boolean containsHedgingOrGuess(String text) {
+        if (text == null) {
+            return true;
+        }
+        String t = text.strip();
+        String[] hedges = {"아마", "추정", "추측", "같아요", "같습니다", "일 것", "일것", "일 수도", "일수도", "가능할 것", "가능할것"};
+        for (String h : hedges) {
+            if (t.contains(h)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
