@@ -1131,7 +1131,7 @@ public class PromptRecommendationService {
     /**
      * @param cfgProvider      {@code localguest.ai.llm-provider} 정규화 값(로그용)
      * @param extractorBeanClass 주입된 {@link LlmPromptExtractor} 구현 단순 클래스명, 없으면 {@code none}
-     * @param outcome          {@code SKIP_DISABLED} | {@code SKIP_NO_BEAN} | {@code LLM_SUCCESS} | {@code LLM_EMPTY} | {@code LLM_ERROR}
+     * @param outcome          {@code SKIP_DISABLED} | {@code SKIP_NO_BEAN} | {@code SKIP_FASTPATH} | {@code LLM_SUCCESS} | {@code LLM_EMPTY} | {@code LLM_ERROR}
      */
     private record LlmParseTrace(String cfgProvider, String extractorBeanClass, String outcome) {}
 
@@ -1156,6 +1156,15 @@ public class PromptRecommendationService {
             );
         }
 
+        // 속도 최적화: rank LLM 경로를 쓰는 경우, 룰 파서가 충분히 신뢰할 만하면 LLM 파싱 호출을 생략한다.
+        GuideRecommendRequest ruleParsed = promptParser.parse(prompt, resolvedTopN, guideCandidates);
+        if (aiProperties.isLlmRankEnabled()
+                && notBlank(ruleParsed.getRegion())
+                && !"LOW".equals(computePromptParseConfidence(ruleParsed))) {
+            metrics.recordLlmPromptExtraction("skip_fastpath", 0L, POLICY_VERSION, cfgProvider);
+            return new ParsedPrompt(ruleParsed, new LlmParseTrace(cfgProvider, extractorBean, "SKIP_FASTPATH"));
+        }
+
         String llmPrompt = truncateForLlm(prompt);
         long t0 = System.nanoTime();
         try {
@@ -1168,14 +1177,14 @@ public class PromptRecommendationService {
             }
             metrics.recordLlmPromptExtraction("empty", elapsed, POLICY_VERSION, cfgProvider);
             return new ParsedPrompt(
-                    promptParser.parse(prompt, resolvedTopN, guideCandidates),
+                    ruleParsed,
                     new LlmParseTrace(cfgProvider, extractorBean, "LLM_EMPTY")
             );
         } catch (Exception e) {
             metrics.recordLlmPromptExtraction("error", System.nanoTime() - t0, POLICY_VERSION, cfgProvider);
             log.warn("[AI_PROMPT] LLM 추출 실패, 룰 파서로 폴백: {}", e.toString());
             return new ParsedPrompt(
-                    promptParser.parse(prompt, resolvedTopN, guideCandidates),
+                    ruleParsed,
                     new LlmParseTrace(cfgProvider, extractorBean, "LLM_ERROR")
             );
         }
