@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 
 import { beginGoogleOAuth } from '../../api/client'
 import { useAuth } from '../../context/useAuth.js'
+import { OauthRejectionModal } from './OauthRejectionModal.jsx'
 
 import '../../pages/FormPage.css'
 
@@ -15,6 +16,8 @@ import '../../pages/FormPage.css'
  *   titleTag?: 'h1' | 'h2'
  *   onEmailLoginSuccess?: () => void
  *   roleMismatchZIndex?: number
+ *   oauthRejection?: string | null
+ *   onCloseOauthRejection?: () => void
  * }} props
  */
 export function LoginFormPanel({
@@ -25,8 +28,10 @@ export function LoginFormPanel({
   titleTag: TitleTag = 'h1',
   onEmailLoginSuccess,
   roleMismatchZIndex = 50,
+  oauthRejection = null,
+  onCloseOauthRejection = () => {},
 }) {
-  const { login } = useAuth()
+  const { login, token, isGuide } = useAuth()
   const navigate = useNavigate()
   const rt = String(returnTo)
   const looksLikeGuideApp = /^\/guide(\/|$)/.test(rt)
@@ -40,6 +45,7 @@ export function LoginFormPanel({
   const [loading, setLoading] = useState(false)
   const [flash, setFlash] = useState('')
   const [roleMismatch, setRoleMismatch] = useState(null)
+  const [guideRegModal, setGuideRegModal] = useState(false)
 
   useEffect(() => {
     if (hint) {
@@ -98,8 +104,28 @@ export function LoginFormPanel({
     return `선택하신 로그인 유형은 ${label(roleMismatch.requestedRole)}인데, 실제로는 ${label(roleMismatch.signedInRole)} 계정으로 로그인되었습니다. (이메일·비밀번호는 맞습니다.)`
   }
 
+  /** 상단 탭(여행자/가이드)과 동일한 역할로 구글 OAuth 시작 */
+  function startGoogleOauth() {
+    if (role === 'GUIDE') {
+      if (token && !isGuide) {
+        setGuideRegModal(true)
+        return
+      }
+      beginGoogleOAuth('GUIDE', returnTo)
+      return
+    }
+    beginGoogleOAuth('GUEST', returnTo)
+  }
+
   return (
     <>
+      {oauthRejection && (
+        <OauthRejectionModal
+          reason={oauthRejection}
+          onClose={onCloseOauthRejection}
+          zIndex={roleMismatchZIndex + 5}
+        />
+      )}
       {showTitle && <TitleTag>로그인</TitleTag>}
 
       {flash && (
@@ -160,8 +186,13 @@ export function LoginFormPanel({
           <button
             type="button"
             className="submit ghost form-google-login form-auth-primary-btn"
-            onClick={() => beginGoogleOAuth(role, returnTo)}
-            title="Google OAuth2 로그인"
+            onClick={startGoogleOauth}
+            title={
+              role === 'GUIDE'
+                ? '가이드 — (여행자) 가입 + 가이드 등록·승인이 된 Google 계정'
+                : '여행자 — (여행자) 회원가입이 완료된 Google 계정'
+            }
+            aria-label={role === 'GUIDE' ? 'Google 가이드로 로그인' : 'Google 여행자로 로그인'}
           >
             <span className="form-google-login__icon" aria-hidden="true">
               G
@@ -192,6 +223,49 @@ export function LoginFormPanel({
           </button>
         </nav>
       </form>
+
+      {guideRegModal && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(15, 23, 42, 0.45)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: roleMismatchZIndex,
+            padding: '1rem',
+          }}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="guide-reg-prompt-title"
+        >
+          <div
+            className="form-card"
+            style={{ maxWidth: 420, width: '100%', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.35)' }}
+          >
+            <h2 id="guide-reg-prompt-title" style={{ marginTop: 0 }}>
+              가이드 등록
+            </h2>
+            <p className="form-hint" style={{ marginBottom: '1rem' }}>가이드 등록을 진행해 주세요.</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              <button
+                type="button"
+                className="submit"
+                onClick={() => {
+                  setGuideRegModal(false)
+                  navigate('/guide/register', { replace: false })
+                }}
+              >
+                가이드 등록하러 가기
+              </button>
+              <button type="button" className="submit ghost" onClick={() => setGuideRegModal(false)}>
+                닫기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {roleMismatch && (
         <div

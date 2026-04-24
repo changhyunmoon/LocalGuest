@@ -29,16 +29,28 @@ public class JwtTokenProvider {
     }
 
     public String createToken(String email, String role) {
-        // [LOG] INFO : [Auth-Domain] JWT 토큰 생성 시작 (Target : {})
+        return buildAccessToken(email, role, false);
+    }
+
+    /**
+     * 최초 소셜(게스트) 가입 직후 여행 성향(온보딩) 유도 — 프론트가 claim으로 분기
+     */
+    public String createToken(String email, String role, boolean onboardingClaim) {
+        return buildAccessToken(email, role, onboardingClaim);
+    }
+
+    private String buildAccessToken(String email, String role, boolean onboardingClaim) {
         Date now = new Date();
-        return Jwts.builder()
+        var builder = Jwts.builder()
                 .subject(email)
                 .claim("role", role)
                 .claim("jti", UUID.randomUUID().toString())
                 .issuedAt(now)
-                .expiration(new Date(now.getTime() + ACCESS_TOKEN_VALIDITY))
-                .signWith(key)
-                .compact();
+                .expiration(new Date(now.getTime() + ACCESS_TOKEN_VALIDITY));
+        if (onboardingClaim) {
+            builder.claim("onboarding", true);
+        }
+        return builder.signWith(key).compact();
     }
 
     public String createRefreshToken(String email, String role) {

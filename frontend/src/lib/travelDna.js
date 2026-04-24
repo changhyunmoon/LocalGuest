@@ -25,6 +25,11 @@ export function buildTravelDnaPreview(dna) {
   return parts.length ? `${parts.join(', ')} 여행자` : ''
 }
 
+/** 온보딩(여행 성향)이 한 번이라도 저장돼 있으면 true — `buildTravelDnaPreview` 와 동일한 기준 */
+export function hasSavedTravelDna() {
+  return Boolean(buildTravelDnaPreview(loadTravelDna()))
+}
+
 export function extractTravelDnaTags(dna) {
   if (!dna) return []
   const raw = [

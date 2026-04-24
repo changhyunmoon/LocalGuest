@@ -30,21 +30,12 @@ async function fetchWithFallback(apiRequest, paths) {
 
 /** @param {(path: string, init?: object) => Promise<Response>} apiRequest */
 export async function fetchGuestMatchRequests(apiRequest) {
-  return fetchWithFallback(apiRequest, [
-    '/matching/requests/guest/list',
-    // 구버전 호환 경로
-    '/matching/requests/me',
-  ])
+  return fetchWithFallback(apiRequest, ['/matching/requests/guest/list'])
 }
 
 /** @param {(path: string, init?: object) => Promise<Response>} apiRequest */
 export async function fetchGuideMatchRequests(apiRequest) {
-  return fetchWithFallback(apiRequest, [
-    '/matching/requests/guide/list',
-    // 구버전 호환 경로
-    '/matching/requests/guide',
-    '/matching/requests/guide/me',
-  ])
+  return fetchWithFallback(apiRequest, ['/matching/requests/guide/list'])
 }
 
 /** @param {(path: string, init?: object) => Promise<Response>} apiRequest */
