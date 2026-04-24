@@ -44,6 +44,13 @@ subprojects {
 
     tasks.withType(JavaCompile).configureEach {
         options.compilerArgs.add('-parameters')
+        options.encoding = 'UTF-8'
+    }
+
+    tasks.withType(JavaExec).configureEach {
+        systemProperty 'file.encoding', 'UTF-8'
+        systemProperty 'sun.jnu.encoding', 'UTF-8'
+        jvmArgs '-Dstdout.encoding=UTF-8', '-Dstderr.encoding=UTF-8'
     }
 
 }

@@ -19,6 +19,35 @@ API 베이스는 애플리케이션의 `/api` 프리픽스 뒤에 붙는다고 �
 - `GET/POST … /matching/payments`
 - `GET/PATCH … /matching/extensions`
 
+## 사용자 플로우 (Guest / Guide)
+
+### 1) 요청 생성 ~ 응답
+
+1. Guest가 `POST /matching/requests`로 Guide에게 매칭 요청을 생성합니다.
+2. Guide가 `GET /matching/requests/guide/list`로 본인 요청 목록을 조회합니다.
+3. Guide는 요청별로 `reject`(거절) 또는 `propose`(제안) 액션을 수행합니다.
+4. Guest가 `GET /matching/requests/guest/list`로 제안/거절 결과를 확인합니다.
+5. Guest는 `decline`(거절)을 할 수 있으며, 하지 않을 시 결제로 이어집니다.
+
+### 2) 결제 ~ 확정
+
+1. Guest는 `ACCEPTED` 상태 요청에 대해 `POST /matching/payments`로 결제를 생성합니다.
+2. 결제 확인 단계에서 금액/주문번호를 검증하고 결제를 확정합니다.
+3. 결제가 확정되면 요청 상태가 `ACCEPTED -> PAID`로 전이됩니다.
+4. 결제 완료 후 가이드 스케줄 paid-confirm 연동을 시도합니다(실패 시 결제는 유지되고 로그로 추적).
+
+### 3) 연장 선택 ~ 마감 처리
+
+1. 투어 당일 스케줄 배치가 연장 선택 레코드를 생성합니다.
+2. Guest는 마감 시각(`deadlineAt`) 전까지 `PATCH /matching/extensions/{id}/select`로 연장 여부를 선택합니다.
+3. 마감 후 미선택 건은 분 단위 배치로 자동 처리(`AUTO_CANCELLED` 등 도메인 규칙)됩니다.
+
+### 4) 예외 플로우
+
+1. Guest/Guide는 필요 시 요청 취소(`guest/cancel`, `guide/cancel`)를 수행할 수 있습니다.
+2. 환불은 완료 결제 + 환불 가능 시간 조건을 만족할 때만 `POST /matching/payments/refunds`로 신청할 수 있습니다.
+3. 모든 예외는 `MatchingExceptionHandler`에서 API 에러 응답으로 변환됩니다.
+
 ## 매칭 요청 (`/matching/requests`)
 
 - **생성**: 게스트가 가이드에게 매칭 요청을 올림(가이드 존재 여부 검증).

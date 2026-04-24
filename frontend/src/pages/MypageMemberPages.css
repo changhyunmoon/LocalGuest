@@ -574,6 +574,17 @@ button.mp-thumb--match:focus-visible {
   color: #374151;
 }
 
+a.mp-polaroid.mp-polaroid--scrap-link {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+
+a.mp-polaroid.mp-polaroid--scrap-link:focus-visible {
+  outline: 2px solid #0f766e;
+  outline-offset: 3px;
+}
+
 .mp-pay-wrap {
   width: 100%;
   overflow-x: auto;

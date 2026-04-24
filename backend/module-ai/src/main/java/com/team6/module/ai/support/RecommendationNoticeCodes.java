@@ -10,6 +10,10 @@ public final class RecommendationNoticeCodes {
 
     public static final String REGION_REQUIRED = "REGION_REQUIRED";
     public static final String ADJACENT_REGION_INCLUDED = "ADJACENT_REGION_INCLUDED";
+    /**
+     * 후보 풀에 요청 지역과 정확히 일치하는 가이드가 없어(인접 확장도 없음) 광역·혼합 풀에서 안내한 경우.
+     */
+    public static final String NO_EXACT_REGION_GUIDES_IN_POOL = "NO_EXACT_REGION_GUIDES_IN_POOL";
     public static final String SPARSE_GUIDE_POOL = "SPARSE_GUIDE_POOL";
     public static final String NO_GUIDE_CANDIDATES = "NO_GUIDE_CANDIDATES";
     public static final String PROMPT_DETAIL_REQUESTED = "PROMPT_DETAIL_REQUESTED";

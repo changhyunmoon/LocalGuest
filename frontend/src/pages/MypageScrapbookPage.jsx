@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { PageEmpty, PageError, PageLoading } from '../components/PageStates.jsx'
 import { apiRequest } from '../api/client.js'
 import { DEFAULT_KOREA_CENTER, resolveLatLng } from '../lib/kakaoGeocode.js'
@@ -248,11 +248,20 @@ export function MypageScrapbookPage() {
             <>
               <h2 style={{ margin: '1.5rem 0 0.75rem', fontSize: '0.95rem', fontWeight: 800 }}>지난 여행 갤러리</h2>
               <div className="mp-gallery">
-                {rows.slice(0, 6).map((r, i) => (
-                  <div key={`g-${r.requestId}`} className="mp-polaroid" style={{ transform: `rotate(${i % 2 === 0 ? -2 : 2}deg)` }}>
-                    {r.destination}
-                  </div>
-                ))}
+                {rows.slice(0, 6).map((r, i) => {
+                  const label = String(r.destination ?? '').trim() || '여행 기록'
+                  return (
+                    <Link
+                      key={`g-${r.requestId}`}
+                      to={`/mypage/scrapbook/${r.requestId}`}
+                      className="mp-polaroid mp-polaroid--scrap-link"
+                      style={{ transform: `rotate(${i % 2 === 0 ? -2 : 2}deg)` }}
+                      aria-label={`${label} 여행기 상세 보기`}
+                    >
+                      {label}
+                    </Link>
+                  )
+                })}
               </div>
             </>
           )}

@@ -20,6 +20,25 @@ function parseFeedHeading(content) {
   return { title, body: body || String(content).trim() }
 }
 
+/** 등록 시 본문 맨 끝 한 줄 `#태그1 #태그2` 형태를 역파싱한다. */
+function parseFeedForEdit(content) {
+  const raw = String(content ?? '').replace(/\r\n/g, '\n').trimEnd()
+  if (!raw) return { title: '', body: '', tags: [] }
+  const lines = raw.split('\n')
+  const title = (lines[0] ?? '').trim()
+  if (lines.length <= 1) return { title, body: '', tags: [] }
+  const lastLine = (lines[lines.length - 1] ?? '').trim()
+  const tagLinePattern = /^(#\S+(?:\s+#\S+)*)$/
+  let tags = []
+  let end = lines.length - 1
+  if (tagLinePattern.test(lastLine)) {
+    tags = lastLine.split(/\s+/).map((t) => t.replace(/^#/, '').trim()).filter(Boolean)
+    end = lines.length - 2
+  }
+  const body = lines.slice(1, end + 1).join('\n').trim()
+  return { title, body, tags }
+}
+
 function isInstagramUrl(url) {
   return typeof url === 'string' && url.includes('instagram.com')
 }
@@ -126,7 +145,20 @@ export function GuideFeedSchedulePage() {
   const mainFileInputRef = useRef(null)
   const feedImagesRef = useRef([])
   const dragIdx = useRef(null)
+  const editDragIdx = useRef(null)
+  const editFileInputRef = useRef(null)
   const currentTab = searchParams.get('tab') === 'schedule' ? 'schedule' : 'feed'
+
+  const [feedModalFeed, setFeedModalFeed] = useState(null)
+  const [editFeedTitle, setEditFeedTitle] = useState('')
+  const [editFeedBody, setEditFeedBody] = useState('')
+  const [editFeedTags, setEditFeedTags] = useState([])
+  const [editFeedImages, setEditFeedImages] = useState([])
+  const [editFeedImageMode, setEditFeedImageMode] = useState('file')
+  const [editUrlInput, setEditUrlInput] = useState('')
+  const [editShowLocation, setEditShowLocation] = useState(false)
+  const [editLocationInput, setEditLocationInput] = useState('')
+  const [editFeedBusy, setEditFeedBusy] = useState(false)
 
   const revokePreviewUrl = useCallback((src) => {
     if (typeof src === 'string' && src.startsWith('blob:')) {
@@ -348,10 +380,178 @@ export function GuideFeedSchedulePage() {
         return
       }
       await reloadFeeds(guideId)
+      if (feedModalFeed && Number(feedModalFeed.feedId) === Number(feedId)) {
+        setFeedModalFeed(null)
+      }
     } catch {
       addToast('삭제 실패', 'error')
     } finally {
       setBusy(false)
+    }
+  }
+
+  const closeFeedModal = useCallback(() => {
+    setEditFeedImages((prev) => {
+      prev.forEach((img) => {
+        if (typeof img?.src === 'string' && img.src.startsWith('blob:')) {
+          URL.revokeObjectURL(img.src)
+        }
+      })
+      return []
+    })
+    setFeedModalFeed(null)
+    setEditFeedTitle('')
+    setEditFeedBody('')
+    setEditFeedTags([])
+    setEditFeedImageMode('file')
+    setEditUrlInput('')
+    setEditShowLocation(false)
+    setEditLocationInput('')
+  }, [])
+
+  const openFeedModal = useCallback((f) => {
+    const { title, body, tags } = parseFeedForEdit(f.content ?? '')
+    const urls =
+      Array.isArray(f.imageUrls) && f.imageUrls.length > 0
+        ? f.imageUrls.map((u) => String(u).trim()).filter(Boolean)
+        : f.imageUrl
+          ? String(f.imageUrl)
+              .split(',')
+              .map((s) => s.trim())
+              .filter(Boolean)
+          : []
+    setFeedModalFeed(f)
+    setEditFeedTitle(title)
+    setEditFeedBody(body)
+    setEditFeedTags(tags)
+    setEditFeedImages(
+      urls.map((src, i) => ({
+        id: `edit-${f.feedId}-${i}-${Date.now()}`,
+        src,
+        file: null,
+      })),
+    )
+    setEditFeedImageMode('file')
+    setEditUrlInput('')
+    setEditShowLocation(tags.length > 0)
+    setEditLocationInput('')
+  }, [])
+
+  useEffect(() => {
+    if (!feedModalFeed) return
+    const onKey = (e) => {
+      if (e.key === 'Escape' && !editFeedBusy) closeFeedModal()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [feedModalFeed, editFeedBusy, closeFeedModal])
+
+  const removeEditFeedImage = (id) => {
+    setEditFeedImages((prev) => {
+      const target = prev.find((img) => img.id === id)
+      if (typeof target?.src === 'string' && target.src.startsWith('blob:')) {
+        URL.revokeObjectURL(target.src)
+      }
+      return prev.filter((img) => img.id !== id)
+    })
+  }
+
+  const onEditPickFiles = async (e) => {
+    const files = Array.from(e.target.files ?? [])
+    e.target.value = ''
+    if (!files.length) return
+    const remaining = 10 - editFeedImages.length
+    const toProcess = files.slice(0, remaining)
+    const oversized = toProcess.filter((f) => f.size > MAX_LOCAL_IMAGE_BYTES)
+    if (oversized.length) addToast(`${oversized.length}개 파일이 2MB를 초과해 제외됐습니다.`, 'error')
+    const valid = toProcess.filter((f) => f.size <= MAX_LOCAL_IMAGE_BYTES)
+    const newImgs = valid.map((file) => ({
+      id: Date.now() + Math.random(),
+      src: URL.createObjectURL(file),
+      file,
+    }))
+    setEditFeedImages((prev) => [...prev, ...newImgs].slice(0, 10))
+  }
+
+  const addEditUrlImage = () => {
+    const src = editUrlInput.trim()
+    if (!src || editFeedImages.length >= 10) return
+    setEditFeedImages((prev) => [...prev, { id: Date.now() + Math.random(), src, file: null }])
+    setEditUrlInput('')
+  }
+
+  const reorderEditFeedImages = (dropIdx) => {
+    if (editDragIdx.current === null || editDragIdx.current === dropIdx) return
+    setEditFeedImages((prev) => {
+      const next = [...prev]
+      const [moved] = next.splice(editDragIdx.current, 1)
+      next.splice(dropIdx, 0, moved)
+      return next
+    })
+    editDragIdx.current = null
+  }
+
+  const addEditLocationTag = (raw) => {
+    const tag = raw.trim().replace(/^#/, '')
+    if (!tag || editFeedTags.includes(tag)) return
+    setEditFeedTags((prev) => [...prev, tag])
+    setEditLocationInput('')
+  }
+
+  const removeEditLocationTag = (tag) => {
+    setEditFeedTags((prev) => prev.filter((t) => t !== tag))
+  }
+
+  const saveFeedEdit = async () => {
+    if (!guideId || !feedModalFeed || !editFeedTitle.trim()) return
+    setEditFeedBusy(true)
+    try {
+      const uploadedImageUrls = []
+      for (const img of editFeedImages) {
+        if (img?.file) {
+          const formData = new FormData()
+          formData.append('file', img.file)
+          formData.append('folder', 'guide-feed')
+          const uploadRes = await apiRequest('/files/upload', { method: 'POST', body: formData })
+          const uploadText = await uploadRes.text()
+          if (!uploadRes.ok) {
+            addToast(await readJsonError(uploadRes, uploadText), 'error')
+            setEditFeedBusy(false)
+            return
+          }
+          const uploadJson = uploadText ? JSON.parse(uploadText) : {}
+          const uploadedUrl = String(uploadJson?.url ?? '').trim()
+          if (!uploadedUrl) {
+            addToast('이미지 업로드 URL을 받지 못했습니다.', 'error')
+            setEditFeedBusy(false)
+            return
+          }
+          uploadedImageUrls.push(uploadedUrl)
+          continue
+        }
+        const src = String(img?.src ?? '').trim()
+        if (!src || src.startsWith('blob:') || src.startsWith('data:')) continue
+        uploadedImageUrls.push(src)
+      }
+      const tagLine = editFeedTags.length > 0 ? '\n' + editFeedTags.map((t) => `#${t}`).join(' ') : ''
+      const content = (editFeedTitle.trim() + '\n' + editFeedBody.trim() + tagLine).trim()
+      const res = await apiRequest(`/guides/${guideId}/feeds/${feedModalFeed.feedId}`, {
+        method: 'PUT',
+        json: { content, imageUrls: uploadedImageUrls.length > 0 ? uploadedImageUrls : [] },
+      })
+      const text = await res.text()
+      if (!res.ok) {
+        addToast(await readJsonError(res, text), 'error')
+        return
+      }
+      addToast('피드를 저장했습니다.')
+      closeFeedModal()
+      await reloadFeeds(guideId)
+    } catch (e) {
+      console.error('[saveFeedEdit]', e)
+      addToast('저장에 실패했습니다.', 'error')
+    } finally {
+      setEditFeedBusy(false)
     }
   }
 
@@ -550,6 +750,180 @@ export function GuideFeedSchedulePage() {
     <div className="g-panel">
       {loadError && <p className="g-error">{loadError}</p>}
       <Toast toasts={toasts} />
+      {feedModalFeed &&
+        typeof document !== 'undefined' &&
+        createPortal(
+          <div
+            className="gfd-overlay"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="gfd-feed-modal-title"
+            onClick={(e) => {
+              if (e.target === e.currentTarget && !editFeedBusy) closeFeedModal()
+            }}
+          >
+            <div className="gfd-sheet" onClick={(e) => e.stopPropagation()}>
+              <div className="gfd-head">
+                <h3 id="gfd-feed-modal-title">피드 상세 · 수정</h3>
+                <button type="button" className="gfd-close" aria-label="닫기" disabled={editFeedBusy} onClick={() => closeFeedModal()}>
+                  ×
+                </button>
+              </div>
+              <p className="gfd-lead">본인 피드만 수정할 수 있어요. 저장 시 즉시 반영됩니다.</p>
+
+              <div className="gfd-mode-tabs">
+                {[
+                  { key: 'file', label: '파일 업로드' },
+                  { key: 'url', label: 'URL 입력' },
+                ].map(({ key, label }) => (
+                  <button
+                    key={key}
+                    type="button"
+                    className={`gfi-mode-tab ${editFeedImageMode === key ? 'is-on' : ''}`}
+                    onClick={() => setEditFeedImageMode(key)}
+                    disabled={editFeedBusy}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+
+              {editFeedImageMode === 'file' && editFeedImages.length < 10 && (
+                <div className="gfi-file-row">
+                  <button type="button" className="gm-btn gm-btn--ghost" onClick={() => editFileInputRef.current?.click()} disabled={editFeedBusy}>
+                    {editFeedImages.length === 0 ? '파일 선택' : `+ 추가 (${editFeedImages.length}/10)`}
+                  </button>
+                  <input
+                    ref={editFileInputRef}
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    style={{ display: 'none' }}
+                    onChange={(e) => void onEditPickFiles(e)}
+                  />
+                </div>
+              )}
+
+              {editFeedImageMode === 'url' && (
+                <div className="gfi-file-row" style={{ gap: '0.5rem' }}>
+                  <input
+                    className="gfi-text-input"
+                    placeholder="https://…"
+                    value={editUrlInput}
+                    onChange={(e) => setEditUrlInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault()
+                        addEditUrlImage()
+                      }
+                    }}
+                    disabled={editFeedBusy}
+                  />
+                  <button type="button" className="gm-btn gm-btn--ghost" onClick={addEditUrlImage} disabled={!editUrlInput.trim() || editFeedImages.length >= 10 || editFeedBusy}>
+                    추가
+                  </button>
+                </div>
+              )}
+
+              {editFeedImages.length > 0 ? (
+                <div className="gfi-thumb-grid gfd-thumb-grid">
+                  {editFeedImages.map((img, idx) => (
+                    <div
+                      key={img.id}
+                      className="gfi-thumb-item"
+                      draggable
+                      onDragStart={() => { editDragIdx.current = idx }}
+                      onDragOver={(e) => e.preventDefault()}
+                      onDrop={() => reorderEditFeedImages(idx)}
+                    >
+                      <img src={img.src} alt="" />
+                      {idx === 0 && <span className="gfi-thumb-badge">대표</span>}
+                      <button
+                        type="button"
+                        className="gfi-thumb-del"
+                        onClick={() => removeEditFeedImage(img.id)}
+                        aria-label="이미지 삭제"
+                        disabled={editFeedBusy}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="gfi-preview gfd-preview">
+                  <span className="gfi-preview-empty">이미지 없음 — 추가해 주세요</span>
+                </div>
+              )}
+
+              <div className="gfs-content-wrap gfd-fields">
+                <input
+                  type="text"
+                  className="gfi-title-input"
+                  placeholder="제목"
+                  value={editFeedTitle}
+                  onChange={(e) => setEditFeedTitle(e.target.value)}
+                  maxLength={100}
+                  disabled={editFeedBusy}
+                />
+                <textarea
+                  className="gfs-content"
+                  rows={5}
+                  maxLength={1000}
+                  placeholder="본문"
+                  value={editFeedBody}
+                  onChange={(e) => setEditFeedBody(e.target.value)}
+                  disabled={editFeedBusy}
+                />
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <button type="button" className="gfs-tag-hint-btn" onClick={() => setEditShowLocation((v) => !v)} disabled={editFeedBusy}>
+                    📍 장소 태그 {editShowLocation ? '닫기' : '추가'}
+                  </button>
+                  <span className="gfi-char-count">{editFeedBody.length} / 1000</span>
+                </div>
+                {editShowLocation && (
+                  <div style={{ marginTop: '0.5rem' }}>
+                    <input
+                      className="gi-tag-input"
+                      placeholder="장소명 입력 후 Enter"
+                      value={editLocationInput}
+                      onChange={(e) => setEditLocationInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault()
+                          addEditLocationTag(editLocationInput)
+                        }
+                      }}
+                      disabled={editFeedBusy}
+                    />
+                    {editFeedTags.length > 0 && (
+                      <div className="gi-tag-list" style={{ marginTop: '0.4rem' }}>
+                        {editFeedTags.map((tag) => (
+                          <span key={tag} className="gi-tag">
+                            #{tag}
+                            <button type="button" className="gi-tag-del" onClick={() => removeEditLocationTag(tag)} aria-label={`${tag} 삭제`} disabled={editFeedBusy}>
+                              ×
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <div className="gfd-actions">
+                <button type="button" className="gm-btn gm-btn--ghost" onClick={() => closeFeedModal()} disabled={editFeedBusy}>
+                  취소
+                </button>
+                <button type="button" className="gfs-upload-btn" onClick={() => void saveFeedEdit()} disabled={editFeedBusy || !editFeedTitle.trim()}>
+                  {editFeedBusy ? '저장 중…' : '저장'}
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body,
+        )}
       {currentTab === 'feed' ? (
         <section className="gfs-feed">
           <header className="gfs-feed-head">
@@ -716,18 +1090,20 @@ export function GuideFeedSchedulePage() {
               const dateStr = f.createdAt ? String(f.createdAt).slice(0, 10).replace(/-/g, '.') : null
               return (
                 <li key={f.feedId} className="gfi-feed-card">
-                  <div className="gfi-feed-thumb">
-                    {(() => {
-                      const thumb = f.imageUrls?.[0] ?? f.imageUrl ?? null
-                      if (!thumb) return <div className="gfi-thumb-empty" />
-                      if (isInstagramUrl(thumb)) return <span className="gfi-thumb-insta">📷</span>
-                      return <img src={thumb} alt="" />
-                    })()}
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <p className="gfi-feed-title">{title}</p>
-                    {dateStr && <p className="gfi-feed-date">{dateStr}</p>}
-                  </div>
+                  <button type="button" className="gfi-feed-card-main" onClick={() => openFeedModal(f)} disabled={busy}>
+                    <div className="gfi-feed-thumb">
+                      {(() => {
+                        const thumb = f.imageUrls?.[0] ?? f.imageUrl ?? null
+                        if (!thumb) return <div className="gfi-thumb-empty" />
+                        if (isInstagramUrl(thumb)) return <span className="gfi-thumb-insta">📷</span>
+                        return <img src={thumb} alt="" />
+                      })()}
+                    </div>
+                    <div className="gfi-feed-card-text">
+                      <p className="gfi-feed-title">{title}</p>
+                      {dateStr && <p className="gfi-feed-date">{dateStr}</p>}
+                    </div>
+                  </button>
                   <button type="button" className="gm-danger" onClick={() => void removeFeed(f.feedId)} disabled={busy}>
                     삭제
                   </button>
