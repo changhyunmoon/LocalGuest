@@ -557,9 +557,9 @@ public class PromptRecommendationService {
             // 금액/총액/1인당/숫자 같은 "예산 확정 단서"가 없다면 가성비 맥락으로 보고 notice를 띄우지 않는다.
             boolean numericBudgetCue = p.contains("1인당")
                     || p.contains("총액")
-                    || p.contains("만원")
-                    || p.contains("원")
-                    || p.matches(".*\\d+.*");
+                    || p.matches(".*\\d+\\s*만\\s*원.*")
+                    || p.matches(".*\\d+\\s*만원.*")
+                    || p.matches(".*\\d+\\s*원.*");
             if (!numericBudgetCue) {
                 return false;
             }
