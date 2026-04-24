@@ -12,10 +12,10 @@ public final class OnOpenAiLlmRankProperties implements Condition {
     @Override
     public boolean matches(ConditionContext context, AnnotatedTypeMetadata metadata) {
         String enabled = context.getEnvironment().getProperty("localguest.ai.llm-rank-enabled", "false");
-        if (!"true".equalsIgnoreCase(enabled.trim())) {
+        if (!Boolean.parseBoolean(enabled == null ? "false" : enabled.trim())) {
             return false;
         }
         String provider = context.getEnvironment().getProperty("localguest.ai.llm-provider", "openai");
-        return "openai".equalsIgnoreCase(provider.trim());
+        return "openai".equalsIgnoreCase((provider == null ? "openai" : provider).trim());
     }
 }
