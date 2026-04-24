@@ -22666,6 +22666,7 @@ com.team6.domain.matching.exception.MatchingException: 해당 매칭 요청에 �
 2026-04-24 18:39:00.018 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
 2026-04-24 18:39:00.019 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-04-24T18:39:00.008141400]
 2026-04-24 18:39:00.023 INFO  [] c.t.a.l.RepositoryLoggingAspect - [DB] Completed - method: TourExtensionRepository.findByStatusAndDeadlineAtBefore(..), latencyMs: 15, status: success
+<<<<<<< HEAD
 2026-04-24 18:40:00.014 DEBUG [] org.hibernate.SQL - 
     /* <criteria> */ select
         te1_0.id,
@@ -36016,3 +36017,5 @@ where
 2026-04-24 22:52:00.712 INFO  [77add97e] c.t.a.l.RepositoryLoggingAspect - [DB] Completed - method: MatchRequestRepository.findByGuideId(..), latencyMs: 7, status: success
 2026-04-24 22:52:00.712 INFO  [77add97e] c.t.a.l.HttpHandlerLoggingInterceptor - [API] Exit - method: MatchRequestController.getGuideRequests, latencyMs: 30, statusCode: 200, requestUri: /api/matching/requests/guide/list
 2026-04-24 22:52:00.712 INFO  [77add97e] c.t.a.logging.MdcLoggingFilter - [HTTP] Request completed - statusCode: 200, latencyMs: 44, requestUri: /api/matching/requests/guide/list, method: GET
+=======
+>>>>>>> 6e4fa357b0d4eba20aac3dad439581516d923f14
