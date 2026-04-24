@@ -20,7 +20,7 @@ import java.io.IOException;
 public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
     private final JwtTokenProvider jwtTokenProvider;
 
-    @Value("${app.oauth2.frontend-redirect-base:http://localhost:5173}")
+    @Value("${app.oauth2.frontend-redirect-base}")
     private String frontendRedirectBase;
 
     @Override
