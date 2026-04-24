@@ -32,8 +32,8 @@ class ReasonGeneratorTest {
 
         ReasonBundle bundle = generator().generate(pref, guide, 0);
 
-        assertThat(bundle.getReasonCodes()).contains(ReasonGenerator.CODE_BUDGET_ADJACENT);
-        assertThat(bundle.getText()).contains("예산");
+        assertThat(bundle.getReasonCodes()).doesNotContain(ReasonGenerator.CODE_BUDGET_ADJACENT);
+        assertThat(bundle.getText()).doesNotContain("예산");
     }
 
     @Test

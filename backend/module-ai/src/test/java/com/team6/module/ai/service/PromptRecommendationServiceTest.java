@@ -301,4 +301,17 @@ class PromptRecommendationServiceTest {
 
         verifyNoInteractions(extractor);
     }
+
+    @Test
+    void sanitizeLlmReason_requiresShortQuotationCitation() {
+        // 따옴표 인용이 없으면 룰 reason으로 폴백(null)
+        assertThat(PromptRecommendationService.sanitizeLlmReason(
+                "부산 야경 코스에 잘 맞고 리뷰도 안정적이에요. 요청하신 제외 조건도 반영할 수 있어요."
+        )).isNull();
+
+        // 소개 기반 짧은 인용이 있으면 통과
+        assertThat(PromptRecommendationService.sanitizeLlmReason(
+                "소개에 “조용히 걷는 산책 코스”가 있어 감성 일정에 잘 맞습니다. 술집 위주는 제외하고 구성하겠습니다."
+        )).isNotNull();
+    }
 }
