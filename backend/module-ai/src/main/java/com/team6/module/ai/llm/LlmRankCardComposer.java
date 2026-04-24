@@ -5,8 +5,11 @@ import com.team6.module.ai.dto.request.GuideRecommendRequest;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
+import java.util.regex.Pattern;
 
 /**
  * LLM 순위 호출용 후보 카드 텍스트 조립(길이·순서 보조).
@@ -15,6 +18,12 @@ public final class LlmRankCardComposer {
 
     private LlmRankCardComposer() {
     }
+
+    /** 후보 1명 카드의 최대 길이(문자). 초과하면 선택적으로 줄이고 마지막에 잘라낸다. */
+    private static final int MAX_CANDIDATE_BLOCK_CHARS = 2200;
+
+    private static final Pattern BRACKET_TAG = Pattern.compile("\\[[^\\]]{1,20}\\]");
+    private static final Pattern KOREAN_TOKEN = Pattern.compile("[가-힣]{2,}");
 
     public static long stableSeed(String prompt, List<GuideRecommendRequest.GuideCandidateDto> candidates) {
         long h = prompt == null ? 0L : prompt.hashCode();
@@ -79,56 +88,202 @@ public final class LlmRankCardComposer {
         StringBuilder sb = new StringBuilder();
         sb.append("사용자 요청:\n").append(userPrompt == null ? "" : userPrompt.strip()).append("\n\n");
         sb.append("아래는 동일 지역(및 서버 게이트)을 통과한 가이드 후보이다. 각 블록의 guideId는 반드시 그대로 orderedGuideIds에만 사용한다.\n\n");
+        List<String> promptTokens = extractPromptTokens(userPrompt);
         int idx = 1;
         for (GuideRecommendRequest.GuideCandidateDto c : sortedCandidates) {
             if (c == null || c.getGuideId() == null) {
                 continue;
             }
-            sb.append("--- 후보 #").append(idx++).append(" ---\n");
-            sb.append("guideId=").append(c.getGuideId()).append('\n');
-            sb.append("이름=").append(nullToEmpty(c.getGuideName())).append('\n');
-            sb.append("지역=").append(nullToEmpty(c.getRegion())).append('\n');
-            sb.append("스타일=").append(nullToEmpty(c.getGuideStyle())).append('\n');
-            sb.append("가격대=").append(nullToEmpty(c.getPriceLevel())).append('\n');
-            appendPriceRangeLine(sb, c.getPriceMinWon(), c.getPriceMaxWon(), c.getPriceScope());
-            appendRatingLine(sb, c.getAverageRating(), c.getReviewCount());
-            sb.append("공개피드수=").append(c.getPublicFeedCount() == null ? 0 : c.getPublicFeedCount()).append('\n');
-            if (c.getLatestPublicFeedDate() != null && !c.getLatestPublicFeedDate().isBlank()) {
-                sb.append("최근피드일=").append(c.getLatestPublicFeedDate().strip()).append('\n');
-            }
-            if (Boolean.TRUE.equals(c.getColdStart())) {
-                sb.append("콜드스타트=리뷰없음").append('\n');
-            }
-            if (c.getResidenceYears() != null && c.getResidenceYears() > 0) {
-                sb.append("거주연수=").append(c.getResidenceYears()).append("년").append('\n');
-            }
-            appendTrustSignalLine(sb, c);
-            String core = nullToEmpty(c.getCoreSpecialtyTagsTop3());
-            if (!core.isEmpty()) {
-                sb.append("핵심태그=").append(core).append('\n');
-            }
-            sb.append("태그=").append(joinTags(c.getSpecialtyTags())).append('\n');
-            sb.append("언어=").append(joinTags(c.getLanguages())).append('\n');
-            String kw = nullToEmpty(c.getLlmKeywordsSnippet());
-            if (!kw.isEmpty()) {
-                sb.append("키워드=").append(kw).append('\n');
-            }
-            String intro = nullToEmpty(c.getLlmIntroSnippet());
-            if (!intro.isEmpty()) {
-                sb.append("소개:\n").append(intro).append('\n');
-            }
-            appendFeedSection(sb, c, tieBreakSeed ^ (c.getGuideId() * 31L));
-            String course = nullToEmpty(c.getLlmDefaultCourseSnippet());
-            if (!course.isEmpty()) {
-                sb.append("디폴트코스:\n").append(course).append('\n');
-            }
-            String careers = nullToEmpty(c.getLlmCareerSnippet());
-            if (!careers.isEmpty()) {
-                sb.append("경력:\n").append(careers).append('\n');
-            }
-            sb.append('\n');
+            String block = buildCandidateBlock(userPrompt, promptTokens, c, idx++, tieBreakSeed);
+            sb.append(block).append('\n');
         }
         return sb.toString();
+    }
+
+    private static String buildCandidateBlock(
+            String userPrompt,
+            List<String> promptTokens,
+            GuideRecommendRequest.GuideCandidateDto c,
+            int idx,
+            long tieBreakSeed
+    ) {
+        StringBuilder b = new StringBuilder();
+        b.append("--- 후보 #").append(idx).append(" ---\n");
+        b.append("guideId=").append(c.getGuideId()).append('\n');
+        b.append("이름=").append(nullToEmpty(c.getGuideName())).append('\n');
+        b.append("지역=").append(nullToEmpty(c.getRegion())).append('\n');
+        b.append("스타일=").append(nullToEmpty(c.getGuideStyle())).append('\n');
+        b.append("가격대=").append(nullToEmpty(c.getPriceLevel())).append('\n');
+        appendPriceRangeLine(b, c.getPriceMinWon(), c.getPriceMaxWon(), c.getPriceScope());
+        appendRatingLine(b, c.getAverageRating(), c.getReviewCount());
+        b.append("공개피드수=").append(c.getPublicFeedCount() == null ? 0 : c.getPublicFeedCount()).append('\n');
+        if (c.getLatestPublicFeedDate() != null && !c.getLatestPublicFeedDate().isBlank()) {
+            b.append("최근피드일=").append(c.getLatestPublicFeedDate().strip()).append('\n');
+        }
+        if (Boolean.TRUE.equals(c.getColdStart())) {
+            b.append("콜드스타트=리뷰없음").append('\n');
+        }
+        if (c.getResidenceYears() != null && c.getResidenceYears() > 0) {
+            b.append("거주연수=").append(c.getResidenceYears()).append("년").append('\n');
+        }
+        appendTrustSignalLine(b, c);
+
+        String core = nullToEmpty(c.getCoreSpecialtyTagsTop3());
+        if (!core.isEmpty()) {
+            b.append("핵심태그=").append(core).append('\n');
+        }
+        String overlap = buildOverlapKeywordsLine(promptTokens, c);
+        if (!overlap.isEmpty()) {
+            b.append("겹치는키워드=").append(overlap).append('\n');
+        }
+        String mood = inferMoodHint(c);
+        if (!mood.isEmpty()) {
+            b.append("분위기힌트=").append(mood).append('\n');
+        }
+
+        b.append("태그=").append(joinTags(c.getSpecialtyTags())).append('\n');
+        b.append("언어=").append(joinTags(c.getLanguages())).append('\n');
+        String kw = nullToEmpty(c.getLlmKeywordsSnippet());
+        if (!kw.isEmpty()) {
+            b.append("키워드=").append(kw).append('\n');
+        }
+        String intro = nullToEmpty(c.getLlmIntroSnippet());
+        if (!intro.isEmpty()) {
+            b.append("소개:\n").append(intro).append('\n');
+        }
+        appendFeedSection(b, c, tieBreakSeed ^ (c.getGuideId() * 31L));
+        String course = nullToEmpty(c.getLlmDefaultCourseSnippet());
+        if (!course.isEmpty()) {
+            b.append("디폴트코스:\n").append(course).append('\n');
+        }
+        String careers = nullToEmpty(c.getLlmCareerSnippet());
+        if (!careers.isEmpty()) {
+            b.append("경력:\n").append(careers).append('\n');
+        }
+        String out = b.toString();
+        return shrinkCandidateBlockIfNeeded(out, MAX_CANDIDATE_BLOCK_CHARS);
+    }
+
+    private static String buildOverlapKeywordsLine(List<String> promptTokens, GuideRecommendRequest.GuideCandidateDto c) {
+        if (promptTokens == null || promptTokens.isEmpty() || c == null) {
+            return "";
+        }
+        String hay = buildCandidateHaystack(c);
+        if (hay.isEmpty()) {
+            return "";
+        }
+        LinkedHashSet<String> picked = new LinkedHashSet<>();
+        for (String t : promptTokens) {
+            if (picked.size() >= 6) {
+                break;
+            }
+            if (t == null || t.length() < 2) {
+                continue;
+            }
+            if (hay.contains(t)) {
+                picked.add(t);
+            }
+        }
+        return picked.isEmpty() ? "" : String.join(", ", picked);
+    }
+
+    private static String buildCandidateHaystack(GuideRecommendRequest.GuideCandidateDto c) {
+        StringBuilder sb = new StringBuilder();
+        appendIfPresent(sb, c.getGuideStyle());
+        appendIfPresent(sb, joinTags(c.getSpecialtyTags()));
+        appendIfPresent(sb, c.getLlmKeywordsSnippet());
+        appendIfPresent(sb, c.getLlmIntroSnippet());
+        if (c.getLlmFeedBodiesNewestFirst() != null) {
+            for (String s : c.getLlmFeedBodiesNewestFirst()) {
+                appendIfPresent(sb, s);
+            }
+        }
+        appendIfPresent(sb, c.getLlmDefaultCourseSnippet());
+        appendIfPresent(sb, c.getLlmCareerSnippet());
+        String t = BRACKET_TAG.matcher(sb.toString()).replaceAll(" ");
+        return t;
+    }
+
+    private static void appendIfPresent(StringBuilder sb, String text) {
+        if (text == null || text.isBlank()) {
+            return;
+        }
+        sb.append(' ').append(text.strip());
+    }
+
+    private static List<String> extractPromptTokens(String userPrompt) {
+        if (userPrompt == null || userPrompt.isBlank()) {
+            return List.of();
+        }
+        LinkedHashSet<String> out = new LinkedHashSet<>();
+        var m = KOREAN_TOKEN.matcher(userPrompt);
+        while (m.find() && out.size() < 30) {
+            String t = m.group();
+            if (t == null) continue;
+            t = t.strip();
+            if (t.length() < 2) continue;
+            // 흔한 불용어(아주 최소)
+            if (t.equals("부산") || t.equals("여행") || t.equals("가이드") || t.equals("추천") || t.equals("이유")) {
+                continue;
+            }
+            out.add(t);
+        }
+        return List.copyOf(out);
+    }
+
+    private static String inferMoodHint(GuideRecommendRequest.GuideCandidateDto c) {
+        String hay = buildCandidateHaystack(c);
+        if (hay.isEmpty()) {
+            return "";
+        }
+        LinkedHashSet<String> hints = new LinkedHashSet<>();
+        addHintIfContains(hints, hay, "조용", "차분");
+        addHintIfContains(hints, hay, "여유", "여유");
+        addHintIfContains(hints, hay, "힐링", "힐링");
+        addHintIfContains(hints, hay, "감성", "감성");
+        addHintIfContains(hints, hay, "사진", "사진");
+        addHintIfContains(hints, hay, "카페", "카페");
+        addHintIfContains(hints, hay, "바다", "바다");
+        addHintIfContains(hints, hay, "야경", "야경");
+        addHintIfContains(hints, hay, "로컬", "로컬");
+        addHintIfContains(hints, hay, "맛집", "맛집");
+        addHintIfContains(hints, hay, "시장", "시장");
+        if (hints.size() > 4) {
+            // 너무 길어지면 앞에서 4개만
+            return String.join("/", hints.stream().limit(4).toList());
+        }
+        return hints.isEmpty() ? "" : String.join("/", hints);
+    }
+
+    private static void addHintIfContains(Set<String> out, String hay, String needle, String label) {
+        if (out.size() >= 4) {
+            return;
+        }
+        if (hay.contains(needle)) {
+            out.add(label);
+        }
+    }
+
+    private static String shrinkCandidateBlockIfNeeded(String block, int maxChars) {
+        if (block == null) {
+            return "";
+        }
+        if (maxChars <= 0 || block.length() <= maxChars) {
+            return block;
+        }
+        String t = block;
+        // 1) 경력/코스는 길어지기 쉬워 우선 제거
+        t = t.replaceAll("(?s)\\n디폴트코스:\\n.*?(?=\\n\\w|\\n---|\\z)", "\n");
+        t = t.replaceAll("(?s)\\n경력:\\n.*?(?=\\n\\w|\\n---|\\z)", "\n");
+        // 2) 피드 추가 1줄 제거
+        t = t.replaceAll("\\n- \\[추가\\].*\\n", "\n");
+        t = t.replaceAll("\\s{2,}", " ").replaceAll("\\n{3,}", "\n\n");
+        if (t.length() <= maxChars) {
+            return t.strip();
+        }
+        // 3) 그래도 길면 앞부분 위주로 자른다
+        String cut = t.substring(0, Math.max(0, maxChars - 1)).strip();
+        return cut + "…";
     }
 
     private static void appendPriceRangeLine(StringBuilder sb, Integer minWon, Integer maxWon, String scope) {
