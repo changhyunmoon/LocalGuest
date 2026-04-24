@@ -5,6 +5,7 @@ import com.team6.module.ai.dto.response.GuideRecommendResponse;
 import com.team6.module.ai.config.LocalGuestAiProperties;
 import com.team6.module.ai.config.ScoringPolicySnapshot;
 import com.team6.module.ai.parser.PromptParser;
+import com.team6.module.ai.llm.LlmCopyPiiMasker;
 import com.team6.module.ai.llm.LlmGuideRankResult;
 import com.team6.module.ai.llm.LlmRankCardComposer;
 import com.team6.module.ai.spi.LlmGuideRanker;
@@ -973,9 +974,10 @@ public class PromptRecommendationService {
             if (it == null) {
                 continue;
             }
-            String r = reasonByGuideId.get(id);
-            GuideRecommendItem built = r != null && !r.isBlank()
-                    ? it.toBuilder().reason(r).comparisonHint(null).build()
+            String cleanedReason = sanitizeLlmReason(reasonByGuideId.get(id));
+            // LLM reason이 비었거나 너무 약하면 룰 reason을 유지한다.
+            GuideRecommendItem built = cleanedReason != null
+                    ? it.toBuilder().reason(cleanedReason).comparisonHint(null).build()
                     : it.toBuilder().comparisonHint(null).build();
             out.add(built);
             used.add(id);
@@ -998,6 +1000,31 @@ public class PromptRecommendationService {
                 .totalCount(out.size())
                 .recommendations(out)
                 .build();
+    }
+
+    private static final int LLM_REASON_MAX_CHARS = 160;
+
+    /**
+     * LLM이 만든 reason은 사용자 노출 문자열이므로 PII 마스킹/길이 상한을 적용한다.
+     * 너무 짧거나 공백뿐이면 null로 간주해 룰 reason을 유지한다.
+     */
+    private static String sanitizeLlmReason(String raw) {
+        if (raw == null) {
+            return null;
+        }
+        String t = raw.strip();
+        if (t.isEmpty()) {
+            return null;
+        }
+        t = LlmCopyPiiMasker.mask(t);
+        if (t.length() > LLM_REASON_MAX_CHARS) {
+            t = t.substring(0, LLM_REASON_MAX_CHARS).strip() + "…";
+        }
+        // 최소 길이(노이즈 한 단어 방지)
+        if (t.length() < 6) {
+            return null;
+        }
+        return t;
     }
 
     private record ParsedPrompt(GuideRecommendRequest request, LlmParseTrace llmTrace) {}
