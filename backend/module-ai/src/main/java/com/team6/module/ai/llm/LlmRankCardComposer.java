@@ -89,8 +89,15 @@ public final class LlmRankCardComposer {
             sb.append("가격대=").append(nullToEmpty(c.getPriceLevel())).append('\n');
             appendRatingLine(sb, c.getAverageRating(), c.getReviewCount());
             sb.append("공개피드수=").append(c.getPublicFeedCount() == null ? 0 : c.getPublicFeedCount()).append('\n');
+            if (c.getResidenceYears() != null && c.getResidenceYears() > 0) {
+                sb.append("거주연수=").append(c.getResidenceYears()).append("년").append('\n');
+            }
             sb.append("태그=").append(joinTags(c.getSpecialtyTags())).append('\n');
             sb.append("언어=").append(joinTags(c.getLanguages())).append('\n');
+            String kw = nullToEmpty(c.getLlmKeywordsSnippet());
+            if (!kw.isEmpty()) {
+                sb.append("키워드=").append(kw).append('\n');
+            }
             String intro = nullToEmpty(c.getLlmIntroSnippet());
             if (!intro.isEmpty()) {
                 sb.append("소개:\n").append(intro).append('\n');

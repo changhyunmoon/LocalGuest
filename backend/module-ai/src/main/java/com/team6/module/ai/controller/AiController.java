@@ -40,6 +40,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import java.nio.charset.StandardCharsets;
 import java.util.zip.CRC32;
@@ -384,6 +386,11 @@ public class AiController {
         if (bundle == null || bundle.unfilteredCandidates() == null || bundle.unfilteredCandidates().isEmpty()) {
             return null;
         }
+        // 일정 필터로 실제로 후보가 빠진 경우에만 "원본 Top1" 재계산을 시도한다.
+        // (그 외에는 같은 요청에서 recommendByPrompt를 한 번 더 호출할 이유가 없다.)
+        if (!hasDateFilteredOutCandidates(bundle)) {
+            return null;
+        }
 
         // 메인 추천이 아예 비었더라도, 일정 필터만 없었다면 추천될 가이드가 있는지 한 번 더 확인한다.
         // 즉 "추천 불가"와 "일정만 안 맞아서 빠짐"을 구분해서 보여주려는 의도다.
@@ -401,6 +408,23 @@ public class AiController {
         // 정책: 일정 필터 때문에 메인 Top1이 달라진 경우에만 특별 제시한다.
         // 메인 Top1과 원본 Top1이 같으면 굳이 별도 specialSuggestion을 만들 필요가 없다.
         return Objects.equals(mainTop1, unfilteredTop1) ? null : special;
+    }
+
+    private static boolean hasDateFilteredOutCandidates(GuideCandidateBundle bundle) {
+        if (bundle == null || bundle.candidates() == null || bundle.unfilteredCandidates() == null) {
+            return false;
+        }
+        // unfiltered에만 있고 candidates에는 없는 guideId가 하나라도 있으면 일정 필터로 빠진 것으로 본다.
+        Set<Long> filteredIds = bundle.candidates().stream()
+                .map(GuideRecommendRequest.GuideCandidateDto::getGuideId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        for (GuideRecommendRequest.GuideCandidateDto c : bundle.unfilteredCandidates()) {
+            if (c != null && c.getGuideId() != null && !filteredIds.contains(c.getGuideId())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private GuideRecommendResponse.SpecialSuggestion computeTop1SpecialSuggestion(

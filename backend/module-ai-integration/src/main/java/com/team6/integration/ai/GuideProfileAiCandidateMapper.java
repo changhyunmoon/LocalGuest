@@ -31,6 +31,7 @@ public final class GuideProfileAiCandidateMapper {
     private static final int LLM_FEED_MAX_ITEMS = 12;
     private static final int LLM_CAREER_SNIPPET_MAX = 650;
     private static final int LLM_DEFAULT_COURSE_MAX = 400;
+    private static final int LLM_KEYWORDS_MAX = 240;
 
     public static GuideRecommendRequest.GuideCandidateDto toCandidate(
             GuideProfile profile,
@@ -62,6 +63,8 @@ public final class GuideProfileAiCandidateMapper {
                 .llmCareerSnippet(buildLlmCareerSnippet(careers))
                 .llmDefaultCourseSnippet(truncate(profile == null ? null : profile.getDefaultCourse(), LLM_DEFAULT_COURSE_MAX))
                 .publicFeedCount(visibleFeeds.size())
+                .llmKeywordsSnippet(truncate(profile == null ? null : profile.getKeywords(), LLM_KEYWORDS_MAX))
+                .residenceYears(profile == null ? null : profile.getResidenceYears())
                 .build();
     }
 
