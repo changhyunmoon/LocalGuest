@@ -1026,7 +1026,7 @@ export function GuideFeedSchedulePage() {
             <input
               type="text"
               className="gfi-title-input"
-              placeholder="예: 해방촌 골목골목, 진짜 서울을 보여드릴게요"
+              placeholder="제목을 입력해주세요 (예: 해방촌 골목골목, 진짜 서울을 보여드릴게요)"
               value={feedTitle}
               onChange={(e) => setFeedTitle(e.target.value)}
               maxLength={100}

@@ -99,11 +99,11 @@ export function GuideReviewsManagePage() {
       )}
       {listLoading && <PageLoading label="목록을 불러오는 중…" />}
 
-      <div className="mp-scrap-hero" style={{ marginBottom: '0.85rem' }}>
-        <div>
+      <div className="mp-scrap-hero grv-review-hero" style={{ marginBottom: '0.85rem' }}>
+        <div className="grv-review-note">
           <h1 style={{ margin: 0 }}>🌟 게스트 리뷰</h1>
           <p className="sub" style={{ marginTop: '0.25rem' }}>
-            게스트 리뷰 페이지와 같은 카드 UX로 확인할 수 있어요.
+            게스트가 남겨준 소중한 후기를 한눈에 살펴볼 수 있어요.
           </p>
         </div>
         {summaryLoading ? (
