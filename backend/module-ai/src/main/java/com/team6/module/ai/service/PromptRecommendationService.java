@@ -94,8 +94,6 @@ public class PromptRecommendationService {
             "이 조건에 맞는 가이드가 한 분뿐이라 추천 선택 폭이 좁을 수 있어요.";
     private static final String NOTICE_PARSE_LOW =
             "입력이 짧아 해석 여지가 있어요. 예산·일정·활동을 더 적어주시면 정확해져요.";
-    private static final String NOTICE_BUDGET_VAGUE =
-            "예산과 관련된 표현이 있는데 구간을 확정하지 못했어요. 금액이나 ‘가성비/럭셔리’처럼 알려주시면 좋아요.";
     private static final String NOTICE_DURATION_VAGUE =
             "일정에 대한 말은 있는데 며칠인지 확정하지 못했어요. ‘2박3일’처럼 적어주시면 좋아요.";
 
@@ -513,11 +511,8 @@ public class PromptRecommendationService {
             String parseConfidence,
             List<String> ambiguityCodes
     ) {
-        // 파싱이 애매했던 경우에는 사용자에게 "예산/기간을 더 구체적으로 적어달라"는 힌트를 notice에 덧붙인다.
+        // 파싱이 애매했던 경우에는 사용자에게 "기간" 힌트를 notice에 덧붙인다.
         String out = notice;
-        if (ambiguityCodes != null && ambiguityCodes.contains(RecommendationNoticeCodes.PROMPT_BUDGET_AMBIGUOUS)) {
-            out = mergeNotice(out, NOTICE_BUDGET_VAGUE);
-        }
         if (ambiguityCodes != null && ambiguityCodes.contains(RecommendationNoticeCodes.PROMPT_DURATION_AMBIGUOUS)) {
             out = mergeNotice(out, NOTICE_DURATION_VAGUE);
         }
@@ -537,9 +532,7 @@ public class PromptRecommendationService {
     private static List<String> collectAmbiguityNoticeCodes(String prompt, GuideRecommendRequest parsed) {
         String p = normalizeForAmbiguityScan(prompt);
         List<String> codes = new ArrayList<>();
-        if (!notBlank(parsed.getBudgetLevel()) && budgetMentionedAmbiguous(p)) {
-            codes.add(RecommendationNoticeCodes.PROMPT_BUDGET_AMBIGUOUS);
-        }
+        // 예산은 가이드/사용자 간 조율 영역으로 보고, 예산 관련 모호 notice는 노출하지 않는다.
         if (parsed.getDurationDays() == null && durationMentionedAmbiguous(p)) {
             codes.add(RecommendationNoticeCodes.PROMPT_DURATION_AMBIGUOUS);
         }
