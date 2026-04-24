@@ -1025,7 +1025,7 @@ public class PromptRecommendationService {
      * LLM이 만든 reason은 사용자 노출 문자열이므로 PII 마스킹/길이 상한을 적용한다.
      * 너무 짧거나 공백뿐이면 null로 간주해 룰 reason을 유지한다.
      */
-    private static String sanitizeLlmReason(String raw) {
+    static String sanitizeLlmReason(String raw) {
         if (raw == null) {
             return null;
         }
@@ -1053,7 +1053,43 @@ public class PromptRecommendationService {
         if (containsHedgingOrGuess(t)) {
             return null;
         }
+        if (!containsShortQuotation(t)) {
+            return null;
+        }
         return t;
+    }
+
+    /**
+     * 인용 근거가 없는 reason은 룰 reason으로 폴백한다.
+     * - 따옴표(" 또는 “ ”)로 감싼 3~40자 인용 1개 이상을 요구한다.
+     */
+    private static boolean containsShortQuotation(String text) {
+        if (text == null || text.isBlank()) {
+            return false;
+        }
+        String t = text.strip();
+        // 우선 큰따옴표 기반으로 검사
+        if (hasQuotedSpan(t, '"', '"')) {
+            return true;
+        }
+        // 곡선따옴표(“ ”) 기반으로 검사
+        return hasQuotedSpan(t, '“', '”');
+    }
+
+    private static boolean hasQuotedSpan(String text, char open, char close) {
+        int start = text.indexOf(open);
+        while (start >= 0) {
+            int end = text.indexOf(close, start + 1);
+            if (end < 0) {
+                return false;
+            }
+            int len = end - start - 1;
+            if (len >= 3 && len <= 40) {
+                return true;
+            }
+            start = text.indexOf(open, end + 1);
+        }
+        return false;
     }
 
     /**
