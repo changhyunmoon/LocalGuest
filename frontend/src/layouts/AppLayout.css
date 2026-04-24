@@ -134,7 +134,7 @@
   background: #edf2f7;
 }
 
-/* 활성 탭: 홈·메시지·AI 검색·마이페이지 동일 회색 (매칭 요청만 별색). /guides* 는 AI 검색 탭 활성으로 표시 */
+/* 활성 탭: 홈·가이드·메시지·AI 검색·마이페이지 동일 회색 (매칭 요청만 별색) */
 .shell-pill-link.is-on:not(.shell-pill-link--guide) {
   background: #10b981;
   color: #ffffff;
