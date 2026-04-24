@@ -554,13 +554,13 @@ public class PromptRecommendationService {
                 || p.contains("가격 대비")
                 || p.contains("값 대비");
         if (valueOnly) {
-            // 금액/총액/1인당 같은 예산 확정 표현이 함께 있으면 모호 notice를 유지한다.
-            boolean explicitBudgetCue = p.contains("예산")
-                    || p.contains("1인당")
+            // 금액/총액/1인당/숫자 같은 "예산 확정 단서"가 없다면 가성비 맥락으로 보고 notice를 띄우지 않는다.
+            boolean numericBudgetCue = p.contains("1인당")
                     || p.contains("총액")
                     || p.contains("만원")
-                    || p.contains("원");
-            if (!explicitBudgetCue) {
+                    || p.contains("원")
+                    || p.matches(".*\\d+.*");
+            if (!numericBudgetCue) {
                 return false;
             }
         }
