@@ -599,7 +599,9 @@ public class PromptParser {
     }
 
     private static List<Map.Entry<String, String>> buildRegionAliasEntries(LocalGuestAiProperties props) {
-        LinkedHashMap<String, String> merged = new LinkedHashMap<>(defaultEnglishRegionAliases());
+        LinkedHashMap<String, String> merged = new LinkedHashMap<>();
+        merged.putAll(defaultKoreanRegionPoolingAliases());
+        merged.putAll(defaultEnglishRegionAliases());
         Map<String, String> yaml = props.getParser().getRegionAliases();
         if (yaml != null) {
             for (Map.Entry<String, String> e : yaml.entrySet()) {
@@ -616,6 +618,43 @@ public class PromptParser {
         return merged.entrySet().stream()
                 .sorted(Comparator.comparingInt((Map.Entry<String, String> en) -> en.getKey().length()).reversed())
                 .toList();
+    }
+
+    /**
+     * 한글 동네·시군구 등 {@link #extractRegion(String)} 고정 키워드에 없는 표기를
+     * DB/매칭에서 쓰는 광역 허브 지역으로 매핑한다. (가이드 후보 풀링·LLM 폴백 파싱 정렬 목적)
+     * <p>
+     * 팀 YAML {@code localguest.ai.parser.region-aliases}로 덮어쓸 수 있다.
+     */
+    private static LinkedHashMap<String, String> defaultKoreanRegionPoolingAliases() {
+        LinkedHashMap<String, String> m = new LinkedHashMap<>();
+        String[][] pairs = {
+                {"홍대입구", "서울"},
+                {"신촌", "서울"},
+                {"홍대", "서울"},
+                {"강남", "서울"},
+                {"명동", "서울"},
+                {"이태원", "서울"},
+                {"잠실", "서울"},
+                {"건대", "서울"},
+                {"영등포", "서울"},
+                {"마포", "서울"},
+                {"종로", "서울"},
+                {"혜화", "서울"},
+                {"을지로", "서울"},
+                {"송도", "인천"},
+                {"부평", "인천"},
+                {"구미", "대구"},
+                {"김천", "대구"},
+                {"칠곡", "대구"},
+                {"경산", "대구"},
+        };
+        for (String[] p : pairs) {
+            if (p[0] != null && p[1] != null && !p[0].isBlank() && !p[1].isBlank()) {
+                m.put(p[0].trim().toLowerCase(Locale.ROOT), p[1].trim());
+            }
+        }
+        return m;
     }
 
     /**
