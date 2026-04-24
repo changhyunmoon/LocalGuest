@@ -25,6 +25,7 @@ import java.util.concurrent.TimeUnit;
  *   <li>{@code .negative_filter(reason=region|style|language,policy_version=...)} — 부정 의도로 제외된 후보 수</li>
  *   <li>{@code .budget_range_match(result=match|miss,policy_version=...)} — 범위 예산 매칭 분기(비교 가능 후보에 한함)</li>
  *   <li>{@code .llm_prompt_extraction(result=success|empty|error,policy_version=...,llm_provider=openai|gemini|unknown)} — LLM 프롬프트 추출 시도 결과</li>
+ *   <li>{@code .llm_guide_rank(result=success|empty|empty_rule_full|error,policy_version=...)} — 후보 풀 LLM 재순위 시도 결과</li>
  * </ul>
  * <b>Timer / Summary</b> (태그 {@code policy_version} 권장)
  * <ul>
@@ -34,6 +35,7 @@ import java.util.concurrent.TimeUnit;
  *   <li>{@code .feedback_penalty_magnitude} — 후보별 피드백 감점 절댓값(룰 점수에서 깎인 양, 단위: 점)</li>
  *   <li>{@code .diversity_penalty_magnitude} — Top-N에서 2번째 슬롯부터 선택 시 적용된 유사도×λ 패널티(점수 스케일)</li>
  *   <li>{@code .llm_prompt_extraction_latency} — LLM 추출 호출 지연(카운터와 동일 태그: {@code policy_version}, {@code result}, {@code llm_provider})</li>
+ *   <li>{@code .llm_guide_rank_latency} — LLM 순위 호출 지연({@code policy_version}, {@code result})</li>
  * </ul>
  */
 @Component
@@ -225,6 +227,19 @@ public class AiRecommendationMetrics {
         Tags tags = Tags.of("policy_version", pv, "result", r, "llm_provider", prov);
         registry.counter(PREFIX + ".llm_prompt_extraction", tags).increment();
         registry.timer(PREFIX + ".llm_prompt_extraction_latency", tags).record(Math.max(0L, nanos), TimeUnit.NANOSECONDS);
+    }
+
+    /**
+     * {@link com.team6.module.ai.spi.LlmGuideRanker} 호출 1회당 기록한다.
+     *
+     * @param result {@code success} | {@code empty} | {@code empty_rule_full} | {@code error}
+     */
+    public void recordLlmGuideRank(String result, long nanos, String policyVersion) {
+        String pv = policyVersion == null ? "unknown" : policyVersion;
+        String r = result == null || result.isBlank() ? "unknown" : result;
+        Tags tags = Tags.of("policy_version", pv, "result", r);
+        registry.counter(PREFIX + ".llm_guide_rank", tags).increment();
+        registry.timer(PREFIX + ".llm_guide_rank_latency", tags).record(Math.max(0L, nanos), TimeUnit.NANOSECONDS);
     }
 
     private static String sanitizeLlmProviderTag(String raw) {
