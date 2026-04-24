@@ -1027,7 +1027,40 @@ public class PromptRecommendationService {
         if (t.length() < 6) {
             return null;
         }
+        if (isTooGenericReason(t)) {
+            return null;
+        }
         return t;
+    }
+
+    /**
+     * 너무 뻔한 문장(근거 없이 '잘 맞아요/추천해요')은 룰 reason으로 폴백한다.
+     */
+    private static boolean isTooGenericReason(String text) {
+        if (text == null) {
+            return true;
+        }
+        String t = text.strip();
+        if (t.isEmpty()) {
+            return true;
+        }
+        // 숫자/고유명/구체 근거가 전혀 없고, 일반 칭찬만 있는 경우를 걸러낸다.
+        boolean hasDigit = t.matches(".*\\d+.*");
+        boolean hasSpecificCue = t.contains("피드") || t.contains("리뷰") || t.contains("평점")
+                || t.contains("소개") || t.contains("경력") || t.contains("코스")
+                || t.contains("바다") || t.contains("야경") || t.contains("카페") || t.contains("산책");
+        if (hasDigit || hasSpecificCue) {
+            return false;
+        }
+        String[] genericPhrases = {
+                "잘 맞", "추천", "좋아요", "좋을", "완벽", "최적", "딱이", "적합", "만족", "훌륭", "최고"
+        };
+        for (String p : genericPhrases) {
+            if (t.contains(p)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private record ParsedPrompt(GuideRecommendRequest request, LlmParseTrace llmTrace) {}
