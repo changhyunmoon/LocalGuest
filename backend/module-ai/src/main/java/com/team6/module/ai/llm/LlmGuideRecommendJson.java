@@ -1,6 +1,7 @@
 package com.team6.module.ai.llm;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -21,7 +22,12 @@ public class LlmGuideRecommendJson {
     private Integer budgetMaxWon;
     private String budgetScope;
     private Boolean strictBudget;
-    private String companionType;
+    /**
+     * LLM이 종종 문자열 대신 배열로 주는 경우가 있어 유연하게 받는다.
+     * <p>예: "가족" 또는 ["가족"].
+     */
+    @JsonProperty("companionType")
+    private Object companionTypeRaw;
     private List<String> activityTags;
     private List<String> requiredActivityTags;
     private List<String> niceToHaveActivityTags;
@@ -40,4 +46,26 @@ public class LlmGuideRecommendJson {
     private List<String> guideBullets;
     /** 가이드에게 보여줄 서술형 요약(한두 문장). LLM 시스템 프롬프트에서 우선 채우도록 유도한다. */
     private String specialRequests;
+
+    public String getCompanionType() {
+        if (companionTypeRaw == null) {
+            return null;
+        }
+        if (companionTypeRaw instanceof String s) {
+            return s;
+        }
+        if (companionTypeRaw instanceof List<?> list) {
+            for (Object v : list) {
+                if (v instanceof String s && !s.isBlank()) {
+                    return s;
+                }
+            }
+            return null;
+        }
+        return String.valueOf(companionTypeRaw);
+    }
+
+    public void setCompanionType(String companionType) {
+        this.companionTypeRaw = companionType;
+    }
 }
