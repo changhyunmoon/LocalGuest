@@ -144,6 +144,14 @@ class PromptParserTest {
     }
 
     @Test
+    void parse_should_map_korean_subcity_aliases_to_hub_regions_for_pooling() {
+        assertThat(promptParser.parse("구미 맛집 투어 추천", 3, List.of()).getRegion()).isEqualTo("대구");
+        assertThat(promptParser.parse("신촌 카페 코스", 3, List.of()).getRegion()).isEqualTo("서울");
+        assertThat(promptParser.parse("홍대입구 야경 산책", 3, List.of()).getRegion()).isEqualTo("서울");
+        assertThat(promptParser.parse("송도 하루 코스", 3, List.of()).getRegion()).isEqualTo("인천");
+    }
+
+    @Test
     void parse_should_extract_manwon_rough_budget_tier() {
         GuideRecommendRequest r = promptParser.parse("제주 8만 안으로 카페 위주", 3, List.of());
         assertThat(r.getBudgetLevel()).isEqualTo("낮음");
