@@ -56,6 +56,10 @@ public class GuideFeedService {
 
         // imageUrls 우선, 없으면 imageUrl 단일 값 사용
         String imageUrl = joinImageUrls(request.getImageUrls(), request.getImageUrl());
+        // 요청에 빈 imageUrls 가 오면 이미지 전부 제거(join 만으로는 null 이 되어 기존 이미지가 유지됨)
+        if (request.getImageUrls() != null && request.getImageUrls().isEmpty()) {
+            imageUrl = "";
+        }
 
         // 피드 내용 수정
         feed.update(request.getContent(), imageUrl);
