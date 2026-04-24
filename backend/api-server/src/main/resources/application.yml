@@ -7,6 +7,13 @@ spring:
       max-file-size: 10MB
       max-request-size: 10MB
 
+# OAuth2 성공 후 토큰을 넘겨받는 프론트 기준 URL ( …/oauth2/callback?token= ).
+# prod 기본: 배포 HTTPS API/프론트가 https://api.bam-match.com 인 경우.
+# 정적/SPA가 bam-match.com에만 뜨면 APP_OAUTH2_FRONTEND_REDIRECT_BASE=https://bam-match.com
+app:
+  oauth2:
+    frontend-redirect-base: http://localhost:5173
+
 # OpenAI(Spring AI) — 기본 비활성. 켤 때는 API 키(spring.ai.openai.api-key 등)가 필요하다.
 # Gemini(Google AI Studio API 키) — module-gemini. llm-provider=gemini 일 때 localguest.gemini.enabled 필요.
 localguest:
@@ -29,3 +36,7 @@ spring:
   config:
     activate:
       on-profile: prod
+
+app:
+  oauth2:
+    frontend-redirect-base: https://api.bam-match.com

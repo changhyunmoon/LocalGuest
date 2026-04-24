@@ -2,6 +2,9 @@ package com.team6.apiserver.auth.config;
 
 import com.team6.apiserver.auth.filter.JwtAuthenticationFilter;
 import com.team6.apiserver.auth.oauth.CustomOauth2UserService;
+import com.team6.apiserver.auth.oauth.OAuth2CallbackRoleFromRedisFilter;
+import com.team6.apiserver.auth.oauth.OAuth2RoleHintCookieFilter;
+import com.team6.apiserver.auth.oauth.OAuth2LoginFailureHandler;
 import com.team6.apiserver.auth.oauth.OAuth2SuccessHandler;
 import com.team6.domain.auth.provider.JwtTokenProvider;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -13,12 +16,15 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestRedirectFilter;
+import org.springframework.security.oauth2.client.web.OAuth2LoginAuthenticationFilter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestResolver;
 
 @Configuration
 @EnableWebSecurity
@@ -26,22 +32,31 @@ public class SecurityConfig {
     private final JwtTokenProvider jwtTokenProvider;
     private final CustomOauth2UserService customOauth2UserService;
     private final OAuth2SuccessHandler oAuth2SuccessHandler;
+    private final OAuth2LoginFailureHandler oAuth2LoginFailureHandler;
     private final RedisTemplate<String, String> redisTemplate;
+    private final OAuth2AuthorizationRequestResolver oAuth2AuthorizationRequestResolver;
 
     public SecurityConfig(
             JwtTokenProvider jwtTokenProvider,
             CustomOauth2UserService customOauth2UserService,
             OAuth2SuccessHandler oAuth2SuccessHandler,
-            @Qualifier("memberRedisTemplate") RedisTemplate<String, String> redisTemplate
+            OAuth2LoginFailureHandler oAuth2LoginFailureHandler,
+            @Qualifier("memberRedisTemplate") RedisTemplate<String, String> redisTemplate,
+            OAuth2AuthorizationRequestResolver oAuth2AuthorizationRequestResolver
     ) {
         this.jwtTokenProvider = jwtTokenProvider;
         this.customOauth2UserService = customOauth2UserService;
         this.oAuth2SuccessHandler = oAuth2SuccessHandler;
+        this.oAuth2LoginFailureHandler = oAuth2LoginFailureHandler;
         this.redisTemplate = redisTemplate;
+        this.oAuth2AuthorizationRequestResolver = oAuth2AuthorizationRequestResolver;
     }
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain filterChain(
+            HttpSecurity http,
+            OAuth2RoleHintCookieFilter oauth2RoleHintCookieFilter,
+            OAuth2CallbackRoleFromRedisFilter oauth2CallbackRoleFromRedisFilter) throws Exception {
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
@@ -106,12 +121,21 @@ public class SecurityConfig {
 
                 // OAuth2 로그인 설정 추가
                 .oauth2Login(oauth2 -> oauth2
+                        .authorizationEndpoint(authorization -> authorization
+                                .authorizationRequestResolver(oAuth2AuthorizationRequestResolver))
                         .userInfoEndpoint(userInfo ->
                                 userInfo.userService(customOauth2UserService)) // 사용자 정보 처리
-                        .successHandler(oAuth2SuccessHandler)                   // 성공 시 JWR 발급
+                        .successHandler(oAuth2SuccessHandler)                   // 성공 시 JWT 발급
+                        .failureHandler(oAuth2LoginFailureHandler)                // 가이드 조건 미충족 → 프론트 모달
                 );
 
 
+        http.addFilterBefore(
+                oauth2RoleHintCookieFilter,
+                OAuth2AuthorizationRequestRedirectFilter.class);
+        http.addFilterBefore(
+                oauth2CallbackRoleFromRedisFilter,
+                OAuth2LoginAuthenticationFilter.class);
         http.addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider, redisTemplate), UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
@@ -123,8 +147,9 @@ public class SecurityConfig {
         CorsConfiguration configuration = new org.springframework.web.cors.CorsConfiguration();
 
         configuration.addAllowedOrigin("http://localhost:5173");          // 로컬 테스트용
-        configuration.addAllowedOrigin("https://bam-match.com");        // 실제 프론트 도메인
-        configuration.addAllowedOrigin("https://www.bam-match.com");    // www 포함 도메인
+        configuration.addAllowedOrigin("https://api.bam-match.com");    // prod API/프론트(HTTPS) 배포
+        configuration.addAllowedOrigin("https://bam-match.com");
+        configuration.addAllowedOrigin("https://www.bam-match.com");
 
         configuration.addAllowedMethod("*"); // 모든 HTTP 메서드 허용 (GET, POST, OPTIONS 등)
         configuration.addAllowedHeader("*"); // 모든 헤더 허용

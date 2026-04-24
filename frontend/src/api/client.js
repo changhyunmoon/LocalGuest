@@ -1,12 +1,32 @@
 const API_BASE = normalizeApiBase(import.meta.env.VITE_API_BASE_URL ?? '/api')
 
-window.API_URL_DEBUG = import.meta.env.VITE_API_BASE_URL;
-
 function normalizeApiBase(rawBase) {
   if (!rawBase) return '/api'
   const trimmed = rawBase.trim()
   if (!trimmed) return '/api'
   return trimmed.replace(/\/+$/, '')
+}
+
+/**
+ * 구글 OAuth "시작" URL 베이스( …/api ).
+ * - API 호출은 Vite 프록시(`VITE_API_BASE_URL=/api`)로만 가도, OAuth 콜백은
+ *   백엔드에 등록된 `…/api/login/oauth2/code/google`로 직접 들어온다.
+ * - 시작 요청이 프론트(5173)에만 쿠키를 심고 콜백은 8080이면 `localguest_oauth_role_hint`가
+ *   붙지 않아 가이드 로그인이 GUEST로 떨어질 수 있으므로, 기본(dev)은 백엔드 포트로 맞춘다.
+ * - `VITE_OAUTH_START_BASE` (예: http://localhost:8080/api)로 덮어쓸 수 있다.
+ */
+function getOAuthStartBase() {
+  const explicit = (import.meta.env.VITE_OAUTH_START_BASE || '').trim()
+  if (explicit) return explicit.replace(/\/+$/, '')
+
+  const raw = import.meta.env.VITE_API_BASE_URL ?? '/api'
+  if (raw.startsWith('http://') || raw.startsWith('https://')) {
+    return normalizeApiBase(raw)
+  }
+  if (import.meta.env.DEV) {
+    return `http://localhost:8080${API_BASE}`.replace(/\/+$/, '')
+  }
+  return `${window.location.origin}${API_BASE}`.replace(/\/+$/, '')
 }
 
 function joinApiUrl(path) {
@@ -246,20 +266,29 @@ export async function fetchNicknameAvailable(nickname) {
 
 /**
  * Google OAuth2 로그인 시작.
- * - 백엔드 CustomOauth2UserService가 role 쿠키를 읽으므로 짧게 저장한다.
+ * - `role` 은 쿼리로 백엔드에 전달되며(Authorization 요청 state와 함께 Redis에 잠시 저장), 콜백 시 프론트·백이 다른 포트/도메인이어도 가입 역할이 일치한다.
+ * - 역할 힌트는 state→Redis·API HttpOnly 쿠키로만(브라우저 `role` 쿠키는 사용하지 않음)
  * - 콜백 이후 이동 경로를 sessionStorage에 저장한다.
  * @param {'GUEST' | 'GUIDE' | string} role
  * @param {string} [returnTo]
+ * @param {{ allowGuestSocialSignup?: boolean }} [options] 로그인이 아닌 <strong>회원가입</strong> Step1(구글로 빠르게)일 때만 true — 백엔드가 GUEST만 findOrCreate 허용
  */
-export function beginGoogleOAuth(role = 'GUEST', returnTo = '/mypage') {
+export function beginGoogleOAuth(role = 'GUEST', returnTo = '/mypage', options = {}) {
+  const allowGuestSocialSignup = Boolean(options?.allowGuestSocialSignup)
   const normalizedRole = String(role || 'GUEST').toUpperCase() === 'GUIDE' ? 'GUIDE' : 'GUEST'
   try {
-    document.cookie = `role=${normalizedRole}; path=/; max-age=600; samesite=lax`
     sessionStorage.setItem('oauth_return_to', returnTo)
+    sessionStorage.setItem('oauth_intended_role', normalizedRole)
   } catch {
     /* ignore */
   }
-  window.location.href = joinApiUrl('/oauth2/authorization/google')
+  const qs = new URLSearchParams({ role: normalizedRole })
+  if (allowGuestSocialSignup) {
+    qs.set('signup', '1')
+  }
+  const base = getOAuthStartBase()
+  const path = '/oauth2/authorization/google?' + qs.toString()
+  window.location.href = base + path
 }
 
 

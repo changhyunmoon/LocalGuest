@@ -680,7 +680,11 @@ export function SignupPage() {
         <h1 className="signup-title">계정 정보를 입력해주세요</h1>
         <p className="signup-lead">나만의 로컬 여행을 시작하기 위한 첫 번째 단계예요.</p>
 
-        <button type="button" className="signup-google" onClick={() => beginGoogleOAuth('GUEST', '/mypage')}>
+        <button
+          type="button"
+          className="signup-google"
+          onClick={() => beginGoogleOAuth('GUEST', '/onboarding', { allowGuestSocialSignup: true })}
+        >
           <span className="signup-google-icon" aria-hidden>
             G
           </span>
