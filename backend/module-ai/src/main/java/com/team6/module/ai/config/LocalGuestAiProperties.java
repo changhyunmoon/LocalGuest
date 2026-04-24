@@ -69,7 +69,7 @@ public class LocalGuestAiProperties {
     private boolean llmPromptExtractionEnabled = false;
 
     /**
-     * LLM 백엔드. {@code openai}(기본)는 {@code module-openai}, {@code gemini}는 {@code module-gemini}(Google AI Studio API 키).
+     * LLM 백엔드. {@code openai}(기본)는 {@code module-openai}. {@code gemini}는 별도 앱에서 {@code module-gemini}를 둘 때만 유효.
      * {@code localguest.ai.llm-provider}
      */
     private String llmProvider = "openai";
