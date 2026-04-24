@@ -1,18 +1,21 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 
 import { PageEmpty, PageError, PageLoading } from '../components/PageStates.jsx'
 import { apiRequest } from '../api/client'
 import { useAuth } from '../context/useAuth.js'
-import { readRecentGuideIds } from '../lib/recentGuides.js'
+import { extractReviewListFromPage, reviewStableKey } from '../lib/reviewPage.js'
 
 import './HomePage.css'
 
+const POLAROID_A = '/hero/hero-polaroid-coastal-mint.png'
+const POLAROID_B = '/hero/hero-polaroid-cafe-mint.png'
+
 const DESTINATIONS = [
-  { name: '제주', query: '제주' },
-  { name: '부산', query: '부산' },
-  { name: '강릉', query: '강릉' },
-  { name: '여수', query: '여수' },
+  { name: '제주', query: '제주', image: '/destinations/jeju.webp' },
+  { name: '부산', query: '부산', image: '/destinations/busan.webp' },
+  { name: '강릉', query: '강릉', image: '/destinations/gangneung.webp' },
+  { name: '여수', query: '여수', image: '/destinations/yeosu.webp' },
 ]
 
 function parseTags(keywords) {
@@ -30,11 +33,26 @@ function truncate(s, n) {
   return t.length <= n ? t : `${t.slice(0, n)}…`
 }
 
+function formatReviewDate(iso) {
+  if (!iso) return ''
+  try {
+    const d = new Date(String(iso))
+    if (Number.isNaN(d.getTime())) return ''
+    return d.toLocaleDateString('ko-KR', { year: 'numeric', month: 'short', day: 'numeric' })
+  } catch {
+    return ''
+  }
+}
+
 export function HomePage() {
   const { isAuthenticated } = useAuth()
   const [guides, setGuides] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+  const [guidesLoading, setGuidesLoading] = useState(true)
+  const [guidesError, setGuidesError] = useState('')
+
+  const [reviews, setReviews] = useState([])
+  const [reviewsLoading, setReviewsLoading] = useState(true)
+  const [reviewsError, setReviewsError] = useState('')
 
   const loadGuides = useCallback(async () => {
     const res = await apiRequest('/guides', { method: 'GET', skipAuth: true })
@@ -47,28 +65,28 @@ export function HomePage() {
   }, [])
 
   const refetchGuides = useCallback(async () => {
-    setLoading(true)
-    setError('')
+    setGuidesLoading(true)
+    setGuidesError('')
     try {
       await loadGuides()
     } catch (e) {
-      setError(e instanceof Error ? e.message : '오류')
+      setGuidesError(e instanceof Error ? e.message : '오류')
     } finally {
-      setLoading(false)
+      setGuidesLoading(false)
     }
   }, [loadGuides])
 
   useEffect(() => {
     let cancelled = false
     ;(async () => {
-      setLoading(true)
-      setError('')
+      setGuidesLoading(true)
+      setGuidesError('')
       try {
         await loadGuides()
       } catch (e) {
-        if (!cancelled) setError(e instanceof Error ? e.message : '오류')
+        if (!cancelled) setGuidesError(e instanceof Error ? e.message : '오류')
       } finally {
-        if (!cancelled) setLoading(false)
+        if (!cancelled) setGuidesLoading(false)
       }
     })()
     return () => {
@@ -76,17 +94,46 @@ export function HomePage() {
     }
   }, [loadGuides])
 
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      setReviewsLoading(true)
+      setReviewsError('')
+      try {
+        const res = await apiRequest('/reviews?size=4&sort=createdAt,desc', { method: 'GET', skipAuth: true })
+        const text = await res.text()
+        if (cancelled) return
+        if (!res.ok) {
+          setReviews([])
+          setReviewsError(text || '후기를 불러오지 못했습니다.')
+          return
+        }
+        const page = text ? JSON.parse(text) : {}
+        const list = extractReviewListFromPage(page).slice(0, 4)
+        setReviews(list)
+        setReviewsError('')
+      } catch (e) {
+        if (!cancelled) {
+          setReviews([])
+          setReviewsError(e instanceof Error ? e.message : '오류')
+        }
+      } finally {
+        if (!cancelled) setReviewsLoading(false)
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
   const experts = guides.slice(0, 3)
-  const recentGuides = useMemo(() => {
-    const ids = readRecentGuideIds()
-    if (ids.length === 0 || guides.length === 0) return []
-    const byId = new Map(guides.map((g) => [Number(g.guideId), g]))
-    return ids.map((id) => byId.get(Number(id))).filter(Boolean).slice(0, 3)
-  }, [guides])
 
   const aiCta = isAuthenticated ? (
     <Link to="/ai-search" className="f02-cta">
-      ✨ AI 맞춤 가이드 찾기
+      <span className="f02-cta-icon" aria-hidden>
+        ✨
+      </span>
+      AI 맞춤 가이드 찾기
     </Link>
   ) : (
     <Link
@@ -97,13 +144,17 @@ export function HomePage() {
         hint: 'AI 맞춤 추천은 로그인 후 이용할 수 있습니다.',
       }}
     >
-      ✨ AI 맞춤 가이드 찾기
+      <span className="f02-cta-icon" aria-hidden>
+        ✨
+      </span>
+      AI 맞춤 가이드 찾기
     </Link>
   )
 
   return (
     <div className="f02">
       <section className="f02-hero" aria-labelledby="f02-hero-title">
+        <div className="f02-hero-media" aria-hidden />
         <div className="f02-hero-inner">
           <div className="f02-notepad">
             <h1 id="f02-hero-title" className="f02-headline">
@@ -117,13 +168,17 @@ export function HomePage() {
           <div className="f02-hero-visual" aria-hidden>
             <div className="f02-polaroid f02-polaroid--a">
               <div className="f02-polaroid-tape" />
-              <div className="f02-polaroid-img" />
+              <div className="f02-polaroid-img">
+                <img src={POLAROID_A} alt="" width={360} height={480} decoding="async" />
+              </div>
               <span className="f02-polaroid-cap">hidden spots ✨</span>
             </div>
             <div className="f02-polaroid f02-polaroid--b">
               <div className="f02-polaroid-tape f02-polaroid-tape--b" />
-              <div className="f02-polaroid-img f02-polaroid-img--b" />
-              <span className="f02-polaroid-cap">coffee!</span>
+              <div className="f02-polaroid-img">
+                <img src={POLAROID_B} alt="" width={360} height={480} decoding="async" />
+              </div>
+              <span className="f02-polaroid-cap">had the best coffee!</span>
             </div>
           </div>
         </div>
@@ -142,23 +197,82 @@ export function HomePage() {
           {DESTINATIONS.map((d) => (
             <Link key={d.name} to={`/guides?region=${encodeURIComponent(d.query)}`} className="f02-dest-card">
               <span className="f02-dest-tape" aria-hidden />
-              <div className="f02-dest-photo" />
+              <div className="f02-dest-photo">
+                <img src={d.image} alt="" width={320} height={400} loading="lazy" decoding="async" />
+              </div>
               <span className="f02-dest-name">{d.name}</span>
             </Link>
           ))}
         </div>
       </section>
 
+      <section className="f02-section f02-section--reviews" aria-labelledby="f02-rev-title">
+        <div className="f02-section-head">
+          <h2 id="f02-rev-title" className="f02-section-title">
+            실제 여행자 후기
+          </h2>
+        </div>
+        {reviewsLoading && <PageLoading label="최근 후기를 불러오는 중…" />}
+        {!reviewsLoading && reviewsError && !reviews.length && (
+          <p className="f02-muted" role="status">
+            {reviewsError}
+          </p>
+        )}
+        {!reviewsLoading && !reviewsError && reviews.length === 0 && (
+          <PageEmpty title="아직 등록된 후기가 없어요">첫 매칭 후기가 곧 채워질 거예요.</PageEmpty>
+        )}
+        {!reviewsLoading && reviews.length > 0 && (
+          <div className="f02-review-grid">
+            {reviews.map((r, idx) => {
+              const guideId = r.guideId != null ? Number(r.guideId) : null
+              const rating = r.rating != null ? Number(r.rating) : 0
+              const content = truncate(String(r.content ?? ''), 120)
+              const nick = String(r.writeNickname ?? '여행자')
+              const dateLine = formatReviewDate(r.createdAt)
+              const inner = (
+                <>
+                  <div className="f02-review-top">
+                    <span className="f02-review-stars" aria-label={`별점 ${rating}점`}>
+                      {'★'.repeat(Math.min(5, Math.max(0, rating)))}
+                      <span className="f02-review-stars-muted">
+                        {'★'.repeat(Math.max(0, 5 - Math.min(5, Math.max(0, rating))))}
+                      </span>
+                    </span>
+                    {dateLine ? <time className="f02-review-date">{dateLine}</time> : null}
+                  </div>
+                  <p className="f02-review-body">{content || '내용이 없습니다.'}</p>
+                  <footer className="f02-review-foot">
+                    <span className="f02-review-nick">{nick}</span>
+                    {guideId != null && Number.isFinite(guideId) ? (
+                      <span className="f02-review-more">가이드 보기 →</span>
+                    ) : null}
+                  </footer>
+                </>
+              )
+              return guideId != null && Number.isFinite(guideId) ? (
+                <Link key={reviewStableKey(r, idx)} to={`/guides/${guideId}`} className="f02-review-card">
+                  {inner}
+                </Link>
+              ) : (
+                <article key={reviewStableKey(r, idx)} className="f02-review-card f02-review-card--static">
+                  {inner}
+                </article>
+              )
+            })}
+          </div>
+        )}
+      </section>
+
       <section className="f02-section f02-section--experts" aria-labelledby="f02-exp-title">
         <h2 id="f02-exp-title" className="f02-section-title f02-section-title--solo">
           Local Experts
         </h2>
-        {loading && <PageLoading label="가이드를 불러오는 중…" />}
-        {!loading && error && <PageError message={error} onRetry={() => void refetchGuides()} />}
-        {!loading && !error && experts.length === 0 && (
+        {guidesLoading && <PageLoading label="가이드를 불러오는 중…" />}
+        {!guidesLoading && guidesError && <PageError message={guidesError} onRetry={() => void refetchGuides()} />}
+        {!guidesLoading && !guidesError && experts.length === 0 && (
           <PageEmpty title="등록된 가이드가 없습니다">가이드 신청을 기다리고 있어요.</PageEmpty>
         )}
-        {!loading && !error && experts.length > 0 && (
+        {!guidesLoading && !guidesError && experts.length > 0 && (
           <div className="f02-expert-grid">
             {experts.map((g) => {
               const rating =
@@ -169,9 +283,13 @@ export function HomePage() {
               )
               return (
                 <article key={g.guideId} className="f02-expert-card">
+                  <span className="f02-expert-tape" aria-hidden />
                   <Link to={`/guides/${g.guideId}`} className="f02-expert-link">
                     <div className="f02-expert-top">
-                      <div className="f02-expert-avatar" style={g.profileImage ? { backgroundImage: `url(${g.profileImage})` } : undefined} />
+                      <div
+                        className="f02-expert-avatar"
+                        style={g.profileImage ? { backgroundImage: `url(${g.profileImage})` } : undefined}
+                      />
                       <div className="f02-expert-meta">
                         <p className="f02-expert-rating">🌟 {rating}</p>
                         <strong className="f02-expert-name">{g.nickname ?? '가이드'}</strong>
@@ -192,58 +310,6 @@ export function HomePage() {
             })}
           </div>
         )}
-      </section>
-
-      <section className="f02-section" aria-labelledby="f02-recent-title">
-        <div className="f02-section-head">
-          <h2 id="f02-recent-title" className="f02-section-title">
-            최근 본 가이드
-          </h2>
-          <Link to="/guides" className="f02-view-all">
-            전체 보기
-          </Link>
-        </div>
-        {recentGuides.length === 0 ? (
-          <p className="f02-muted">가이드 상세를 둘러보면 여기에 최근 본 가이드가 최대 3명까지 표시됩니다.</p>
-        ) : (
-          <div className="f02-expert-grid f02-expert-grid--recent">
-            {recentGuides.map((g) => (
-              <article key={`recent-${g.guideId}`} className="f02-expert-card">
-                <Link to={`/guides/${g.guideId}`} className="f02-expert-link">
-                  <div className="f02-expert-top">
-                    <div className="f02-expert-avatar" style={g.profileImage ? { backgroundImage: `url(${g.profileImage})` } : undefined} />
-                    <div className="f02-expert-meta">
-                      <p className="f02-expert-rating">최근 본 가이드</p>
-                      <strong className="f02-expert-name">{g.nickname ?? '가이드'}</strong>
-                      <span className="f02-expert-region">{g.region ?? '지역 미등록'}</span>
-                    </div>
-                  </div>
-                  <p className="f02-expert-bio">{truncate(g.bio, 84) || '소개글이 곧 채워질 예정이에요.'}</p>
-                </Link>
-              </article>
-            ))}
-          </div>
-        )}
-      </section>
-
-      <section className="f02-section" aria-labelledby="f02-ideas-title">
-        <h2 id="f02-ideas-title" className="f02-section-title f02-section-title--solo">
-          메인 구성 추천
-        </h2>
-        <div className="f02-idea-grid">
-          <article className="f02-idea-card">
-            <h3>오늘의 추천 코스</h3>
-            <p>실시간 인기 지역/테마를 바탕으로 3~4개의 코스 카드를 노출하면 첫 클릭 유도가 좋습니다.</p>
-          </article>
-          <article className="f02-idea-card">
-            <h3>신규 등록 가이드</h3>
-            <p>최근 등록된 가이드를 노출하면 플랫폼 활성을 보여주고, 신규 가이드의 노출 공정성도 확보됩니다.</p>
-          </article>
-          <article className="f02-idea-card">
-            <h3>후기 하이라이트</h3>
-            <p>게스트 후기 2~3개를 슬라이드로 노출하면 신뢰 형성에 가장 빠르게 기여합니다.</p>
-          </article>
-        </div>
       </section>
     </div>
   )
