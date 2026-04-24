@@ -32,13 +32,14 @@ public class MdcLoggingFilter extends OncePerRequestFilter {
         MDC.put(TRACE_ID_KEY, traceId);
         response.setHeader(TRACE_ID_HEADER, traceId);
         long startNanos = System.nanoTime();
+        log.info("[HTTP] Request started - requestUri: {}, method: {}", request.getRequestURI(), request.getMethod());
 
         try {
             filterChain.doFilter(request, response);
         } finally {
             long latencyMs = (System.nanoTime() - startNanos) / 1_000_000;
             log.info(
-                    "[HTTP] 요청 완료 - statusCode: {}, latencyMs: {}, requestUri: {}, method: {}",
+                    "[HTTP] Request completed - statusCode: {}, latencyMs: {}, requestUri: {}, method: {}",
                     response.getStatus(),
                     latencyMs,
                     request.getRequestURI(),
