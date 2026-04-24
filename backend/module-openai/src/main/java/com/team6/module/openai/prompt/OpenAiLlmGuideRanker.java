@@ -95,6 +95,11 @@ public final class OpenAiLlmGuideRanker implements LlmGuideRanker {
                 return Optional.empty();
             }
             Map<Long, String> reasons = parsed.reasonsByGuideId();
+            log.info("[OPEN_AI_RANK] success topN={} inputCandidates={} orderedIds={}",
+                    topN,
+                    candidates.size(),
+                    dedup
+            );
             return Optional.of(new LlmGuideRankResult(new ArrayList<>(dedup), reasons));
         } catch (Exception e) {
             log.warn("[OPEN_AI_RANK] LLM 순위 실패: {}", e.toString());

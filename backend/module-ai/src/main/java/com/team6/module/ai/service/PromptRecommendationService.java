@@ -935,10 +935,17 @@ public class PromptRecommendationService {
                     llmGuideRanker.tryRank(truncateForLlm(prompt), pool, resolvedTopN, seed);
             if (ranked.isEmpty()) {
                 metrics.recordLlmGuideRank("empty", System.nanoTime() - t0, POLICY_VERSION);
+                log.info("[AI_RANK] llmRank=empty policyVer={} topN={} poolSize={}", POLICY_VERSION, resolvedTopN, poolSize);
                 return finalBase;
             }
             GuideRecommendResponse merged = mergeLlmRankIntoResponse(fullRule, ranked.get(), resolvedTopN);
             metrics.recordLlmGuideRank("success", System.nanoTime() - t0, POLICY_VERSION);
+            log.info("[AI_RANK] llmRank=success policyVer={} topN={} poolSize={} orderedIds={}",
+                    POLICY_VERSION,
+                    resolvedTopN,
+                    poolSize,
+                    ranked.get().orderedGuideIds()
+            );
             return merged;
         } catch (Exception e) {
             metrics.recordLlmGuideRank("error", System.nanoTime() - t0, POLICY_VERSION);
