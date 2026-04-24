@@ -5,7 +5,6 @@ import { MypageShell } from '../layouts/MypageShell'
 import { GuestUpcomingTripsPage } from '../pages/GuestUpcomingTripsPage'
 import { MypagePaymentsPage } from '../pages/MypagePaymentsPage'
 import { MypagePrivacyPage } from '../pages/MypagePrivacyPage'
-import { MypageReviewDetailPage } from '../pages/MypageReviewDetailPage'
 import { MypageReviewsPage } from '../pages/MypageReviewsPage'
 import { MypageScrapbookPage } from '../pages/MypageScrapbookPage'
 import { MypageScrapbookTicketDetailPage } from '../pages/MypageScrapbookTicketDetailPage'
@@ -53,7 +52,6 @@ export const mypageRoutes = [
         path: 'tour',
         element: <MypageTourPage />,
       },
-      { path: 'reviews/:reviewId', element: <MypageReviewDetailPage /> },
       { path: 'reviews', element: <MypageReviewsPage /> },
     ],
   },

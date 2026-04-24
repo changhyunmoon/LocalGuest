@@ -34,12 +34,6 @@ public class ReviewController {
         return ResponseEntity.ok(reviewService.listMyReviews(pageable));
     }
 
-    /** 마이페이지 상세: 본인이 작성한 리뷰 단건(타인 리뷰는 조회 불가). {@code /reviews/me} 목록과 경로 충돌을 피하기 위해 {@code /me/{id}} 로 둔다. */
-    @GetMapping("/me/{reviewId}")
-    public ResponseEntity<ReviewResponse> getMyReview(@PathVariable Long reviewId) {
-        return ResponseEntity.ok(reviewService.getMyReview(reviewId));
-    }
-
     @PostMapping
     public ResponseEntity<String> create(@Valid @RequestBody ReviewRequest request) {
         reviewService.saveReview(request);

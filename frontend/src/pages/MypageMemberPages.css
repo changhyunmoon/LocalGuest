@@ -574,17 +574,6 @@ button.mp-thumb--match:focus-visible {
   color: #374151;
 }
 
-a.mp-polaroid.mp-polaroid--link {
-  text-decoration: none;
-  color: inherit;
-  display: block;
-}
-
-a.mp-polaroid.mp-polaroid--link:focus-visible {
-  outline: 2px solid #0f766e;
-  outline-offset: 3px;
-}
-
 .mp-pay-wrap {
   width: 100%;
   overflow-x: auto;
@@ -903,39 +892,6 @@ a.mp-polaroid.mp-polaroid--link:focus-visible {
   margin-top: 0.55rem;
   display: flex;
   justify-content: flex-end;
-}
-
-.mp-review-detail-card {
-  margin-top: 1rem;
-  padding: 1.25rem 1.35rem;
-  border-radius: 16px;
-  border: 1px solid #e8eaed;
-  background: #fff;
-  box-shadow: 0 8px 20px rgba(31, 35, 40, 0.06);
-}
-
-.mp-review-detail-stars {
-  font-size: 1.1rem;
-  margin: 0 0 0.75rem;
-}
-
-.mp-review-detail-body {
-  font-size: 1rem;
-  line-height: 1.55;
-  margin: 0 0 1rem;
-  color: #1f2937;
-}
-
-.mp-review-detail-meta {
-  font-size: 0.85rem;
-  color: #6b7280;
-  margin: 0 0 1.25rem;
-}
-
-.mp-review-detail-links {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
 }
 
 .mp-tour-block {
