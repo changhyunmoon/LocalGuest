@@ -229,7 +229,12 @@ public class PromptRecommendationService {
             // 한 단계씩만 완화하는 전략적 fallback을 시도한다.
             FallbackOutcome fallback = resolveFallbackWithStrategicRelaxation(effective, base);
             GuideRecommendResponse finalBase =
-                    applyLlmGuideRankIfEnabled(prompt, effective, resolvedTopN, fallback.responseAfterFallback());
+                    applyLlmGuideRankIfEnabled(
+                            prompt,
+                            fallback.requestUsedForRecommend(),
+                            resolvedTopN,
+                            fallback.responseAfterFallback()
+                    );
 
             // 7) 파싱 결과가 얼마나 풍부한지(HIGH/MEDIUM/LOW), 어떤 모호함이 있었는지 계산한다.
             // 이 값들은 추천 점수 자체보다 notice/로그/운영 튜닝에 더 가깝게 쓰인다.
@@ -659,7 +664,8 @@ public class PromptRecommendationService {
             return FallbackOutcome.errorNotice(
                     base,
                     "연결 가능한 가이드 후보가 없어 추천을 제공하기 어려워요. 지역을 바꾸거나 나중에 다시 시도해 주세요.",
-                    List.of(RecommendationNoticeCodes.NO_GUIDE_CANDIDATES)
+                    List.of(RecommendationNoticeCodes.NO_GUIDE_CANDIDATES),
+                    effective
             );
         }
 
@@ -667,7 +673,8 @@ public class PromptRecommendationService {
             return FallbackOutcome.errorNotice(
                     base,
                     "원하는 조건(지역/스타일/예산/활동/언어/기간/인원)을 조금 더 구체적으로 알려주세요.",
-                    List.of(RecommendationNoticeCodes.PROMPT_DETAIL_REQUESTED)
+                    List.of(RecommendationNoticeCodes.PROMPT_DETAIL_REQUESTED),
+                    effective
             );
         }
 
@@ -676,7 +683,7 @@ public class PromptRecommendationService {
         boolean lowScore = !noResults && score < scoringPolicy.lowSignalScoreThreshold();
         if (!noResults && !lowScore) {
             // 결과가 충분하면 fallback 없이 그대로 채택한다.
-            return FallbackOutcome.noRelax(base);
+            return FallbackOutcome.noRelax(base, effective);
         }
 
         List<String> coreCodes = noResults
@@ -689,6 +696,7 @@ public class PromptRecommendationService {
         StrategicChainResult chain = runStrategicRelaxationChain(effective, base, scoringPolicy);
         boolean improved = chain.winningStage() != RelaxStage.NONE;
         GuideRecommendResponse finalResp = improved ? chain.bestResponse() : base;
+        GuideRecommendRequest requestUsed = improved ? chain.requestUsedForRecommend() : effective;
         boolean exhausted = !improved;
         String notice = improved
                 ? "조건을 완화해 다시 추천했어요."
@@ -700,7 +708,8 @@ public class PromptRecommendationService {
                 chain.winningStage(),
                 exhausted,
                 notice,
-                coreCodes
+                coreCodes,
+                requestUsed
         );
     }
 
@@ -719,10 +728,10 @@ public class PromptRecommendationService {
             current = applyStrategicRelaxStep(languageAnchor, current, step);
             GuideRecommendResponse retried = aiRecommendationService.recommend(current);
             if (acceptsStrategicRetry(retried, baseline, scoring)) {
-                return new StrategicChainResult(retried, step);
+                return new StrategicChainResult(retried, step, current);
             }
         }
-        return new StrategicChainResult(baseline, RelaxStage.NONE);
+        return new StrategicChainResult(baseline, RelaxStage.NONE, languageAnchor);
     }
 
     private static boolean acceptsStrategicRetry(
@@ -809,7 +818,11 @@ public class PromptRecommendationService {
                 .build();
     }
 
-    private record StrategicChainResult(GuideRecommendResponse bestResponse, RelaxStage winningStage) {
+    private record StrategicChainResult(
+            GuideRecommendResponse bestResponse,
+            RelaxStage winningStage,
+            GuideRecommendRequest requestUsedForRecommend
+    ) {
     }
 
     private static boolean hasAnySignal(GuideRecommendRequest req) {
@@ -889,7 +902,7 @@ public class PromptRecommendationService {
 
     private GuideRecommendResponse applyLlmGuideRankIfEnabled(
             String prompt,
-            GuideRecommendRequest effective,
+            GuideRecommendRequest scoringRequest,
             int resolvedTopN,
             GuideRecommendResponse finalBase
     ) {
@@ -899,14 +912,17 @@ public class PromptRecommendationService {
         if (finalBase == null || finalBase.getRecommendations() == null || finalBase.getRecommendations().isEmpty()) {
             return finalBase;
         }
-        List<GuideRecommendRequest.GuideCandidateDto> pool = effective.getGuideCandidates();
+        if (scoringRequest == null) {
+            return finalBase;
+        }
+        List<GuideRecommendRequest.GuideCandidateDto> pool = scoringRequest.getGuideCandidates();
         if (pool == null || pool.isEmpty()) {
             return finalBase;
         }
         int poolSize = pool.size();
         long t0 = System.nanoTime();
         try {
-            GuideRecommendRequest fullReq = effective.toBuilder()
+            GuideRecommendRequest fullReq = scoringRequest.toBuilder()
                     .topN(Math.max(poolSize, resolvedTopN))
                     .build();
             GuideRecommendResponse fullRule = aiRecommendationService.recommend(fullReq);
@@ -1079,14 +1095,24 @@ public class PromptRecommendationService {
             RelaxStage winningRelaxStage,
             boolean chainExhausted,
             String fallbackNotice,
-            List<String> coreNoticeCodes
+            List<String> coreNoticeCodes,
+            /**
+             * {@link #responseAfterFallback()}를 만들 때 사용한 추천 요청(전략 폴백으로 완화된 경우 그 요청).
+             * LLM 풀 스코어와 동일 조건을 맞추기 위해 쓴다.
+             */
+            GuideRecommendRequest requestUsedForRecommend
     ) {
-        static FallbackOutcome noRelax(GuideRecommendResponse base) {
-            return new FallbackOutcome(false, base, RelaxStage.NONE, false, null, List.of());
+        static FallbackOutcome noRelax(GuideRecommendResponse base, GuideRecommendRequest requestUsedForRecommend) {
+            return new FallbackOutcome(false, base, RelaxStage.NONE, false, null, List.of(), requestUsedForRecommend);
         }
 
-        static FallbackOutcome errorNotice(GuideRecommendResponse base, String notice, List<String> codes) {
-            return new FallbackOutcome(false, base, RelaxStage.NONE, false, notice, codes);
+        static FallbackOutcome errorNotice(
+                GuideRecommendResponse base,
+                String notice,
+                List<String> codes,
+                GuideRecommendRequest requestUsedForRecommend
+        ) {
+            return new FallbackOutcome(false, base, RelaxStage.NONE, false, notice, codes, requestUsedForRecommend);
         }
     }
 }
