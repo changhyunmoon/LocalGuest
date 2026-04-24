@@ -54,7 +54,10 @@ public final class LlmRankCardComposer {
             rating = c.getAverageRating().doubleValue();
         }
         int feeds = c.getPublicFeedCount() == null ? 0 : Math.max(0, c.getPublicFeedCount());
-        return Math.log1p(rc) * (rating + 0.15d) + 0.22d * Math.log1p(feeds);
+        int tagCount = c.getSpecialtyTags() == null ? 0 : c.getSpecialtyTags().size();
+        // 태그는 신호로 쓰되 과대평가하지 않도록 매우 약하게만 가점.
+        double tagBonus = 0.05d * Math.log1p(Math.max(0, tagCount));
+        return Math.log1p(rc) * (rating + 0.15d) + 0.22d * Math.log1p(feeds) + tagBonus;
     }
 
     /**
@@ -90,10 +93,20 @@ public final class LlmRankCardComposer {
             appendPriceRangeLine(sb, c.getPriceMinWon(), c.getPriceMaxWon(), c.getPriceScope());
             appendRatingLine(sb, c.getAverageRating(), c.getReviewCount());
             sb.append("공개피드수=").append(c.getPublicFeedCount() == null ? 0 : c.getPublicFeedCount()).append('\n');
+            if (c.getLatestPublicFeedDate() != null && !c.getLatestPublicFeedDate().isBlank()) {
+                sb.append("최근피드일=").append(c.getLatestPublicFeedDate().strip()).append('\n');
+            }
+            if (Boolean.TRUE.equals(c.getColdStart())) {
+                sb.append("콜드스타트=리뷰없음").append('\n');
+            }
             if (c.getResidenceYears() != null && c.getResidenceYears() > 0) {
                 sb.append("거주연수=").append(c.getResidenceYears()).append("년").append('\n');
             }
             appendTrustSignalLine(sb, c);
+            String core = nullToEmpty(c.getCoreSpecialtyTagsTop3());
+            if (!core.isEmpty()) {
+                sb.append("핵심태그=").append(core).append('\n');
+            }
             sb.append("태그=").append(joinTags(c.getSpecialtyTags())).append('\n');
             sb.append("언어=").append(joinTags(c.getLanguages())).append('\n');
             String kw = nullToEmpty(c.getLlmKeywordsSnippet());
