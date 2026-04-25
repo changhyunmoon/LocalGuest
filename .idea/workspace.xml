@@ -5,7 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="84d1b3de-8103-452e-83cf-38ecd34993e7" name="Changes" comment="Feat/fe#453: redis, mongodb 분리">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/stress-test/scripts/matching-guest-list-test.js‎" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -39,6 +39,7 @@
       <list>
         <option value="Class" />
         <option value="GitHub Workflow" />
+        <option value="JavaScript File" />
       </list>
     </option>
   </component>
