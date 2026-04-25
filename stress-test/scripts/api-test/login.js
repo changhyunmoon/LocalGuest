@@ -14,32 +14,36 @@ export const options = {
     iterations: 1,
 }
 
+function percentile(sorted, p) {
+    if (sorted.length === 0) return 0
+    const index = Math.ceil(sorted.length * p) - 1
+    return sorted[Math.max(0, index)]
+}
+
 function logResult(name, durations, statuses) {
     const sorted = [...durations].sort((a, b) => a - b)
-    const sum = durations.reduce((acc, v) => acc + v, 0)
-    const avg = sum / durations.length
-    const min = sorted[0]
-    const max = sorted[sorted.length - 1]
-    const p95 = sorted[Math.max(0, Math.ceil(sorted.length * 0.95) - 1)]
+    const p95 = percentile(sorted, 0.95)
+    const p99 = percentile(sorted, 0.99)
+    const errorCount = statuses.filter((s) => s < 200 || s >= 400).length
+    const errorRate = (errorCount / statuses.length) * 100
 
     console.log(`\n[${name}]`)
-    console.log(`count: ${durations.length}`)
-    console.log(`min: ${min.toFixed(2)} ms`)
-    console.log(`avg: ${avg.toFixed(2)} ms`)
+    console.log(`count: ${statuses.length}`)
     console.log(`p95: ${p95.toFixed(2)} ms`)
-    console.log(`max: ${max.toFixed(2)} ms`)
+    console.log(`p99: ${p99.toFixed(2)} ms`)
+    console.log(`errorRate: ${errorRate.toFixed(2)} %`)
     console.log(`statuses: ${statuses.join(', ')}`)
 }
 
 export default function () {
-    const durations = []
+    const measuredDurations = []
     const statuses = []
 
     for (let i = 0; i < 2; i++) {
         const res = http.post(`${BASE_URL}/auth/login`, JSON.stringify(LOGIN_INFO), {
             headers: { 'Content-Type': 'application/json' },
         })
-        check(res, { 'warmup login ok': (r) => r.status === 200 })
+        check(res, { 'warmup ok': (r) => r.status === 200 })
         sleep(0.2)
     }
 
@@ -47,11 +51,11 @@ export default function () {
         const res = http.post(`${BASE_URL}/auth/login`, JSON.stringify(LOGIN_INFO), {
             headers: { 'Content-Type': 'application/json' },
         })
-        check(res, { 'login ok': (r) => r.status === 200 })
-        durations.push(res.timings.duration)
+        check(res, { 'request completed': (r) => r.status > 0 })
+        measuredDurations.push(res.timings.duration)
         statuses.push(res.status)
         sleep(0.2)
     }
 
-    logResult('POST /auth/login', durations, statuses)
+    logResult('POST /auth/login', measuredDurations, statuses)
 }

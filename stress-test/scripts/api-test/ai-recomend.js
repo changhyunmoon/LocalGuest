@@ -22,11 +22,9 @@ function percentile(sorted, p) {
 
 function logResult(name, durations, statuses) {
     const sorted = [...durations].sort((a, b) => a - b)
-
     const p95 = percentile(sorted, 0.95)
     const p99 = percentile(sorted, 0.99)
-
-    const errorCount = statuses.filter((status) => status < 200 || status >= 400).length
+    const errorCount = statuses.filter((s) => s < 200 || s >= 400).length
     const errorRate = (errorCount / statuses.length) * 100
 
     console.log(`\n[${name}]`)
@@ -41,36 +39,21 @@ export default function () {
     const measuredDurations = []
     const statuses = []
 
-    // 워밍업 2회
     for (let i = 0; i < 2; i++) {
         const res = http.post(`${BASE_URL}/ai/recommend`, JSON.stringify(BODY), {
-            headers: {
-                'Content-Type': 'application/json',
-            },
+            headers: { 'Content-Type': 'application/json' },
         })
-
-        check(res, {
-            'warmup ai recommend ok': (r) => r.status === 200,
-        })
-
+        check(res, { 'warmup ok': (r) => r.status === 200 })
         sleep(0.2)
     }
 
-    // 본 측정 20회
     for (let i = 0; i < 20; i++) {
         const res = http.post(`${BASE_URL}/ai/recommend`, JSON.stringify(BODY), {
-            headers: {
-                'Content-Type': 'application/json',
-            },
+            headers: { 'Content-Type': 'application/json' },
         })
-
-        check(res, {
-            'ai recommend request completed': (r) => r.status > 0,
-        })
-
+        check(res, { 'request completed': (r) => r.status > 0 })
         measuredDurations.push(res.timings.duration)
         statuses.push(res.status)
-
         sleep(0.2)
     }
 

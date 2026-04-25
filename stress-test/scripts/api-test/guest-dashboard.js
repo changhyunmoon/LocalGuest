@@ -22,11 +22,9 @@ function percentile(sorted, p) {
 
 function logResult(name, durations, statuses) {
     const sorted = [...durations].sort((a, b) => a - b)
-
     const p95 = percentile(sorted, 0.95)
     const p99 = percentile(sorted, 0.99)
-
-    const errorCount = statuses.filter((status) => status < 200 || status >= 400).length
+    const errorCount = statuses.filter((s) => s < 200 || s >= 400).length
     const errorRate = (errorCount / statuses.length) * 100
 
     console.log(`\n[${name}]`)
@@ -39,32 +37,21 @@ function logResult(name, durations, statuses) {
 
 function loginAndGetToken() {
     const res = http.post(`${BASE_URL}/auth/login`, JSON.stringify(LOGIN_INFO), {
-        headers: {
-            'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
     })
 
-    check(res, {
-        'login success': (r) => r.status === 200,
-    })
+    check(res, { 'login success': (r) => r.status === 200 })
 
     if (res.status !== 200) {
         throw new Error(`로그인 실패: status=${res.status}, body=${res.body}`)
     }
 
-    const json = res.json()
-
-    if (!json || !json.accessToken) {
-        throw new Error(`accessToken 없음: body=${res.body}`)
-    }
-
-    return json.accessToken
+    return res.json().accessToken
 }
 
 export default function () {
     const measuredDurations = []
     const statuses = []
-
     const accessToken = loginAndGetToken()
 
     const headers = {
@@ -72,32 +59,17 @@ export default function () {
         Authorization: `Bearer ${accessToken}`,
     }
 
-    // 워밍업 2회
     for (let i = 0; i < 2; i++) {
-        const res = http.get(`${BASE_URL}/mypage/guest/dashboard`, {
-            headers,
-        })
-
-        check(res, {
-            'warmup guest dashboard ok': (r) => r.status === 200,
-        })
-
+        const res = http.get(`${BASE_URL}/mypage/guest/dashboard`, { headers })
+        check(res, { 'warmup ok': (r) => r.status === 200 })
         sleep(0.2)
     }
 
-    // 본 측정 20회
     for (let i = 0; i < 20; i++) {
-        const res = http.get(`${BASE_URL}/mypage/guest/dashboard`, {
-            headers,
-        })
-
-        check(res, {
-            'guest dashboard request completed': (r) => r.status > 0,
-        })
-
+        const res = http.get(`${BASE_URL}/mypage/guest/dashboard`, { headers })
+        check(res, { 'request completed': (r) => r.status > 0 })
         measuredDurations.push(res.timings.duration)
         statuses.push(res.status)
-
         sleep(0.2)
     }
 
