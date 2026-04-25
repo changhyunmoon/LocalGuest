@@ -54,4 +54,24 @@ public class MatchRequestCreateResponse {
                 .createdAt(entity.getCreatedAt())
                 .build();
     }
+
+    public static MatchRequestCreateResponse fromProjection(MatchRequestListProjection projection) {
+        return MatchRequestCreateResponse.builder()
+                .requestId(projection.getRequestId())
+                .guestId(projection.getGuestId())
+                .guideId(projection.getGuideId())
+                .guideScheduleId(projection.getGuideScheduleId())
+                .destination(projection.getDestination())
+                .concept(projection.getConcept())
+                .conceptSummary(projection.getConceptSummary())
+                .desiredDate(projection.getDesiredDate())
+                .desiredBudget(projection.getDesiredBudget())
+                .budgetMinWon(projection.getBudgetMinWon())
+                .budgetMaxWon(projection.getBudgetMaxWon())
+                .proposedSchedule(projection.getProposedSchedule())
+                .proposeMessage(projection.getProposeMessage())
+                .status(projection.getStatus() == null ? null : projection.getStatus().name())
+                .createdAt(projection.getCreatedAt())
+                .build();
+    }
 }
