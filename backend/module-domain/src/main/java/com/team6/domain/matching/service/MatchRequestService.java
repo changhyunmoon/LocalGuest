@@ -21,6 +21,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -93,6 +94,24 @@ public class MatchRequestService {
         LocalDate today = LocalDate.now();
 
         return matchRequestRepository.findByGuestId(guestId, pageable)
+                .map(request -> {
+                    syncTourProgress(request, today);
+                    return MatchRequestCreateResponse.from(request);
+                });
+    }
+
+    /** 게스트 본인 매칭 요청 Slice 조회 (COUNT 오버헤드 회피용). */
+    public Slice<MatchRequestCreateResponse> getGuestRequestsSlice(Long guestId, int page, int size) {
+        int normalizedPage = Math.max(page, 0);
+        int normalizedSize = Math.min(Math.max(size, 1), 100);
+        Pageable pageable = PageRequest.of(
+                normalizedPage,
+                normalizedSize,
+                Sort.by(Sort.Direction.DESC, "createdAt")
+        );
+        LocalDate today = LocalDate.now();
+
+        return matchRequestRepository.findSliceByGuestId(guestId, pageable)
                 .map(request -> {
                     syncTourProgress(request, today);
                     return MatchRequestCreateResponse.from(request);
