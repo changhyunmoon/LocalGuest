@@ -4,6 +4,8 @@ import com.team6.domain.guide.entity.GuideProfile;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Optional;
@@ -18,6 +20,14 @@ public interface GuideProfileRepository extends JpaRepository<GuideProfile, Long
 
     // 프로필 중복 등록 방지 확인 (F06-01)
     boolean existsByMemberId(Long memberId);
+
+    /**
+     * 파생 쿼리 기대에만 의존하지 않도록 JPQL로 고정(소셜 가이드 토큰 조건)
+     */
+    @Query(
+            "select case when count(p) > 0 then true else false end from GuideProfile p "
+                    + "where p.memberId = :memberId and p.isApproved = true and p.isActive = true")
+    boolean hasApprovedAndActiveByMemberId(@Param("memberId") Long memberId);
 
     /** 승인·활성 가이드 전체 목록 — getProfileList() 용 */
     List<GuideProfile> findByIsApprovedTrueAndIsActiveTrue();

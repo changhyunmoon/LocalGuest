@@ -152,7 +152,7 @@ class AiRecommendationRegressionTest {
         assertThat(response.getRecommendations()).hasSize(1);
         assertThat(response.getRecommendations().get(0).getGuideId()).isEqualTo(80L);
         assertThat(response.getRecommendations().get(0).getReasonCodes())
-                .contains(ReasonGenerator.CODE_BUDGET_ADJACENT);
+                .doesNotContain(ReasonGenerator.CODE_BUDGET_ADJACENT);
     }
 
     @Test
@@ -524,6 +524,7 @@ class AiRecommendationRegressionTest {
                 metrics,
                 scoring,
                 aiProps,
+                null,
                 null
         );
     }

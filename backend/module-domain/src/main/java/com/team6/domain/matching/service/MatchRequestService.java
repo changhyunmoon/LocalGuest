@@ -17,6 +17,10 @@ import com.team6.domain.matching.exception.MatchingException;
 import com.team6.domain.matching.repository.MatchRequestRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -79,6 +83,20 @@ public class MatchRequestService {
                 .peek(request -> syncTourProgress(request, today))
                 .map(MatchRequestCreateResponse::from)
                 .toList();
+    }
+
+    /** 게스트 본인 매칭 요청 페이징 조회 (안전한 전환을 위해 기존 전체 조회 API와 분리 제공) */
+    public Page<MatchRequestCreateResponse> getGuestRequestsPaged(Long guestId, int page, int size) {
+        int normalizedPage = Math.max(page, 0);
+        int normalizedSize = Math.min(Math.max(size, 1), 100);
+        Pageable pageable = PageRequest.of(normalizedPage, normalizedSize, Sort.by(Sort.Direction.DESC, "createdAt"));
+        LocalDate today = LocalDate.now();
+
+        return matchRequestRepository.findByGuestId(guestId, pageable)
+                .map(request -> {
+                    syncTourProgress(request, today);
+                    return MatchRequestCreateResponse.from(request);
+                });
     }
 
     // 가이드의 매칭 요청 목록 조회

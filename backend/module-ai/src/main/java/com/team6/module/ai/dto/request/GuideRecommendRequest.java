@@ -11,7 +11,7 @@ import java.util.Map;
 
 @Schema(name = "GuideRecommendRequest", description = "파싱 결과 또는 직접 구성한 추천 요청(내부/테스트용)")
 @Getter
-@Builder
+@Builder(toBuilder = true)
 public class GuideRecommendRequest {
     private String region;
     private String travelStyle;
@@ -127,5 +127,45 @@ public class GuideRecommendRequest {
 
         @Schema(description = "동일 세션 내 최근 추천 노출 횟수(반복 추천 완화용). 미전달 시 미반영")
         private Integer recommendExposureCount;
+
+        /**
+         * LLM 순위용: 소개(bio+localStory) 스니펫. OpenAPI·JSON에 실리지 않는다.
+         */
+        @JsonIgnore
+        private String llmIntroSnippet;
+        /**
+         * LLM 순위용: 공개 피드 본문(최신순, 각 글은 서버에서 길이 상한 적용). 비어 있을 수 있음.
+         */
+        @JsonIgnore
+        private List<String> llmFeedBodiesNewestFirst;
+        /** LLM 순위용: 경력 요약 스니펫. */
+        @JsonIgnore
+        private String llmCareerSnippet;
+        /** LLM 순위용: 디폴트 코스 스니펫. */
+        @JsonIgnore
+        private String llmDefaultCourseSnippet;
+        /** LLM 순위용: 삭제 제외 공개 피드 개수. */
+        @JsonIgnore
+        private Integer publicFeedCount;
+
+        /** LLM 순위용: AI 키워드(프로필 raw keywords) 스니펫. */
+        @JsonIgnore
+        private String llmKeywordsSnippet;
+
+        /** LLM 순위용: 거주 연수(신뢰/로컬성 힌트). */
+        @JsonIgnore
+        private Integer residenceYears;
+
+        /** LLM 순위용: 최신 공개 피드 날짜(YYYY-MM-DD). */
+        @JsonIgnore
+        private String latestPublicFeedDate;
+
+        /** LLM 순위용: 리뷰가 거의 없는 콜드스타트인지(예: reviewCount=0). */
+        @JsonIgnore
+        private Boolean coldStart;
+
+        /** LLM 순위용: 핵심 전문 태그 상위 3개 요약(콤마 구분). */
+        @JsonIgnore
+        private String coreSpecialtyTagsTop3;
     }
 }

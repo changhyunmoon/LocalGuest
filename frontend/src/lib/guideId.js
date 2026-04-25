@@ -127,7 +127,7 @@ export async function resolveGuideId(apiRequest) {
   }
 
   try {
-    const candidatePaths = ['/matching/requests/guide/list', '/matching/requests/guide', '/matching/requests/guide/me']
+    const candidatePaths = ['/matching/requests/guide/list']
     for (const path of candidatePaths) {
       const res = await apiRequest(path, { method: 'GET' })
       const text = await res.text()

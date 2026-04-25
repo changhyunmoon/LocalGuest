@@ -277,21 +277,7 @@ public class ReasonGenerator {
             }
         }
 
-        if (safeEquals(pref.getBudgetLevel(), guide.getPriceLevel())) {
-            segments.add(new Segment(
-                    CODE_BUDGET_MATCH,
-                    RecommendReasonEvidenceSlots.BUDGET,
-                    pickVariant(seed, CODE_BUDGET_MATCH, COPY_BUDGET_EXACT),
-                    listNonNull(guide.getPriceLevel())
-            ));
-        } else if (BudgetTier.adjacentTiers(pref.getBudgetLevel(), guide.getPriceLevel())) {
-            segments.add(new Segment(
-                    CODE_BUDGET_ADJACENT,
-                    RecommendReasonEvidenceSlots.BUDGET_ADJACENT,
-                    pickVariant(seed, CODE_BUDGET_ADJACENT, COPY_BUDGET_ADJ),
-                    listNonNull(guide.getPriceLevel())
-            ));
-        }
+        // 예산은 가이드/사용자 간 조율 영역으로 보고, 추천 reason 노출에서는 예산 수준 멘트를 제외한다.
 
         if (guide.getApprovedRefundCount() != null && guide.getApprovedRefundCount() > 0) {
             segments.add(new Segment(

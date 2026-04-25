@@ -1,18 +1,17 @@
 package com.team6.apiserver.auth.oauth;
 
 import com.team6.domain.auth.provider.JwtTokenProvider;
-import com.team6.domain.member.entity.Role;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
-import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
-import org.springframework.security.oauth2.client.userinfo.OAuth2UserService;
-import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.user.OAuth2User;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
 
@@ -20,6 +19,9 @@ import java.io.IOException;
 @RequiredArgsConstructor
 public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
     private final JwtTokenProvider jwtTokenProvider;
+
+    @Value("${app.oauth2.frontend-redirect-base}")
+    private String frontendRedirectBase;
 
     @Override
     public void onAuthenticationSuccess(
@@ -31,20 +33,32 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         String email = (String) oAuth2User.getAttributes().get("email");
         String role = authentication.getAuthorities().iterator().next().getAuthority();
 
-        // JWT 발급
-        String token = jwtTokenProvider.createToken(email, role);
+        boolean newGuest = Boolean.TRUE.equals(request.getAttribute(CustomOauth2UserService.ATTR_SOCIAL_IS_NEW_GUEST));
+        boolean withOnboardingClaim = newGuest && "ROLE_GUEST".equals(role);
 
-        // 프론트엔드로 토큰과 함께 리다이렉트
-        String redirectUrl = "http://localhost:5173/oauth2/callback?token=" + token;
-        getRedirectStrategy().sendRedirect(request,response, redirectUrl);
+        // JWT 발급 (최초 소셜 가입 GUEST — 여행 성향 안내)
+        String token = jwtTokenProvider.createToken(email, role, withOnboardingClaim);
 
-        // 프론트 없을 때 임시 테스트용 → 토큰을 바로 응답으로 반환
-//        response.setContentType("application/json");
-//        response.setCharacterEncoding("UTF-8");
-//        response.getWriter().write("{\"token\": \"" + token + "\"}");
+        String base = frontendRedirectBase.replaceAll("/+$", "");
+        String redirectUrl = UriComponentsBuilder
+                .fromHttpUrl(base + "/oauth2/callback")
+                .queryParam("token", token)
+                .build()
+                .encode()
+                .toUriString();
 
-        // 프론트 있을 때
-        // String redirectUrl = "http://localhost:5173/oauth2/callback?token=" + token;
-        // getRedirectStrategy().sendRedirect(request, response, redirectUrl);
+        clearRoleHintCookie(request, response);
+        getRedirectStrategy().sendRedirect(request, response, redirectUrl);
+    }
+
+    private void clearRoleHintCookie(HttpServletRequest request, HttpServletResponse response) {
+        String ctx = request.getContextPath();
+        String p = (ctx == null || ctx.isEmpty()) ? "/" : ctx;
+        ResponseCookie clear = ResponseCookie.from(OAuth2RoleHintCookieFilter.OAUTH_ROLE_HINT_COOKIE, "")
+                .path(p)
+                .httpOnly(true)
+                .maxAge(0)
+                .build();
+        response.addHeader(HttpHeaders.SET_COOKIE, clear.toString());
     }
 }

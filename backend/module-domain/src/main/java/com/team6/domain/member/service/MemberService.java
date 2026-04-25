@@ -66,25 +66,35 @@ public class MemberService {
         member.withdraw();
     }
 
+    /**
+     * @param created {@code true}이면 이 호출로 신규 행이 insert 된 경우(최초 소셜 가입 등)
+     */
+    public record SocialMemberResult(Member member, boolean created) {
+    }
+
     // 소셜로그인을 통한 위한 회원 조회 및 회원가입
     @Transactional
     public Member findOrCreateMember(String email, String name, String picture, Role selectedRole) {
-        return memberRepository.findByEmailAndRole(email, selectedRole)
-                .orElseGet(() -> {
-                    String tempNickname = email.split("@")[0]
-                            + "_" + (int)(Math.random()*10000);
-                    // 조회 후 없으면 신규 소셜 회원 가입
-                    Member newMember = Member.builder()
-                            .email(email)
-                            .name(name)
-                            .password("")
-                            .nickname(tempNickname)
-                            .role(selectedRole)
-                            .socialType(SocialType.GOOGLE)
-                            .status(Status.ACTIVE)
-                            .build();
-                    return memberRepository.save(newMember);
-                });
+        return findOrCreateMemberWithFlag(email, name, picture, selectedRole).member();
+    }
+
+    @Transactional
+    public SocialMemberResult findOrCreateMemberWithFlag(String email, String name, String picture, Role selectedRole) {
+        var found = memberRepository.findByEmailIgnoreCaseAndRole(email, selectedRole);
+        if (found.isPresent()) {
+            return new SocialMemberResult(found.get(), false);
+        }
+        String tempNickname = email.split("@")[0] + "_" + (int) (Math.random() * 10000);
+        Member newMember = Member.builder()
+                .email(email)
+                .name(name)
+                .password("")
+                .nickname(tempNickname)
+                .role(selectedRole)
+                .socialType(SocialType.GOOGLE)
+                .status(Status.ACTIVE)
+                .build();
+        return new SocialMemberResult(memberRepository.save(newMember), true);
     }
 
     // 닉네임 중복 체크

@@ -2,6 +2,8 @@ package com.team6.domain.matching.repository;
 
 import com.team6.domain.matching.entity.MatchRequest;
 import com.team6.domain.matching.entity.enums.MatchRequestStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -13,6 +15,9 @@ public interface MatchRequestRepository extends JpaRepository<MatchRequest, Long
 
     // 게스트 ID로 전체 매칭 요청 조회
     List<MatchRequest> findByGuestId(Long guestId);
+
+    // 게스트 ID로 페이징 조회
+    Page<MatchRequest> findByGuestId(Long guestId, Pageable pageable);
 
     // 가이드 ID로 전체 매칭 요청 조회
     List<MatchRequest> findByGuideId(Long guideId);

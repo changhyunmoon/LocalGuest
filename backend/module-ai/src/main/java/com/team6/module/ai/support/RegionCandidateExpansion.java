@@ -50,6 +50,19 @@ public final class RegionCandidateExpansion {
             Function<String, Set<String>> adjacentNeighbors,
             boolean allowAdjacentEvenIfExactEnough
     ) {
+        return apply(all, region, adjacentNeighbors, allowAdjacentEvenIfExactEnough, AiRecommendationTuning.DEFAULT_TOP_N);
+    }
+
+    /**
+     * @param desiredTopN 추천에서 원하는 상위 개수. exact 후보가 이 값 이상이면 인접 확장을 피한다(희소할 때만 확장).
+     */
+    public static Result apply(
+            List<GuideRecommendRequest.GuideCandidateDto> all,
+            String region,
+            Function<String, Set<String>> adjacentNeighbors,
+            boolean allowAdjacentEvenIfExactEnough,
+            int desiredTopN
+    ) {
         List<GuideRecommendRequest.GuideCandidateDto> pool =
                 all == null ? List.of() : new ArrayList<>(all);
 
@@ -63,7 +76,9 @@ public final class RegionCandidateExpansion {
                 .filter(g -> regionEquals(g.getRegion(), r))
                 .collect(Collectors.toList());
 
-        if (!allowAdjacentEvenIfExactEnough && exact.size() >= AiRecommendationTuning.MIN_EXACT_REGION_CANDIDATES) {
+        int target = Math.max(1, desiredTopN);
+        int minExact = Math.min(target, Math.max(1, AiRecommendationTuning.MIN_EXACT_REGION_CANDIDATES));
+        if (!allowAdjacentEvenIfExactEnough && exact.size() >= minExact) {
             return new Result(exact, false, exact.size());
         }
 

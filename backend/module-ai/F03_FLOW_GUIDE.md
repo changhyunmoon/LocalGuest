@@ -20,10 +20,11 @@ F03는 사용자가 입력한 여행 프롬프트를 해석해서, 조건에 맞
 2. AI 추천 API가 요청을 받는다.
 3. 서버가 추천 대상이 될 가이드 후보군을 준비한다.
 4. 프롬프트를 지역, 스타일, 예산, 활동, 언어 같은 구조화된 조건으로 바꾼다.
-5. 각 가이드 후보에게 점수를 매긴다.
-6. 추천 이유와 함께 상위 가이드를 응답으로 내려준다.
-7. 프론트는 그 결과를 카드 형태로 보여준다.
-8. 이후 사용자는 가이드를 선택하고, 매칭 요청 생성 단계로 넘어간다.
+5. 필요하면 LLM이 후보 카드들을 다시 읽고 상위 순서를 재정렬한다.
+6. 각 가이드 후보에게 점수를 매긴다.
+7. 추천 이유와 함께 상위 가이드를 응답으로 내려준다.
+8. 프론트는 그 결과를 카드 형태로 보여준다.
+9. 이후 사용자는 가이드를 선택하고, 매칭 요청 생성 단계로 넘어간다.
 
 즉 AI 모듈의 핵심 역할은 `추천까지`다.
 
@@ -37,11 +38,12 @@ F03는 사용자가 입력한 여행 프롬프트를 해석해서, 조건에 맞
 2. [AiController.java](src/main/java/com/team6/module/ai/controller/AiController.java) 가 요청 수신
 3. `GuideCandidateProvider`가 후보 가이드 목록 준비
 4. [PromptRecommendationService.java](src/main/java/com/team6/module/ai/service/PromptRecommendationService.java) 가 추천 전체 흐름 조립
-5. [PromptParser.java](src/main/java/com/team6/module/ai/parser/PromptParser.java) 가 프롬프트 해석
+5. LLM 프롬프트 추출기 또는 [PromptParser.java](src/main/java/com/team6/module/ai/parser/PromptParser.java) 가 프롬프트 해석
 6. 인접 지역 확장, fallback, notice 조립
 7. [AiRecommendationServiceImpl.java](src/main/java/com/team6/module/ai/service/AiRecommendationServiceImpl.java) 가 엔진 입력 형태로 변환
-8. [MatchingEngine.java](src/main/java/com/team6/module/ai/engine/MatchingEngine.java) 이 최종 추천 카드 생성
-9. [GuideRecommendResponse.java](src/main/java/com/team6/module/ai/dto/response/GuideRecommendResponse.java) 형태로 응답 반환
+8. [MatchingEngine.java](src/main/java/com/team6/module/ai/engine/MatchingEngine.java) 이 룰 점수 기반 추천 카드 생성
+9. 필요하면 LLM ranker가 후보 카드 텍스트를 읽고 Top-N 순서를 재정렬
+10. [GuideRecommendResponse.java](src/main/java/com/team6/module/ai/dto/response/GuideRecommendResponse.java) 형태로 응답 반환
 
 ---
 
@@ -92,7 +94,27 @@ F03는 사용자가 입력한 여행 프롬프트를 해석해서, 조건에 맞
 
 이 파일은 `자연어 -> 구조화 데이터 변환기`다.
 
-### 3-4. 4단계: 후보 가이드가 어디서 오는지 보기
+### 3-4. 4단계: LLM 추출 흐름 보기
+
+[PromptRecommendationService.java](src/main/java/com/team6/module/ai/service/PromptRecommendationService.java)
+
+[LlmPromptExtractor.java](src/main/java/com/team6/module/ai/spi/LlmPromptExtractor.java)
+
+[LlmPromptExtractionSystemText.java](src/main/java/com/team6/module/ai/llm/LlmPromptExtractionSystemText.java)
+
+[LlmGuideRecommendMapper.java](src/main/java/com/team6/module/ai/llm/LlmGuideRecommendMapper.java)
+
+여기서 먼저 확인할 것:
+
+- LLM 추출 기능이 켜졌는지
+- 어떤 provider(`openai`, `gemini`)를 쓰는지
+- LLM이 어떤 JSON 스키마로 응답하게 되어 있는지
+- LLM 결과가 왜 다시 `GuideRecommendRequest`로 매핑되는지
+- LLM 실패 시 왜 바로 룰 파서로 폴백하는지
+
+이 단계는 `자연어를 더 풍부하게 읽는 보조 해석기`다.
+
+### 3-5. 5단계: 후보 가이드가 어디서 오는지 보기
 
 [DbBackedGuideCandidateProvider.java](../module-ai-integration/src/main/java/com/team6/integration/ai/DbBackedGuideCandidateProvider.java)
 
@@ -105,7 +127,7 @@ F03는 사용자가 입력한 여행 프롬프트를 해석해서, 조건에 맞
 
 이 클래스는 `추천 엔진이 비교할 후보군을 만드는 담당자`다.
 
-### 3-5. 5단계: 엔진 입력으로 바꾸는 부분 보기
+### 3-6. 6단계: 엔진 입력으로 바꾸는 부분 보기
 
 [AiRecommendationServiceImpl.java](src/main/java/com/team6/module/ai/service/AiRecommendationServiceImpl.java)
 
@@ -118,7 +140,7 @@ F03는 사용자가 입력한 여행 프롬프트를 해석해서, 조건에 맞
 
 이 단계는 `API/파서 결과 -> 엔진 전용 모델` 변환 단계다.
 
-### 3-6. 6단계: 추천 카드가 만들어지는 곳 보기
+### 3-7. 7단계: 추천 카드가 만들어지는 곳 보기
 
 [MatchingEngine.java](src/main/java/com/team6/module/ai/engine/MatchingEngine.java)
 
@@ -131,7 +153,24 @@ F03는 사용자가 입력한 여행 프롬프트를 해석해서, 조건에 맞
 
 이 파일은 `최종 추천 엔진`이다.
 
-### 3-7. 7단계: 점수 계산 세부 보기
+### 3-8. 8단계: LLM 재정렬 보기
+
+[LlmGuideRanker.java](src/main/java/com/team6/module/ai/spi/LlmGuideRanker.java)
+
+[LlmGuideRankSystemText.java](src/main/java/com/team6/module/ai/llm/LlmGuideRankSystemText.java)
+
+[LlmRankCardComposer.java](src/main/java/com/team6/module/ai/llm/LlmRankCardComposer.java)
+
+여기서 먼저 확인할 것:
+
+- 룰 엔진 추천 결과 위에 왜 LLM 재정렬을 한 번 더 얹는지
+- LLM에 후보 가이드를 어떤 카드 텍스트로 보여주는지
+- `orderedGuideIds`를 어떻게 검증하는지
+- LLM reason이 왜 짧은 인용문을 포함하도록 강제되는지
+
+이 단계는 `룰 엔진 결과 위에 사용자 뉘앙스를 더 반영하는 최종 정렬기`다.
+
+### 3-9. 9단계: 점수 계산 세부 보기
 
 [ScoreCalculator.java](src/main/java/com/team6/module/ai/engine/ScoreCalculator.java)
 
@@ -168,10 +207,12 @@ F03는 사용자가 입력한 여행 프롬프트를 해석해서, 조건에 맞
 역할:
 
 - 프롬프트 파싱
+- LLM 프롬프트 추출 시도
 - 지역 검증
 - 후보 확장
 - 추천 1차 실행
 - 전략적 fallback
+- 필요 시 LLM rank 재정렬
 - notice / noticeCodes / confidence 생성
 - `conceptSummary`, `keywords`, `matchRequestDraft` 생성
 
@@ -185,6 +226,17 @@ F03는 사용자가 입력한 여행 프롬프트를 해석해서, 조건에 맞
 - 사용자의 의도를 구조화된 필드로 추출
 
 쉽게 말하면 `번역기`다.
+
+### LlmPromptExtractor
+
+역할:
+
+- 사용자 원문을 LLM으로 먼저 읽기
+- JSON 스키마에 맞춘 추출 결과 생성
+- `GuideRecommendRequest`로 다시 매핑
+- 실패하면 empty를 반환해 룰 파서 폴백 유도
+
+쉽게 말하면 `LLM 기반 정보 추출기`다.
 
 ### DbBackedGuideCandidateProvider
 
@@ -215,6 +267,17 @@ F03는 사용자가 입력한 여행 프롬프트를 해석해서, 조건에 맞
 - 추천 카드 DTO 생성
 
 쉽게 말하면 `최종 추천 결과 생산기`다.
+
+### LlmGuideRanker
+
+역할:
+
+- 룰 엔진이 만든 후보 카드들을 다시 읽기
+- 사용자 프롬프트의 뉘앙스와 더 잘 맞는 순서 제안
+- 각 가이드에 대한 짧은 이유 문구 생성
+- 유효한 guideId만 남기고 최종 Top-N 재정렬
+
+쉽게 말하면 `마지막 취향 보정 정렬기`다.
 
 ### ScoreCalculator
 
@@ -257,6 +320,17 @@ F03는 사용자가 입력한 여행 프롬프트를 해석해서, 조건에 맞
 - `durationDays`
 - `excludedActivityTags`
 - `softPenaltyActivityTags`
+
+LLM이 켜져 있으면 여기에 추가로 들어올 수 있는 필드:
+
+- `requiredActivityTags`
+- `niceToHaveActivityTags`
+- `requiredLanguages`
+- `niceToHaveLanguages`
+- `allowAdjacentRegion`
+- `strictBudget`
+- `llmGuideBullets`
+- `llmSpecialRequests`
 
 ### 최종 response
 
@@ -301,11 +375,13 @@ F03는 사용자가 입력한 여행 프롬프트를 해석해서, 조건에 맞
 현재 코드 기준으로 AI 모듈이 직접 하는 일은 여기까지다.
 
 1. 프롬프트 해석
-2. 후보군 준비 요청
-3. 후보 점수 계산
-4. 추천 이유 생성
-5. 추천 카드 응답 생성
-6. 매칭 요청 화면용 draft 생성
+2. 필요 시 LLM 프롬프트 추출
+3. 후보군 준비 요청
+4. 후보 점수 계산
+5. 추천 이유 생성
+6. 필요 시 LLM 재정렬과 LLM 이유 문구 생성
+7. 추천 카드 응답 생성
+8. 매칭 요청 화면용 draft 생성
 
 반대로 AI 모듈이 직접 하지 않는 일은 이렇다.
 
@@ -318,6 +394,143 @@ F03는 사용자가 입력한 여행 프롬프트를 해석해서, 조건에 맞
 이건 다른 모듈이 맡는다.
 
 ---
+
+## 7. 지금 LLM이 어디에 들어가 있는가
+
+최신 구조에서는 LLM이 두 군데에 들어간다.
+
+### 7-1. 첫 번째 LLM: 프롬프트 추출
+
+위치:
+
+- [PromptRecommendationService.java](src/main/java/com/team6/module/ai/service/PromptRecommendationService.java)
+- [LlmPromptExtractor.java](src/main/java/com/team6/module/ai/spi/LlmPromptExtractor.java)
+
+역할:
+
+- 사용자 문장을 먼저 읽고
+- region / activityTags / excludedActivityTags / durationDays 같은 값을 구조화
+- 가능하면 `requiredActivityTags`, `niceToHaveActivityTags`, `guideBullets`, `specialRequests` 같은 더 풍부한 값도 채움
+
+이 단계는 `무엇을 원하는지 이해하는 LLM`이다.
+
+쉽게 말하면:
+
+- 룰 파서: 정해진 규칙으로 문장을 읽음
+- LLM 추출기: 문맥과 뉘앙스를 보고 더 풍부하게 읽음
+
+### 7-2. 두 번째 LLM: 후보 순위 재정렬
+
+위치:
+
+- [PromptRecommendationService.java](src/main/java/com/team6/module/ai/service/PromptRecommendationService.java)
+- [LlmGuideRanker.java](src/main/java/com/team6/module/ai/spi/LlmGuideRanker.java)
+- [LlmRankCardComposer.java](src/main/java/com/team6/module/ai/llm/LlmRankCardComposer.java)
+
+역할:
+
+- 룰 엔진이 뽑아둔 후보 카드들을 다시 읽고
+- 사용자 프롬프트의 무드/뉘앙스에 더 잘 맞는 순서로 재정렬
+- 각 가이드별 짧은 추천 이유를 생성
+
+이 단계는 `누가 더 1순위에 가까운지 다시 정렬하는 LLM`이다.
+
+즉 지금 구조는:
+
+1. LLM 추출 또는 룰 파싱으로 프롬프트를 구조화
+2. 룰 엔진으로 기본 추천 계산
+3. 필요하면 LLM이 후보 카드들을 다시 읽고 최종 순서를 다듬음
+
+으로 이해하면 된다.
+
+---
+
+## 8. LLM 추출 흐름
+
+LLM 추출 흐름은 이렇게 본다.
+
+1. 컨트롤러가 `recommendByPrompt(...)` 호출
+2. `PromptRecommendationService.parsePromptToRequest(...)` 진입
+3. 설정에서 `llmPromptExtractionEnabled` 확인
+4. `LlmPromptExtractor` 빈이 있으면 LLM 시도
+5. 성공 시 `LlmGuideRecommendJson -> GuideRecommendRequest`로 매핑
+6. 실패/빈 응답이면 `PromptParser.parse(...)`로 폴백
+
+핵심 포인트:
+
+- LLM이 직접 추천 점수를 계산하지는 않는다
+- LLM은 먼저 `프롬프트를 구조화하는 역할`을 한다
+- 추천 엔진이 받는 최종 타입은 여전히 `GuideRecommendRequest` 하나로 통일된다
+
+---
+
+## 9. LLM rank 흐름
+
+LLM rank 흐름은 이렇게 본다.
+
+1. `PromptRecommendationService`가 룰 엔진으로 기본 추천(`base`) 생성
+2. 전략적 fallback까지 적용한 추천 결과를 `finalBase` 후보로 정리
+3. `applyLlmGuideRankIfEnabled(...)`가 LLM rank 활성 여부 확인
+4. 후보들을 `LlmRankCardComposer`가 긴 텍스트 카드 블록으로 조립
+5. `LlmGuideRanker`가 `orderedGuideIds`와 `reasons` JSON을 반환
+6. 서버가 guideId 유효성/중복을 검증
+7. 검증 통과한 순서만 반영해 최종 recommendations 재정렬
+
+핵심 포인트:
+
+- LLM rank는 후보를 새로 찾지 않는다
+- 이미 서버가 찾아둔 후보들 안에서만 순서를 다시 정한다
+- guideId 검증을 해서 LLM이 엉뚱한 값을 내도 그대로 믿지 않는다
+
+---
+
+## 10. LLM 전용 데이터가 왜 필요한가
+
+최신 코드에서는 `GuideRecommendRequest`와 `GuideCandidateDto` 안에 LLM 전용 필드가 들어 있다.
+
+### 요청 쪽 LLM 전용 필드
+
+- `llmGuideBullets`
+- `llmSpecialRequests`
+
+이 값들은 사용자의 긴 요청을 가이드가 바로 읽기 좋은 문장/불릿으로 정리한 결과다.
+
+주로:
+
+- `conceptSummary`
+- `matchRequestDraft`
+
+를 더 자연스럽게 만드는 데 쓰인다.
+
+### 후보 쪽 LLM 전용 필드
+
+- `llmIntroSnippet`
+- `llmFeedBodiesNewestFirst`
+- `llmCareerSnippet`
+- `llmDefaultCourseSnippet`
+- `llmKeywordsSnippet`
+- `residenceYears`
+- `latestPublicFeedDate`
+- `coldStart`
+- `coreSpecialtyTagsTop3`
+
+이 값들은 LLM rank 단계에서 후보 가이드 카드를 더 잘 읽게 만들기 위한 재료다.
+
+즉 룰 엔진은 수치/태그 중심으로 비교하고,
+LLM rank는 이 텍스트/맥락 재료까지 읽고 순서를 다듬는다.
+
+---
+
+## 11. 초보자 기준으로 지금 구조를 한 문장으로 정리하면
+
+현재 F03는 `LLM 또는 룰 파서로 프롬프트를 구조화하고, 룰 엔진으로 기본 추천을 만든 뒤, 필요하면 LLM이 후보 카드들을 다시 읽어 최종 순서를 다듬는 구조`다.
+
+즉 LLM이 모든 걸 대신하는 구조가 아니라,
+
+- 앞단에서는 `사용자 문장 이해`
+- 뒷단에서는 `후보 순서 보정`
+
+에 들어가는 하이브리드 구조라고 보면 된다.
 
 ## 7. AI 모듈과 다른 모듈의 경계
 
