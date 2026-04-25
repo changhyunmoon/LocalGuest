@@ -11,6 +11,7 @@ import com.team6.domain.matching.dto.request.MatchRequestDeclineRequest;
 import com.team6.domain.matching.dto.request.MatchRequestProposeRequest;
 import com.team6.domain.matching.dto.response.MatchRequestCreateResponse;
 import com.team6.domain.matching.dto.response.MatchRequestActionResponse;
+import com.team6.domain.matching.dto.response.MatchRequestListProjection;
 import com.team6.domain.matching.entity.MatchRequest;
 import com.team6.domain.matching.exception.MatchingErrorCode;
 import com.team6.domain.matching.exception.MatchingException;
@@ -116,6 +117,17 @@ public class MatchRequestService {
                     syncTourProgress(request, today);
                     return MatchRequestCreateResponse.from(request);
                 });
+    }
+
+    /** 게스트 본인 매칭 요청 Slice 조회 (DTO projection 적용). */
+    @Transactional(readOnly = true)
+    public Slice<MatchRequestCreateResponse> getGuestRequestsSliceProjected(Long guestId, int page, int size) {
+        int normalizedPage = Math.max(page, 0);
+        int normalizedSize = Math.min(Math.max(size, 1), 100);
+        Pageable pageable = PageRequest.of(normalizedPage, normalizedSize);
+
+        return matchRequestRepository.findGuestListProjectionSliceByGuestId(guestId, pageable)
+                .map(MatchRequestCreateResponse::fromProjection);
     }
 
     // 가이드의 매칭 요청 목록 조회

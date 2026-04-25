@@ -76,6 +76,19 @@ public class MatchRequestController {
         return ResponseEntity.ok(matchRequestService.getGuestRequestsSlice(guestId, page, size));
     }
 
+    /**
+     * 게스트 본인 매칭 요청 Slice 조회 (DTO projection).
+     * 기존 API 동작은 유지하고, 성능 비교를 위한 별도 경로를 제공한다.
+     */
+    @GetMapping("/guest/list/slice-projected")
+    public ResponseEntity<Slice<MatchRequestCreateResponse>> getGuestRequestsSliceProjected(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        Long guestId = matchingAuthenticationSupport.getCurrentGuestMemberId();
+        return ResponseEntity.ok(matchRequestService.getGuestRequestsSliceProjected(guestId, page, size));
+    }
+
     /** 가이드 본인 매칭 요청 목록 — 경로는 {@code /guide/list} (게스트 {@code /guest/list} 와 대칭). */
     @GetMapping("/guide/list")
     public ResponseEntity<List<MatchRequestCreateResponse>> getGuideRequests() {
