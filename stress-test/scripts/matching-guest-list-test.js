@@ -26,7 +26,7 @@ export default function () {
     throw new Error('TOKEN is required. Set env var TOKEN');
   }
 
-  const res = http.get(`${BASE}/matching/requests/guest/list`, {
+const res = http.get(`${BASE}/matching/requests/guest/list/paged?page=0&size=20`, {
     headers: { Authorization: `Bearer ${TOKEN}` },
   });
 
