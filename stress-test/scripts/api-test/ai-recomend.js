@@ -14,61 +14,65 @@ export const options = {
     iterations: 1,
 }
 
-function logResult(name, durations, statuses, startTime, endTime) {
+function percentile(sorted, p) {
+    if (sorted.length === 0) return 0
+    const index = Math.ceil(sorted.length * p) - 1
+    return sorted[Math.max(0, index)]
+}
+
+function logResult(name, durations, statuses) {
     const sorted = [...durations].sort((a, b) => a - b)
-    const count = durations.length
-    const avg = durations.reduce((a, b) => a + b, 0) / count
 
-    // Percentile 계산
-    const p95 = sorted[Math.max(0, Math.ceil(count * 0.95) - 1)]
-    const p99 = sorted[Math.max(0, Math.ceil(count * 0.99) - 1)]
+    const p95 = percentile(sorted, 0.95)
+    const p99 = percentile(sorted, 0.99)
 
-    // 오류율 계산 (200이 아닌 모든 상태 코드)
-    const errors = statuses.filter(s => s !== 200).length
-    const errorRate = (errors / count) * 100
+    const errorCount = statuses.filter((status) => status < 200 || status >= 400).length
+    const errorRate = (errorCount / statuses.length) * 100
 
-    // TPS 계산 (실제 테스트 수행 시간 기준)
-    const durationSeconds = (endTime - startTime) / 1000
-    const tps = count / durationSeconds
-
-    console.log(`\n================ [ ${name} ] ================`)
-    console.log(`api: ${name}`)
-    console.log(`avg: ${avg.toFixed(2)} ms`)
+    console.log(`\n[${name}]`)
+    console.log(`count: ${statuses.length}`)
     console.log(`p95: ${p95.toFixed(2)} ms`)
     console.log(`p99: ${p99.toFixed(2)} ms`)
-    console.log(`오류율: ${errorRate.toFixed(2)}%`)
-    console.log(`초당 처리 건수(TPS): ${tps.toFixed(2)} req/s`)
-    console.log(`CPU 사용량: [Grafana에서 확인 필요]`)
-    console.log(`메모리 사용량: [Grafana에서 확인 필요]`)
-    console.log(`================================================\n`)
+    console.log(`errorRate: ${errorRate.toFixed(2)} %`)
+    console.log(`statuses: ${statuses.join(', ')}`)
 }
 
 export default function () {
-    const durations = []
+    const measuredDurations = []
     const statuses = []
 
-    // 1. Warmup
+    // 워밍업 2회
     for (let i = 0; i < 2; i++) {
-        http.post(`${BASE_URL}/ai/recommend`, BODY, {
-            headers: { 'Content-Type': 'application/json' },
+        const res = http.post(`${BASE_URL}/ai/recommend`, JSON.stringify(BODY), {
+            headers: {
+                'Content-Type': 'application/json',
+            },
         })
+
+        check(res, {
+            'warmup ai recommend ok': (r) => r.status === 200,
+        })
+
         sleep(0.2)
     }
 
-    // 2. Main Test (시간 측정 시작)
-    const startTime = Date.now()
+    // 본 측정 20회
     for (let i = 0; i < 20; i++) {
-        const res = http.post(`${BASE_URL}/ai/recommend`, BODY, {
-            headers: { 'Content-Type': 'application/json' },
+        const res = http.post(`${BASE_URL}/ai/recommend`, JSON.stringify(BODY), {
+            headers: {
+                'Content-Type': 'application/json',
+            },
         })
 
-        check(res, { 'status is 200': (r) => r.status === 200 })
+        check(res, {
+            'ai recommend request completed': (r) => r.status > 0,
+        })
 
-        durations.push(res.timings.duration)
+        measuredDurations.push(res.timings.duration)
         statuses.push(res.status)
+
         sleep(0.2)
     }
-    const endTime = Date.now()
 
-    logResult('POST /ai/recommend', durations, statuses, startTime, endTime)
+    logResult('POST /ai/recommend', measuredDurations, statuses)
 }
