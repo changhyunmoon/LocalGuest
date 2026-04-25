@@ -14,6 +14,7 @@ import com.team6.domain.matching.support.MatchingAuthenticationSupport;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Slice;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -60,6 +61,19 @@ public class MatchRequestController {
     ) {
         Long guestId = matchingAuthenticationSupport.getCurrentGuestMemberId();
         return ResponseEntity.ok(matchRequestService.getGuestRequestsPaged(guestId, page, size));
+    }
+
+    /**
+     * 게스트 본인 매칭 요청 Slice 조회.
+     * 기존 /guest/list 응답(List)은 그대로 유지하여 하위호환을 보장한다.
+     */
+    @GetMapping("/guest/list/slice")
+    public ResponseEntity<Slice<MatchRequestCreateResponse>> getGuestRequestsSlice(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        Long guestId = matchingAuthenticationSupport.getCurrentGuestMemberId();
+        return ResponseEntity.ok(matchRequestService.getGuestRequestsSlice(guestId, page, size));
     }
 
     /** 가이드 본인 매칭 요청 목록 — 경로는 {@code /guide/list} (게스트 {@code /guest/list} 와 대칭). */
