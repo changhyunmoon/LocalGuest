@@ -4,7 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="84d1b3de-8103-452e-83cf-38ecd34993e7" name="Changes" comment="Feat/fe#453: redis, mongodb 분리" />
+    <list default="true" id="84d1b3de-8103-452e-83cf-38ecd34993e7" name="Changes" comment="Feat/fe#453: redis, mongodb 분리">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -153,7 +155,8 @@
       <workItem from="1776940610378" duration="262000" />
       <workItem from="1776996988492" duration="2173000" />
       <workItem from="1777024277210" duration="1941000" />
-      <workItem from="1777123987663" duration="3164000" />
+      <workItem from="1777123987663" duration="4948000" />
+      <workItem from="1777166706254" duration="313000" />
     </task>
     <task id="LOCAL-00001" summary="Feat/be#417: 모니터링 배포 테스트">
       <option name="closed" value="true" />
