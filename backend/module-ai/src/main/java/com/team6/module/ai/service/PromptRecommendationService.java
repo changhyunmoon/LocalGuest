@@ -94,8 +94,6 @@ public class PromptRecommendationService {
             "이 조건에 맞는 가이드가 한 분뿐이라 추천 선택 폭이 좁을 수 있어요.";
     private static final String NOTICE_PARSE_LOW =
             "입력이 짧아 해석 여지가 있어요. 예산·일정·활동을 더 적어주시면 정확해져요.";
-    private static final String NOTICE_BUDGET_VAGUE =
-            "예산과 관련된 표현이 있는데 구간을 확정하지 못했어요. 금액이나 ‘가성비/럭셔리’처럼 알려주시면 좋아요.";
     private static final String NOTICE_DURATION_VAGUE =
             "일정에 대한 말은 있는데 며칠인지 확정하지 못했어요. ‘2박3일’처럼 적어주시면 좋아요.";
 
@@ -192,7 +190,8 @@ public class PromptRecommendationService {
                         parsed.getGuideCandidates(),
                         parsed.getRegion(),
                         adjacentRegionProvider::neighbors,
-                        Boolean.TRUE.equals(parsed.getAllowAdjacentRegion())
+                        Boolean.TRUE.equals(parsed.getAllowAdjacentRegion()),
+                        resolvedTopN
                 );
 
         // 4) 실제 점수 계산에 넣을 최종 요청 객체를 다시 만든다.
@@ -513,11 +512,8 @@ public class PromptRecommendationService {
             String parseConfidence,
             List<String> ambiguityCodes
     ) {
-        // 파싱이 애매했던 경우에는 사용자에게 "예산/기간을 더 구체적으로 적어달라"는 힌트를 notice에 덧붙인다.
+        // 파싱이 애매했던 경우에는 사용자에게 "기간" 힌트를 notice에 덧붙인다.
         String out = notice;
-        if (ambiguityCodes != null && ambiguityCodes.contains(RecommendationNoticeCodes.PROMPT_BUDGET_AMBIGUOUS)) {
-            out = mergeNotice(out, NOTICE_BUDGET_VAGUE);
-        }
         if (ambiguityCodes != null && ambiguityCodes.contains(RecommendationNoticeCodes.PROMPT_DURATION_AMBIGUOUS)) {
             out = mergeNotice(out, NOTICE_DURATION_VAGUE);
         }
@@ -537,9 +533,7 @@ public class PromptRecommendationService {
     private static List<String> collectAmbiguityNoticeCodes(String prompt, GuideRecommendRequest parsed) {
         String p = normalizeForAmbiguityScan(prompt);
         List<String> codes = new ArrayList<>();
-        if (!notBlank(parsed.getBudgetLevel()) && budgetMentionedAmbiguous(p)) {
-            codes.add(RecommendationNoticeCodes.PROMPT_BUDGET_AMBIGUOUS);
-        }
+        // 예산은 가이드/사용자 간 조율 영역으로 보고, 예산 관련 모호 notice는 노출하지 않는다.
         if (parsed.getDurationDays() == null && durationMentionedAmbiguous(p)) {
             codes.add(RecommendationNoticeCodes.PROMPT_DURATION_AMBIGUOUS);
         }
@@ -859,6 +853,90 @@ public class PromptRecommendationService {
                 || (req.getNiceToHaveActivityTags() != null && !req.getNiceToHaveActivityTags().isEmpty());
     }
 
+    /**
+     * LLM rank 품질 보호용: excludedActivityTags가 후보 카드 텍스트/태그에 강하게 드러나는 경우
+     * LLM에 넘길 풀에서 우선 제거한다(단, 전부 제거되면 원본 풀을 유지).
+     */
+    static List<GuideRecommendRequest.GuideCandidateDto> filterPoolByExcludedSignals(
+            List<String> excludedActivityTags,
+            List<GuideRecommendRequest.GuideCandidateDto> pool
+    ) {
+        if (pool == null || pool.isEmpty()) {
+            return List.of();
+        }
+        if (excludedActivityTags == null || excludedActivityTags.isEmpty()) {
+            return pool;
+        }
+        List<String> needles = excludedActivityTags.stream()
+                .filter(Objects::nonNull)
+                .map(String::trim)
+                .filter(s -> !s.isBlank())
+                .filter(s -> s.length() >= 2)
+                .map(s -> s.toLowerCase(Locale.ROOT))
+                .distinct()
+                .toList();
+        if (needles.isEmpty()) {
+            return pool;
+        }
+
+        List<GuideRecommendRequest.GuideCandidateDto> kept = new ArrayList<>();
+        for (GuideRecommendRequest.GuideCandidateDto c : pool) {
+            if (c == null) continue;
+            if (!violatesExcludedSignals(needles, c)) {
+                kept.add(c);
+            }
+        }
+        return kept.isEmpty() ? pool : kept;
+    }
+
+    private static boolean violatesExcludedSignals(List<String> needlesLower, GuideRecommendRequest.GuideCandidateDto c) {
+        if (needlesLower == null || needlesLower.isEmpty() || c == null) {
+            return false;
+        }
+        String hay = buildCandidateTextHaystackLower(c);
+        if (hay.isEmpty()) {
+            return false;
+        }
+        for (String n : needlesLower) {
+            if (n == null || n.isBlank()) continue;
+            if (hay.contains(n)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static String buildCandidateTextHaystackLower(GuideRecommendRequest.GuideCandidateDto c) {
+        StringBuilder sb = new StringBuilder();
+        appendIfPresent(sb, c.getGuideStyle());
+        appendIfPresent(sb, joinOrEmpty(c.getSpecialtyTags()));
+        appendIfPresent(sb, c.getLlmKeywordsSnippet());
+        appendIfPresent(sb, c.getLlmIntroSnippet());
+        if (c.getLlmFeedBodiesNewestFirst() != null) {
+            for (String s : c.getLlmFeedBodiesNewestFirst()) {
+                appendIfPresent(sb, s);
+            }
+        }
+        appendIfPresent(sb, c.getLlmDefaultCourseSnippet());
+        appendIfPresent(sb, c.getLlmCareerSnippet());
+        return sb.toString().toLowerCase(Locale.ROOT);
+    }
+
+    private static void appendIfPresent(StringBuilder sb, String text) {
+        if (sb == null) return;
+        if (text == null || text.isBlank()) return;
+        sb.append(' ').append(text.strip());
+    }
+
+    private static String joinOrEmpty(List<String> tags) {
+        if (tags == null || tags.isEmpty()) return "";
+        return tags.stream()
+                .filter(Objects::nonNull)
+                .map(String::trim)
+                .filter(s -> !s.isBlank())
+                .collect(Collectors.joining(" "));
+    }
+
     private void logRecommendation(
             String prompt,
             GuideRecommendRequest request,
@@ -937,7 +1015,9 @@ public class PromptRecommendationService {
         if (pool == null || pool.isEmpty()) {
             return finalBase;
         }
-        int poolSize = pool.size();
+        List<GuideRecommendRequest.GuideCandidateDto> filteredPool =
+                filterPoolByExcludedSignals(scoringRequest.getExcludedActivityTags(), pool);
+        int poolSize = filteredPool.size();
         long t0 = System.nanoTime();
         try {
             GuideRecommendRequest fullReq = scoringRequest.toBuilder()
@@ -948,15 +1028,21 @@ public class PromptRecommendationService {
                 metrics.recordLlmGuideRank("empty_rule_full", System.nanoTime() - t0, POLICY_VERSION);
                 return finalBase;
             }
-            long seed = LlmRankCardComposer.stableSeed(prompt, pool);
+            long seed = LlmRankCardComposer.stableSeed(prompt, filteredPool);
             Optional<LlmGuideRankResult> ranked =
-                    llmGuideRanker.tryRank(truncateForLlm(prompt), pool, resolvedTopN, seed);
+                    llmGuideRanker.tryRank(truncateForLlm(prompt), filteredPool, resolvedTopN, seed);
             if (ranked.isEmpty()) {
                 metrics.recordLlmGuideRank("empty", System.nanoTime() - t0, POLICY_VERSION);
                 log.info("[AI_RANK] llmRank=empty policyVer={} topN={} poolSize={}", POLICY_VERSION, resolvedTopN, poolSize);
                 return finalBase;
             }
-            GuideRecommendResponse merged = mergeLlmRankIntoResponse(fullRule, ranked.get(), resolvedTopN);
+            GuideRecommendResponse merged = mergeLlmRankIntoResponse(
+                    fullRule,
+                    ranked.get(),
+                    resolvedTopN,
+                    scoringRequest.getExcludedActivityTags(),
+                    filteredPool
+            );
             metrics.recordLlmGuideRank("success", System.nanoTime() - t0, POLICY_VERSION);
             log.info("[AI_RANK] llmRank=success policyVer={} topN={} poolSize={} orderedIds={}",
                     POLICY_VERSION,
@@ -970,6 +1056,60 @@ public class PromptRecommendationService {
             log.warn("[AI_RANK] LLM 순위 적용 실패, 룰 결과 유지: {}", e.toString());
             return finalBase;
         }
+    }
+
+    private static GuideRecommendResponse mergeLlmRankIntoResponse(
+            GuideRecommendResponse fullRule,
+            LlmGuideRankResult rank,
+            int topN,
+            List<String> excludedActivityTags,
+            List<GuideRecommendRequest.GuideCandidateDto> pool
+    ) {
+        // 2단 필터: LLM이 실수로 제외 후보를 앞에 두더라도, 최종 TopN에서는 제외 위반 후보를 한 번 더 걸러낸다.
+        // 단, 너무 과하게 걸러 empty가 되면 원본 머지 결과를 유지한다.
+        GuideRecommendResponse baselineMerged = mergeLlmRankIntoResponse(fullRule, rank, topN);
+        if (excludedActivityTags == null || excludedActivityTags.isEmpty() || pool == null || pool.isEmpty()) {
+            return baselineMerged;
+        }
+
+        Map<Long, GuideRecommendRequest.GuideCandidateDto> candidateById = pool.stream()
+                .filter(Objects::nonNull)
+                .filter(c -> c.getGuideId() != null)
+                .collect(Collectors.toMap(GuideRecommendRequest.GuideCandidateDto::getGuideId, c -> c, (a, b) -> a));
+        List<String> needles = excludedActivityTags.stream()
+                .filter(Objects::nonNull)
+                .map(String::trim)
+                .filter(s -> !s.isBlank())
+                .filter(s -> s.length() >= 2)
+                .map(s -> s.toLowerCase(Locale.ROOT))
+                .distinct()
+                .toList();
+        if (needles.isEmpty()) {
+            return baselineMerged;
+        }
+
+        List<GuideRecommendItem> src = baselineMerged.getRecommendations();
+        if (src == null || src.isEmpty()) {
+            return baselineMerged;
+        }
+        List<GuideRecommendItem> filtered = new ArrayList<>();
+        for (GuideRecommendItem it : src) {
+            if (filtered.size() >= topN) break;
+            if (it == null || it.getGuideId() == null) continue;
+            GuideRecommendRequest.GuideCandidateDto c = candidateById.get(it.getGuideId());
+            if (c != null && violatesExcludedSignals(needles, c)) {
+                continue;
+            }
+            filtered.add(it);
+        }
+        if (filtered.isEmpty()) {
+            return baselineMerged;
+        }
+        return GuideRecommendResponse.builder()
+                .policyVersion(POLICY_VERSION)
+                .totalCount(filtered.size())
+                .recommendations(filtered)
+                .build();
     }
 
     private static GuideRecommendResponse mergeLlmRankIntoResponse(
@@ -1025,7 +1165,7 @@ public class PromptRecommendationService {
      * LLM이 만든 reason은 사용자 노출 문자열이므로 PII 마스킹/길이 상한을 적용한다.
      * 너무 짧거나 공백뿐이면 null로 간주해 룰 reason을 유지한다.
      */
-    private static String sanitizeLlmReason(String raw) {
+    static String sanitizeLlmReason(String raw) {
         if (raw == null) {
             return null;
         }
@@ -1053,7 +1193,43 @@ public class PromptRecommendationService {
         if (containsHedgingOrGuess(t)) {
             return null;
         }
+        if (!containsShortQuotation(t)) {
+            return null;
+        }
         return t;
+    }
+
+    /**
+     * 인용 근거가 없는 reason은 룰 reason으로 폴백한다.
+     * - 따옴표(" 또는 “ ”)로 감싼 3~40자 인용 1개 이상을 요구한다.
+     */
+    private static boolean containsShortQuotation(String text) {
+        if (text == null || text.isBlank()) {
+            return false;
+        }
+        String t = text.strip();
+        // 우선 큰따옴표 기반으로 검사
+        if (hasQuotedSpan(t, '"', '"')) {
+            return true;
+        }
+        // 곡선따옴표(“ ”) 기반으로 검사
+        return hasQuotedSpan(t, '“', '”');
+    }
+
+    private static boolean hasQuotedSpan(String text, char open, char close) {
+        int start = text.indexOf(open);
+        while (start >= 0) {
+            int end = text.indexOf(close, start + 1);
+            if (end < 0) {
+                return false;
+            }
+            int len = end - start - 1;
+            if (len >= 3 && len <= 40) {
+                return true;
+            }
+            start = text.indexOf(open, end + 1);
+        }
+        return false;
     }
 
     /**

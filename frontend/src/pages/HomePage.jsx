@@ -12,10 +12,10 @@ const POLAROID_A = '/hero/hero-polaroid-coastal-mint.png'
 const POLAROID_B = '/hero/hero-polaroid-cafe-mint.png'
 
 const DESTINATIONS = [
-  { name: '제주', query: '제주', image: '/destinations/jeju.webp' },
-  { name: '부산', query: '부산', image: '/destinations/busan.webp' },
-  { name: '강릉', query: '강릉', image: '/destinations/gangneung.webp' },
-  { name: '여수', query: '여수', image: '/destinations/yeosu.webp' },
+  { name: '제주', image: '/destinations/jeju.webp' },
+  { name: '부산', image: '/destinations/busan.webp' },
+  { name: '강릉', image: '/destinations/gangneung.webp' },
+  { name: '여수', image: '/destinations/yeosu.webp' },
 ]
 
 /** 민트 키 베이스·거의 흰색에 가까운 밝은 파스텔(한 행 카드끼리 색 구분) */
@@ -171,13 +171,13 @@ export function HomePage() {
         </h2>
         <div className="f02-dest-grid">
           {DESTINATIONS.map((d) => (
-            <Link key={d.name} to={`/guides?region=${encodeURIComponent(d.query)}`} className="f02-dest-card">
+            <div key={d.name} className="f02-dest-card" role="img" aria-label={`${d.name} 여행지 이미지`}>
               <span className="f02-dest-tape" aria-hidden />
               <div className="f02-dest-photo">
                 <img src={d.image} alt="" width={320} height={400} loading="lazy" decoding="async" />
               </div>
               <span className="f02-dest-name">{d.name}</span>
-            </Link>
+            </div>
           ))}
         </div>
       </section>

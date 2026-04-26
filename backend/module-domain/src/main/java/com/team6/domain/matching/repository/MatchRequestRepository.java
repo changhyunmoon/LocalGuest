@@ -1,7 +1,11 @@
 package com.team6.domain.matching.repository;
 
 import com.team6.domain.matching.entity.MatchRequest;
+import com.team6.domain.matching.dto.response.MatchRequestListProjection;
 import com.team6.domain.matching.entity.enums.MatchRequestStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -13,6 +17,36 @@ public interface MatchRequestRepository extends JpaRepository<MatchRequest, Long
 
     // 게스트 ID로 전체 매칭 요청 조회
     List<MatchRequest> findByGuestId(Long guestId);
+
+    // 게스트 ID로 페이징 조회
+    Page<MatchRequest> findByGuestId(Long guestId, Pageable pageable);
+
+    // 게스트 ID로 Slice 기반 페이징 조회 (COUNT 쿼리 회피용)
+    Slice<MatchRequest> findSliceByGuestId(Long guestId, Pageable pageable);
+
+    // 게스트 ID로 DTO projection + Slice 조회 (필요 컬럼만 선택)
+    @Query("""
+            SELECT
+              mr.id AS requestId,
+              mr.guestId AS guestId,
+              mr.guideId AS guideId,
+              mr.guideScheduleId AS guideScheduleId,
+              mr.destination AS destination,
+              mr.concept AS concept,
+              mr.conceptSummary AS conceptSummary,
+              mr.desiredDate AS desiredDate,
+              mr.desiredBudget AS desiredBudget,
+              mr.budgetMinWon AS budgetMinWon,
+              mr.budgetMaxWon AS budgetMaxWon,
+              mr.proposedSchedule AS proposedSchedule,
+              mr.proposeMessage AS proposeMessage,
+              mr.status AS status,
+              mr.createdAt AS createdAt
+            FROM MatchRequest mr
+            WHERE mr.guestId = :guestId
+            ORDER BY mr.createdAt DESC
+            """)
+    Slice<MatchRequestListProjection> findGuestListProjectionSliceByGuestId(@Param("guestId") Long guestId, Pageable pageable);
 
     // 가이드 ID로 전체 매칭 요청 조회
     List<MatchRequest> findByGuideId(Long guideId);

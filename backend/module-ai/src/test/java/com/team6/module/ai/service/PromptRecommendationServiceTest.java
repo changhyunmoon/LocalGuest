@@ -301,4 +301,41 @@ class PromptRecommendationServiceTest {
 
         verifyNoInteractions(extractor);
     }
+
+    @Test
+    void sanitizeLlmReason_requiresShortQuotationCitation() {
+        // 따옴표 인용이 없으면 룰 reason으로 폴백(null)
+        assertThat(PromptRecommendationService.sanitizeLlmReason(
+                "부산 야경 코스에 잘 맞고 리뷰도 안정적이에요. 요청하신 제외 조건도 반영할 수 있어요."
+        )).isNull();
+
+        // 소개 기반 짧은 인용이 있으면 통과
+        assertThat(PromptRecommendationService.sanitizeLlmReason(
+                "소개에 “조용히 걷는 산책 코스”가 있어 감성 일정에 잘 맞습니다. 술집 위주는 제외하고 구성하겠습니다."
+        )).isNotNull();
+    }
+
+    @Test
+    void applyLlmGuideRank_filters_out_candidates_matching_excluded_activity_tags() {
+        List<GuideRecommendRequest.GuideCandidateDto> candidates = List.of(
+                GuideRecommendRequest.GuideCandidateDto.builder()
+                        .guideId(1L).guideName("A").region("부산").guideStyle("감성").priceLevel("중간")
+                        .specialtyTags(List.of("바다"))
+                        .languages(List.of("한국어"))
+                        .llmIntroSnippet("조용한 산책 코스를 좋아해요")
+                        .build(),
+                GuideRecommendRequest.GuideCandidateDto.builder()
+                        .guideId(2L).guideName("B").region("부산").guideStyle("파티").priceLevel("중간")
+                        .specialtyTags(List.of("술집"))
+                        .languages(List.of("한국어"))
+                        .llmIntroSnippet("술집 투어를 자주 안내합니다")
+                        .build()
+        );
+
+        List<GuideRecommendRequest.GuideCandidateDto> filtered =
+                PromptRecommendationService.filterPoolByExcludedSignals(List.of("술집"), candidates);
+        assertThat(filtered.stream().map(GuideRecommendRequest.GuideCandidateDto::getGuideId).toList())
+                .contains(1L)
+                .doesNotContain(2L);
+    }
 }

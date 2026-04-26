@@ -13,6 +13,8 @@ import com.team6.domain.matching.service.MatchRequestService;
 import com.team6.domain.matching.support.MatchingAuthenticationSupport;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Slice;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -49,6 +51,42 @@ public class MatchRequestController {
     public ResponseEntity<List<MatchRequestCreateResponse>> getGuestRequests() {
         Long guestId = matchingAuthenticationSupport.getCurrentGuestMemberId();
         return ResponseEntity.ok(matchRequestService.getGuestRequests(guestId));
+    }
+
+    /** 게스트 본인 매칭 요청 페이징 조회 (기존 /guest/list 하위호환 유지용 신규 경로). */
+    @GetMapping("/guest/list/paged")
+    public ResponseEntity<Page<MatchRequestCreateResponse>> getGuestRequestsPaged(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        Long guestId = matchingAuthenticationSupport.getCurrentGuestMemberId();
+        return ResponseEntity.ok(matchRequestService.getGuestRequestsPaged(guestId, page, size));
+    }
+
+    /**
+     * 게스트 본인 매칭 요청 Slice 조회.
+     * 기존 /guest/list 응답(List)은 그대로 유지하여 하위호환을 보장한다.
+     */
+    @GetMapping("/guest/list/slice")
+    public ResponseEntity<Slice<MatchRequestCreateResponse>> getGuestRequestsSlice(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        Long guestId = matchingAuthenticationSupport.getCurrentGuestMemberId();
+        return ResponseEntity.ok(matchRequestService.getGuestRequestsSlice(guestId, page, size));
+    }
+
+    /**
+     * 게스트 본인 매칭 요청 Slice 조회 (DTO projection).
+     * 기존 API 동작은 유지하고, 성능 비교를 위한 별도 경로를 제공한다.
+     */
+    @GetMapping("/guest/list/slice-projected")
+    public ResponseEntity<Slice<MatchRequestCreateResponse>> getGuestRequestsSliceProjected(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        Long guestId = matchingAuthenticationSupport.getCurrentGuestMemberId();
+        return ResponseEntity.ok(matchRequestService.getGuestRequestsSliceProjected(guestId, page, size));
     }
 
     /** 가이드 본인 매칭 요청 목록 — 경로는 {@code /guide/list} (게스트 {@code /guest/list} 와 대칭). */
