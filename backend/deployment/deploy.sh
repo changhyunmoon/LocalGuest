@@ -16,38 +16,46 @@ cd "$DOCKER_DIR" || exit 1
 
 
 
-# 2-1. 모니터링(Prometheus, Grafana) 환경 점검
+# 2-1. 모니터링(Prometheus, Grafana, Loki) 환경 점검
 echo "--- 📊 2. 모니터링 환경 점검 ---"
 
 if [ -f "$COMPOSE_MONITORING" ]; then
-    $DOCKER_COMPOSE_MONITORING up -d || { echo "❌ 모니터링 실행 실패"; exit 1; }
-
-    RUNNING_PROMETHEUS=$(docker ps --filter "name=prometheus" --filter "status=running" -q)
-    RUNNING_GRAFANA=$(docker ps --filter "name=grafana" --filter "status=running" -q)
-
-    if [ -n "$RUNNING_PROMETHEUS" ] && [ -n "$RUNNING_GRAFANA" ]; then
-        echo "✅ 모니터링 컨테이너 가동 확인 완료."
-    else
-        echo "⏳ 모니터링 안정화 대기 (10s)..."
-        sleep 10
-    fi
-
-    # Prometheus 헬스체크
-    for i in {1..10}; do
-        echo "🔎 Prometheus 헬스체크 중... ($i/10)"
-        sleep 3
-        PROM_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:9090/-/healthy || true)
-
-        if [ "$PROM_STATUS" -eq 200 ]; then
-            echo "✅ Prometheus 헬스체크 성공!"
-            break
-        fi
-
-        if [ $i -eq 10 ]; then
-            echo "⚠️ Prometheus 헬스체크 실패. 로그를 확인하세요."
-            docker logs --tail 50 prometheus || true
+    # [보완] 마운트 에러 방지: 설정값이 디렉토리로 잘못 생성되었는지 체크
+    for FILE in "$DOCKER_DIR/loki/loki-config.yml" "$DOCKER_DIR/loki/promtail-config.yml"; do
+        if [ -d "$FILE" ]; then
+            echo "⚠️ 경고: $FILE 이 디렉토리로 존재합니다. 삭제 후 재시도합니다."
+            sudo rm -rf "$FILE"
         fi
     done
+
+    $DOCKER_COMPOSE_MONITORING up -d || { echo "❌ 모니터링 실행 실패"; exit 1; }
+
+    echo "⏳ 모니터링 컨테이너 안정화 대기 (10s)..."
+    sleep 10
+
+    # Prometheus 헬스체크
+    PROM_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:9090/-/healthy || true)
+    if [ "$PROM_STATUS" -eq 200 ]; then
+        echo "✅ Prometheus 가동 중"
+    else
+        echo "❌ Prometheus 응답 없음"; exit 1
+    fi
+
+    # [추가] Loki 헬스체크
+    LOKI_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3100/ready || true)
+    if [ "$LOKI_STATUS" -eq 200 ]; then
+        echo "✅ Loki 가동 중"
+    else
+        echo "❌ Loki 응답 없음 (loki-config.yml 설정을 확인하세요)"; exit 1
+    fi
+
+    # [추가] Promtail 가동 확인 (프로세스 체크)
+    if [ -n "$(docker ps --filter "name=promtail" --filter "status=running" -q)" ]; then
+        echo "✅ Promtail 가동 중"
+    else
+        echo "❌ Promtail 실행 실패 (로그 마운트 에러일 가능성이 높음)"; exit 1
+    fi
+
 else
     echo "⚠️ $COMPOSE_MONITORING 파일이 없어 모니터링 단계는 건너뜁니다."
 fi
