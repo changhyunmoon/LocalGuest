@@ -42,12 +42,24 @@ if [ -f "$COMPOSE_MONITORING" ]; then
     fi
 
     # [추가] Loki 헬스체크
-    LOKI_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3100/ready || true)
-    if [ "$LOKI_STATUS" -eq 200 ]; then
-        echo "✅ Loki 가동 중"
-    else
-        echo "❌ Loki 응답 없음 (loki-config.yml 설정을 확인하세요)"; exit 1
-    fi
+    # Loki can return 503 from /ready for a short time after the container starts.
+    for i in {1..30}; do
+        LOKI_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3100/ready || true)
+
+        if [ "$LOKI_STATUS" -eq 200 ]; then
+            echo "✅ Loki 가동 중"
+            break
+        fi
+
+        if [ $i -eq 30 ]; then
+            echo "❌ Loki 응답 없음 (HTTP $LOKI_STATUS). 최근 Loki 로그:"
+            docker logs --tail 80 loki || true
+            exit 1
+        fi
+
+        echo "⏳ Loki 준비 대기 중... ($i/30, HTTP $LOKI_STATUS)"
+        sleep 2
+    done
 
     # [추가] Promtail 가동 확인 (프로세스 체크)
     if [ -n "$(docker ps --filter "name=promtail" --filter "status=running" -q)" ]; then
