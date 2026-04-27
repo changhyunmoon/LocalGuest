@@ -279,12 +279,17 @@ export function GuestUpcomingTripsPage() {
       if (st === 'PAID' || st === 'IN_PROGRESS') {
         const qs = new URLSearchParams()
         qs.set('requestId', String(row.requestId))
+        qs.set('nav', 'itinerary')
         const pid = paymentIdByRequest[row.requestId]
         if (pid != null) qs.set('paymentId', String(pid))
         navigate(`/guides/${row.guideId}/match/complete?${qs.toString()}`)
         return
       }
-      navigate(`/guides/${row.guideId}/match`, { state: { requestId: row.requestId } })
+      navigate({
+        pathname: `/guides/${row.guideId}/match`,
+        search: 'nav=itinerary',
+        state: { requestId: row.requestId },
+      })
     },
     [navigate, paymentIdByRequest],
   )

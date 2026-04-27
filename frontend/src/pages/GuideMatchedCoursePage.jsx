@@ -61,6 +61,8 @@ export function GuideMatchedCoursePage() {
 
   const requestId = searchParams.get('requestId')
   const paymentId = searchParams.get('paymentId')
+  const itineraryNav = searchParams.get('nav') === 'itinerary'
+  const guideProfileHref = itineraryNav ? `/guides/${guideId}?nav=itinerary` : `/guides/${guideId}`
 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -253,7 +255,7 @@ export function GuideMatchedCoursePage() {
 
       {/* 가이드 프로필 헤더 (기존 유지) */}
       <Link
-        to={`/guides/${guideId}`}
+        to={guideProfileHref}
         state={{
           fromMatchedCourse: true,
           hideMatchRequest: true,
