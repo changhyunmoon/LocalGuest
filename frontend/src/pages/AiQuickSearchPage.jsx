@@ -611,6 +611,7 @@ export function AiQuickSearchPage() {
                                     <span className="ais-polaroid-pin" aria-hidden />
                                     <Link
                                       to={`/guides/${g.guideId}`}
+                                      state={{ returnTo: '/ai-search' }}
                                       className="ais-polaroid-link"
                                       onClick={() => onClickGuideDetail(g.guideId, idx + 1)}
                                     >
@@ -696,6 +697,7 @@ export function AiQuickSearchPage() {
                                       <Link
                                         key={f.feedId}
                                         to={`/guides/${g.guideId}`}
+                                        state={{ returnTo: '/ai-search' }}
                                         className="ais-feed-thumb"
                                         title={f.content ? String(f.content).slice(0, 80) : '가이드 상세보기'}
                                         onClick={() => onClickGuideDetail(g.guideId, rank)}
@@ -710,6 +712,7 @@ export function AiQuickSearchPage() {
                                   ) : (
                                     <Link
                                       to={`/guides/${g.guideId}`}
+                                      state={{ returnTo: '/ai-search' }}
                                       className="ais-feed-empty"
                                       title="가이드 상세보기"
                                       onClick={() => onClickGuideDetail(g.guideId, rank)}

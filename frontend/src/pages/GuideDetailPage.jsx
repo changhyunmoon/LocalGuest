@@ -251,7 +251,8 @@ export function GuideDetailPage() {
       // 목적지는 사용자가 비워둔 경우에만 보조로 채운다.
       if (!destination.trim() && draft?.destination) setDestination(String(draft.destination).trim())
 
-      sessionStorage.removeItem('localguest_ai_match_draft_v1')
+      // 뒤로가기/피드 탐색 후 재진입 시에도 AI 예산·기간 힌트를 유지하기 위해
+      // 매칭 요청 성공 시점에만 정리한다.
     } catch {
       /* ignore */
     }
@@ -528,6 +529,11 @@ export function GuideDetailPage() {
       }
       const data = t ? JSON.parse(t) : {}
       const rid = data?.requestId
+      try {
+        sessionStorage.removeItem('localguest_ai_match_draft_v1')
+      } catch {
+        /* ignore */
+      }
       navigate('/mypage/itinerary', {
         replace: false,
         state: {
@@ -688,7 +694,23 @@ export function GuideDetailPage() {
             ← 상세 코스로 돌아가기
           </button>
         ) : (
-          <Link to="/guides">← 목록</Link>
+          <button
+            type="button"
+            className="gdp-back-btn"
+            onClick={() => {
+              if (returnTo) {
+                navigate(returnTo)
+                return
+              }
+              if (window.history.length > 1) {
+                navigate(-1)
+                return
+              }
+              navigate('/guides')
+            }}
+          >
+            ← 목록
+          </button>
         )}
       </p>
 
