@@ -105,12 +105,15 @@ export function MypageScrapbookPage() {
         if (cancelled || !overviewMapRef.current) return
 
         const dests = [...new Set(rows.map((r) => String(r.destination ?? '').trim()).filter(Boolean))].slice(0, 15)
-        const hint = dests[0] ?? ''
+        const geoQueries = dests
+          .map((d) => d.split(/\s+/)[0]?.trim() ?? '')
+          .filter(Boolean)
+        const hint = geoQueries[0] ?? ''
         const points =
-          dests.length > 0
+          geoQueries.length > 0
             ? await Promise.all(
-                dests.map(async (d, idx) => {
-                  const p = await resolveLatLng(kakao, d, { regionHint: hint || d })
+                geoQueries.map(async (q, idx) => {
+                  const p = await resolveLatLng(kakao, q, { regionHint: hint || q })
                   return (
                     p ?? {
                       lat: DEFAULT_KOREA_CENTER.lat + idx * 0.04,
