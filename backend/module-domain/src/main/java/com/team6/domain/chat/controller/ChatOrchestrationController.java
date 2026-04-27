@@ -6,12 +6,12 @@ import com.team6.domain.member.repository.MemberRepository;
 import com.team6.module.common.global.util.SecurityUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.server.ResponseStatusException;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.util.*;
 import java.util.regex.Matcher;
@@ -31,6 +31,12 @@ public class ChatOrchestrationController {
     private final MemberRepository memberRepository;
     private final RestTemplate restTemplate = new RestTemplate();
 
+    @Value("${matching.chat.base-url:http://localhost:8080}")
+    private String chatBaseUrl;
+
+    @Value("${matching.chat.context-path:${server.servlet.context-path:/api}}")
+    private String chatContextPath;
+
     private static final Pattern DM_GUIDE_TITLE = Pattern.compile("^LG-DM-GUIDE-(\\d+)$");
 
     /**
@@ -43,7 +49,7 @@ public class ChatOrchestrationController {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authorization 헤더가 없습니다.");
         }
 
-        String base = ServletUriComponentsBuilder.fromCurrentContextPath().build().toUriString();
+        String base = chatApiBase();
         Map<String, Object> raw = fetchRooms(base, auth);
         Object roomsObj = raw.get("rooms");
         if (!(roomsObj instanceof List<?> rooms)) {
@@ -97,7 +103,7 @@ public class ChatOrchestrationController {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authorization 헤더가 없습니다.");
         }
 
-        String base = ServletUriComponentsBuilder.fromCurrentContextPath().build().toUriString();
+        String base = chatApiBase();
         Map<String, Object> existing = findRoomByTitle(base, auth, title);
         if (existing != null) {
             return ResponseEntity.ok(existing);
@@ -105,6 +111,18 @@ public class ChatOrchestrationController {
 
         Map<String, Object> created = createRoom(base, auth, title, List.of(guideEmail));
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
+    }
+
+    private String chatApiBase() {
+        String b = (chatBaseUrl == null ? "" : chatBaseUrl.trim()).replaceAll("/+$", "");
+        String ctx = chatContextPath == null ? "" : chatContextPath.trim();
+        if (ctx.isEmpty() || "/".equals(ctx)) {
+            return b;
+        }
+        if (!ctx.startsWith("/")) {
+            ctx = "/" + ctx;
+        }
+        return b + ctx.replaceAll("/+$", "");
     }
 
     private Map<String, Object> fetchRooms(String base, String auth) {
