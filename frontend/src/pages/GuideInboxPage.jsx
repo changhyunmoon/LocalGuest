@@ -238,7 +238,7 @@ export function GuideInboxPage() {
     if (extensionRows.length > 0) {
       mainSections.unshift({ key: 'EXTENSION', label: '연장 요청', statuses: [], rows: extensionRows })
     }
-    if (others.length > 0) mainSections.push({ key: 'OTHER', label: '기타', statuses: [], rows: others })
+    if (others.length > 0) mainSections.push({ key: 'OTHER', label: '완료', statuses: [], rows: others })
     if (rejectedSection?.rows.length) mainSections.push(rejectedSection)
     return mainSections
   }, [rows, extensionsByRequestId])
