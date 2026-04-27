@@ -17,10 +17,14 @@
 --   payment 970001~, chat 983001~, 기타 보조 ID 아래 참고
 -- · MongoDB(chat_message 등)는 이 스크립트로 지우지 않음.
 -- · MySQL 8.0+
+-- · 한글 깨짐 방지: 클라이언트가 UTF-8로 보내야 함. 아래 중 하나 필수.
+--     mysql --default-character-set=utf8mb4 -h... -uroot -p local_guide_db < 이파일
+--   (또는 mysql 프롬프트에서 먼저 SET NAMES utf8mb4; 후 SOURCE)
 -- =============================================================================
 
 USE local_guide_db;
 
+SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
 
 TRUNCATE TABLE chat_participants;
