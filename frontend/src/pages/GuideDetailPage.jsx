@@ -694,7 +694,23 @@ export function GuideDetailPage() {
             ← 상세 코스로 돌아가기
           </button>
         ) : (
-          <Link to="/guides">← 목록</Link>
+          <button
+            type="button"
+            className="gdp-back-btn"
+            onClick={() => {
+              if (returnTo) {
+                navigate(returnTo)
+                return
+              }
+              if (window.history.length > 1) {
+                navigate(-1)
+                return
+              }
+              navigate('/guides')
+            }}
+          >
+            ← 목록
+          </button>
         )}
       </p>
 
