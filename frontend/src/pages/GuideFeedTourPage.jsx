@@ -182,9 +182,6 @@ export function GuideFeedTourPage() {
     )
   }
 
-  const chatTo = isAuthenticated ? '/messages' : '/auth/login'
-  const chatState = isAuthenticated ? undefined : { returnTo: `/guides/${guideId}/feeds/${feedId}`, hint: '채팅은 로그인 후 이용할 수 있어요.' }
-
   return (
     <div className="gft gft--journal">
       <button type="button" className="gft-back" onClick={() => goBack()}>
@@ -279,9 +276,6 @@ export function GuideFeedTourPage() {
       </div>
 
       <div className="gft-actions">
-        <Link to={chatTo} state={chatState} className="gft-btn gft-btn--line">
-          💬 1:1 채팅하기
-        </Link>
         <Link
           to={isAuthenticated ? `/guides/${guideId}#match-request` : '/auth/login'}
           state={
