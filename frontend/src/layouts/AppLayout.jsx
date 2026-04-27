@@ -21,9 +21,15 @@ function isGuidesMatchCompletePath(pathname) {
   return /^\/guides\/[^/]+\/match\/complete(?:\/|$)/.test(pathname)
 }
 
+/** `/guides/:id/match*` — 일정 확인/결제 전 플로우. 상단은 마이페이지(예정된 로컬 만남) 컨텍스트로 본다. */
+function isGuidesMatchFlowPath(pathname) {
+  return /^\/guides\/[^/]+\/match(?:\/|$)/.test(pathname)
+}
+
 /** 가이드 목록·상세 등 `/guides*` 는 메뉴에서 빠졌지만, 상단에서는 AI 검색 흐름으로 간주해 같은 탭을 켠다. */
-function isAiSearchShellActive(pathname, matchComplete) {
+function isAiSearchShellActive(pathname, matchComplete, matchFlow) {
   if (matchComplete) return false
+  if (matchFlow) return false
   if (pathname === '/ai-search' || pathname.startsWith('/ai-search/')) return true
   if (pathname === '/guides' || pathname.startsWith('/guides/')) return true
   return false
@@ -36,6 +42,7 @@ function AppLayoutInner() {
   const { pendingCount } = useGuidePendingRequests()
   const guideMypageActive = isGuide && pathname.startsWith('/guide/mypage')
   const matchComplete = isGuidesMatchCompletePath(pathname)
+  const matchFlow = isGuidesMatchFlowPath(pathname)
   const focusMode = pathname.startsWith('/auth/signup') || pathname.startsWith('/onboarding')
   const baseTitleRef = useRef(typeof document !== 'undefined' ? document.title : 'LocalGuest')
 
@@ -69,7 +76,7 @@ function AppLayoutInner() {
           <NavLink
             to="/ai-search"
             className={({ isActive }) => {
-              const on = (isActive || isAiSearchShellActive(pathname, matchComplete)) && !matchComplete
+              const on = (isActive || isAiSearchShellActive(pathname, matchComplete, matchFlow)) && !matchComplete && !matchFlow
               const parts = ['shell-pill-link', 'shell-pill-link--spark']
               if (on) parts.push('is-on')
               return parts.join(' ')
@@ -86,7 +93,15 @@ function AppLayoutInner() {
             </NavLink>
           )}
           {!isGuide && (
-            <NavLink to="/mypage/itinerary" className={pillClass('shell-pill-link--cta')}>
+            <NavLink
+              to="/mypage/itinerary"
+              className={({ isActive }) => {
+                const on = isActive || matchComplete || matchFlow
+                const parts = ['shell-pill-link', 'shell-pill-link--cta']
+                if (on) parts.push('is-on')
+                return parts.join(' ')
+              }}
+            >
               예정된 로컬 만남
             </NavLink>
           )}
@@ -113,7 +128,7 @@ function AppLayoutInner() {
               <NavLink
                 to={isGuide ? '/guide/mypage/profile' : '/mypage'}
                 className={({ isActive }) => {
-                  const on = isGuide ? guideMypageActive || matchComplete : isActive || matchComplete
+                  const on = isGuide ? guideMypageActive || matchComplete : isActive || matchComplete || matchFlow
                   const parts = ['shell-btn', 'shell-btn--ghost']
                   if (on) parts.push('shell-btn--dark')
                   return parts.join(' ')
