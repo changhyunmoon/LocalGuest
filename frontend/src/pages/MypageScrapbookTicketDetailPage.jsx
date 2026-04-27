@@ -27,6 +27,11 @@ function fallbackLatLng(idx) {
   return { lat: base.lat + idx * 0.007, lng: base.lng + (idx % 2 === 0 ? 0.009 : -0.006) }
 }
 
+function fallbackLatLngAround(centerPoint, idx) {
+  const base = centerPoint ?? DEFAULT_KOREA_CENTER
+  return { lat: base.lat + idx * 0.007, lng: base.lng + (idx % 2 === 0 ? 0.009 : -0.006) }
+}
+
 function createSpotOverlay(kakao, map, latlng, idx, name) {
   const root = document.createElement('div')
   root.className = 'gmc-pin'
@@ -176,27 +181,34 @@ export function MypageScrapbookTicketDetailPage() {
         const kakao = await loadKakaoSdk(KAKAO_APP_KEY)
         if (cancelled || !mapRef.current) return
 
+        const destinationCity = String(row?.destination ?? '').trim().split(/\s+/)[0]?.trim() ?? ''
+        const regionHint = destinationCity || String(profile?.region ?? '').trim()
+
         let center = DEFAULT_KOREA_CENTER
         const userPos = await getUserLatLng()
         if (userPos) {
           center = userPos
         } else if (formData?.meetingPoint?.trim()) {
-          const byMeeting = await resolveLatLng(kakao, formData.meetingPoint.trim(), { regionHint: String(profile?.region ?? '').trim() })
+          const byMeeting = await resolveLatLng(kakao, formData.meetingPoint.trim(), { regionHint })
           if (byMeeting) center = byMeeting
         } else if (spots[0]?.name) {
-          const firstSpot = await resolveLatLng(kakao, spots[0].name, { regionHint: String(profile?.region ?? '').trim() })
+          const firstSpot = await resolveLatLng(kakao, spots[0].name, { regionHint })
           if (firstSpot) center = firstSpot
         } else if (row?.destination) {
-          const byDestination = await resolveLatLng(kakao, row.destination, { regionHint: String(profile?.region ?? '').trim() })
+          const byDestination = await resolveLatLng(kakao, destinationCity || row.destination, { regionHint })
           if (byDestination) center = byDestination
         }
+
+        const fallbackCenter =
+          (destinationCity ? await resolveLatLng(kakao, destinationCity, { regionHint }) : null)
+          ?? (row?.destination ? await resolveLatLng(kakao, String(row.destination), { regionHint }) : null)
+          ?? center
 
         const map = new kakao.maps.Map(el, {
           center: new kakao.maps.LatLng(center.lat, center.lng),
           level: 8,
         })
 
-        const regionHint = String(profile?.region ?? '').trim()
         const spotNames = spots.map((spot) => spot.name).filter(Boolean)
         if (spotNames.length === 0 && formData?.meetingPoint?.trim()) {
           spotNames.push(formData.meetingPoint.trim())
@@ -207,7 +219,7 @@ export function MypageScrapbookTicketDetailPage() {
         const resolved = await Promise.all(
           spotNames.map(async (name, idx) => {
             const point = await resolveLatLng(kakao, name, { regionHint })
-            return point ?? fallbackLatLng(idx)
+            return point ?? fallbackLatLngAround(fallbackCenter, idx)
           }),
         )
         if (cancelled || resolved.length === 0) return
