@@ -1,0 +1,359 @@
+package com.team6.domain.matching.service;
+
+import com.team6.domain.guide.repository.GuideProfileRepository;
+import com.team6.domain.guide.repository.GuideScheduleRepository;
+import com.team6.domain.guide.entity.GuideProfile;
+import com.team6.domain.guide.entity.GuideSchedule;
+import com.team6.domain.guide.entity.enums.GuideScheduleStatus;
+import com.team6.domain.matching.client.GuideScheduleSyncClient;
+import com.team6.domain.matching.dto.request.MatchRequestCreateRequest;
+import com.team6.domain.matching.dto.request.MatchRequestDeclineRequest;
+import com.team6.domain.matching.dto.request.MatchRequestProposeRequest;
+import com.team6.domain.matching.dto.response.MatchRequestCreateResponse;
+import com.team6.domain.matching.dto.response.MatchRequestActionResponse;
+import com.team6.domain.matching.dto.response.MatchRequestListProjection;
+import com.team6.domain.matching.entity.MatchRequest;
+import com.team6.domain.matching.exception.MatchingErrorCode;
+import com.team6.domain.matching.exception.MatchingException;
+import com.team6.domain.matching.repository.MatchRequestRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Slice;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.text.NumberFormat;
+import java.util.List;
+import java.util.Locale;
+import java.util.Comparator;
+
+@Slf4j
+@Service
+@RequiredArgsConstructor
+@Transactional
+public class MatchRequestService {
+
+    private final MatchRequestRepository matchRequestRepository;
+    private final GuideScheduleSyncClient guideScheduleSyncClient;
+    private final GuideProfileRepository guideProfileRepository;
+    private final GuideScheduleRepository guideScheduleRepository;
+
+    // 매칭 요청 생성
+    public MatchRequestCreateResponse createMatchRequest(Long guestId, MatchRequestCreateRequest request) {
+        Long guideMemberId = resolveGuideMemberId(request.getGuideId());
+        validateCreateRequest(guestId, guideMemberId);
+        ScheduleResolution scheduleResolution = resolveOrCreateSchedule(request.getGuideId(), request);
+
+        String conceptSummary = resolveConceptSummary(request);
+        MatchRequest matchRequest = MatchRequest.create(
+                guestId,
+                request.getGuideId(),
+                scheduleResolution.scheduleId(),
+                request.getDestination(),
+                request.getConcept(),
+                conceptSummary,
+                request.getDesiredDate(),
+                request.getDesiredBudget(),
+                request.getBudgetMinWon(),
+                request.getBudgetMaxWon()
+        );
+
+        MatchRequest saved = matchRequestRepository.save(matchRequest);
+        if (scheduleResolution.createdSchedule() != null) {
+            // 같은 트랜잭션에서 만든 슬롯은 HTTP sync 전에 직접 PENDING 반영해야 조회 불가 타이밍 문제가 없다.
+            scheduleResolution.createdSchedule().changeStatus(GuideScheduleStatus.PENDING);
+            scheduleResolution.createdSchedule().linkMatchRequest(saved.getId());
+            log.info("[F03-04] 자동 생성 슬롯 PENDING 반영 — guideId={}, scheduleId={}, requestId={}",
+                    saved.getGuideId(), saved.getGuideScheduleId(), saved.getId());
+        } else {
+            guideScheduleSyncClient.markPending(saved.getGuideId(), saved.getGuideScheduleId(), saved.getId(), guideMemberId);
+        }
+        log.info("[F03-04] 매칭 요청 생성 — guestId={}, guideId={}", guestId, request.getGuideId());
+        return MatchRequestCreateResponse.from(saved);
+    }
+
+    /** 게스트 본인 매칭 요청 전체 (마이페이지 일정·스크랩북 등) */
+    public List<MatchRequestCreateResponse> getGuestRequests(Long guestId) {
+        LocalDate today = LocalDate.now();
+        return matchRequestRepository.findByGuestId(guestId).stream()
+                .peek(request -> syncTourProgress(request, today))
+                .map(MatchRequestCreateResponse::from)
+                .toList();
+    }
+
+    /** 게스트 본인 매칭 요청 페이징 조회 (안전한 전환을 위해 기존 전체 조회 API와 분리 제공) */
+    public Page<MatchRequestCreateResponse> getGuestRequestsPaged(Long guestId, int page, int size) {
+        int normalizedPage = Math.max(page, 0);
+        int normalizedSize = Math.min(Math.max(size, 1), 100);
+        Pageable pageable = PageRequest.of(normalizedPage, normalizedSize, Sort.by(Sort.Direction.DESC, "createdAt"));
+        LocalDate today = LocalDate.now();
+
+        return matchRequestRepository.findByGuestId(guestId, pageable)
+                .map(request -> {
+                    syncTourProgress(request, today);
+                    return MatchRequestCreateResponse.from(request);
+                });
+    }
+
+    /** 게스트 본인 매칭 요청 Slice 조회 (COUNT 오버헤드 회피용). */
+    public Slice<MatchRequestCreateResponse> getGuestRequestsSlice(Long guestId, int page, int size) {
+        int normalizedPage = Math.max(page, 0);
+        int normalizedSize = Math.min(Math.max(size, 1), 100);
+        Pageable pageable = PageRequest.of(
+                normalizedPage,
+                normalizedSize,
+                Sort.by(Sort.Direction.DESC, "createdAt")
+        );
+        LocalDate today = LocalDate.now();
+
+        return matchRequestRepository.findSliceByGuestId(guestId, pageable)
+                .map(request -> {
+                    syncTourProgress(request, today);
+                    return MatchRequestCreateResponse.from(request);
+                });
+    }
+
+    /** 게스트 본인 매칭 요청 Slice 조회 (DTO projection 적용). */
+    @Transactional(readOnly = true)
+    public Slice<MatchRequestCreateResponse> getGuestRequestsSliceProjected(Long guestId, int page, int size) {
+        int normalizedPage = Math.max(page, 0);
+        int normalizedSize = Math.min(Math.max(size, 1), 100);
+        Pageable pageable = PageRequest.of(normalizedPage, normalizedSize);
+
+        return matchRequestRepository.findGuestListProjectionSliceByGuestId(guestId, pageable)
+                .map(MatchRequestCreateResponse::fromProjection);
+    }
+
+    // 가이드의 매칭 요청 목록 조회
+    public List<MatchRequestCreateResponse> getGuideRequests(Long guideId) {
+        LocalDate today = LocalDate.now();
+        return matchRequestRepository.findByGuideId(guideId).stream()
+                .peek(request -> syncTourProgress(request, today))
+                .map(MatchRequestCreateResponse::from)
+                .toList();
+    }
+
+    // 가이드 요청 거절
+    public MatchRequestActionResponse rejectMatchRequest(Long guideId, Long requestId) {
+        MatchRequest matchRequest = matchRequestRepository.findById(requestId)
+                .orElseThrow(() -> new MatchingException(MatchingErrorCode.MATCH_REQUEST_NOT_FOUND));
+
+        if (!matchRequest.getGuideId().equals(guideId)) {
+            throw new MatchingException(MatchingErrorCode.MATCH_REQUEST_UNAUTHORIZED);
+        }
+
+        matchRequest.reject();
+        Long guideMemberId = resolveGuideMemberId(matchRequest.getGuideId());
+        guideScheduleSyncClient.cancelToAvailable(matchRequest.getGuideId(), matchRequest.getGuideScheduleId(), guideMemberId);
+        log.info("[MatchRequest] 가이드 거절 — requestId={}, guideId={}", requestId, guideId);
+        return MatchRequestActionResponse.from(matchRequest);
+    }
+
+    // 가이드 제안 단계로 변경
+    public MatchRequestActionResponse proposeMatchRequest(Long guideId, Long requestId, MatchRequestProposeRequest request) {
+        MatchRequest matchRequest = matchRequestRepository.findById(requestId)
+                .orElseThrow(() -> new MatchingException(MatchingErrorCode.MATCH_REQUEST_NOT_FOUND));
+
+        if (!matchRequest.getGuideId().equals(guideId)) {
+            throw new MatchingException(MatchingErrorCode.MATCH_REQUEST_UNAUTHORIZED);
+        }
+
+        matchRequest.applyProposal(request.getProposedSchedule(), request.getProposeMessage());
+        log.info("[F03-05] 가이드 제시안 등록 — requestId={}, guideId={}", requestId, guideId);
+        return MatchRequestActionResponse.from(matchRequest);
+    }
+
+    // 게스트 최종 수락
+    public MatchRequestActionResponse acceptMatchRequest(Long guestId, Long requestId) {
+        MatchRequest matchRequest = matchRequestRepository.findById(requestId)
+                .orElseThrow(() -> new MatchingException(MatchingErrorCode.MATCH_REQUEST_NOT_FOUND));
+
+        if (!matchRequest.getGuestId().equals(guestId)) {
+            throw new MatchingException(MatchingErrorCode.MATCH_REQUEST_UNAUTHORIZED);
+        }
+
+        matchRequest.accept();
+        log.info("[F03-06] 게스트 최종 수락 — requestId={}, guestId={}", requestId, guestId);
+        return MatchRequestActionResponse.from(matchRequest);
+    }
+
+    // F03-06 게스트 최종 거절
+    public MatchRequestActionResponse declineMatchRequest(Long guestId, Long requestId, MatchRequestDeclineRequest request) {
+        MatchRequest matchRequest = matchRequestRepository.findById(requestId)
+                .orElseThrow(() -> new MatchingException(MatchingErrorCode.MATCH_REQUEST_NOT_FOUND));
+
+        if (!matchRequest.getGuestId().equals(guestId)) {
+            throw new MatchingException(MatchingErrorCode.MATCH_REQUEST_UNAUTHORIZED);
+        }
+
+        matchRequest.declineProposalByGuest(request.getReason());
+        Long guideMemberId = resolveGuideMemberId(matchRequest.getGuideId());
+        guideScheduleSyncClient.cancelToAvailable(matchRequest.getGuideId(), matchRequest.getGuideScheduleId(), guideMemberId);
+        log.info("[F03-06] 게스트 최종 거절 — requestId={}, guestId={}", requestId, guestId);
+        return MatchRequestActionResponse.from(matchRequest);
+    }
+
+    // F05-01 게스트 취소
+    public MatchRequestActionResponse cancelByGuest(Long guestId, Long requestId, String reason) {
+        MatchRequest matchRequest = matchRequestRepository.findById(requestId)
+                .orElseThrow(() -> new MatchingException(MatchingErrorCode.MATCH_REQUEST_NOT_FOUND));
+
+        if (!matchRequest.getGuestId().equals(guestId)) {
+            throw new MatchingException(MatchingErrorCode.MATCH_REQUEST_UNAUTHORIZED);
+        }
+
+        matchRequest.cancelByGuest(reason);
+        Long guideMemberId = resolveGuideMemberId(matchRequest.getGuideId());
+        guideScheduleSyncClient.cancelToAvailable(matchRequest.getGuideId(), matchRequest.getGuideScheduleId(), guideMemberId);
+        log.info("[F05-01] 게스트 취소 완료 — requestId={}, guestId={}", requestId, guestId);
+        return MatchRequestActionResponse.from(matchRequest);
+    }
+
+    // F05-02 가이드 취소
+    public MatchRequestActionResponse cancelByGuide(Long guideId, Long requestId, String reason) {
+        MatchRequest matchRequest = matchRequestRepository.findById(requestId)
+                .orElseThrow(() -> new MatchingException(MatchingErrorCode.MATCH_REQUEST_NOT_FOUND));
+
+        if (!matchRequest.getGuideId().equals(guideId)) {
+            throw new MatchingException(MatchingErrorCode.MATCH_REQUEST_UNAUTHORIZED);
+        }
+
+        matchRequest.cancelByGuide(reason);
+        Long guideMemberId = resolveGuideMemberId(matchRequest.getGuideId());
+        guideScheduleSyncClient.cancelToAvailable(matchRequest.getGuideId(), matchRequest.getGuideScheduleId(), guideMemberId);
+        log.info("[F05-02] 가이드 취소 완료 — requestId={}, guideId={}", requestId, guideId);
+        return MatchRequestActionResponse.from(matchRequest);
+    }
+    //그대로 return 하지 않고,
+    //.from()이라는 정적 팩토리 메서드를 호출하여 D
+    // DTO로 변환한 뒤 반환
+
+    private void validateCreateRequest(Long guestId, Long guideMemberId) {
+        if (guestId.equals(guideMemberId)) {
+            throw new MatchingException(MatchingErrorCode.GUEST_GUIDE_SAME);
+        }
+    }
+
+    private String resolveConceptSummary(MatchRequestCreateRequest request) {
+        if (request.getConceptSummary() != null && !request.getConceptSummary().isBlank()) {
+            return request.getConceptSummary().trim();
+        }
+
+        String destination = safeTrim(request.getDestination());
+        String concept = safeTrim(request.getConcept());
+        String date = request.getDesiredDate() == null ? null : request.getDesiredDate().toString();
+        String budget = formatBudget(request.getDesiredBudget());
+
+        StringBuilder sb = new StringBuilder();
+        if (destination != null) {
+            sb.append('[').append(destination).append("] ");
+        }
+        if (date != null) {
+            sb.append(date);
+        }
+        if (budget != null) {
+            if (sb.length() > 0) sb.append(", ");
+            sb.append("예산 ").append(budget);
+        }
+        if (concept != null) {
+            if (sb.length() > 0) sb.append(" · ");
+            sb.append("컨셉: ").append(concept);
+        }
+
+        String summary = sb.toString().trim();
+        if (summary.isBlank()) {
+            return null;
+        }
+        return summary.length() > 500 ? summary.substring(0, 500) : summary;
+    }
+
+    private String safeTrim(String value) {
+        if (value == null) {
+            return null;
+        }
+        String t = value.trim();
+        return t.isBlank() ? null : t;
+    }
+
+    private String formatBudget(Integer desiredBudget) {
+        if (desiredBudget == null) {
+            return null;
+        }
+        if (desiredBudget < 0) {
+            throw new MatchingException(MatchingErrorCode.INVALID_REQUEST);
+        }
+        NumberFormat nf = NumberFormat.getNumberInstance(Locale.KOREA);
+        return nf.format(desiredBudget) + "원";
+    }
+
+    private Long resolveGuideMemberId(Long guideProfileId) {
+        return guideProfileRepository.findById(guideProfileId)
+                .map(guideProfile -> guideProfile.getMemberId())
+                .orElseThrow(() -> new MatchingException(MatchingErrorCode.MATCH_REQUEST_UNAUTHORIZED));
+    }
+
+    /**
+     * 기본 정책: 가이드가 날짜를 별도로 막지 않았다면 요청 가능.
+     * - scheduleId가 오면 그대로 사용
+     * - scheduleId가 없고 desiredDate가 오면
+     *   1) BLOCKED면 거부
+     *   2) AVAILABLE 슬롯이 있으면 그 슬롯 사용
+     *   3) 슬롯이 없으면 종일 AVAILABLE(00:00~23:59) 슬롯을 생성해 사용
+     */
+    private ScheduleResolution resolveOrCreateSchedule(Long guideId, MatchRequestCreateRequest request) {
+        if (request.getGuideScheduleId() != null) {
+            return new ScheduleResolution(request.getGuideScheduleId(), null);
+        }
+
+        LocalDate desiredDate = request.getDesiredDate();
+        if (desiredDate == null) {
+            throw new MatchingException(MatchingErrorCode.INVALID_REQUEST);
+        }
+
+        List<GuideSchedule> daySchedules = guideScheduleRepository.findByGuideProfile_IdAndAvailableDate(guideId, desiredDate);
+        boolean blocked = daySchedules.stream()
+                .anyMatch(s -> s.getStatus() == GuideScheduleStatus.BLOCKED);
+        if (blocked) {
+            throw new MatchingException(MatchingErrorCode.MATCH_REQUEST_INVALID_STATUS);
+        }
+
+        GuideSchedule available = daySchedules.stream()
+                .filter(s -> s.getStatus() == GuideScheduleStatus.AVAILABLE)
+                .min(Comparator.comparing(GuideSchedule::getStartTime))
+                .orElse(null);
+        if (available != null) {
+            return new ScheduleResolution(available.getId(), null);
+        }
+
+        boolean pendingOrBooked = daySchedules.stream()
+                .anyMatch(s -> s.getStatus() == GuideScheduleStatus.PENDING || s.getStatus() == GuideScheduleStatus.BOOKED);
+        if (pendingOrBooked) {
+            throw new MatchingException(MatchingErrorCode.MATCH_REQUEST_INVALID_STATUS);
+        }
+
+        GuideProfile profile = guideProfileRepository.findById(guideId)
+                .orElseThrow(() -> new MatchingException(MatchingErrorCode.INVALID_REQUEST));
+        GuideSchedule generated = GuideSchedule.builder()
+                .guideProfile(profile)
+                .availableDate(desiredDate)
+                .startTime(LocalTime.of(0, 0))
+                .endTime(LocalTime.of(23, 59))
+                .status(GuideScheduleStatus.AVAILABLE)
+                .build();
+        GuideSchedule saved = guideScheduleRepository.save(generated);
+        return new ScheduleResolution(saved.getId(), saved);
+    }
+
+    private record ScheduleResolution(Long scheduleId, GuideSchedule createdSchedule) {}
+
+    private void syncTourProgress(MatchRequest request, LocalDate today) {
+        request.markInProgressIfTourDay(today);
+        request.markCompletedIfTourEnded(today);
+    }
+}

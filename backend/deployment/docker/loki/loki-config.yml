@@ -1,0 +1,34 @@
+auth_enabled: false
+
+server:
+  http_listen_port: 3100
+
+common:
+  path_prefix: /loki
+  storage:
+    filesystem:
+      chunks_directory: /loki/chunks
+      rules_directory: /loki/rules
+  replication_factor: 1
+  ring:
+    kvstore:
+      store: inmemory
+
+schema_config:
+  configs:
+    - from: 2024-04-01
+      store: tsdb
+      object_store: filesystem
+      schema: v13
+      index:
+        prefix: index_
+        period: 24h
+
+# --- 1일(24시간) 뒤 삭제 설정 ---
+limits_config:
+  retention_period: 24h
+
+# 테이블 관리자가 삭제 기능을 수행하도록 설정
+table_manager:
+  retention_deletes_enabled: true
+  retention_period: 24h

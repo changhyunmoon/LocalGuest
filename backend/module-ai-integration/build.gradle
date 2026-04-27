@@ -1,0 +1,24 @@
+/**
+ * AI 추천과 도메인(JPA) 사이의 조립 전용 모듈.
+ * {@code module-ai}는 {@code module-domain}에 의존하지 않도록 유지한다.
+ */
+dependencies {
+    implementation project(':module-common')
+    implementation project(':module-domain')
+    implementation project(':module-ai')
+    implementation project(':module-chat')
+
+    // module-domain의 implementation 의존성은 전이되지 않으므로, 스프링 컴포넌트 컴파일용으로 명시
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    // module-ai의 micrometer 의존은 implementation이라 전이되지 않음(테스트에서 AiRecommendationMetrics 생성에 필요)
+    testImplementation 'io.micrometer:micrometer-core'
+
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+bootJar { enabled = false }
+jar { enabled = true }

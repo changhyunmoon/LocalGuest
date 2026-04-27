@@ -1,0 +1,18 @@
+# local
+.DS_Store
+backend/_tmp_localguest/
+
+.claude/
+
+# IntelliJ
+.idea/
+*.iml
+.name
+out/
+gen/
+backend/.gradle-user
+
+# Runtime / local API logs (logback RollingFileAppender)
+logs/
+/logs/
+*.log

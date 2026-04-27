@@ -1,0 +1,24 @@
+/* 전역 반응형 보조 — 레이아웃별 세부 조정은 각 *.css 에서 */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+#root {
+  overflow-x: clip;
+}
+
+img,
+video {
+  max-width: 100%;
+  height: auto;
+}
+
+@media (max-width: 480px) {
+  code {
+    font-size: 0.78rem;
+    word-break: break-all;
+  }
+}

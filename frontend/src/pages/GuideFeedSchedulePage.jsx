@@ -1,0 +1,1142 @@
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
+
+import { apiRequest } from '../api/client.js'
+import { useResolvedGuideId } from '../hooks/useResolvedGuideId.js'
+import { fetchGuideMatchRequests } from '../lib/matchingGuest.js'
+
+import '../layouts/GuideDashboardLayout.css'
+import './GuideMypagePages.css'
+import { GuideScheduleSection } from './GuideScheduleSection.jsx'
+
+function parseFeedHeading(content) {
+  if (!content || !String(content).trim()) {
+    return { title: '가이드 투어 피드', body: '' }
+  }
+  const lines = String(content).split(/\r?\n/)
+  const title = lines[0]?.trim() || '가이드 투어 피드'
+  const body = lines.slice(1).join('\n').trim()
+  return { title, body: body || String(content).trim() }
+}
+
+/** 등록 시 본문 맨 끝 한 줄 `#태그1 #태그2` 형태를 역파싱한다. */
+function parseFeedForEdit(content) {
+  const raw = String(content ?? '').replace(/\r\n/g, '\n').trimEnd()
+  if (!raw) return { title: '', body: '', tags: [] }
+  const lines = raw.split('\n')
+  const title = (lines[0] ?? '').trim()
+  if (lines.length <= 1) return { title, body: '', tags: [] }
+  const lastLine = (lines[lines.length - 1] ?? '').trim()
+  const tagLinePattern = /^(#\S+(?:\s+#\S+)*)$/
+  let tags = []
+  let end = lines.length - 1
+  if (tagLinePattern.test(lastLine)) {
+    tags = lastLine.split(/\s+/).map((t) => t.replace(/^#/, '').trim()).filter(Boolean)
+    end = lines.length - 2
+  }
+  const body = lines.slice(1, end + 1).join('\n').trim()
+  return { title, body, tags }
+}
+
+function isInstagramUrl(url) {
+  return typeof url === 'string' && url.includes('instagram.com')
+}
+
+function useToast() {
+  const [toasts, setToasts] = useState([])
+  const addToast = useCallback((message, type = 'success') => {
+    const id = Date.now() + Math.random()
+    setToasts((prev) => [...prev, { id, message, type }])
+    setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 2000)
+  }, [])
+  return { toasts, addToast }
+}
+
+function Toast({ toasts }) {
+  if (toasts.length === 0) return null
+  if (typeof document === 'undefined') return null
+  return createPortal(
+    <div style={{ position: 'fixed', top: '1.1rem', left: '50%', transform: 'translateX(-50%)', zIndex: 9999, display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'center', pointerEvents: 'none' }}>
+      {toasts.map((t) => (
+        <div
+          key={t.id}
+          style={{
+            padding: '0.74rem 0.98rem',
+            borderRadius: 12,
+            border: t.type === 'success' ? '1px solid #e7a8c2' : '1px solid #f7b4c1',
+            background: t.type === 'success' ? 'linear-gradient(180deg, #f7d9e8, #efbfd0)' : 'linear-gradient(180deg, #ffe8ee, #ffd8e1)',
+            color: t.type === 'success' ? '#5a2f45' : '#9f274c',
+            fontSize: '0.86rem',
+            fontWeight: 700,
+            boxShadow: '0 14px 28px rgba(15, 23, 42, 0.16)',
+            textAlign: 'center',
+            letterSpacing: '-0.01em',
+            minWidth: 240,
+            maxWidth: 420,
+          }}
+        >
+          {t.message}
+        </div>
+      ))}
+    </div>,
+    document.body,
+  )
+}
+
+async function readJsonError(res, text) {
+  try {
+    const j = JSON.parse(text)
+    return (j.message ?? text) || '요청 실패'
+  } catch {
+    return text || '요청 실패'
+  }
+}
+
+const MAX_LOCAL_IMAGE_BYTES = 1024 * 1024 * 2 // 2MB
+
+function formatScheduleTime(t) {
+  if (t == null) return ''
+  if (typeof t === 'string') return t.length >= 5 ? t.slice(0, 5) : t
+  return String(t)
+}
+
+function isWholeDayOpenSlot(s) {
+  if (!s || s.status !== 'AVAILABLE') return false
+  const st = formatScheduleTime(s.startTime)
+  const en = formatScheduleTime(s.endTime)
+  return st.startsWith('00:00') && (en.startsWith('23:59') || en === '23:59')
+}
+
+/** POST 직전 서버 기준으로 종일 AVAILABLE 여부 확인 (블록 해제 직후 React state와 불일치 방지) */
+async function fetchSchedulesSnapshot(apiReq, guideId) {
+  const res = await apiReq(`/guides/${guideId}/schedules`, { method: 'GET', skipAuth: true })
+  const text = await res.text()
+  if (!res.ok) return null
+  return text ? JSON.parse(text) : []
+}
+
+function hasWholeDayAvailableSlot(list, dateStr) {
+  return list.some((s) => s.availableDate === dateStr && s.status === 'AVAILABLE' && isWholeDayOpenSlot(s))
+}
+
+export function GuideFeedSchedulePage() {
+  const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const { guideId, loading: idLoading, error: idError, reload: reloadId } = useResolvedGuideId()
+  const [feeds, setFeeds] = useState([])
+  const [schedules, setSchedules] = useState([])
+  const [pendingSchedules, setPendingSchedules] = useState([])
+  const [guideRequests, setGuideRequests] = useState([])
+  const [loadError, setLoadError] = useState('')
+  const [feedTitle, setFeedTitle] = useState('')
+  const [feedBody, setFeedBody] = useState('')
+  const [feedImages, setFeedImages] = useState([])
+  const [feedImageMode, setFeedImageMode] = useState('file')
+  const [urlInput, setUrlInput] = useState('')
+  const [feedLocationTags, setFeedLocationTags] = useState([])
+  const [showLocationInput, setShowLocationInput] = useState(false)
+  const [locationInput, setLocationInput] = useState('')
+  const { toasts, addToast } = useToast()
+  const [blockedDates, setBlockedDates] = useState(() => new Set())
+  const [busy, setBusy] = useState(false)
+  /** 스케줄 API 연속 클릭 방지 — React state `busy`보다 먼저 막음 */
+  const scheduleOpLockRef = useRef(false)
+  const mainFileInputRef = useRef(null)
+  const feedImagesRef = useRef([])
+  const dragIdx = useRef(null)
+  const editDragIdx = useRef(null)
+  const editFileInputRef = useRef(null)
+  const currentTab = searchParams.get('tab') === 'schedule' ? 'schedule' : 'feed'
+
+  const [feedModalFeed, setFeedModalFeed] = useState(null)
+  const [editFeedTitle, setEditFeedTitle] = useState('')
+  const [editFeedBody, setEditFeedBody] = useState('')
+  const [editFeedTags, setEditFeedTags] = useState([])
+  const [editFeedImages, setEditFeedImages] = useState([])
+  const [editFeedImageMode, setEditFeedImageMode] = useState('file')
+  const [editUrlInput, setEditUrlInput] = useState('')
+  const [editShowLocation, setEditShowLocation] = useState(false)
+  const [editLocationInput, setEditLocationInput] = useState('')
+  const [editFeedBusy, setEditFeedBusy] = useState(false)
+
+  const revokePreviewUrl = useCallback((src) => {
+    if (typeof src === 'string' && src.startsWith('blob:')) {
+      URL.revokeObjectURL(src)
+    }
+  }, [])
+
+  useEffect(() => {
+    feedImagesRef.current = feedImages
+  }, [feedImages])
+
+  useEffect(() => {
+    return () => {
+      feedImagesRef.current.forEach((img) => revokePreviewUrl(img?.src))
+    }
+  }, [revokePreviewUrl])
+
+  const reloadFeeds = useCallback(async (id) => {
+    try {
+      const res = await apiRequest(`/guides/${id}/feeds`, { method: 'GET', skipAuth: true })
+      const text = await res.text()
+      if (res.ok) setFeeds(text ? JSON.parse(text) : [])
+      else console.error('[reloadFeeds] 피드 목록 조회 실패', res.status)
+    } catch (e) {
+      console.error('[reloadFeeds] 네트워크 오류:', e)
+    }
+  }, [])
+
+  const loadAll = useCallback(async (id) => {
+    setLoadError('')
+    try {
+      const [fr, sr, pr, br] = await Promise.all([
+        apiRequest(`/guides/${id}/feeds`, { method: 'GET', skipAuth: true }),
+        apiRequest(`/guides/${id}/schedules`, { method: 'GET', skipAuth: true }),
+        apiRequest(`/guides/${id}/schedules/pending`, { method: 'GET' }),
+        apiRequest(`/guides/${id}/schedules/blocked`, { method: 'GET', skipAuth: true }),
+      ])
+      const ft = await fr.text()
+      const st = await sr.text()
+      const pt = await pr.text()
+      const bt = await br.text()
+      if (!fr.ok) {
+        throw new Error(await readJsonError(fr, ft))
+      }
+      if (!sr.ok) {
+        throw new Error(await readJsonError(sr, st))
+      }
+      setFeeds(ft ? JSON.parse(ft) : [])
+      setSchedules(st ? JSON.parse(st) : [])
+      if (pr.ok) {
+        setPendingSchedules(pt ? JSON.parse(pt) : [])
+      } else {
+        setPendingSchedules([])
+      }
+      if (br.ok) {
+        const blockedList = bt ? JSON.parse(bt) : []
+        setBlockedDates(new Set(blockedList.map((s) => s.availableDate)))
+      }
+    } catch (e) {
+      setLoadError(e instanceof Error ? e.message : '불러오기 실패')
+    }
+  }, [])
+
+  /** 스케줄/블록/대기만 갱신 — 피드 재조회 없음 (달력 토글 시 렉 방지) */
+  const reloadScheduleData = useCallback(async (id) => {
+    try {
+      const [sr, pr, br] = await Promise.all([
+        apiRequest(`/guides/${id}/schedules`, { method: 'GET', skipAuth: true }),
+        apiRequest(`/guides/${id}/schedules/pending`, { method: 'GET' }),
+        apiRequest(`/guides/${id}/schedules/blocked`, { method: 'GET', skipAuth: true }),
+      ])
+      const st = await sr.text()
+      const pt = await pr.text()
+      const bt = await br.text()
+      if (!sr.ok) {
+        throw new Error(await readJsonError(sr, st))
+      }
+      setSchedules(st ? JSON.parse(st) : [])
+      if (pr.ok) {
+        setPendingSchedules(pt ? JSON.parse(pt) : [])
+      } else {
+        setPendingSchedules([])
+      }
+      if (br.ok) {
+        const blockedList = bt ? JSON.parse(bt) : []
+        setBlockedDates(new Set(blockedList.map((s) => s.availableDate)))
+      }
+    } catch (e) {
+      console.warn('[reloadScheduleData]', e)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!guideId) return
+    fetchGuideMatchRequests(apiRequest)
+      .then((data) => setGuideRequests(Array.isArray(data) ? data : []))
+      .catch((e) => console.warn('매칭 요청 조회 실패:', e))
+  }, [guideId])
+
+  const requestsByScheduleId = useMemo(() => {
+    const map = new Map()
+    for (const r of guideRequests) {
+      if (r?.scheduleId != null) {
+        map.set(Number(r.scheduleId), r)
+      }
+    }
+    return map
+  }, [guideRequests])
+
+  const cancelBookedRequest = useCallback(async ({ requestId, scheduleId, availableDate }) => {
+    if (!guideId) return
+    const rid = Number(requestId)
+    if (!Number.isFinite(rid) || rid <= 0) {
+      addToast('취소할 예약 정보를 찾을 수 없습니다.', 'error')
+      return
+    }
+    const reason = window.prompt('일정 취소 사유를 입력해 주세요.', '개인 사정으로 일정이 변경되었습니다.')
+    if (!reason || !String(reason).trim()) return
+    if (!window.confirm(`${availableDate || ''} 예약(#${rid})을 취소할까요?`)) return
+
+    setBusy(true)
+    try {
+      const res = await apiRequest(`/matching/requests/${rid}/guide/cancel`, {
+        method: 'PATCH',
+        json: { cancelReason: String(reason).trim() },
+      })
+      const text = await res.text()
+      if (!res.ok) {
+        addToast(await readJsonError(res, text), 'error')
+        return
+      }
+      addToast('일정을 취소했습니다.')
+      await reloadScheduleData(guideId)
+      const reqs = await fetchGuideMatchRequests(apiRequest).catch(() => [])
+      setGuideRequests(Array.isArray(reqs) ? reqs : [])
+    } catch {
+      addToast('일정 취소에 실패했습니다.', 'error')
+    } finally {
+      setBusy(false)
+    }
+  }, [guideId, addToast, reloadScheduleData])
+
+  useEffect(() => {
+    if (!guideId) return
+    void loadAll(guideId)
+  }, [guideId, loadAll])
+
+  const addFeed = async () => {
+    if (!guideId || !feedTitle.trim()) return
+    setBusy(true)
+    try {
+      const uploadedImageUrls = []
+      for (const img of feedImages) {
+        if (img?.file) {
+          const formData = new FormData()
+          formData.append('file', img.file)
+          formData.append('folder', 'guide-feed')
+          const uploadRes = await apiRequest('/files/upload', { method: 'POST', body: formData })
+          const uploadText = await uploadRes.text()
+          if (!uploadRes.ok) {
+            addToast(await readJsonError(uploadRes, uploadText), 'error')
+            setBusy(false)
+            return
+          }
+          const uploadJson = uploadText ? JSON.parse(uploadText) : {}
+          const uploadedUrl = String(uploadJson?.url ?? '').trim()
+          if (!uploadedUrl) {
+            addToast('이미지 업로드 URL을 받지 못했습니다.', 'error')
+            setBusy(false)
+            return
+          }
+          uploadedImageUrls.push(uploadedUrl)
+          continue
+        }
+        const src = String(img?.src ?? '').trim()
+        if (!src || src.startsWith('blob:') || src.startsWith('data:')) continue
+        uploadedImageUrls.push(src)
+      }
+      const tagLine = feedLocationTags.length > 0 ? '\n' + feedLocationTags.map((t) => `#${t}`).join(' ') : ''
+      const content = (feedTitle.trim() + '\n' + feedBody.trim() + tagLine).trim()
+      const res = await apiRequest(`/guides/${guideId}/feeds`, {
+        method: 'POST',
+        json: { content, imageUrls: uploadedImageUrls.length > 0 ? uploadedImageUrls : undefined },
+      })
+      const text = await res.text()
+      if (!res.ok) {
+        const msg = await readJsonError(res, text)
+        console.error('[addFeed] API error', res.status, msg)
+        addToast(msg, 'error')
+        return
+      }
+      setFeedTitle('')
+      setFeedBody('')
+      feedImages.forEach((img) => revokePreviewUrl(img?.src))
+      setFeedImages([])
+      setUrlInput('')
+      setFeedImageMode('file')
+      setFeedLocationTags([])
+      setLocationInput('')
+      setShowLocationInput(false)
+      addToast('등록되었습니다.')
+      await reloadFeeds(guideId)
+    } catch (e) {
+      console.error('[addFeed] 네트워크/예외 오류:', e)
+      addToast('피드 등록 실패', 'error')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const removeFeed = async (feedId) => {
+    if (!guideId || !window.confirm('이 피드를 삭제할까요?')) return
+    setBusy(true)
+    try {
+      const res = await apiRequest(`/guides/${guideId}/feeds/${feedId}`, { method: 'DELETE' })
+      if (!res.ok) {
+        const text = await res.text()
+        addToast(await readJsonError(res, text), 'error')
+        return
+      }
+      await reloadFeeds(guideId)
+      if (feedModalFeed && Number(feedModalFeed.feedId) === Number(feedId)) {
+        setFeedModalFeed(null)
+      }
+    } catch {
+      addToast('삭제 실패', 'error')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const closeFeedModal = useCallback(() => {
+    setEditFeedImages((prev) => {
+      prev.forEach((img) => {
+        if (typeof img?.src === 'string' && img.src.startsWith('blob:')) {
+          URL.revokeObjectURL(img.src)
+        }
+      })
+      return []
+    })
+    setFeedModalFeed(null)
+    setEditFeedTitle('')
+    setEditFeedBody('')
+    setEditFeedTags([])
+    setEditFeedImageMode('file')
+    setEditUrlInput('')
+    setEditShowLocation(false)
+    setEditLocationInput('')
+  }, [])
+
+  const openFeedModal = useCallback((f) => {
+    const { title, body, tags } = parseFeedForEdit(f.content ?? '')
+    const urls =
+      Array.isArray(f.imageUrls) && f.imageUrls.length > 0
+        ? f.imageUrls.map((u) => String(u).trim()).filter(Boolean)
+        : f.imageUrl
+          ? String(f.imageUrl)
+              .split(',')
+              .map((s) => s.trim())
+              .filter(Boolean)
+          : []
+    setFeedModalFeed(f)
+    setEditFeedTitle(title)
+    setEditFeedBody(body)
+    setEditFeedTags(tags)
+    setEditFeedImages(
+      urls.map((src, i) => ({
+        id: `edit-${f.feedId}-${i}-${Date.now()}`,
+        src,
+        file: null,
+      })),
+    )
+    setEditFeedImageMode('file')
+    setEditUrlInput('')
+    setEditShowLocation(tags.length > 0)
+    setEditLocationInput('')
+  }, [])
+
+  useEffect(() => {
+    if (!feedModalFeed) return
+    const onKey = (e) => {
+      if (e.key === 'Escape' && !editFeedBusy) closeFeedModal()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [feedModalFeed, editFeedBusy, closeFeedModal])
+
+  const removeEditFeedImage = (id) => {
+    setEditFeedImages((prev) => {
+      const target = prev.find((img) => img.id === id)
+      if (typeof target?.src === 'string' && target.src.startsWith('blob:')) {
+        URL.revokeObjectURL(target.src)
+      }
+      return prev.filter((img) => img.id !== id)
+    })
+  }
+
+  const onEditPickFiles = async (e) => {
+    const files = Array.from(e.target.files ?? [])
+    e.target.value = ''
+    if (!files.length) return
+    const remaining = 10 - editFeedImages.length
+    const toProcess = files.slice(0, remaining)
+    const oversized = toProcess.filter((f) => f.size > MAX_LOCAL_IMAGE_BYTES)
+    if (oversized.length) addToast(`${oversized.length}개 파일이 2MB를 초과해 제외됐습니다.`, 'error')
+    const valid = toProcess.filter((f) => f.size <= MAX_LOCAL_IMAGE_BYTES)
+    const newImgs = valid.map((file) => ({
+      id: Date.now() + Math.random(),
+      src: URL.createObjectURL(file),
+      file,
+    }))
+    setEditFeedImages((prev) => [...prev, ...newImgs].slice(0, 10))
+  }
+
+  const addEditUrlImage = () => {
+    const src = editUrlInput.trim()
+    if (!src || editFeedImages.length >= 10) return
+    setEditFeedImages((prev) => [...prev, { id: Date.now() + Math.random(), src, file: null }])
+    setEditUrlInput('')
+  }
+
+  const reorderEditFeedImages = (dropIdx) => {
+    if (editDragIdx.current === null || editDragIdx.current === dropIdx) return
+    setEditFeedImages((prev) => {
+      const next = [...prev]
+      const [moved] = next.splice(editDragIdx.current, 1)
+      next.splice(dropIdx, 0, moved)
+      return next
+    })
+    editDragIdx.current = null
+  }
+
+  const addEditLocationTag = (raw) => {
+    const tag = raw.trim().replace(/^#/, '')
+    if (!tag || editFeedTags.includes(tag)) return
+    setEditFeedTags((prev) => [...prev, tag])
+    setEditLocationInput('')
+  }
+
+  const removeEditLocationTag = (tag) => {
+    setEditFeedTags((prev) => prev.filter((t) => t !== tag))
+  }
+
+  const saveFeedEdit = async () => {
+    if (!guideId || !feedModalFeed || !editFeedTitle.trim()) return
+    setEditFeedBusy(true)
+    try {
+      const uploadedImageUrls = []
+      for (const img of editFeedImages) {
+        if (img?.file) {
+          const formData = new FormData()
+          formData.append('file', img.file)
+          formData.append('folder', 'guide-feed')
+          const uploadRes = await apiRequest('/files/upload', { method: 'POST', body: formData })
+          const uploadText = await uploadRes.text()
+          if (!uploadRes.ok) {
+            addToast(await readJsonError(uploadRes, uploadText), 'error')
+            setEditFeedBusy(false)
+            return
+          }
+          const uploadJson = uploadText ? JSON.parse(uploadText) : {}
+          const uploadedUrl = String(uploadJson?.url ?? '').trim()
+          if (!uploadedUrl) {
+            addToast('이미지 업로드 URL을 받지 못했습니다.', 'error')
+            setEditFeedBusy(false)
+            return
+          }
+          uploadedImageUrls.push(uploadedUrl)
+          continue
+        }
+        const src = String(img?.src ?? '').trim()
+        if (!src || src.startsWith('blob:') || src.startsWith('data:')) continue
+        uploadedImageUrls.push(src)
+      }
+      const tagLine = editFeedTags.length > 0 ? '\n' + editFeedTags.map((t) => `#${t}`).join(' ') : ''
+      const content = (editFeedTitle.trim() + '\n' + editFeedBody.trim() + tagLine).trim()
+      const res = await apiRequest(`/guides/${guideId}/feeds/${feedModalFeed.feedId}`, {
+        method: 'PUT',
+        json: { content, imageUrls: uploadedImageUrls.length > 0 ? uploadedImageUrls : [] },
+      })
+      const text = await res.text()
+      if (!res.ok) {
+        addToast(await readJsonError(res, text), 'error')
+        return
+      }
+      addToast('피드를 저장했습니다.')
+      closeFeedModal()
+      await reloadFeeds(guideId)
+    } catch (e) {
+      console.error('[saveFeedEdit]', e)
+      addToast('저장에 실패했습니다.', 'error')
+    } finally {
+      setEditFeedBusy(false)
+    }
+  }
+
+  /** 예약 요청 막기 (BLOCKED) */
+  const setDayBlocked = async (dateStr) => {
+    if (!guideId || scheduleOpLockRef.current || busy) return
+    if (blockedDates.has(dateStr)) return
+    scheduleOpLockRef.current = true
+    setBusy(true)
+    try {
+      const res = await apiRequest(`/guides/${guideId}/schedules/block`, {
+        method: 'POST',
+        json: { date: dateStr },
+      })
+      const text = await res.text()
+      if (!res.ok) {
+        addToast(await readJsonError(res, text), 'error')
+        return
+      }
+      setBlockedDates((prev) => new Set(prev).add(dateStr))
+      addToast(`${dateStr} 예약 요청을 받지 않아요 🚫`)
+      await reloadScheduleData(guideId)
+    } catch {
+      addToast('날짜 설정 실패', 'error')
+    } finally {
+      scheduleOpLockRef.current = false
+      setBusy(false)
+    }
+  }
+
+  /** 비어 있음 → 예약 받기: 종일 AVAILABLE 슬롯 생성 (막힌 날이면 먼저 해제) */
+  const activateReceiving = async (dateStr) => {
+    if (!guideId || scheduleOpLockRef.current || busy) return
+    if (!blockedDates.has(dateStr) && hasWholeDayAvailableSlot(schedules, dateStr)) {
+      addToast('이미 이 날은 예약을 받는 설정이에요')
+      return
+    }
+    scheduleOpLockRef.current = true
+    setBusy(true)
+    try {
+      if (blockedDates.has(dateStr)) {
+        const u = await apiRequest(`/guides/${guideId}/schedules/block`, {
+          method: 'DELETE',
+          json: { date: dateStr },
+        })
+        const ut = await u.text()
+        if (!u.ok) {
+          addToast(await readJsonError(u, ut), 'error')
+          return
+        }
+        setBlockedDates((prev) => {
+          const next = new Set(prev)
+          next.delete(dateStr)
+          return next
+        })
+      }
+      const snap = await fetchSchedulesSnapshot(apiRequest, guideId)
+      const list = snap ?? schedules
+      if (hasWholeDayAvailableSlot(list, dateStr)) {
+        addToast('이미 이 날은 예약을 받는 설정이에요')
+        await reloadScheduleData(guideId)
+        return
+      }
+      const res = await apiRequest(`/guides/${guideId}/schedules`, {
+        method: 'POST',
+        json: { availableDate: dateStr, startTime: '00:00:00', endTime: '23:59:00' },
+      })
+      const text = await res.text()
+      if (!res.ok) {
+        if (res.status === 409) {
+          addToast('이미 이 날은 예약을 받는 설정이에요')
+          await reloadScheduleData(guideId)
+          return
+        }
+        addToast(await readJsonError(res, text), 'error')
+        return
+      }
+      addToast(`${dateStr} — 이 날 예약 요청을 받도록 설정했어요`)
+      await reloadScheduleData(guideId)
+    } catch {
+      addToast('설정에 실패했어요', 'error')
+    } finally {
+      scheduleOpLockRef.current = false
+      setBusy(false)
+    }
+  }
+
+  const onPickFiles = async (e) => {
+    const files = Array.from(e.target.files ?? [])
+    e.target.value = ''
+    if (!files.length) return
+    const remaining = 10 - feedImages.length
+    const toProcess = files.slice(0, remaining)
+    const oversized = toProcess.filter((f) => f.size > MAX_LOCAL_IMAGE_BYTES)
+    if (oversized.length) addToast(`${oversized.length}개 파일이 2MB를 초과해 제외됐습니다.`, 'error')
+    const valid = toProcess.filter((f) => f.size <= MAX_LOCAL_IMAGE_BYTES)
+    const newImgs = valid.map((file) => ({
+      id: Date.now() + Math.random(),
+      src: URL.createObjectURL(file),
+      file,
+    }))
+    setFeedImages((prev) => [...prev, ...newImgs].slice(0, 10))
+  }
+
+  const addUrlImage = () => {
+    const src = urlInput.trim()
+    if (!src || feedImages.length >= 10) return
+    setFeedImages((prev) => [...prev, { id: Date.now() + Math.random(), src, file: null }])
+    setUrlInput('')
+  }
+
+  const removeImage = (id) => {
+    setFeedImages((prev) => {
+      const target = prev.find((img) => img.id === id)
+      revokePreviewUrl(target?.src)
+      return prev.filter((img) => img.id !== id)
+    })
+  }
+
+  const reorderImages = (dropIdx) => {
+    if (dragIdx.current === null || dragIdx.current === dropIdx) return
+    setFeedImages((prev) => {
+      const next = [...prev]
+      const [moved] = next.splice(dragIdx.current, 1)
+      next.splice(dropIdx, 0, moved)
+      return next
+    })
+    dragIdx.current = null
+  }
+
+  const addLocationTag = (raw) => {
+    const tag = raw.trim().replace(/^#/, '')
+    if (!tag || feedLocationTags.includes(tag)) return
+    setFeedLocationTags((prev) => [...prev, tag])
+    setLocationInput('')
+  }
+
+  const removeLocationTag = (tag) => {
+    setFeedLocationTags((prev) => prev.filter((t) => t !== tag))
+  }
+
+  const moveToCourseEditor = useCallback(async (tour) => {
+    const sid = Number(tour?.scheduleId)
+    if (!Number.isFinite(sid)) return
+    const rid = Number(tour?.requestId)
+    const hasRid = Number.isFinite(rid) && rid > 0
+    const path = hasRid
+      ? `/guide/requests/${rid}/course-editor`
+      : `/guide/schedules/${sid}/course-editor`
+    const params = new URLSearchParams()
+    params.set('scheduleId', String(sid))
+    if (tour?.availableDate) params.set('date', String(tour.availableDate))
+    if (tour?.startTime) params.set('startTime', String(tour.startTime))
+    if (tour?.endTime) params.set('endTime', String(tour.endTime))
+    if (tour?.destination) params.set('destination', String(tour.destination))
+
+    let initialForm = null
+    if (guideId) {
+      try {
+        const formRes = await apiRequest(`/guides/${guideId}/schedules/${sid}/form`, { method: 'GET' })
+        const formText = await formRes.text()
+        if (formRes.ok) initialForm = formText ? JSON.parse(formText) : null
+      } catch {
+        initialForm = null
+      }
+    }
+
+    navigate(`${path}?${params.toString()}`, {
+      state: {
+        schedule: tour,
+        initialForm,
+      },
+    })
+  }, [navigate, guideId])
+
+  if (idLoading) {
+    return (
+      <div className="g-panel">
+        <p>불러오는 중…</p>
+      </div>
+    )
+  }
+
+  if (idError) {
+    return (
+      <div className="g-panel">
+        <p className="g-error">{idError}</p>
+        <button type="button" className="gm-btn gm-btn--ghost" onClick={() => reloadId()}>
+          다시 시도
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <div className="g-panel">
+      {loadError && <p className="g-error">{loadError}</p>}
+      <Toast toasts={toasts} />
+      {feedModalFeed &&
+        typeof document !== 'undefined' &&
+        createPortal(
+          <div
+            className="gfd-overlay"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="gfd-feed-modal-title"
+            onClick={(e) => {
+              if (e.target === e.currentTarget && !editFeedBusy) closeFeedModal()
+            }}
+          >
+            <div className="gfd-sheet" onClick={(e) => e.stopPropagation()}>
+              <div className="gfd-head">
+                <h3 id="gfd-feed-modal-title">피드 상세 · 수정</h3>
+                <button type="button" className="gfd-close" aria-label="닫기" disabled={editFeedBusy} onClick={() => closeFeedModal()}>
+                  ×
+                </button>
+              </div>
+              <p className="gfd-lead">본인 피드만 수정할 수 있어요. 저장 시 즉시 반영됩니다.</p>
+
+              <div className="gfd-mode-tabs">
+                {[
+                  { key: 'file', label: '파일 업로드' },
+                  { key: 'url', label: 'URL 입력' },
+                ].map(({ key, label }) => (
+                  <button
+                    key={key}
+                    type="button"
+                    className={`gfi-mode-tab ${editFeedImageMode === key ? 'is-on' : ''}`}
+                    onClick={() => setEditFeedImageMode(key)}
+                    disabled={editFeedBusy}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+
+              {editFeedImageMode === 'file' && editFeedImages.length < 10 && (
+                <div className="gfi-file-row">
+                  <button type="button" className="gm-btn gm-btn--ghost" onClick={() => editFileInputRef.current?.click()} disabled={editFeedBusy}>
+                    {editFeedImages.length === 0 ? '파일 선택' : `+ 추가 (${editFeedImages.length}/10)`}
+                  </button>
+                  <input
+                    ref={editFileInputRef}
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    style={{ display: 'none' }}
+                    onChange={(e) => void onEditPickFiles(e)}
+                  />
+                </div>
+              )}
+
+              {editFeedImageMode === 'url' && (
+                <div className="gfi-file-row" style={{ gap: '0.5rem' }}>
+                  <input
+                    className="gfi-text-input"
+                    placeholder="https://…"
+                    value={editUrlInput}
+                    onChange={(e) => setEditUrlInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault()
+                        addEditUrlImage()
+                      }
+                    }}
+                    disabled={editFeedBusy}
+                  />
+                  <button type="button" className="gm-btn gm-btn--ghost" onClick={addEditUrlImage} disabled={!editUrlInput.trim() || editFeedImages.length >= 10 || editFeedBusy}>
+                    추가
+                  </button>
+                </div>
+              )}
+
+              {editFeedImages.length > 0 ? (
+                <div className="gfi-thumb-grid gfd-thumb-grid">
+                  {editFeedImages.map((img, idx) => (
+                    <div
+                      key={img.id}
+                      className="gfi-thumb-item"
+                      draggable
+                      onDragStart={() => { editDragIdx.current = idx }}
+                      onDragOver={(e) => e.preventDefault()}
+                      onDrop={() => reorderEditFeedImages(idx)}
+                    >
+                      <img src={img.src} alt="" />
+                      {idx === 0 && <span className="gfi-thumb-badge">대표</span>}
+                      <button
+                        type="button"
+                        className="gfi-thumb-del"
+                        onClick={() => removeEditFeedImage(img.id)}
+                        aria-label="이미지 삭제"
+                        disabled={editFeedBusy}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="gfi-preview gfd-preview">
+                  <span className="gfi-preview-empty">이미지 없음 — 추가해 주세요</span>
+                </div>
+              )}
+
+              <div className="gfs-content-wrap gfd-fields">
+                <input
+                  type="text"
+                  className="gfi-title-input"
+                  placeholder="제목"
+                  value={editFeedTitle}
+                  onChange={(e) => setEditFeedTitle(e.target.value)}
+                  maxLength={100}
+                  disabled={editFeedBusy}
+                />
+                <textarea
+                  className="gfs-content"
+                  rows={5}
+                  maxLength={1000}
+                  placeholder="본문"
+                  value={editFeedBody}
+                  onChange={(e) => setEditFeedBody(e.target.value)}
+                  disabled={editFeedBusy}
+                />
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <button type="button" className="gfs-tag-hint-btn" onClick={() => setEditShowLocation((v) => !v)} disabled={editFeedBusy}>
+                    📍 장소 태그 {editShowLocation ? '닫기' : '추가'}
+                  </button>
+                  <span className="gfi-char-count">{editFeedBody.length} / 1000</span>
+                </div>
+                {editShowLocation && (
+                  <div style={{ marginTop: '0.5rem' }}>
+                    <input
+                      className="gi-tag-input"
+                      placeholder="장소명 입력 후 Enter"
+                      value={editLocationInput}
+                      onChange={(e) => setEditLocationInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault()
+                          addEditLocationTag(editLocationInput)
+                        }
+                      }}
+                      disabled={editFeedBusy}
+                    />
+                    {editFeedTags.length > 0 && (
+                      <div className="gi-tag-list" style={{ marginTop: '0.4rem' }}>
+                        {editFeedTags.map((tag) => (
+                          <span key={tag} className="gi-tag">
+                            #{tag}
+                            <button type="button" className="gi-tag-del" onClick={() => removeEditLocationTag(tag)} aria-label={`${tag} 삭제`} disabled={editFeedBusy}>
+                              ×
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <div className="gfd-actions">
+                <button type="button" className="gm-btn gm-btn--ghost" onClick={() => closeFeedModal()} disabled={editFeedBusy}>
+                  취소
+                </button>
+                <button type="button" className="gfs-upload-btn" onClick={() => void saveFeedEdit()} disabled={editFeedBusy || !editFeedTitle.trim()}>
+                  {editFeedBusy ? '저장 중…' : '저장'}
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body,
+        )}
+      {currentTab === 'feed' ? (
+        <section className="gfs-feed">
+          <header className="gfs-feed-head">
+            <h2 className="gfs-feed-title">
+              <span className="gfs-feed-ico" aria-hidden="true">
+                📸
+              </span>
+              피드 등록
+            </h2>
+            <p className="gfs-feed-lead">투어 사진과 소개를 올리면 게스트에게 더 잘 보여요.</p>
+          </header>
+
+          {/* 이미지 입력 방식 탭 */}
+          <div className="gfi-mode-tabs">
+            {[
+              { key: 'file', label: '파일 업로드' },
+              { key: 'url', label: 'URL 입력' },
+            ].map(({ key, label }) => (
+              <button
+                key={key}
+                type="button"
+                className={`gfi-mode-tab ${feedImageMode === key ? 'is-on' : ''}`}
+                onClick={() => setFeedImageMode(key)}
+              >
+                {label}
+              </button>
+            ))}
+            <button type="button" className="gfi-mode-tab gfi-mode-tab--disabled" disabled>
+              인스타그램 (준비 중)
+            </button>
+          </div>
+
+          {/* 파일 업로드 */}
+          {feedImageMode === 'file' && feedImages.length < 10 && (
+            <div className="gfi-file-row">
+              <button type="button" className="gm-btn gm-btn--ghost" onClick={() => mainFileInputRef.current?.click()}>
+                {feedImages.length === 0 ? '파일 선택' : `+ 추가 (${feedImages.length}/10)`}
+              </button>
+              <input
+                ref={mainFileInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                style={{ display: 'none' }}
+                onChange={(e) => void onPickFiles(e)}
+              />
+            </div>
+          )}
+
+          {/* URL 입력 */}
+          {feedImageMode === 'url' && (
+            <div className="gfi-file-row" style={{ gap: '0.5rem' }}>
+              <input
+                className="gfi-text-input"
+                placeholder="https://example.com/image.jpg"
+                value={urlInput}
+                onChange={(e) => setUrlInput(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addUrlImage() } }}
+              />
+              <button
+                type="button"
+                className="gm-btn gm-btn--ghost"
+                onClick={addUrlImage}
+                disabled={!urlInput.trim() || feedImages.length >= 10}
+              >
+                추가
+              </button>
+            </div>
+          )}
+
+          {/* 썸네일 그리드 */}
+          {feedImages.length > 0 ? (
+            <div className="gfi-thumb-grid">
+              {feedImages.map((img, idx) => (
+                <div
+                  key={img.id}
+                  className="gfi-thumb-item"
+                  draggable
+                  onDragStart={() => { dragIdx.current = idx }}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={() => reorderImages(idx)}
+                >
+                  <img src={img.src} alt="" />
+                  {idx === 0 && <span className="gfi-thumb-badge">대표</span>}
+                  <button type="button" className="gfi-thumb-del" onClick={() => removeImage(img.id)} aria-label="이미지 삭제">×</button>
+                </div>
+              ))}
+              {feedImageMode === 'file' && feedImages.length < 10 && (
+                <button type="button" className="gfi-thumb-add" onClick={() => mainFileInputRef.current?.click()} aria-label="이미지 추가">+</button>
+              )}
+            </div>
+          ) : (
+            <div className="gfi-preview">
+              <span className="gfi-preview-empty">이미지를 추가해보세요</span>
+            </div>
+          )}
+
+          {/* 피드 내용 입력 */}
+          <div className="gfs-content-wrap" style={{ marginTop: '1rem' }}>
+            <input
+              type="text"
+              className="gfi-title-input"
+              placeholder="제목을 입력해주세요 (예: 해방촌 골목골목, 진짜 서울을 보여드릴게요)"
+              value={feedTitle}
+              onChange={(e) => setFeedTitle(e.target.value)}
+              maxLength={100}
+            />
+            <textarea
+              className="gfs-content"
+              rows={4}
+              maxLength={1000}
+              placeholder="피드 내용과 장소를 입력해주세요..."
+              value={feedBody}
+              onChange={(e) => setFeedBody(e.target.value)}
+            />
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <button type="button" className="gfs-tag-hint-btn" onClick={() => setShowLocationInput((v) => !v)}>
+                📍 장소 태그 {showLocationInput ? '닫기' : '추가'}
+              </button>
+              <span className="gfi-char-count">{feedBody.length} / 1000</span>
+            </div>
+            {showLocationInput && (
+              <div style={{ marginTop: '0.5rem' }}>
+                <input
+                  className="gi-tag-input"
+                  placeholder="장소명 입력 후 Enter"
+                  value={locationInput}
+                  onChange={(e) => setLocationInput(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addLocationTag(locationInput) } }}
+                />
+                {feedLocationTags.length > 0 && (
+                  <div className="gi-tag-list" style={{ marginTop: '0.4rem' }}>
+                    {feedLocationTags.map((tag) => (
+                      <span key={tag} className="gi-tag">
+                        #{tag}
+                        <button type="button" className="gi-tag-del" onClick={() => removeLocationTag(tag)} aria-label={`${tag} 삭제`}>×</button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '0.75rem' }}>
+            <button
+              type="button"
+              className="gfs-upload-btn"
+              onClick={() => void addFeed()}
+              disabled={busy || !feedTitle.trim()}
+            >
+              {busy ? <><span className="gfi-spinner" aria-hidden="true" /> 업로드 중…</> : '업로드 🚀'}
+            </button>
+          </div>
+
+          {/* 피드 목록 */}
+          <p className="gm-hint" style={{ marginTop: '1.25rem', marginBottom: '0.5rem' }}>등록된 피드 {feeds.length}개</p>
+          <ul className="gfi-feed-list">
+            {feeds.length === 0 && (
+              <li style={{ padding: '0.65rem 0.75rem', fontSize: '0.84rem', color: '#9ca3af' }}>등록된 피드가 없습니다.</li>
+            )}
+            {feeds.map((f) => {
+              const { title } = parseFeedHeading(f.content)
+              const dateStr = f.createdAt ? String(f.createdAt).slice(0, 10).replace(/-/g, '.') : null
+              return (
+                <li key={f.feedId} className="gfi-feed-card">
+                  <button type="button" className="gfi-feed-card-main" onClick={() => openFeedModal(f)} disabled={busy}>
+                    <div className="gfi-feed-thumb">
+                      {(() => {
+                        const thumb = f.imageUrls?.[0] ?? f.imageUrl ?? null
+                        if (!thumb) return <div className="gfi-thumb-empty" />
+                        if (isInstagramUrl(thumb)) return <span className="gfi-thumb-insta">📷</span>
+                        return <img src={thumb} alt="" />
+                      })()}
+                    </div>
+                    <div className="gfi-feed-card-text">
+                      <p className="gfi-feed-title">{title}</p>
+                      {dateStr && <p className="gfi-feed-date">{dateStr}</p>}
+                    </div>
+                  </button>
+                  <button type="button" className="gm-danger" onClick={() => void removeFeed(f.feedId)} disabled={busy}>
+                    삭제
+                  </button>
+                </li>
+              )
+            })}
+          </ul>
+        </section>
+      ) : (
+        <>
+          <header className="gss-head gss-head--schedule">
+            <h2>🗓️ 스케줄 관리</h2>
+            <p>투어 가능 일정을 관리하고 예약 현황을 확인하세요.</p>
+          </header>
+          <div className="gss-banner gss-banner--schedule">
+            <span className="gss-banner__icon" aria-hidden="true">💡</span>
+            <span>
+              달력은 기본이 <strong>예약 가능</strong>이에요. 요청을 받지 않을 날짜만 눌러 <strong>예약 안 받기</strong>로 바꿔 주세요.
+            </span>
+          </div>
+          <GuideScheduleSection
+            schedules={schedules}
+            pendingSchedules={pendingSchedules}
+            blockedDates={blockedDates}
+            busy={busy}
+            onActivateReceiving={activateReceiving}
+            onSetBlocked={setDayBlocked}
+            onOpenCourse={moveToCourseEditor}
+            onCancelRequest={cancelBookedRequest}
+            requestsByScheduleId={requestsByScheduleId}
+          />
+        </>
+      )}
+    </div>
+  )
+}

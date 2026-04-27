@@ -1,0 +1,90 @@
+package com.team6.module.chat.config;
+
+import com.team6.module.chat.service.ChatRoomService;
+import com.team6.module.chat.support.ChatPresenceRedisKeys;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.ObjectProvider; // 추가
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.messaging.Message;
+import org.springframework.messaging.MessageChannel;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.messaging.simp.stomp.StompCommand;
+import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
+import org.springframework.messaging.support.ChannelInterceptor;
+import org.springframework.messaging.support.MessageHeaderAccessor;
+import org.springframework.stereotype.Component;
+
+import java.util.Map;
+
+@Component
+//@RequiredArgsConstructor
+@Slf4j
+public class PresenceInterceptor implements ChannelInterceptor {
+
+    // StringRedisTemplate 대신 Qualifier를 사용한 RedisTemplate으로 변경
+    private final RedisTemplate<String, String> redisTemplate;
+    private final ObjectProvider<SimpMessagingTemplate> messagingTemplateProvider;
+    private final ChatRoomService chatRoomService;
+
+    // 생성자 주입 시 @Qualifier 적용
+    public PresenceInterceptor(
+            @Qualifier("memberRedisTemplate") RedisTemplate<String, String> redisTemplate,
+            ObjectProvider<SimpMessagingTemplate> messagingTemplateProvider,
+            ChatRoomService chatRoomService
+    ) {
+        this.redisTemplate = redisTemplate;
+        this.messagingTemplateProvider = messagingTemplateProvider;
+        this.chatRoomService = chatRoomService;
+    }
+
+    @Override
+    public Message<?> preSend(Message<?> message, MessageChannel channel) {
+        StompHeaderAccessor accessor = MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
+        if (accessor == null) return message;
+
+        String sessionId = accessor.getSessionId();
+        String userEmail = (String) accessor.getSessionAttributes().get("userEmail");
+
+        if (StompCommand.SUBSCRIBE.equals(accessor.getCommand())) {
+            String roomId = getRoomId(accessor.getDestination());
+            if (roomId != null && userEmail != null) {
+                redisTemplate.opsForSet().add(ChatPresenceRedisKeys.roomParticipantsKey(roomId), userEmail);
+                Map<String, String> sessionData = Map.of("email", userEmail, "roomId", roomId);
+                redisTemplate.opsForHash().putAll(ChatPresenceRedisKeys.userSessionKey(sessionId), sessionData);
+
+                chatRoomService.updateLastReadAt(roomId, userEmail);
+                sendReadUpdate(roomId, userEmail);
+                log.info("[Presence] User {} entered room {}", userEmail, roomId);
+            }
+        }
+        else if (StompCommand.DISCONNECT.equals(accessor.getCommand())) {
+            Map<Object, Object> sessionData = redisTemplate.opsForHash().entries(ChatPresenceRedisKeys.userSessionKey(sessionId));
+            if (!sessionData.isEmpty()) {
+                String email = (String) sessionData.get("email");
+                String roomId = (String) sessionData.get("roomId");
+
+                chatRoomService.updateLastReadAt(roomId, email);
+
+                redisTemplate.opsForSet().remove(ChatPresenceRedisKeys.roomParticipantsKey(roomId), email);
+                redisTemplate.delete(ChatPresenceRedisKeys.userSessionKey(sessionId));
+                log.info("[Presence] User {} left room {}", email, roomId);
+            }
+        }
+        return message;
+    }
+
+    private void sendReadUpdate(String roomId, String userEmail) {
+        Map<String, String> payload = Map.of("type", "READ_UPDATE", "userEmail", userEmail);
+        SimpMessagingTemplate messagingTemplate = messagingTemplateProvider.getIfAvailable();
+        if (messagingTemplate != null) {
+            messagingTemplate.convertAndSend("/sub/chat/room/" + roomId, payload);
+        }
+    }
+
+    private String getRoomId(String destination) {
+        if (destination == null || !destination.startsWith("/sub/chat/room/")) return null;
+        return destination.substring(destination.lastIndexOf("/") + 1);
+    }
+}

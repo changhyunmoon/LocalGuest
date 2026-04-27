@@ -1,0 +1,235 @@
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
+@import url("https://fonts.googleapis.com/css2?family=Gowun+Dodum&display=swap");
+
+:root {
+  --text: #334155;
+  --text-h: #0f172a;
+  --bg: #f4f7fa;
+  --surface: #ffffff;
+  --surface-soft: #f8fafc;
+  --border: #dbe4ef;
+  --code-bg: #eff6ff;
+  --accent: #10b981;
+  --accent-strong: #059669;
+  --accent-bg: #eef2ff;
+  --accent-border: #6ee7b7;
+  --social-bg: #f8fafc;
+  --muted: #64748b;
+
+  --sans: "Pretendard", "Malgun Gothic", "맑은 고딕", sans-serif;
+  --heading: "Pretendard", "Malgun Gothic", "맑은 고딕", sans-serif;
+  --hand: "Gowun Dodum", "Pretendard", "Malgun Gothic", "맑은 고딕", sans-serif;
+  --logo-header: "Pretendard", "Malgun Gothic", "맑은 고딕", sans-serif;
+  --logo-footer: "Pretendard", "Malgun Gothic", "맑은 고딕", sans-serif;
+  --logo-alt: "Pretendard", "Malgun Gothic", "맑은 고딕", sans-serif;
+  --mono: ui-monospace, Consolas, monospace;
+  --scrap-sticker-z: 60;
+
+  font-size: 18px;
+  font-family: var(--sans);
+  line-height: 1.45;
+  letter-spacing: 0.1px;
+  color-scheme: light;
+  color: var(--text);
+  background: var(--bg);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@media (max-width: 1024px) {
+  :root {
+    font-size: 16px;
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  color: var(--text);
+  background-color: var(--bg);
+  background-image: radial-gradient(#cbd5e1 1.2px, transparent 1.2px);
+  background-size: 24px 24px;
+  font-family: var(--sans);
+}
+
+#root {
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+}
+
+h1,
+h2 {
+  font-family: var(--heading);
+  font-weight: 800;
+  color: var(--text-h);
+}
+
+h1 {
+  font-size: 56px;
+  letter-spacing: -1.3px;
+  margin: 32px 0;
+}
+
+h2 {
+  font-size: 24px;
+  line-height: 1.18;
+  letter-spacing: -0.2px;
+  margin: 0 0 8px;
+}
+
+@media (max-width: 1024px) {
+  h1 {
+    font-size: 36px;
+    margin: 20px 0;
+  }
+
+  h2 {
+    font-size: 20px;
+  }
+}
+
+p {
+  margin: 0;
+}
+
+code,
+.counter {
+  font-family: var(--mono);
+  display: inline-flex;
+  border-radius: 4px;
+  color: var(--text-h);
+}
+
+code {
+  font-size: 15px;
+  line-height: 1.35;
+  padding: 4px 8px;
+  background: var(--code-bg);
+}
+
+button,
+.button {
+  font-family: inherit;
+  transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease, transform 0.18s ease;
+}
+
+button:hover:not(:disabled),
+.button:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+button:focus-visible,
+.button:focus-visible {
+  outline: 2px solid var(--accent-border);
+  outline-offset: 2px;
+}
+
+.scrap-grid-paper {
+  background-color: #fff;
+  background-image: linear-gradient(#f1f5f9 1px, transparent 1px), linear-gradient(90deg, #f1f5f9 1px, transparent 1px);
+  background-size: 24px 24px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: 0 14px 32px rgba(15, 23, 42, 0.08);
+}
+
+.scrap-polaroid {
+  position: relative;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 10px 10px 40px;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.12);
+}
+
+.scrap-tape {
+  position: absolute;
+  top: -8px;
+  width: 56px;
+  height: 16px;
+  border-radius: 3px;
+  opacity: 0.88;
+  box-shadow: 0 2px 5px rgba(15, 23, 42, 0.12);
+}
+
+.scrap-tape--pink {
+  background: rgba(244, 114, 182, 0.5);
+}
+
+.scrap-tape--green {
+  background: rgba(134, 239, 172, 0.55);
+}
+
+.scrap-tape--yellow {
+  background: rgba(253, 224, 71, 0.55);
+}
+
+.scrap-tape--white {
+  background: rgba(255, 255, 255, 0.92);
+}
+
+/* Global scrapbook motion accents */
+@keyframes scrapFloatSoft {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+@keyframes scrapGlowPulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 rgba(16, 185, 129, 0);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(16, 185, 129, 0.1);
+  }
+}
+
+@keyframes scrapTapeSway {
+  0%,
+  100% {
+    transform: translate(-50%, -38%) rotate(-2deg);
+  }
+  50% {
+    transform: translate(-50%, -38%) rotate(2deg);
+  }
+}
+
+.scrap-hover-lift {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.scrap-hover-lift:hover {
+  transform: translateY(-2px);
+}
+
+.scrap-sticker-top {
+  position: relative;
+  z-index: var(--scrap-sticker-z);
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

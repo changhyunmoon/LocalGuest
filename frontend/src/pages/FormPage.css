@@ -1,0 +1,277 @@
+.form-page {
+  max-width: 420px;
+  margin: 0 auto;
+  text-align: left;
+  color: #0f172a;
+  color-scheme: light;
+}
+
+.form-page h1 {
+  margin: 0 0 0.35rem;
+  font-size: 1.5rem;
+}
+
+.form-hint {
+  margin: 0 0 1.25rem;
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.form-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  padding: 1.25rem;
+  border: 1px solid #dbe4ef;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.09);
+}
+
+.form-card::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-2deg);
+  width: 60px;
+  height: 16px;
+  border-radius: 3px;
+  background: rgba(244, 114, 182, 0.38);
+  box-shadow: 0 2px 4px rgba(15, 23, 42, 0.14);
+}
+
+.form-role-switch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.form-role-btn {
+  padding: 0.62rem 0.8rem;
+  border-radius: 10px;
+  border: 1px solid #dbe4ef;
+  background: #f8fafc;
+  color: #475569;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+}
+
+.form-role-btn.is-on {
+  background: #10b981;
+  border-color: #10b981;
+  color: #ffffff;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.875rem;
+}
+
+.field span {
+  font-weight: 600;
+  color: #334155;
+}
+
+.field input,
+.field textarea,
+.field select {
+  padding: 0.5rem 0.6rem;
+  border: 1px solid #dbe4ef;
+  border-radius: 10px;
+  background: #f8fafc;
+  color: #111827;
+  caret-color: #111827;
+  font: inherit;
+}
+
+.field input::placeholder,
+.field textarea::placeholder {
+  color: #9ca3af;
+  opacity: 1;
+}
+
+.field input:focus,
+.field textarea:focus,
+.field select:focus {
+  outline: none;
+  border-color: #1f2328;
+  background: #fff;
+  color: #111827;
+}
+
+.form-error {
+  margin: 0;
+  color: #b71c1c;
+  font-size: 0.85rem;
+}
+
+.form-success {
+  padding: 1rem;
+  border-radius: 8px;
+  background: #ecfeff;
+  border: 1px solid #bae6fd;
+  margin-bottom: 1rem;
+}
+
+.form-success p {
+  margin: 0 0 0.75rem;
+}
+
+.submit {
+  margin-top: 0.25rem;
+  padding: 0.6rem 1rem;
+  border-radius: 999px;
+  border: none;
+  background: #10b981;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.submit.ghost {
+  background: #fff;
+  color: #334155;
+  border: 1px solid #dbe4ef;
+}
+
+.form-login-submit {
+  border: 1px solid #10b981;
+  background: #10b981;
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.form-login-submit:hover:not(:disabled) {
+  background: #059669;
+}
+
+/* 로그인 / 구글 로그인 동일 폭·블록 버튼 */
+.form-auth-primary-btn {
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 0;
+  min-height: 2.65rem;
+}
+
+/* 비밀번호 입력란과 로그인 버튼 사이 여유 */
+button[type='submit'].form-login-submit.form-auth-primary-btn {
+  margin-top: 0.75rem;
+}
+
+.form-social--inside {
+  margin-top: 0.1rem;
+  padding-top: 0.25rem;
+}
+
+.form-social--after-login {
+  margin-top: 0.35rem;
+  padding-top: 0.35rem;
+  border-top: none;
+}
+
+.form-google-login {
+  width: 100%;
+  margin-top: 0.2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.52rem;
+  border-color: #dbe4ef !important;
+  background: #fff !important;
+  color: #334155 !important;
+  font-weight: 700;
+}
+
+.form-google-login__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.4rem;
+  height: 1.4rem;
+  border-radius: 999px;
+  border: 1px solid #dbe4ef;
+  background: #f8fafc;
+  color: #047857;
+  font-size: 0.86rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.form-social {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+.form-social p {
+  margin: 0 0 0.5rem;
+  font-size: 0.8rem;
+  color: #777;
+}
+
+.form-footer {
+  margin-top: 1rem;
+  font-size: 0.9rem;
+}
+
+.form-footer a {
+  color: #0d47a1;
+  font-weight: 600;
+}
+
+.form-account-links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem 0.35rem;
+  margin-top: 0.15rem;
+  padding-top: 0.15rem;
+  font-size: 0.82rem;
+  color: #64748b;
+}
+
+.form-account-links__sep {
+  color: #d1d5db;
+  user-select: none;
+}
+
+.form-text-link {
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: inherit;
+  color: #64748b;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.form-text-link:hover {
+  color: #1e293b;
+}
+
+a.form-text-link {
+  color: #6b7280;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  font-weight: inherit;
+}
+
+a.form-text-link:hover {
+  color: #374151;
+}

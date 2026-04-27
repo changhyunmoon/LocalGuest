@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>채팅방 목록</title>
+    <style>
+        body { font-family: sans-serif; background-color: #f5f5f5; padding: 20px; }
+        .container { max-width: 500px; margin: 0 auto; }
+        .section { background: white; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 20px; overflow: hidden; }
+        .header { padding: 15px; background: #4A90E2; color: white; display: flex; justify-content: space-between; align-items: center; }
+
+        /* 직접 입력 */
+        .input-box { padding: 15px; display: flex; gap: 8px; border-bottom: 1px solid #eee; }
+        .input-box input { flex: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+
+        /* 목록 스타일 */
+        .room-list { list-style: none; margin: 0; padding: 0; }
+        .room-item { padding: 15px; border-bottom: 1px solid #eee; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+        .room-item:hover { background: #fcfcfc; }
+        .room-main { flex: 1; }
+        .title-row { display: flex; align-items: center; gap: 5px; margin-bottom: 5px; }
+        .count { font-size: 0.8em; color: #888; }
+        .last-msg { font-size: 0.9em; color: #666; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 250px; }
+        .meta { text-align: right; }
+        .time { font-size: 0.75em; color: #aaa; margin-bottom: 5px; }
+        .badge { background: #ff4d4f; color: white; padding: 2px 8px; border-radius: 10px; font-size: 0.75em; font-weight: bold; }
+        .btn-create { display: block; text-align: center; padding: 15px; background: #424242; color: white; text-decoration: none; border-radius: 8px; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="section">
+        <div class="header"><h3>방 ID로 바로가기</h3></div>
+        <div class="input-box">
+            <input type="text" id="manual-id" placeholder="방 UUID 입력">
+            <button onclick="goRoom()">이동</button>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="header">
+            <h3>내 채팅방</h3>
+            <button onclick="fetchRooms()" style="cursor:pointer; font-size:0.7em;">새로고침</button>
+        </div>
+        <ul id="room-list" class="room-list"></ul>
+    </div>
+
+    <a href="chat-create.html" class="btn-create">+ 새 채팅방 만들기</a>
+</div>
+
+<script>
+    function goRoom() {
+        const id = document.getElementById('manual-id').value.trim();
+        if(id) location.href = `chat-room.html?roomId=${id}`;
+    }
+
+    async function fetchRooms() {
+        const listEl = document.getElementById('room-list');
+        try {
+            const response = await fetch('/api/chat/rooms');
+            const data = await response.json();
+
+            listEl.innerHTML = '';
+            data.rooms.forEach(room => {
+                // 날짜 포맷팅
+                let timeText = '';
+                if (room.lastMessageAt) {
+                    const date = new Date(room.lastMessageAt);
+                    const now = new Date();
+                    timeText = date.toDateString() === now.toDateString()
+                        ? date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                        : `${date.getMonth() + 1}월 ${date.getDate()}일`;
+                }
+
+                const li = document.createElement('li');
+                li.className = 'room-item';
+                li.onclick = () => location.href = `chat-room.html?roomId=${room.roomId}`;
+                li.innerHTML = `
+                    <div class="room-main">
+                        <div class="title-row">
+                            <strong>${room.title}</strong>
+                            <span class="count">👤${room.participantCount}</span>
+                        </div>
+                        <div class="last-msg">${room.lastMessage || '대화가 없습니다.'}</div>
+                    </div>
+                    <div class="meta">
+                        <div class="time">${timeText}</div>
+                        ${room.unreadCount > 0 ? `<span class="badge">${room.unreadCount}</span>` : ''}
+                    </div>
+                `;
+                listEl.appendChild(li);
+            });
+        } catch (e) {
+            console.error("로드 실패", e);
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', fetchRooms);
+</script>
+</body>
+</html>

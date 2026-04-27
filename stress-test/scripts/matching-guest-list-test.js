@@ -1,0 +1,38 @@
+import http from 'k6/http';
+import { check, sleep } from 'k6';
+
+const BASE = __ENV.BASE_URL || 'https://api.bam-match.com/api';
+const TOKEN = __ENV.TOKEN;
+
+export const options = {
+  stages: [
+    // 2분 동안 동시 사용자 50명까지 점진 증가
+    { duration: '2m', target: 50 },
+    // 다음 3분 동안 동시 사용자 100명까지 증가
+    { duration: '3m', target: 100 },
+    // 다음 3분 동안 동시 사용자 200명까지 증가(최대 부하)
+    { duration: '3m', target: 200 },
+    // 마지막 2분 동안 동시 사용자 0명으로 감소(정리 구간)
+    { duration: '2m', target: 0 },
+  ],
+  thresholds: {
+    http_req_failed: ['rate<0.05'],
+    http_req_duration: ['p(95)<1000'],
+  },
+};
+
+export default function () {
+  if (!TOKEN) {
+    throw new Error('TOKEN is required. Set env var TOKEN');
+  }
+
+const res = http.get(`${BASE}/matching/requests/guest/list/paged?page=0&size=20`, {
+    headers: { Authorization: `Bearer ${TOKEN}` },
+  });
+
+  check(res, {
+    'status is 200': (r) => r.status === 200,
+  });
+
+  sleep(1);
+}

@@ -1,0 +1,208 @@
+/* 가이드 제안 수신 (F03-06 직전 화면) */
+
+.gp {
+  width: 100%;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 0 0 2rem;
+  box-sizing: border-box;
+}
+
+.gp-back {
+  display: inline-block;
+  margin: 0 0 1rem;
+  padding: 0;
+  border: none;
+  background: none;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #4b5563;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.gp-banner {
+  margin: 0 0 1rem;
+  padding: 0.65rem 0.85rem;
+  border-radius: 12px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  font-size: 0.82rem;
+  color: #1e40af;
+  line-height: 1.45;
+}
+
+.gp-card {
+  background: #fff;
+  border: 1px solid #e8eaed;
+  border-radius: 18px;
+  padding: clamp(1.15rem, 3vw, 1.5rem);
+  box-shadow: 0 10px 36px rgba(15, 23, 42, 0.07);
+}
+
+.gp-title {
+  margin: 0 0 0.45rem;
+  font-size: clamp(1.1rem, 2.8vw, 1.35rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: #111827;
+}
+
+.gp-sub {
+  margin: 0 0 1.25rem;
+  font-size: 0.86rem;
+  line-height: 1.55;
+  color: #6b7280;
+}
+
+.gp-profile {
+  display: flex;
+  gap: 0.85rem;
+  align-items: center;
+  margin-bottom: 1.1rem;
+}
+
+.gp-avatar {
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: linear-gradient(145deg, #e5e7eb, #d1d5db);
+  background-size: cover;
+  background-position: center;
+}
+
+.gp-name {
+  margin: 0 0 0.2rem;
+  font-size: 1rem;
+  font-weight: 800;
+  color: #111827;
+}
+
+.gp-meta {
+  margin: 0;
+  font-size: 0.82rem;
+  color: #6b7280;
+}
+
+.gp-box {
+  background: #f8f9fa;
+  border-radius: 14px;
+  padding: 1rem 1.05rem;
+  border: 1px solid #eef0f3;
+}
+
+.gp-box h3 {
+  margin: 0 0 0.35rem;
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: #374151;
+}
+
+.gp-box p {
+  margin: 0 0 0.85rem;
+  font-size: 0.86rem;
+  line-height: 1.6;
+  color: #4b5563;
+}
+
+.gp-box p:last-child {
+  margin-bottom: 0;
+}
+
+.gp-box section:last-of-type p:last-child {
+  margin-bottom: 0;
+}
+
+.gp-steps {
+  margin: 0 0 0.85rem;
+  padding-left: 1.1rem;
+  font-size: 0.86rem;
+  line-height: 1.55;
+  color: #374151;
+}
+
+.gp-steps li {
+  margin-bottom: 0.25rem;
+}
+
+.gp-divider {
+  margin: 1rem 0 0.75rem;
+  border: none;
+  border-top: 1px dashed #d1d5db;
+}
+
+.gp-price-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.gp-price-label {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #374151;
+}
+
+.gp-price {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #dc2626;
+}
+
+.gp-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-top: 1.35rem;
+  justify-content: center;
+}
+
+.gp-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: min(100%, 220px);
+  padding: 0.65rem 1.1rem;
+  border-radius: 999px;
+  font-size: 0.86rem;
+  font-weight: 700;
+  text-decoration: none;
+  border: 1px solid transparent;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.gp-btn--ghost {
+  background: #fff;
+  border-color: #d1d5db;
+  color: #374151;
+}
+
+.gp-btn--ghost:hover {
+  background: #f9fafb;
+}
+
+.gp-btn--primary {
+  background: #1f2328;
+  border-color: #1f2328;
+  color: #fff !important;
+}
+
+.gp-btn--primary:hover:not(:disabled) {
+  background: #111418;
+}
+
+.gp-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.gp-err {
+  margin-top: 0.75rem;
+  font-size: 0.84rem;
+  color: #b91c1c;
+  text-align: center;
+}

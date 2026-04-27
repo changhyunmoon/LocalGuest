@@ -1,0 +1,102 @@
+name: Backend Blue-Green CI/CD (Multi-Module)
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'backend/**'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Decode and Create application-prod.yml
+        run: |
+          mkdir -p backend/api-server/src/main/resources
+          echo "${{ secrets.APPLICATION_PROD }}" | base64 --decode > backend/api-server/src/main/resources/application-prod.yml
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x backend/gradlew
+
+      - name: Build with Gradle
+        working-directory: ./backend
+        run: ./gradlew clean :api-server:build -x test
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.BACKEND_IMAGE_NAME }}:${{ secrets.BACKEND_IMAGE_TAG }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.BACKEND_IMAGE_NAME }}:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create .env file
+        run: |
+          mkdir -p backend/deployment
+          echo "DOCKERHUB_USERNAME=${{ secrets.DOCKERHUB_USERNAME }}" >> backend/deployment/.env
+          echo "BACKEND_IMAGE_NAME=${{ secrets.BACKEND_IMAGE_NAME }}" >> backend/deployment/.env
+          echo "BACKEND_IMAGE_TAG=${{ github.sha }}" >> backend/deployment/.env
+
+      - name: Verify deployment files
+        run: |
+          echo "=== deployment files ==="
+          find backend/deployment -type f | sort
+
+      - name: Copy deployment files to EC2
+        uses: appleboy/scp-action@v1.0.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: "backend/deployment/**"
+          target: "/home/ubuntu/backend-deploy"
+          strip_components: 2
+          overwrite: true
+
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          envs: DOCKER_IMAGE_TAG,DOCKERHUB_USERNAME,BACKEND_IMAGE_NAME
+          script: |
+            export DOCKER_IMAGE_TAG=${{ github.sha }}
+            export DOCKERHUB_USERNAME=${{ secrets.DOCKERHUB_USERNAME }}
+            export BACKEND_IMAGE_NAME=${{ secrets.BACKEND_IMAGE_NAME }}
+
+            cd /home/ubuntu/backend-deploy
+            echo "=== copied files on EC2 ==="
+            find . -type f | sort
+
+            chmod +x deploy.sh
+            ./deploy.sh

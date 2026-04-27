@@ -1,0 +1,199 @@
+.rev-carousel {
+  outline: none;
+}
+
+.rev-carousel:focus-visible {
+  box-shadow: 0 0 0 2px #fff, 0 0 0 4px #10b981;
+  border-radius: 10px;
+}
+
+.rev-carousel--default {
+  --rev-bg: #fafafa;
+  --rev-brd: #e5e7eb;
+  --rev-text: #374151;
+}
+
+.rev-carousel--dialog {
+  --rev-bg: #f8fafc;
+  --rev-brd: #e2e8f0;
+  --rev-text: #334155;
+}
+
+.rev-carousel-btn {
+  flex-shrink: 0;
+  width: 2.1rem;
+  height: 2.1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  border: 1px solid #dbe4ef;
+  background: #fff;
+  color: #0f172a;
+  font-size: 1.2rem;
+  line-height: 1;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.rev-carousel-btn:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+}
+
+.rev-carousel-btn:active {
+  background: #e2e8f0;
+}
+
+.rev-carousel-counter {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #64748b;
+  letter-spacing: 0.04em;
+}
+
+.rev-carousel-viewport {
+  position: relative;
+  overflow: hidden;
+  border-radius: 10px;
+  border: 1px solid var(--rev-brd);
+  background: var(--rev-bg);
+}
+
+.rev-carousel-viewport .rev-carousel-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.12);
+  background: rgba(255, 255, 255, 0.94);
+}
+
+.rev-carousel-viewport .rev-carousel-btn--prev {
+  left: 0.45rem;
+}
+
+.rev-carousel-viewport .rev-carousel-btn--next {
+  right: 0.45rem;
+}
+
+.rev-carousel-track {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  transition: transform 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
+}
+
+.rev-carousel-slide {
+  box-sizing: border-box;
+  flex-shrink: 0;
+  padding: 0.85rem 1rem;
+}
+
+.rev-carousel--has-nav .rev-carousel-slide {
+  padding-left: 2.6rem;
+  padding-right: 2.6rem;
+}
+
+.rev-slide {
+  max-width: 100%;
+}
+
+.rev-slide-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.4rem;
+  width: 100%;
+}
+
+.rev-slide-name {
+  font-weight: 600;
+  font-size: 0.88rem;
+  color: #111827;
+}
+
+.rev-slide-stars {
+  font-size: 0.8rem;
+  color: #f59e0b;
+  letter-spacing: 0.04em;
+}
+
+.rev-slide-when {
+  margin-left: auto;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #6b7280;
+}
+
+.rev-slide-text {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--rev-text);
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+
+.rev-carousel-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  margin-top: 0.55rem;
+}
+
+.rev-carousel-dots {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.4rem;
+  margin-top: 0;
+}
+
+.rev-carousel-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: #cbd5e1;
+  cursor: pointer;
+  font-size: 0;
+  line-height: 0;
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+
+.rev-carousel-dot:hover {
+  background: #94a3b8;
+}
+
+.rev-carousel-dot[data-on='1'] {
+  background: #10b981;
+  transform: scale(1.2);
+}
+
+.rev-carousel--dialog .rev-slide-name {
+  font-size: 0.84rem;
+}
+
+.rev-carousel--dialog .rev-slide-text {
+  font-size: 0.86rem;
+}
+
+.rev-carousel--dialog .rev-carousel-btn {
+  width: 1.95rem;
+  height: 1.95rem;
+  font-size: 1.1rem;
+}

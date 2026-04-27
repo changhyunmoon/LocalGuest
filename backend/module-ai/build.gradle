@@ -1,0 +1,22 @@
+dependencies {
+    // 공통 모듈
+    implementation project(':module-common')
+
+    // Web Server
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+
+    // Redis (click/exposure signals persistence)
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+
+    implementation 'io.micrometer:micrometer-core'
+    implementation 'io.swagger.core.v3:swagger-annotations-jakarta:2.2.22'
+
+    // Lombok
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+
+    // 테스트
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+}
+bootJar { enabled = false }
+jar { enabled = true }
