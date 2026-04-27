@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 
 import { PageEmpty, PageError, PageLoading } from '../components/PageStates.jsx'
 import { ReviewCarousel } from '../components/ReviewCarousel.jsx'
@@ -42,6 +42,9 @@ async function fetchJson(path, { skipAuth = true } = {}) {
 export function GuideFeedTourPage() {
   const { guideId, feedId } = useParams()
   const navigate = useNavigate()
+  const location = useLocation()
+  const itineraryNav = new URLSearchParams(location.search).get('nav') === 'itinerary'
+  const itineraryQs = itineraryNav ? '?nav=itinerary' : ''
   const { isAuthenticated } = useAuth()
   const [detail, setDetail] = useState(null)
   const [reviews, setReviews] = useState([])
@@ -143,8 +146,15 @@ export function GuideFeedTourPage() {
   const rc = profile?.reviewCount != null ? profile.reviewCount : 0
 
   const goBack = () => {
-    if (window.history.length > 1) navigate(-1)
-    else navigate('/ai-search')
+    if (window.history.length > 1) {
+      navigate(-1)
+      return
+    }
+    if (itineraryNav && guideId) {
+      navigate(`/guides/${guideId}${itineraryQs}`)
+      return
+    }
+    navigate('/ai-search')
   }
 
   if (loading) {
@@ -176,7 +186,7 @@ export function GuideFeedTourPage() {
         </button>
         <PageEmpty title="이 피드를 찾을 수 없습니다">
           삭제되었거나 주소가 바뀌었을 수 있어요.{' '}
-          <Link to={`/guides/${guideId}`}>가이드 프로필</Link>로 이동
+          <Link to={`/guides/${guideId}${itineraryQs}`}>가이드 프로필</Link>로 이동
         </PageEmpty>
       </div>
     )
@@ -204,7 +214,7 @@ export function GuideFeedTourPage() {
           {otherFeeds.map((f, i) => (
             <Link
               key={f.feedId}
-              to={`/guides/${guideId}/feeds/${f.feedId}`}
+              to={`/guides/${guideId}/feeds/${f.feedId}${itineraryQs}`}
               className={`gft-polaroid gft-polaroid--sm ${i === 0 ? 'gft-polaroid--tilt-l' : 'gft-polaroid--tilt-r'}`}
             >
               <span className={`gft-tape ${i === 0 ? 'gft-tape--g' : 'gft-tape--b'}`} aria-hidden />
@@ -277,12 +287,12 @@ export function GuideFeedTourPage() {
 
       <div className="gft-actions">
         <Link
-          to={isAuthenticated ? `/guides/${guideId}#match-request` : '/auth/login'}
+          to={isAuthenticated ? `/guides/${guideId}${itineraryQs}#match-request` : '/auth/login'}
           state={
             isAuthenticated
               ? { hint: '아래로 스크롤되면「매칭 요청 보내기」로 일정을 등록할 수 있어요.' }
               : {
-                  returnTo: `/guides/${guideId}#match-request`,
+                  returnTo: `/guides/${guideId}${itineraryQs}#match-request`,
                   hint: '로그인 후 달력이 있는 매칭 요청 섹션으로 이동해 이어갈 수 있어요.',
                 }
           }

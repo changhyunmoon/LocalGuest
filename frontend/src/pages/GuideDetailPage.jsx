@@ -188,6 +188,8 @@ export function GuideDetailPage() {
   const location = useLocation()
   const navigate = useNavigate()
   const { isAuthenticated, isGuide } = useAuth()
+  const itineraryNav = new URLSearchParams(location.search).get('nav') === 'itinerary'
+  const itineraryQs = itineraryNav ? '?nav=itinerary' : ''
   const fromMatchedCourse = location.state?.fromMatchedCourse === true
   const hideMatchRequest = location.state?.hideMatchRequest === true
   const returnTo = typeof location.state?.returnTo === 'string' ? location.state.returnTo : ''
@@ -698,6 +700,10 @@ export function GuideDetailPage() {
             type="button"
             className="gdp-back-btn"
             onClick={() => {
+              if (itineraryNav) {
+                navigate('/mypage/itinerary')
+                return
+              }
               if (returnTo) {
                 navigate(returnTo)
                 return
@@ -800,7 +806,7 @@ export function GuideDetailPage() {
           </h2>
           <div className="gdp-feeds">
             {feeds.map((f) => {
-              const href = `/guides/${guideId}/feeds/${f.feedId}`
+              const href = `/guides/${guideId}/feeds/${f.feedId}${itineraryQs}`
               const bg = feedPrimaryImage(f)
               return (
                 <Link key={f.feedId} to={href} className="gdp-feed-card">
@@ -1126,7 +1132,7 @@ export function GuideDetailPage() {
         <LoginModal
           open={loginModalOpen}
           onClose={() => setLoginModalOpen(false)}
-          returnTo={`/guides/${guideId}#match-request`}
+          returnTo={`/guides/${guideId}${itineraryQs}#match-request`}
           hint="로그인 후 이 가이드에게 매칭 요청을 보낼 수 있어요."
           preferredRole="GUEST"
         />

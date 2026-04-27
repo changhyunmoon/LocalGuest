@@ -450,7 +450,7 @@ export function GuideMatchOptionsPage() {
   return (
     <div className="gmo">
       <div className="gmo-topbar">
-        <Link to={`/guides/${guideId}`} className="gmo-back gmo-back--pill">
+        <Link to={`/guides/${guideId}?nav=itinerary`} className="gmo-back gmo-back--pill">
           ← 가이드 프로필
         </Link>
         <Link to="/mypage/itinerary" className="gmo-back gmo-back--pill gmo-back--line">
@@ -697,7 +697,7 @@ export function GuideMatchOptionsPage() {
               ) : (
                 <div className="gmo-profile-dialog-feeds">
                   {modalFeeds.map((f) => {
-                    const href = `/guides/${guideId}/feeds/${f.feedId}`
+                    const href = `/guides/${guideId}/feeds/${f.feedId}?nav=itinerary`
                     const bg = feedPrimaryImage(f)
                     return (
                       <Link key={f.feedId} to={href} className="gmo-profile-dialog-feed" onClick={() => setProfileModalOpen(false)}>
@@ -732,7 +732,7 @@ export function GuideMatchOptionsPage() {
             </section>
 
             <p className="gmo-profile-dialog-footer">
-              <Link to={`/guides/${guideId}`} onClick={() => setProfileModalOpen(false)}>
+              <Link to={`/guides/${guideId}?nav=itinerary`} onClick={() => setProfileModalOpen(false)}>
                 전체 프로필 페이지로 이동 →
               </Link>
             </p>
