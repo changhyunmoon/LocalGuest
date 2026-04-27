@@ -163,13 +163,20 @@ function groupRows(rows) {
   const dday = []
   const d1 = []
   const upcoming = []
+  const expired = []
 
   for (const row of rows) {
+    const d = daysUntil(row.desiredDate)
+    const st = String(row?.status ?? '').toUpperCase()
+    const expiredPrePay = (st === 'PENDING' || st === 'ACCEPTED') && d != null && d < 0
+    if (expiredPrePay) {
+      expired.push(row)
+      continue
+    }
     if (row.status === 'ACCEPTED') {
       paymentPending.push(row)
       continue
     }
-    const d = daysUntil(row.desiredDate)
     if (row.status === 'IN_PROGRESS') inProgress.push(row)
     else if (d === 0) dday.push(row)
     else if (d === 1) d1.push(row)
@@ -177,6 +184,7 @@ function groupRows(rows) {
   }
 
   return [
+    { key: 'expired', title: '일정 지남 (결제 불가)', rows: expired },
     { key: 'payment', title: '결제 전 (확정 필요)', rows: paymentPending },
     { key: 'inprogress', title: '진행 중인 여행', rows: inProgress },
     { key: 'dday', title: '오늘 출발 (D-Day)', rows: dday },
@@ -345,7 +353,9 @@ export function GuestUpcomingTripsPage() {
                   const budget = formatBudgetRangeKrw(row.budgetMinWon, row.budgetMaxWon, row.desiredBudget)
                   const tripTitle = buildTripCardTitle(row, nick)
                   const paidAtMs = latestCompletedPaymentPaidAtMs(payments, row.requestId)
-                  const canCancel = guestCanCancelByPolicy(row, paidAtMs)
+                  const st = String(row?.status ?? '').toUpperCase()
+                  const expiredPrePay = (st === 'PENDING' || st === 'ACCEPTED') && d != null && d < 0
+                  const canCancel = !expiredPrePay && guestCanCancelByPolicy(row, paidAtMs)
                   const cancelDisabledTitle = guestCancelDisabledTitle(row, paidAtMs, canCancel)
                   const cancelEnds =
                     String(row.status) === 'PAID' && paidAtMs != null
@@ -373,22 +383,27 @@ export function GuestUpcomingTripsPage() {
                             </p>
                           )}
                           <div className="gut-card-footer">
-                            <span className={`gut-status-badge ${statusBadgeClass(row.status)}`} role="status">
-                              {statusBadgeLabel(row.status)}
+                            <span
+                              className={`gut-status-badge ${expiredPrePay ? 'gut-status-badge--muted' : statusBadgeClass(row.status)}`}
+                              role="status"
+                            >
+                              {expiredPrePay ? '일정 지남' : statusBadgeLabel(row.status)}
                             </span>
                             <div className="gut-card-actions">
-                              <button
-                                type="button"
-                                className="gut-cancel"
-                                disabled={busyId != null || !canCancel}
-                                title={cancelDisabledTitle}
-                                onClick={() => {
-                                  if (!canCancel) return
-                                  void cancelTrip(row)
-                                }}
-                              >
-                                {busyId === row.requestId ? '취소 중…' : '취소하기'}
-                              </button>
+                              {!expiredPrePay && (
+                                <button
+                                  type="button"
+                                  className="gut-cancel"
+                                  disabled={busyId != null || !canCancel}
+                                  title={cancelDisabledTitle}
+                                  onClick={() => {
+                                    if (!canCancel) return
+                                    void cancelTrip(row)
+                                  }}
+                                >
+                                  {busyId === row.requestId ? '취소 중…' : '취소하기'}
+                                </button>
+                              )}
                               <button type="button" className="gut-open" onClick={() => openMatchScreen(row)}>
                                 일정 확인하기
                               </button>
