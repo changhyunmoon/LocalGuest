@@ -1,0 +1,43 @@
+### JetBrains (IntelliJ) ###
+.idea/
+*.iws
+*.iml
+*.ipr
+out/
+
+### Eclipse ###
+.metadata/
+bin/
+tmp/
+.classpath
+.project
+.settings/
+
+### Build Tools (Gradle) ###
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+
+### Logging ###
+*.log
+logs/
+
+### OS ###
+.DS_Store
+Thumbs.db
+
+### Spring Boot & Project Specific ###
+**/src/main/resources/application-*-local.yml
+**/src/main/resources/application-local.yml
+**/src/main/resources/application-*-prod.yml
+**/src/main/resources/application-prod.yml
+
+# 기타 보안이 필요한 파일들
+*.jks
+*.p12
+*.key
+*.pem
+
+### Backend Specific ###
+# 만약 Querydsl을 사용한다면 자동 생성되는 QClass 제외
+**/build/generated/
