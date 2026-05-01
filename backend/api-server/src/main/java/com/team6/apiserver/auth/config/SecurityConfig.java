@@ -67,6 +67,16 @@ public class SecurityConfig {
                         .requestMatchers("/notifications/subscribe").permitAll()
                         .requestMatchers("/ws-stomp/**").permitAll()
 
+                        //잠시 테스트용
+                        .requestMatchers(HttpMethod.GET,
+                                "/auth-test.html",
+                                "/api/auth-test.html",
+                                "/chat-test.html",
+                                "/api/chat-test.html",
+                                "/chat-room-test.html",
+                                "/api/chat-room-test.html"
+                        ).permitAll()
+
                         // 1. 누구나 접근 가능한 경로 (화이트리스트)
                         .requestMatchers("/auth/**", "/members/join").permitAll()
                         .requestMatchers(HttpMethod.POST, "/members/email-verification/**").permitAll()

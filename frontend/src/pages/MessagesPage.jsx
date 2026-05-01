@@ -3,9 +3,8 @@ import SockJS from 'sockjs-client/dist/sockjs'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 
+import { fetchChatRooms, leaveChatRoom } from '../api/chat.js'
 import { PageEmpty, PageError, PageLoading } from '../components/PageStates.jsx'
-import { apiRequest } from '../api/client'
-import { fetchChatRooms } from '../api/chat.js'
 import { useAuth } from '../context/useAuth.js'
 
 import './MessagesPage.css'
@@ -24,387 +23,118 @@ function formatDay(iso) {
   return d.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })
 }
 
-function nicknameFromEmail(email) {
-  if (!email) return '나'
-  const head = String(email).split('@')[0]
-  return head || '나'
-}
-
 function readString(value) {
-  if (typeof value !== 'string') return ''
-  const v = value.trim()
-  return v
+  return typeof value === 'string' ? value.trim() : ''
 }
 
-function normalizeNick(value) {
-  return readString(value).toLowerCase().replace(/\s+/g, '')
-}
-
-function extractRoomAvatar(room, myEmail, guideAvatarById, guideAvatarByNickname) {
+function pickRoomAvatar(room, myEmail) {
   if (!room) return ''
+
   const direct = [
     room.opponentProfileImageUrl,
     room.otherProfileImageUrl,
     room.partnerProfileImageUrl,
     room.counterpartProfileImageUrl,
-    room.counterpartyProfileImageUrl,
-    room.otherUserProfileImageUrl,
-    room.guideProfileImageUrl,
-    room.guestProfileImageUrl,
     room.profileImageUrl,
     room.profileImage,
     room.avatarUrl,
-    room.ownerProfileImageUrl,
-    room.otherUserProfileImage,
-    room.opponentProfileImage,
   ]
     .map(readString)
     .find(Boolean)
+
   if (direct) return direct
-
-  const nestedDirect = [
-    room.opponent?.profileImageUrl,
-    room.otherUser?.profileImageUrl,
-    room.counterpart?.profileImageUrl,
-    room.partner?.profileImageUrl,
-    room.guide?.profileImage,
-    room.guest?.profileImageUrl,
-  ]
-    .map(readString)
-    .find(Boolean)
-  if (nestedDirect) return nestedDirect
-
-  const guideId = Number(room.guideId ?? room.counterpartGuideId ?? room.otherGuideId)
-  if (Number.isFinite(guideId) && guideAvatarById?.[guideId]) {
-    return guideAvatarById[guideId]
-  }
-
-  const titleRaw = readString(room.title)
-  if (titleRaw) {
-    const idHit =
-      titleRaw.match(/LG-DM-GUIDE-(\d+)/i) ||
-      titleRaw.match(/(?:채팅방|chat room)\s*#?\s*(\d+)/i) ||
-      titleRaw.match(/(\d+)\s*$/)
-    if (idHit) {
-      const titleId = Number(idHit[1])
-      if (Number.isFinite(titleId) && guideAvatarById?.[titleId]) return guideAvatarById[titleId]
-    }
-  }
-
-  const nicknameCandidates = [
-    room.opponentNickname,
-    room.otherNickname,
-    room.ownerNickname,
-    room.partnerNickname,
-    room.counterpartNickname,
-    room.title,
-  ]
-    .map((x) => readString(x).toLowerCase())
-    .filter(Boolean)
-  for (const nick of nicknameCandidates) {
-    if (guideAvatarByNickname?.[nick]) return guideAvatarByNickname[nick]
-  }
-  for (const nick of nicknameCandidates) {
-    if (!nick) continue
-    const hit = Object.entries(guideAvatarByNickname ?? {}).find(([key]) => key.includes(nick) || nick.includes(key))
-    if (hit?.[1]) return hit[1]
-  }
 
   const members = Array.isArray(room.participants) ? room.participants : []
   const me = String(myEmail ?? '').trim().toLowerCase()
   const other = members.find((m) => String(m?.email ?? '').trim().toLowerCase() !== me) ?? members[0]
-  if (!other) return ''
-  return (
-    readString(other.profileImageUrl) ||
-    readString(other.avatarUrl) ||
-    readString(other.imageUrl) ||
-    ''
-  )
+
+  return readString(other?.profileImageUrl) || readString(other?.avatarUrl) || readString(other?.imageUrl) || ''
+}
+
+function normalizeRoom(room) {
+  return {
+    ...room,
+    unreadCount: Number(room?.unreadCount ?? 0),
+  }
 }
 
 /**
- * @typedef {{ roomId: string, title: string, ownerEmail: string, participantCount: number, lastMessage: string | null, lastMessageAt: string | null, unreadCount: number }} ChatRoom
- * @typedef {{ id: string, roomId: string, senderEmail: string, senderNickname: string, message: string, unreadCount: number, createdAt: string }} ChatMessage
+ * @typedef {{ roomId: string, title: string, participantCount?: number, lastMessage?: string | null, lastMessageAt?: string | null, unreadCount?: number, participants?: unknown[] }} ChatRoom
+ * @typedef {{ id?: string, roomId: string, senderEmail: string, senderNickname?: string, message: string, createdAt?: string }} ChatMessage
  */
 
 export function MessagesPage() {
-  const { isAuthenticated, email, token, claims } = useAuth()
+  const { isAuthenticated, email, token } = useAuth()
   const [searchParams] = useSearchParams()
+
   const chatBodyRef = useRef(null)
   const stompRef = useRef(/** @type {Client | null} */ (null))
-  const sseRef = useRef(/** @type {EventSource | null} */ (null))
+  const roomMenuRef = useRef(/** @type {HTMLDivElement | null} */ (null))
 
   const [rooms, setRooms] = useState(/** @type {ChatRoom[]} */ ([]))
   const [selectedRoomId, setSelectedRoomId] = useState('')
   const [messages, setMessages] = useState(/** @type {ChatMessage[]} */ ([]))
   const [input, setInput] = useState('')
   const [loadingRooms, setLoadingRooms] = useState(false)
-  const [loadingMessages, setLoadingMessages] = useState(false)
+  const [connecting, setConnecting] = useState(false)
   const [error, setError] = useState('')
   const [sending, setSending] = useState(false)
   const [roomMenuOpen, setRoomMenuOpen] = useState(false)
-  const [guideAvatarById, setGuideAvatarById] = useState(() => ({}))
-  const [guideAvatarByNickname, setGuideAvatarByNickname] = useState(() => ({}))
-  const readUpdateTimerRef = useRef(/** @type {ReturnType<typeof setTimeout> | null} */ (null))
-  const autoReadTimerRef = useRef(/** @type {ReturnType<typeof setTimeout> | null} */ (null))
-  const roomMenuRef = useRef(/** @type {HTMLDivElement | null} */ (null))
-  const selectedRoomIdRef = useRef(selectedRoomId)
-
-  useEffect(() => {
-    selectedRoomIdRef.current = selectedRoomId
-  }, [selectedRoomId])
-
-  const removeRoomFromList = useCallback((rid) => {
-    setRooms((prev) => {
-      const next = prev.filter((r) => r.roomId !== rid)
-      setSelectedRoomId((cur) => {
-        if (cur !== rid) return cur
-        setMessages([])
-        return next[0]?.roomId ?? ''
-      })
-      return next
-    })
-  }, [])
-
-  const myNickname = useMemo(() => {
-    const fromClaims =
-      claims?.nickname || claims?.name || claims?.nickName || claims?.username
-    return String(fromClaims || nicknameFromEmail(email))
-  }, [claims, email])
 
   const selectedRoom = useMemo(
-    () => rooms.find((r) => r.roomId === selectedRoomId) ?? null,
+    () => rooms.find((room) => room.roomId === selectedRoomId) ?? null,
     [rooms, selectedRoomId],
   )
-  const selectedRoomAvatar = useMemo(
-    () => extractRoomAvatar(selectedRoom, email, guideAvatarById, guideAvatarByNickname),
-    [selectedRoom, email, guideAvatarById, guideAvatarByNickname],
-  )
 
-  const [roomDetailAvatar, setRoomDetailAvatar] = useState('')
+  const selectedRoomAvatar = useMemo(() => pickRoomAvatar(selectedRoom, email), [selectedRoom, email])
 
-  useEffect(() => {
-    if (!selectedRoom) {
-      setRoomDetailAvatar('')
-      return
-    }
-    if (selectedRoomAvatar) {
-      setRoomDetailAvatar('')
-      return
-    }
-    const t = readString(selectedRoom.title)
-    const m = t.match(/LG-DM-GUIDE-(\d+)/i)
-    if (!m) {
-      setRoomDetailAvatar('')
-      return
-    }
-    const gid = Number(m[1])
-    if (!Number.isFinite(gid)) return
-    let cancelled = false
-    ;(async () => {
-      try {
-        const res = await apiRequest(`/guides/${gid}`, { method: 'GET', skipAuth: true })
-        const text = await res.text()
-        if (!res.ok || cancelled) return
-        const j = text ? JSON.parse(text) : null
-        const img = readString(j?.profileImage ?? j?.profileImageUrl)
-        if (img && !cancelled) setRoomDetailAvatar(img)
-        else if (!cancelled) setRoomDetailAvatar('')
-      } catch {
-        if (!cancelled) setRoomDetailAvatar('')
-      }
-    })()
-    return () => {
-      cancelled = true
-    }
-  }, [selectedRoom, selectedRoomAvatar])
-
-  const chatOpponentAvatar = selectedRoomAvatar || roomDetailAvatar
-
-  useEffect(() => {
-    let cancelled = false
-    ;(async () => {
-      try {
-        const res = await apiRequest('/guides', { method: 'GET', skipAuth: true })
-        const text = await res.text()
-        if (!res.ok || cancelled) return
-        const list = text ? JSON.parse(text) : []
-        if (!Array.isArray(list)) return
-        const byId = {}
-        const byNickname = {}
-        for (const g of list) {
-          const img = readString(g?.profileImage ?? g?.profileImageUrl)
-          if (!img) continue
-          const gid = Number(g?.guideId)
-          if (Number.isFinite(gid)) byId[gid] = img
-          const nick = normalizeNick(g?.nickname)
-          if (nick) byNickname[nick] = img
-        }
-        if (!cancelled) {
-          setGuideAvatarById(byId)
-          setGuideAvatarByNickname(byNickname)
-        }
-      } catch {
-        /* ignore avatar preload errors */
-      }
-    })()
-    return () => {
-      cancelled = true
-    }
-  }, [])
-
-  // 선택된 방은 목록에서 unreadCount를 0으로 유지한다(현재 보고 있으면 '안 읽음' 표시 X).
-  useEffect(() => {
-    if (!selectedRoomId) return
-    setRooms((prev) => prev.map((r) => (r.roomId === selectedRoomId ? { ...r, unreadCount: 0 } : r)))
-  }, [selectedRoomId])
-
-  useEffect(() => {
-    if (!isAuthenticated || !token) return
-
-    // SSE: NEW_MESSAGE/NEW_ROOM 실시간 수신(방 목록 unreadCount 갱신용)
-    sseRef.current?.close()
-    const qs = encodeURIComponent(token)
-    const es = new EventSource(`/api/notifications/subscribe?token=${qs}`)
-    sseRef.current = es
-
-    /** @type {ReturnType<typeof setTimeout> | null} */
-    let refreshTimer = null
-
-    const scheduleRefreshRooms = () => {
-      if (refreshTimer) clearTimeout(refreshTimer)
-      refreshTimer = setTimeout(async () => {
-        try {
-          const list = await fetchChatRooms()
-          const sid = selectedRoomIdRef.current
-          setRooms(list.map((r) => (sid && r.roomId === sid ? { ...r, unreadCount: 0 } : r)))
-        } catch {
-          /* ignore */
-        }
-      }, 400)
-    }
-
-    es.addEventListener('chat-event', (evt) => {
-      try {
-        const payload = JSON.parse(String(/** @type {MessageEvent} */ (evt).data || '{}'))
-        if (payload?.type === 'ROOM_LEFT' && payload.roomId) {
-          const rid = payload.roomId
-          const roomDeleted = Boolean(payload.data?.roomDeleted)
-          const leftUser =
-            typeof payload.data?.leftUserEmail === 'string'
-              ? payload.data.leftUserEmail
-              : typeof payload.senderEmail === 'string'
-                ? payload.senderEmail
-                : ''
-          if (roomDeleted) {
-            removeRoomFromList(rid)
-            return
-          }
-          if (leftUser && leftUser === email) {
-            removeRoomFromList(rid)
-            return
-          }
-          scheduleRefreshRooms()
-          return
-        }
-        // 현재 보고 있는 방에서의 NEW_MESSAGE는 unreadCount 갱신 대상이 아니다(0 유지).
-        if (payload?.type === 'NEW_MESSAGE' && payload?.roomId && payload.roomId === selectedRoomIdRef.current) {
-          return
-        }
-        if (payload?.type === 'NEW_MESSAGE' || payload?.type === 'NEW_ROOM') {
-          scheduleRefreshRooms()
-        }
-      } catch {
-        /* ignore */
-      }
-    })
-
-    es.onerror = () => {
-      // 브라우저가 자동 재연결한다. 조용히 둔다.
-    }
-
-    return () => {
-      if (refreshTimer) clearTimeout(refreshTimer)
-      es.close()
-      if (sseRef.current === es) sseRef.current = null
-    }
-  }, [isAuthenticated, token, email, removeRoomFromList])
-
-  const onPickRoom = (roomId) => {
-    setRoomMenuOpen(false)
-    setSelectedRoomId(roomId)
-    // 읽음 처리 요청은 별도로 보내지만, UI는 즉시 0으로 내려 카톡처럼 반응하게 한다.
-    setRooms((prev) => prev.map((r) => (r.roomId === roomId ? { ...r, unreadCount: 0 } : r)))
-  }
-
-  useEffect(() => {
-    if (!roomMenuOpen) return
-    const onDocMouseDown = (e) => {
-      const el = roomMenuRef.current
-      if (el && !el.contains(/** @type {Node} */ (e.target))) {
-        setRoomMenuOpen(false)
-      }
-    }
-    document.addEventListener('mousedown', onDocMouseDown)
-    return () => document.removeEventListener('mousedown', onDocMouseDown)
-  }, [roomMenuOpen])
-
-  const leaveSelectedRoom = async () => {
-    if (!selectedRoomId) return
-    const ok = window.confirm(
-      '채팅방에서 나갑니다. 다른 참가자가 남아 있으면 대화와 방은 그대로 유지되고, 마지막 사람이 나가면 서버에서 방과 메시지가 삭제돼요. 계속할까요?',
-    )
-    if (!ok) return
-    setRoomMenuOpen(false)
-    setError('')
-    try {
-      const res = await apiRequest('/chat/rooms/leave', {
-        method: 'POST',
-        json: { roomId: selectedRoomId },
-      })
-      const text = await res.text()
-      /** @type {{ success?: boolean, message?: string, roomDeleted?: boolean }} */
-      let parsed = {}
-      try {
-        if (text.startsWith('{') || text.startsWith('[')) parsed = JSON.parse(text)
-      } catch {
-        /* ignore */
-      }
-      if (!res.ok) {
-        const msg = typeof parsed.message === 'string' && parsed.message.trim() ? parsed.message.trim() : '퇴장에 실패했습니다.'
-        throw new Error(msg)
-      }
-      if (parsed.success === false) {
-        throw new Error(typeof parsed.message === 'string' && parsed.message ? parsed.message : '퇴장에 실패했습니다.')
-      }
-      const rid = selectedRoomId
-      removeRoomFromList(rid)
-    } catch (e) {
-      setError(e instanceof Error ? e.message : '퇴장에 실패했습니다.')
-    }
-  }
-
-  const bumpRoomPreview = (roomId, message, createdAt) => {
+  const bumpRoomPreview = useCallback((roomId, message, createdAt) => {
     setRooms((prev) => {
-      const next = prev.map((r) =>
-        r.roomId === roomId
+      const next = prev.map((room) =>
+        room.roomId === roomId
           ? {
-              ...r,
-              lastMessage: message ?? r.lastMessage,
-              lastMessageAt: createdAt ?? r.lastMessageAt,
-              unreadCount: r.roomId === selectedRoomId ? 0 : r.unreadCount,
+              ...room,
+              lastMessage: message ?? room.lastMessage,
+              lastMessageAt: createdAt ?? room.lastMessageAt,
             }
-          : r,
+          : room,
       )
-      // 최신 메시지 방을 상단으로 올린다(카톡 UX).
+
       next.sort((a, b) => {
         const ta = a.lastMessageAt ? new Date(a.lastMessageAt).getTime() : 0
         const tb = b.lastMessageAt ? new Date(b.lastMessageAt).getTime() : 0
         return tb - ta
       })
+
       return next
     })
-  }
+  }, [])
+
+  const refreshRooms = useCallback(async () => {
+    setLoadingRooms(true)
+    setError('')
+    try {
+      const list = await fetchChatRooms()
+      const normalized = list.map(normalizeRoom)
+      setRooms(normalized)
+
+      const fromQuery = searchParams.get('roomId')
+      setSelectedRoomId((prev) => {
+        if (prev && normalized.some((room) => room.roomId === prev)) return prev
+        if (fromQuery) return normalized.find((room) => room.roomId === fromQuery)?.roomId ?? fromQuery
+        return normalized[0]?.roomId ?? ''
+      })
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '채팅방 목록을 불러오지 못했습니다.')
+    } finally {
+      setLoadingRooms(false)
+    }
+  }, [searchParams])
+
+  useEffect(() => {
+    if (!isAuthenticated) return
+    void refreshRooms()
+  }, [isAuthenticated, refreshRooms])
 
   useEffect(() => {
     const el = chatBodyRef.current
@@ -413,80 +143,17 @@ export function MessagesPage() {
   }, [messages, selectedRoomId])
 
   useEffect(() => {
-    if (!isAuthenticated || !email) return
-    let cancelled = false
-
-    const loadRooms = async () => {
-      setLoadingRooms(true)
-      setError('')
-      try {
-        const list = await fetchChatRooms()
-        if (!cancelled) {
-          setRooms(list)
-          const fromQuery = searchParams.get('roomId')
-          const picked = fromQuery
-            ? list.find((r) => r.roomId === fromQuery)?.roomId ?? fromQuery
-            : list[0]?.roomId ?? ''
-          setSelectedRoomId((prev) => prev || picked)
-        }
-      } catch (e) {
-        if (!cancelled) setError(e instanceof Error ? e.message : '오류')
-      } finally {
-        if (!cancelled) setLoadingRooms(false)
-      }
-    }
-
-    void loadRooms()
-    return () => {
-      cancelled = true
-    }
-  }, [isAuthenticated, email, searchParams])
-
-  useEffect(() => {
-    if (!isAuthenticated || !selectedRoomId || !email) return
-    let cancelled = false
-
-    const markReadNow = async () => {
-      const q = encodeURIComponent(email)
-      try {
-        await apiRequest(`/chat/rooms/${selectedRoomId}/read?email=${q}`, { method: 'POST' })
-      } catch {
-        /* ignore */
-      }
-    }
-
-    const loadMessages = async () => {
-      setLoadingMessages(true)
-      try {
-        const res = await apiRequest(`/chat/rooms/${selectedRoomId}/messages?page=0&size=60`, { method: 'GET' })
-        const text = await res.text()
-        if (!res.ok) throw new Error(text || '메시지를 불러오지 못했습니다.')
-        const data = text ? JSON.parse(text) : {}
-        const content = Array.isArray(data?.content) ? data.content : []
-        const ordered = [...content].reverse()
-        if (!cancelled) setMessages(ordered)
-      } catch (e) {
-        if (!cancelled) setError(e instanceof Error ? e.message : '오류')
-      } finally {
-        if (!cancelled) setLoadingMessages(false)
-      }
-    }
-
-    const markRead = async () => {
-      await markReadNow()
-    }
-
-    void loadMessages()
-    void markRead()
-    return () => {
-      cancelled = true
-    }
-  }, [isAuthenticated, selectedRoomId, email])
+    setMessages([])
+    setRoomMenuOpen(false)
+  }, [selectedRoomId])
 
   useEffect(() => {
     if (!isAuthenticated || !token || !selectedRoomId) return
 
     stompRef.current?.deactivate()
+    setConnecting(true)
+    setError('')
+
     const client = new Client({
       webSocketFactory: () => new SockJS('/api/ws-stomp'),
       connectHeaders: {
@@ -497,54 +164,24 @@ export function MessagesPage() {
     })
 
     client.onConnect = () => {
+      setConnecting(false)
       client.subscribe(`/sub/chat/room/${selectedRoomId}`, (frame) => {
         const payload = JSON.parse(frame.body)
-        if (payload?.type === 'READ_UPDATE') {
-          // 상대가 읽음 처리하면, 서버가 기존 메시지들의 unreadCount 를 갱신하므로 최신 상태를 다시 가져온다.
-          if (readUpdateTimerRef.current) clearTimeout(readUpdateTimerRef.current)
-          readUpdateTimerRef.current = setTimeout(async () => {
-            try {
-              const res = await apiRequest(`/chat/rooms/${selectedRoomId}/messages?page=0&size=60`, { method: 'GET' })
-              const text = await res.text()
-              if (!res.ok) return
-              const data = text ? JSON.parse(text) : {}
-              const content = Array.isArray(data?.content) ? data.content : []
-              const ordered = [...content].reverse()
-              setMessages(ordered)
-            } catch {
-              /* ignore */
-            }
-          }, 250)
-          return
-        }
-        // 실시간 메시지 수신 시, 방 목록 프리뷰도 같이 갱신한다.
+
         if (payload?.roomId && payload?.message) {
+          setMessages((prev) => [...prev, payload])
           bumpRoomPreview(payload.roomId, payload.message, payload.createdAt)
         }
-        // 내가 보고 있는 방에서 상대가 보낸 메시지는 즉시 읽음 처리(서버 unreadCount/READ_UPDATE 갱신).
-        if (
-          payload?.roomId === selectedRoomId &&
-          payload?.senderEmail &&
-          payload.senderEmail !== email
-        ) {
-          if (autoReadTimerRef.current) clearTimeout(autoReadTimerRef.current)
-          autoReadTimerRef.current = setTimeout(async () => {
-            try {
-              const q = encodeURIComponent(email)
-              await apiRequest(`/chat/rooms/${selectedRoomId}/read?email=${q}`, { method: 'POST' })
-              // UI도 즉시 0으로 맞춘다.
-              setRooms((prev) => prev.map((r) => (r.roomId === selectedRoomId ? { ...r, unreadCount: 0 } : r)))
-            } catch {
-              /* ignore */
-            }
-          }, 120)
-        }
-        setMessages((prev) => [...prev, payload])
       })
     }
 
     client.onStompError = () => {
-      setError('실시간 연결이 불안정합니다. 새로고침 후 다시 시도해 주세요.')
+      setConnecting(false)
+      setError('실시간 채팅 연결에 실패했습니다. 다시 로그인한 뒤 시도해 주세요.')
+    }
+
+    client.onWebSocketClose = () => {
+      setConnecting(false)
     }
 
     client.activate()
@@ -553,22 +190,67 @@ export function MessagesPage() {
     return () => {
       client.deactivate()
     }
-  }, [isAuthenticated, token, selectedRoomId])
+  }, [bumpRoomPreview, isAuthenticated, token, selectedRoomId])
+
+  useEffect(() => {
+    if (!roomMenuOpen) return
+
+    const onDocMouseDown = (e) => {
+      const el = roomMenuRef.current
+      if (el && !el.contains(/** @type {Node} */ (e.target))) {
+        setRoomMenuOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', onDocMouseDown)
+    return () => document.removeEventListener('mousedown', onDocMouseDown)
+  }, [roomMenuOpen])
+
+  const onPickRoom = (roomId) => {
+    setSelectedRoomId(roomId)
+  }
+
+  const removeRoomFromList = (roomId) => {
+    setRooms((prev) => {
+      const next = prev.filter((room) => room.roomId !== roomId)
+      setSelectedRoomId((current) => {
+        if (current !== roomId) return current
+        return next[0]?.roomId ?? ''
+      })
+      return next
+    })
+    setMessages([])
+  }
+
+  const leaveSelectedRoom = async () => {
+    if (!selectedRoomId) return
+
+    const ok = window.confirm('채팅방을 나가시겠습니까? 마지막 참여자라면 채팅방과 메시지가 함께 삭제됩니다.')
+    if (!ok) return
+
+    setRoomMenuOpen(false)
+    setError('')
+
+    try {
+      await leaveChatRoom(selectedRoomId)
+      removeRoomFromList(selectedRoomId)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '채팅방을 나가지 못했습니다.')
+    }
+  }
 
   const onSend = async (e) => {
     e.preventDefault()
+
     const content = input.trim()
-    if (!content || !selectedRoomId || !email || !stompRef.current?.connected) return
+    if (!content || !selectedRoomId || !stompRef.current?.connected) return
+
     setSending(true)
     try {
-      // sender(나)는 NEW_MESSAGE SSE를 받지 않으므로, 방 목록 프리뷰는 즉시 갱신한다.
-      bumpRoomPreview(selectedRoomId, content, new Date().toISOString())
       stompRef.current.publish({
         destination: '/pub/chat/message',
         body: JSON.stringify({
           roomId: selectedRoomId,
-          senderEmail: email,
-          senderNickname: myNickname,
           message: content,
         }),
       })
@@ -593,17 +275,17 @@ export function MessagesPage() {
   return (
     <div className="msg">
       <aside className="msg-rooms">
-        <h2>대화 목록</h2>
+        <h2>채팅방</h2>
         <div className="msg-rooms-scroll">
           {loadingRooms && <PageLoading className="page-state--tight" />}
           {!loadingRooms && rooms.length === 0 && (
             <PageEmpty className="page-state--tight" title="채팅방이 없습니다">
-              매칭 후 대화가 시작되면 여기에 표시됩니다.
+              생성된 채팅방이 여기에 표시됩니다.
             </PageEmpty>
           )}
           <ul>
             {rooms.map((room) => {
-              const avatarUrl = extractRoomAvatar(room, email, guideAvatarById, guideAvatarByNickname)
+              const avatarUrl = pickRoomAvatar(room, email)
               return (
                 <li key={room.roomId}>
                   <button
@@ -620,11 +302,6 @@ export function MessagesPage() {
                       <div className="msg-room-copy">
                         <strong className="msg-room-title">
                           <span className="msg-room-title-text">{room.title || '채팅방'}</span>
-                          {room.unreadCount > 0 ? (
-                            <span className="msg-room-badge" aria-label={`안 읽은 메시지 ${room.unreadCount}개`}>
-                              {room.unreadCount > 99 ? '99+' : String(room.unreadCount)}
-                            </span>
-                          ) : null}
                         </strong>
                         <span>{room.lastMessage || '대화를 시작해보세요.'}</span>
                       </div>
@@ -640,14 +317,17 @@ export function MessagesPage() {
       <section className="msg-panel">
         <header className="msg-header">
           <div
-            className={`msg-avatar${chatOpponentAvatar ? '' : ' is-empty'}`}
+            className={`msg-avatar${selectedRoomAvatar ? '' : ' is-empty'}`}
             aria-hidden
-            style={chatOpponentAvatar ? { backgroundImage: `url(${chatOpponentAvatar})` } : undefined}
+            style={selectedRoomAvatar ? { backgroundImage: `url(${selectedRoomAvatar})` } : undefined}
           />
           <div className="msg-header-meta">
             <strong>{selectedRoom?.title || '채팅방'}</strong>
             <span>
-              {selectedRoom?.participantCount ? `참여자 ${selectedRoom.participantCount}명` : '채팅방을 선택해 주세요'}
+              {selectedRoom?.participantCount
+                ? `참여자 ${selectedRoom.participantCount}명`
+                : '채팅방을 선택해 주세요'}
+              {connecting ? ' · 연결 중' : ''}
             </span>
           </div>
           <div className="msg-header-actions" ref={roomMenuRef}>
@@ -658,14 +338,19 @@ export function MessagesPage() {
               aria-haspopup="true"
               aria-label="채팅방 메뉴"
               disabled={!selectedRoomId}
-              onClick={() => setRoomMenuOpen((o) => !o)}
+              onClick={() => setRoomMenuOpen((open) => !open)}
             >
               <span className="msg-menu-dots" aria-hidden />
             </button>
             {roomMenuOpen && selectedRoomId ? (
               <div className="msg-room-menu" role="menu">
-                <button type="button" className="msg-room-menu-item msg-room-menu-item--danger" role="menuitem" onClick={() => void leaveSelectedRoom()}>
-                  채팅방 퇴장하기
+                <button
+                  type="button"
+                  className="msg-room-menu-item msg-room-menu-item--danger"
+                  role="menuitem"
+                  onClick={() => void leaveSelectedRoom()}
+                >
+                  채팅방 나가기
                 </button>
               </div>
             ) : null}
@@ -675,8 +360,7 @@ export function MessagesPage() {
         <div ref={chatBodyRef} className="msg-body">
           {error && <PageError message={error} className="page-state--tight" />}
           {!selectedRoomId && <p className="msg-muted">왼쪽 목록에서 채팅방을 선택해 주세요.</p>}
-          {selectedRoomId && loadingMessages && <PageLoading className="page-state--tight" label="메시지를 불러오는 중…" />}
-          {selectedRoomId && !loadingMessages && messages.length === 0 && (
+          {selectedRoomId && messages.length === 0 && (
             <PageEmpty className="page-state--tight" title="아직 메시지가 없습니다">
               첫 메시지를 보내보세요.
             </PageEmpty>
@@ -684,23 +368,25 @@ export function MessagesPage() {
           {selectedRoomId && messages.length > 0 && (
             <>
               <div className="msg-day">{formatDay(messages[0]?.createdAt)}</div>
-              {messages.map((m) => {
-                const mine = m.senderEmail === email
+              {messages.map((message, index) => {
+                const mine = message.senderEmail === email
+                const key =
+                  message.id ||
+                  `${message.createdAt ?? ''}-${message.senderEmail ?? ''}-${message.message?.slice(0, 12) ?? ''}-${index}`
+
                 return (
-                  <article key={m.id || `${m.createdAt}-${m.senderEmail}-${m.message.slice(0, 12)}`} className={`msg-bubble-wrap ${mine ? 'mine' : 'other'}`}>
+                  <article key={key} className={`msg-bubble-wrap ${mine ? 'mine' : 'other'}`}>
                     {!mine && (
                       <div
-                        className={`msg-mini-avatar${chatOpponentAvatar ? '' : ' is-empty'}`}
-                        style={chatOpponentAvatar ? { backgroundImage: `url(${chatOpponentAvatar})` } : undefined}
+                        className={`msg-mini-avatar${selectedRoomAvatar ? '' : ' is-empty'}`}
+                        style={selectedRoomAvatar ? { backgroundImage: `url(${selectedRoomAvatar})` } : undefined}
                         aria-hidden
                       />
                     )}
                     <div className="msg-bubble-box">
-                      <div className={`msg-bubble ${mine ? 'mine' : 'other'}`}>{m.message}</div>
-                      <time className="msg-meta">
-                        {mine && m.unreadCount > 0 ? <span className="msg-unread">{m.unreadCount}</span> : null}
-                        <span>{formatTime(m.createdAt)}</span>
-                      </time>
+                      {!mine && message.senderNickname ? <span className="msg-meta">{message.senderNickname}</span> : null}
+                      <div className={`msg-bubble ${mine ? 'mine' : 'other'}`}>{message.message}</div>
+                      <time className="msg-meta">{formatTime(message.createdAt)}</time>
                     </div>
                   </article>
                 )
@@ -718,10 +404,10 @@ export function MessagesPage() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="메시지를 입력하세요..."
-            disabled={!selectedRoomId || sending}
+            disabled={!selectedRoomId || sending || connecting}
           />
-          <button type="submit" className="msg-send" disabled={!selectedRoomId || sending || !input.trim()}>
-            ▶
+          <button type="submit" className="msg-send" disabled={!selectedRoomId || sending || connecting || !input.trim()}>
+            전송
           </button>
         </form>
       </section>

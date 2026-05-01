@@ -1,0 +1,420 @@
+<!doctype html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Auth API Test</title>
+    <style>
+        :root {
+            color-scheme: light;
+            --bg: #f6f7f9;
+            --panel: #ffffff;
+            --text: #17202a;
+            --muted: #677282;
+            --line: #dce2ea;
+            --accent: #2563eb;
+            --accent-dark: #1d4ed8;
+            --ok: #12805c;
+            --bad: #b42318;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: Arial, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+            background: var(--bg);
+            color: var(--text);
+        }
+
+        main {
+            width: min(1120px, calc(100% - 32px));
+            margin: 0 auto;
+            padding: 32px 0;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: end;
+            gap: 16px;
+            margin-bottom: 18px;
+        }
+
+        h1 {
+            margin: 0 0 6px;
+            font-size: 28px;
+        }
+
+        p {
+            margin: 0;
+            color: var(--muted);
+            line-height: 1.5;
+        }
+
+        .api-base {
+            min-width: min(420px, 100%);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 16px;
+        }
+
+        section {
+            background: var(--panel);
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            padding: 18px;
+        }
+
+        h2 {
+            margin: 0 0 14px;
+            font-size: 18px;
+        }
+
+        label {
+            display: block;
+            margin: 12px 0 6px;
+            font-size: 13px;
+            font-weight: 700;
+            color: #334155;
+        }
+
+        input,
+        select,
+        textarea {
+            width: 100%;
+            border: 1px solid var(--line);
+            border-radius: 6px;
+            padding: 10px 12px;
+            font: inherit;
+            background: #fff;
+        }
+
+        textarea {
+            min-height: 160px;
+            resize: vertical;
+            font-family: Consolas, "Courier New", monospace;
+            font-size: 13px;
+        }
+
+        .row {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        button {
+            border: 0;
+            border-radius: 6px;
+            padding: 11px 14px;
+            font: inherit;
+            font-weight: 700;
+            color: #fff;
+            background: var(--accent);
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: var(--accent-dark);
+        }
+
+        button.secondary {
+            color: var(--text);
+            background: #e8edf5;
+        }
+
+        button.secondary:hover {
+            background: #dce4f0;
+        }
+
+        .actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 16px;
+            flex-wrap: wrap;
+        }
+
+        .token-box {
+            margin-top: 16px;
+        }
+
+        .status {
+            margin-top: 12px;
+            padding: 10px 12px;
+            border-radius: 6px;
+            background: #f1f5f9;
+            color: var(--muted);
+            font-size: 13px;
+            min-height: 38px;
+        }
+
+        .status.ok {
+            background: #e8f7f0;
+            color: var(--ok);
+        }
+
+        .status.bad {
+            background: #fff0ed;
+            color: var(--bad);
+        }
+
+        pre {
+            margin: 0;
+            padding: 14px;
+            min-height: 240px;
+            max-height: 520px;
+            overflow: auto;
+            border-radius: 8px;
+            background: #111827;
+            color: #d1d5db;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        @media (max-width: 860px) {
+            header,
+            .grid,
+            .row {
+                grid-template-columns: 1fr;
+                display: grid;
+            }
+        }
+    </style>
+</head>
+<body>
+<main>
+    <header>
+        <div>
+            <h1>Auth API Test</h1>
+            <p>백엔드 정적 리소스에서 회원가입과 로그인을 빠르게 확인합니다.</p>
+        </div>
+        <div class="api-base">
+            <label for="apiBase">API Base</label>
+            <input id="apiBase" type="text" value="/api">
+        </div>
+    </header>
+
+    <div class="grid">
+        <section>
+            <h2>회원가입</h2>
+            <div class="row">
+                <div>
+                    <label for="joinEmail">Email</label>
+                    <input id="joinEmail" type="email" autocomplete="username">
+                </div>
+                <div>
+                    <label for="joinRole">Role</label>
+                    <select id="joinRole">
+                        <option value="GUEST">GUEST</option>
+                        <option value="GUIDE">GUIDE</option>
+                        <option value="ADMIN">ADMIN</option>
+                    </select>
+                </div>
+            </div>
+
+            <label for="joinPassword">Password</label>
+            <input id="joinPassword" type="password" autocomplete="new-password" minlength="8" maxlength="16">
+
+            <div class="row">
+                <div>
+                    <label for="joinName">Name</label>
+                    <input id="joinName" type="text">
+                </div>
+                <div>
+                    <label for="joinNickname">Nickname</label>
+                    <input id="joinNickname" type="text">
+                </div>
+            </div>
+
+            <div class="actions">
+                <button id="joinButton" type="button">회원가입 요청</button>
+                <button id="copyToLoginButton" class="secondary" type="button">로그인 폼에 복사</button>
+            </div>
+            <div id="joinStatus" class="status">대기 중</div>
+        </section>
+
+        <section>
+            <h2>로그인</h2>
+            <div class="row">
+                <div>
+                    <label for="loginEmail">Email</label>
+                    <input id="loginEmail" type="email" autocomplete="username">
+                </div>
+                <div>
+                    <label for="loginRole">Role</label>
+                    <select id="loginRole">
+                        <option value="GUEST">GUEST</option>
+                        <option value="GUIDE">GUIDE</option>
+                        <option value="ADMIN">ADMIN</option>
+                    </select>
+                </div>
+            </div>
+
+            <label for="loginPassword">Password</label>
+            <input id="loginPassword" type="password" autocomplete="current-password">
+
+            <div class="actions">
+                <button id="loginButton" type="button">로그인 요청</button>
+                <button id="profileButton" class="secondary" type="button">/members/me/profile 확인</button>
+                <button id="clearTokenButton" class="secondary" type="button">토큰 지우기</button>
+            </div>
+            <div id="loginStatus" class="status">대기 중</div>
+
+            <div class="token-box">
+                <label for="accessToken">Access Token</label>
+                <textarea id="accessToken" spellcheck="false"></textarea>
+            </div>
+        </section>
+    </div>
+
+    <section style="margin-top: 16px;">
+        <h2>Response</h2>
+        <pre id="responseOutput">{}</pre>
+    </section>
+</main>
+
+<script>
+    const $ = (id) => document.getElementById(id);
+
+    const defaultEmail = `test-${Date.now()}@example.com`;
+    $("joinEmail").value = defaultEmail;
+    $("joinPassword").value = "password1";
+    $("joinName").value = "테스트유저";
+    $("joinNickname").value = `tester${String(Date.now()).slice(-5)}`;
+
+    if (!location.pathname.startsWith("/api/")) {
+        $("apiBase").value = "http://localhost:8080/api";
+    }
+
+    function apiBase() {
+        return $("apiBase").value.replace(/\/$/, "");
+    }
+
+    function setStatus(target, ok, message) {
+        target.textContent = message;
+        target.className = `status ${ok ? "ok" : "bad"}`;
+    }
+
+    function showResponse(label, status, data) {
+        $("responseOutput").textContent = JSON.stringify({
+            label,
+            status,
+            data
+        }, null, 2);
+    }
+
+    async function readResponse(response) {
+        const text = await response.text();
+        if (!text) {
+            return null;
+        }
+
+        try {
+            return JSON.parse(text);
+        } catch (_) {
+            return text;
+        }
+    }
+
+    async function postJson(path, body, token) {
+        const headers = { "Content-Type": "application/json" };
+        if (token) {
+            headers.Authorization = `Bearer ${token}`;
+        }
+
+        const response = await fetch(`${apiBase()}${path}`, {
+            method: "POST",
+            headers,
+            body: JSON.stringify(body)
+        });
+        return { response, data: await readResponse(response) };
+    }
+
+    $("joinButton").addEventListener("click", async () => {
+        const body = {
+            email: $("joinEmail").value.trim(),
+            password: $("joinPassword").value,
+            name: $("joinName").value.trim(),
+            nickname: $("joinNickname").value.trim(),
+            role: $("joinRole").value
+        };
+
+        try {
+            const { response, data } = await postJson("/members/join", body);
+            showResponse("POST /members/join", response.status, data);
+            setStatus($("joinStatus"), response.ok, response.ok ? `회원가입 성공: memberId=${data}` : "회원가입 실패");
+        } catch (error) {
+            showResponse("POST /members/join", "NETWORK_ERROR", String(error));
+            setStatus($("joinStatus"), false, "요청 실패");
+        }
+    });
+
+    $("copyToLoginButton").addEventListener("click", () => {
+        $("loginEmail").value = $("joinEmail").value;
+        $("loginPassword").value = $("joinPassword").value;
+        $("loginRole").value = $("joinRole").value;
+        setStatus($("loginStatus"), true, "회원가입 폼 값을 복사했습니다.");
+    });
+
+    $("loginButton").addEventListener("click", async () => {
+        const body = {
+            email: $("loginEmail").value.trim(),
+            password: $("loginPassword").value,
+            role: $("loginRole").value
+        };
+
+        try {
+            const { response, data } = await postJson("/auth/login", body);
+            showResponse("POST /auth/login", response.status, data);
+
+            if (response.ok && data && data.accessToken) {
+                $("accessToken").value = data.accessToken;
+                localStorage.setItem("authTestAccessToken", data.accessToken);
+                localStorage.setItem("authTestRefreshToken", data.refreshToken || "");
+                setStatus($("loginStatus"), true, "로그인 성공. Access token을 저장했습니다.");
+            } else {
+                setStatus($("loginStatus"), false, "로그인 실패");
+            }
+        } catch (error) {
+            showResponse("POST /auth/login", "NETWORK_ERROR", String(error));
+            setStatus($("loginStatus"), false, "요청 실패");
+        }
+    });
+
+    $("profileButton").addEventListener("click", async () => {
+        const token = $("accessToken").value.trim();
+        if (!token) {
+            setStatus($("loginStatus"), false, "Access token이 없습니다.");
+            return;
+        }
+
+        try {
+            const response = await fetch(`${apiBase()}/members/me/profile`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            const data = await readResponse(response);
+            showResponse("GET /members/me/profile", response.status, data);
+            setStatus($("loginStatus"), response.ok, response.ok ? "프로필 조회 성공" : "프로필 조회 실패");
+        } catch (error) {
+            showResponse("GET /members/me/profile", "NETWORK_ERROR", String(error));
+            setStatus($("loginStatus"), false, "요청 실패");
+        }
+    });
+
+    $("clearTokenButton").addEventListener("click", () => {
+        $("accessToken").value = "";
+        localStorage.removeItem("authTestAccessToken");
+        localStorage.removeItem("authTestRefreshToken");
+        setStatus($("loginStatus"), true, "토큰을 지웠습니다.");
+    });
+
+    $("accessToken").value = localStorage.getItem("authTestAccessToken") || "";
+</script>
+</body>
+</html>

@@ -27,18 +27,17 @@ public class ChatMessage {
     private String message; // 실제 대화 내용
 
     private LocalDateTime createdAt; // 메시지 전송 시간
-
-    private int unreadCount; //이 메시지를 읽지 않은 사람 수 (초기값: 전체 참여자 수 - 1)
+//
+//    private int unreadCount; //이 메시지를 읽지 않은 사람 수 (초기값: 전체 참여자 수 - 1)
 
     private MessageType type;
 
     @Builder
-    private ChatMessage(String roomId, String senderEmail, String senderNickname, String message, int unreadCount, MessageType type) {
+    private ChatMessage(String roomId, String senderEmail, String senderNickname, String message, MessageType type) {
         this.roomId = roomId;
         this.senderEmail = senderEmail;
         this.senderNickname = senderNickname;
         this.message = message;
-        this.unreadCount = unreadCount;
         this.type = type;
         this.createdAt = LocalDateTime.now();
     }

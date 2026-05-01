@@ -55,6 +55,7 @@ public class JwtTokenProvider {
 
     public String createRefreshToken(String email, String role) {
         Date now = new Date();
+
         return Jwts.builder()
                 .subject(email)
                 .claim("role", role)
@@ -87,6 +88,7 @@ public class JwtTokenProvider {
     public String getRole(String token) {
         return getClaims(token).get("role", String.class);
     }
+
 
     private Claims getClaims(String token) {
         return Jwts.parser()
