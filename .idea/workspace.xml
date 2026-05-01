@@ -4,7 +4,14 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="84d1b3de-8103-452e-83cf-38ecd34993e7" name="Changes" comment="Feat/fe#453: redis, mongodb 분리" />
+    <list default="true" id="84d1b3de-8103-452e-83cf-38ecd34993e7" name="Changes" comment="Feat/fe#453: redis, mongodb 분리">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/module-chat/src/main/java/com/team6/module/chat/repository/mongodb/ChatMessageRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/module-chat/src/main/java/com/team6/module/chat/repository/mongodb/ChatMessageRepository.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/module-chat/src/main/java/com/team6/module/chat/service/ChatMessageService.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/module-chat/src/main/java/com/team6/module/chat/service/ChatMessageService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/api/chat.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/api/chat.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/pages/MessagesPage.css" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/MessagesPage.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/pages/MessagesPage.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/MessagesPage.jsx" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -35,9 +42,9 @@
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
       <list>
-        <option value="Class" />
         <option value="GitHub Workflow" />
         <option value="JavaScript File" />
+        <option value="Class" />
       </list>
     </option>
   </component>
@@ -96,7 +103,7 @@
     "RunOnceActivity.typescript.service.memoryLimit.init": "true",
     "Spring Boot.ApiServerApplication.executor": "Run",
     "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
-    "git-widget-placeholder": "Feat/fe#551",
+    "git-widget-placeholder": "Feat/be#558",
     "junie.onboarding.icon.badge.shown": "true",
     "kotlin-language-version-configured": "true",
     "last_opened_file_path": "C:/Team6LocalGuest_4",

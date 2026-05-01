@@ -5,6 +5,7 @@ import { apiRequest } from './client.js'
  * - List: GET /chat/rooms
  * - Create: POST /chat/rooms
  * - Leave: DELETE /chat/rooms/{roomId}/leave
+ * - Messages: GET /chat/rooms/{roomId}/messages
  * @typedef {{ roomId: string, title: string, ownerEmail: string, participantCount: number, lastMessage: string | null, lastMessageAt: string | null, unreadCount: number, createdAt?: string }} ChatRoomListItem
  */
 
@@ -39,6 +40,36 @@ export async function leaveChatRoom(roomId) {
   const text = await res.text()
   if (!res.ok) throw new Error(text || '채팅방을 나가지 못했습니다.')
   return text ? JSON.parse(text) : {}
+}
+
+/**
+ * @param {string} roomId
+ * @param {{ cursor?: string | null, size?: number }} [options]
+ * @returns {Promise<{ messages: unknown[], nextCursor: string | null, hasNext: boolean }>}
+ */
+export async function fetchChatMessages(roomId, { cursor = null, size = 20 } = {}) {
+  const params = new URLSearchParams()
+  params.set('size', String(size))
+
+  if (cursor) {
+    params.set('cursor', cursor)
+  }
+
+  const res = await apiRequest(
+    `/chat/rooms/${encodeURIComponent(roomId)}/messages?${params.toString()}`,
+    { method: 'GET' },
+  )
+
+  const text = await res.text()
+  if (!res.ok) throw new Error(text || '메시지를 불러오지 못했습니다.')
+
+  return text
+    ? JSON.parse(text)
+    : {
+        messages: [],
+        nextCursor: null,
+        hasNext: false,
+      }
 }
 
 /**
