@@ -58,6 +58,38 @@
   font-weight: 800;
 }
 
+.msg-rooms-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+  margin-bottom: 0.6rem;
+}
+
+.msg-rooms-head h2 {
+  margin: 0;
+}
+
+.msg-room-create {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2rem;
+  height: 2rem;
+  padding: 0 0.72rem;
+  border-radius: 999px;
+  background: #10b981;
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.msg-room-create:hover {
+  background: #059669;
+}
+
 .msg-rooms ul {
   list-style: none;
   margin: 0;

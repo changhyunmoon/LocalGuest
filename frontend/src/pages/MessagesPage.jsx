@@ -275,7 +275,12 @@ export function MessagesPage() {
   return (
     <div className="msg">
       <aside className="msg-rooms">
-        <h2>채팅방</h2>
+        <div className="msg-rooms-head">
+          <h2>채팅방</h2>
+          <Link className="msg-room-create" to="/messages/new" aria-label="채팅방 생성">
+            생성
+          </Link>
+        </div>
         <div className="msg-rooms-scroll">
           {loadingRooms && <PageLoading className="page-state--tight" />}
           {!loadingRooms && rooms.length === 0 && (
