@@ -3,7 +3,7 @@ import SockJS from 'sockjs-client/dist/sockjs'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 
-import { fetchChatRooms, leaveChatRoom } from '../api/chat.js'
+import { fetchChatMessages, fetchChatRooms, leaveChatRoom } from '../api/chat.js'
 import { PageEmpty, PageError, PageLoading } from '../components/PageStates.jsx'
 import { useAuth } from '../context/useAuth.js'
 
@@ -70,12 +70,17 @@ export function MessagesPage() {
   const chatBodyRef = useRef(null)
   const stompRef = useRef(/** @type {Client | null} */ (null))
   const roomMenuRef = useRef(/** @type {HTMLDivElement | null} */ (null))
+  const loadingMessagesRef = useRef(false)
+  const historyRequestIdRef = useRef(0)
 
   const [rooms, setRooms] = useState(/** @type {ChatRoom[]} */ ([]))
   const [selectedRoomId, setSelectedRoomId] = useState('')
   const [messages, setMessages] = useState(/** @type {ChatMessage[]} */ ([]))
+  const [messageCursor, setMessageCursor] = useState(null)
+  const [hasMoreMessages, setHasMoreMessages] = useState(false)
   const [input, setInput] = useState('')
   const [loadingRooms, setLoadingRooms] = useState(false)
+  const [loadingMessages, setLoadingMessages] = useState(false)
   const [connecting, setConnecting] = useState(false)
   const [error, setError] = useState('')
   const [sending, setSending] = useState(false)
@@ -110,6 +115,55 @@ export function MessagesPage() {
     })
   }, [])
 
+  const loadMessages = useCallback(async (roomId, cursor = null, mode = 'replace') => {
+    if (!roomId) return
+    if (loadingMessagesRef.current) return
+
+    loadingMessagesRef.current = true
+    setLoadingMessages(true)
+    setError('')
+
+    const requestId = historyRequestIdRef.current
+    const beforeHeight = chatBodyRef.current?.scrollHeight ?? 0
+
+    try {
+      const data = await fetchChatMessages(roomId, {
+        cursor,
+        size: 20,
+      })
+
+      if (requestId !== historyRequestIdRef.current) return
+
+      const incoming = Array.isArray(data.messages) ? data.messages : []
+      const ordered = [...incoming].reverse()
+
+      setMessages((prev) => (mode === 'prepend' ? [...ordered, ...prev] : ordered))
+      setMessageCursor(data.nextCursor ?? null)
+      setHasMoreMessages(Boolean(data.hasNext))
+
+      requestAnimationFrame(() => {
+        const el = chatBodyRef.current
+        if (!el) return
+
+        if (mode === 'prepend') {
+          el.scrollTop = el.scrollHeight - beforeHeight
+          return
+        }
+
+        el.scrollTop = el.scrollHeight
+      })
+    } catch (e) {
+      if (requestId === historyRequestIdRef.current) {
+        setError(e instanceof Error ? e.message : '메시지를 불러오지 못했습니다.')
+      }
+    } finally {
+      if (requestId === historyRequestIdRef.current) {
+        loadingMessagesRef.current = false
+        setLoadingMessages(false)
+      }
+    }
+  }, [])
+
   const refreshRooms = useCallback(async () => {
     setLoadingRooms(true)
     setError('')
@@ -137,15 +191,19 @@ export function MessagesPage() {
   }, [isAuthenticated, refreshRooms])
 
   useEffect(() => {
-    const el = chatBodyRef.current
-    if (!el) return
-    el.scrollTop = el.scrollHeight
-  }, [messages, selectedRoomId])
+    historyRequestIdRef.current += 1
+    loadingMessagesRef.current = false
 
-  useEffect(() => {
     setMessages([])
+    setMessageCursor(null)
+    setHasMoreMessages(false)
+    setLoadingMessages(false)
     setRoomMenuOpen(false)
-  }, [selectedRoomId])
+
+    if (selectedRoomId) {
+      void loadMessages(selectedRoomId, null, 'replace')
+    }
+  }, [selectedRoomId, loadMessages])
 
   useEffect(() => {
     if (!isAuthenticated || !token || !selectedRoomId) return
@@ -154,7 +212,7 @@ export function MessagesPage() {
     setConnecting(true)
     setError('')
 
-    const wsUrl = import.meta.env.VITE_WS_STOMP_URL  || '/api/ws-stomp'
+    const wsUrl = import.meta.env.VITE_WS_STOMP_URL || '/api/ws-stomp'
 
     const client = new Client({
       webSocketFactory: () => new SockJS(wsUrl),
@@ -173,6 +231,12 @@ export function MessagesPage() {
         if (payload?.roomId && payload?.message) {
           setMessages((prev) => [...prev, payload])
           bumpRoomPreview(payload.roomId, payload.message, payload.createdAt)
+
+          requestAnimationFrame(() => {
+            const el = chatBodyRef.current
+            if (!el) return
+            el.scrollTop = el.scrollHeight
+          })
         }
       })
     }
@@ -211,6 +275,19 @@ export function MessagesPage() {
   const onPickRoom = (roomId) => {
     setSelectedRoomId(roomId)
   }
+
+  const onMessageScroll = useCallback(() => {
+    const el = chatBodyRef.current
+    if (!el) return
+    if (!selectedRoomId) return
+    if (loadingMessagesRef.current) return
+    if (!hasMoreMessages) return
+    if (!messageCursor) return
+
+    if (el.scrollTop <= 24) {
+      void loadMessages(selectedRoomId, messageCursor, 'prepend')
+    }
+  }, [hasMoreMessages, loadMessages, messageCursor, selectedRoomId])
 
   const removeRoomFromList = (roomId) => {
     setRooms((prev) => {
@@ -331,9 +408,7 @@ export function MessagesPage() {
           <div className="msg-header-meta">
             <strong>{selectedRoom?.title || '채팅방'}</strong>
             <span>
-              {selectedRoom?.participantCount
-                ? `참여자 ${selectedRoom.participantCount}명`
-                : '채팅방을 선택해 주세요'}
+              {selectedRoom?.participantCount ? `참여자 ${selectedRoom.participantCount}명` : '채팅방을 선택해 주세요'}
               {connecting ? ' · 연결 중' : ''}
             </span>
           </div>
@@ -364,10 +439,16 @@ export function MessagesPage() {
           </div>
         </header>
 
-        <div ref={chatBodyRef} className="msg-body">
+        <div ref={chatBodyRef} className="msg-body" onScroll={onMessageScroll}>
           {error && <PageError message={error} className="page-state--tight" />}
+          {selectedRoomId && loadingMessages && messages.length > 0 && (
+            <div className="msg-history-loading">이전 메시지를 불러오는 중...</div>
+          )}
           {!selectedRoomId && <p className="msg-muted">왼쪽 목록에서 채팅방을 선택해 주세요.</p>}
-          {selectedRoomId && messages.length === 0 && (
+          {selectedRoomId && loadingMessages && messages.length === 0 && (
+            <PageLoading className="page-state--tight" label="메시지를 불러오는 중..." />
+          )}
+          {selectedRoomId && !loadingMessages && messages.length === 0 && (
             <PageEmpty className="page-state--tight" title="아직 메시지가 없습니다">
               첫 메시지를 보내보세요.
             </PageEmpty>
