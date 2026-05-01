@@ -154,8 +154,9 @@ export function MessagesPage() {
     setConnecting(true)
     setError('')
 
+    const wsUrl = import.meta.env.VITE_API_BASE_URL || '/api/ws-stomp'
     const client = new Client({
-      webSocketFactory: () => new SockJS('/api/ws-stomp'),
+      webSocketFactory: () => new SockJS(wsUrl),
       connectHeaders: {
         Authorization: `Bearer ${token}`,
       },
