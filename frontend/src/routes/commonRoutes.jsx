@@ -8,12 +8,14 @@ import { GuideMatchedCoursePage } from '../pages/GuideMatchedCoursePage'
 import { GuideMatchOptionsPage } from '../pages/GuideMatchOptionsPage'
 import { GuideProposalPage } from '../pages/GuideProposalPage'
 import { HomePage } from '../pages/HomePage'
+import { ChatRoomCreatePage } from '../pages/ChatRoomCreatePage'
 import { MessagesPage } from '../pages/MessagesPage'
 import { PaymentKakaoStubPage } from '../pages/PaymentKakaoStubPage'
 
 export const commonRoutes = [
   { index: true, element: <HomePage /> },
   { path: 'messages', element: <MessagesPage /> },
+  { path: 'messages/new', element: <ChatRoomCreatePage /> },
   { path: 'ai-search', element: <AiQuickSearchPage /> },
   { path: 'ai-quick', element: <Navigate to="/ai-search" replace /> },
   { path: 'guides', element: <GuideListPage /> },
