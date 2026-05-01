@@ -4,7 +4,57 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="84d1b3de-8103-452e-83cf-38ecd34993e7" name="Changes" comment="Feat/fe#453: redis, mongodb 분리" />
+    <list default="true" id="84d1b3de-8103-452e-83cf-38ecd34993e7" name="Changes" comment="Feat/fe#453: redis, mongodb 분리">
+      <change afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/module-chat/src/main/java/com/team6/module/chat/config/PresenceInterceptor.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/module-chat/src/main/java/com/team6/module/chat/config/RedisNotificationConfig.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/module-chat/src/main/java/com/team6/module/chat/config/RedisSubscriber.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/module-chat/src/main/java/com/team6/module/chat/config/StompHandler.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/module-chat/src/main/java/com/team6/module/chat/controller/ChatMessageController.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/module-chat/src/main/java/com/team6/module/chat/controller/ChatMessageStompController.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/module-chat/src/main/java/com/team6/module/chat/controller/NotificationController.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/module-chat/src/main/java/com/team6/module/chat/dto/chatMessage/ChatMessageRequest.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/module-chat/src/main/java/com/team6/module/chat/dto/chatMessage/ChatMessageResponse.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/module-chat/src/main/java/com/team6/module/chat/dto/chatMessage/ChatPagingResponse.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/module-chat/src/main/java/com/team6/module/chat/dto/chatRoom/ChatRoomCreateRequest.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/module-chat/src/main/java/com/team6/module/chat/dto/chatRoom/ChatRoomResponse.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/module-chat/src/main/java/com/team6/module/chat/dto/chatRoom/ChatRoomsResponse.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/module-chat/src/main/java/com/team6/module/chat/dto/chatRoom/LeaveChatRoomRequest.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/module-chat/src/main/java/com/team6/module/chat/dto/chatRoom/LeaveChatRoomResponse.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/module-chat/src/main/java/com/team6/module/chat/dto/notification/ChatNotificationResponse.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/module-chat/src/main/java/com/team6/module/chat/service/ChatPresenceRedisService.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/module-chat/src/main/java/com/team6/module/chat/service/NotificationService.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/module-chat/src/main/java/com/team6/module/chat/support/ChatPresenceRedisKeys.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/module-chat/src/main/resources/static/chat-create.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/module-chat/src/main/resources/static/chat-room.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/module-chat/src/main/resources/static/chat-roomlist.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/logs/waition-api-log.log" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/out/production/LocalGuest/.gitattributes" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/out/production/LocalGuest/.gitignore" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/out/production/LocalGuest/Dockerfile" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/out/production/LocalGuest/HELP.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/out/production/LocalGuest/api-server/build.gradle" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/out/production/LocalGuest/api-server/src/main/resources/application.yml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/out/production/LocalGuest/api-server/src/main/resources/static/chat-test.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/out/production/LocalGuest/build.gradle" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/out/production/LocalGuest/deployment/deploy.sh" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/out/production/LocalGuest/deployment/docker/docker-compose.infra.yml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/out/production/LocalGuest/deployment/docker/docker-compose.yml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/out/production/LocalGuest/deployment/nginx/be_blue.inc" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/out/production/LocalGuest/deployment/nginx/be_green.inc" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/out/production/LocalGuest/gradle/wrapper/gradle-wrapper.jar" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/out/production/LocalGuest/gradle/wrapper/gradle-wrapper.properties" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/out/production/LocalGuest/gradlew" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/out/production/LocalGuest/gradlew.bat" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/out/production/LocalGuest/module-ai-integration/build.gradle" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/out/production/LocalGuest/module-ai/build.gradle" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/out/production/LocalGuest/module-chat/build.gradle" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/out/production/LocalGuest/module-common/build.gradle" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/out/production/LocalGuest/module-domain/build.gradle" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/out/production/LocalGuest/module-domain/src/test/resources/application-test.yml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/out/production/LocalGuest/package-lock.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/out/production/LocalGuest/settings.gradle" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -96,7 +146,7 @@
     "RunOnceActivity.typescript.service.memoryLimit.init": "true",
     "Spring Boot.ApiServerApplication.executor": "Run",
     "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
-    "git-widget-placeholder": "Feat/be#525",
+    "git-widget-placeholder": "Merging Feat/be#550",
     "junie.onboarding.icon.badge.shown": "true",
     "kotlin-language-version-configured": "true",
     "last_opened_file_path": "C:/Team6LocalGuest_4",

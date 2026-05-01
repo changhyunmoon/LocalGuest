@@ -1,5 +1,6 @@
 package com.team6.module.chat.entity.mysql;
 
+import com.team6.module.chat.exception.ParticipantNotFoundException;
 import com.team6.module.common.global.entity.BaseTimeEntity;
 import jakarta.persistence.*;
 import lombok.*;
@@ -33,12 +34,6 @@ public class ChatRoom extends BaseTimeEntity {
 
     private String ownerEmail; // 방장 ID
 
-    /**
-     * 단방향 OneToMany 설정
-     * cascade = ALL: 방이 저장/삭제될 때 참여자도 함께 처리
-     * orphanRemoval = true: 리스트에서 제거된 참여자는 DB에서도 삭제
-     * @JoinColumn: chat_participants 테이블에 생성될 외래키 컬럼명
-     */
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "chat_room_id")
     private List<ChatParticipant> participants = new ArrayList<>();
@@ -57,29 +52,20 @@ public class ChatRoom extends BaseTimeEntity {
         this.participantCount = this.participants.size();
     }
 
-    /**
-     * 참가자 목록에서 해당 이메일을 제거한다. orphanRemoval으로 DB 행도 삭제된다.
-     *
-     * @return 제거 성공 여부
-     */
-    public boolean removeParticipantByEmail(String userEmail) {
-        Iterator<ChatParticipant> it = this.participants.iterator();
-        while (it.hasNext()) {
-            ChatParticipant p = it.next();
-            if (userEmail.equals(p.getUserEmail())) {
-                it.remove();
-                this.participantCount = this.participants.size();
-                return true;
-            }
+    public void removeParticipant(String userEmail) {
+        boolean removed = this.participants.removeIf(
+                participant -> participant.getUserEmail().equals(userEmail)
+        );
+
+        if (!removed) {
+            throw new ParticipantNotFoundException();
         }
-        return false;
+
+        this.participantCount = this.participants.size();
     }
 
-    public void updateLastMessage(String message, LocalDateTime sentAt) {
-        this.lastMessage = message;
-        this.lastMessageAt = sentAt;
+    public boolean isEmpty() {
+        return this.participants.isEmpty();
     }
-
-
 
 }

@@ -3,7 +3,7 @@ import './PageStates.css'
 /**
  * @param {{ label?: string, className?: string }} props
  */
-export function PageLoading({ label = '불러오는 중…', className = '' }) {
+export function PageLoading({ label = '불러오는 중...', className = '' }) {
   return (
     <div
       className={`page-state--loading ${className}`.trim()}

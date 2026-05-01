@@ -1,0 +1,506 @@
+<!doctype html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Chat Test</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.6.1/sockjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+    <style>
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: Arial, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+            background: #f4f6f8;
+            color: #17202a;
+        }
+
+        main {
+            width: min(1120px, calc(100% - 32px));
+            margin: 0 auto;
+            padding: 24px 0;
+            display: grid;
+            grid-template-columns: 360px minmax(0, 1fr);
+            gap: 16px;
+        }
+
+        section {
+            background: #fff;
+            border: 1px solid #dce2ea;
+            border-radius: 8px;
+            padding: 16px;
+        }
+
+        h1 {
+            grid-column: 1 / -1;
+            margin: 0;
+            font-size: 26px;
+        }
+
+        h2 {
+            margin: 0 0 14px;
+            font-size: 18px;
+        }
+
+        label {
+            display: block;
+            margin: 12px 0 6px;
+            font-size: 13px;
+            font-weight: 700;
+            color: #334155;
+        }
+
+        input,
+        textarea {
+            width: 100%;
+            border: 1px solid #dce2ea;
+            border-radius: 6px;
+            padding: 10px 12px;
+            font: inherit;
+            background: #fff;
+        }
+
+        textarea {
+            min-height: 120px;
+            resize: vertical;
+            font-family: Consolas, "Courier New", monospace;
+            font-size: 13px;
+        }
+
+        button {
+            border: 0;
+            border-radius: 6px;
+            padding: 10px 14px;
+            font: inherit;
+            font-weight: 700;
+            color: #fff;
+            background: #2563eb;
+            cursor: pointer;
+        }
+
+        button:hover { background: #1d4ed8; }
+
+        button.secondary {
+            background: #64748b;
+        }
+
+        button.secondary:hover {
+            background: #475569;
+        }
+
+        .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 14px;
+        }
+
+        .status-line {
+            margin-top: 12px;
+            padding: 10px 12px;
+            border-radius: 6px;
+            background: #f1f5f9;
+            color: #475569;
+            font-size: 13px;
+        }
+
+        .status-line strong {
+            color: #111827;
+        }
+
+        .chat-shell {
+            height: 720px;
+            padding: 0;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            background: #b2c7da;
+            border-color: #9fb4c7;
+        }
+
+        .chat-header {
+            padding: 14px 16px;
+            background: #3b4450;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .chat-header strong {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        #status {
+            flex: 0 0 auto;
+            font-size: 12px;
+            color: #cbd5e1;
+            font-weight: 700;
+        }
+
+        .chat-window {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px 12px;
+        }
+
+        .empty {
+            margin-top: 210px;
+            text-align: center;
+            color: #52616f;
+            font-size: 14px;
+        }
+
+        .message-row {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 12px;
+            max-width: 78%;
+        }
+
+        .message-row.mine {
+            margin-left: auto;
+            align-items: flex-end;
+        }
+
+        .message-row.other {
+            margin-right: auto;
+            align-items: flex-start;
+        }
+
+        .sender {
+            margin: 0 0 4px 4px;
+            font-size: 12px;
+            color: #334155;
+            font-weight: 700;
+            max-width: 100%;
+            overflow-wrap: anywhere;
+        }
+
+        .bubble {
+            padding: 9px 12px;
+            border-radius: 14px;
+            line-height: 1.35;
+            word-break: break-word;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+        }
+
+        .mine .bubble {
+            background: #fee500;
+            color: #111827;
+            border-top-right-radius: 3px;
+        }
+
+        .other .bubble {
+            background: white;
+            color: #111827;
+            border-top-left-radius: 3px;
+        }
+
+        .time {
+            margin-top: 4px;
+            font-size: 11px;
+            color: #52616f;
+        }
+
+        .chat-input {
+            display: flex;
+            gap: 8px;
+            padding: 12px;
+            background: white;
+            border-top: 1px solid #d7dde5;
+        }
+
+        .chat-input input {
+            flex: 1;
+            border-radius: 18px;
+        }
+
+        .chat-input button {
+            flex: 0 0 auto;
+            border-radius: 18px;
+            padding: 0 16px;
+            background: #fee500;
+            color: #111827;
+        }
+
+        .chat-input button:hover {
+            background: #f4d900;
+        }
+
+        @media (max-width: 900px) {
+            main {
+                grid-template-columns: 1fr;
+            }
+
+            h1 {
+                grid-column: auto;
+            }
+
+            .chat-shell {
+                height: 680px;
+            }
+        }
+    </style>
+</head>
+<body>
+<main>
+    <h1>Chat Test</h1>
+
+    <section>
+        <h2>Connection</h2>
+
+        <label for="apiBase">API Base</label>
+        <input id="apiBase" value="/api">
+
+        <label for="accessToken">Access Token</label>
+        <textarea id="accessToken" placeholder="auth-test.html에서 로그인한 accessToken"></textarea>
+
+        <label for="roomId">Room ID</label>
+        <input id="roomId" value="test-room-1">
+
+        <div class="actions">
+            <button type="button" onclick="connect()">Connect</button>
+            <button type="button" class="secondary" onclick="disconnect()">Disconnect</button>
+            <button type="button" class="secondary" onclick="clearMessages()">Clear</button>
+        </div>
+
+        <div class="status-line">
+            Status: <strong id="connectionLabel">DISCONNECTED</strong>
+        </div>
+        <div class="status-line">
+            Me: <strong id="meLabel">-</strong>
+        </div>
+    </section>
+
+    <section class="chat-shell">
+        <div class="chat-header">
+            <strong id="roomTitle">test-room-1</strong>
+            <span id="status">DISCONNECTED</span>
+        </div>
+
+        <div id="chatWindow" class="chat-window">
+            <div id="emptyState" class="empty">Connect 후 메시지를 주고받을 수 있습니다.</div>
+        </div>
+
+        <div class="chat-input">
+            <input id="message" placeholder="메시지를 입력하세요" onkeydown="if(event.key === 'Enter') sendMessage()">
+            <button type="button" onclick="sendMessage()">전송</button>
+        </div>
+    </section>
+</main>
+
+<script>
+    let stompClient = null;
+    let subscription = null;
+    let myEmail = "";
+
+    const $ = (id) => document.getElementById(id);
+
+    $("accessToken").value = localStorage.getItem("authTestAccessToken") || "";
+
+    const params = new URLSearchParams(location.search);
+    const roomIdFromQuery = params.get("roomId");
+
+    if (roomIdFromQuery) {
+        $("roomId").value = roomIdFromQuery;
+        $("roomTitle").textContent = roomIdFromQuery;
+    }
+
+    if (!location.pathname.startsWith("/api/")) {
+        $("apiBase").value = "http://localhost:8080/api";
+    }
+
+    function apiBase() {
+        return $("apiBase").value.replace(/\/$/, "");
+    }
+
+    function setStatus(value) {
+        $("status").textContent = value;
+        $("connectionLabel").textContent = value;
+    }
+
+    function parseJwtSubject(token) {
+        try {
+            const payload = token.split(".")[1];
+            const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
+            const padded = normalized.padEnd(
+                normalized.length + (4 - normalized.length % 4) % 4,
+                "="
+            );
+
+            const binary = atob(padded);
+            const bytes = Uint8Array.from(binary, char => char.charCodeAt(0));
+            const json = new TextDecoder().decode(bytes);
+
+            return JSON.parse(json).sub || "";
+        } catch (_) {
+            return "";
+        }
+    }
+
+    function connect() {
+        const token = $("accessToken").value.trim();
+        const roomId = $("roomId").value.trim();
+
+        if (!token) {
+            alert("Access Token이 필요합니다.");
+            return;
+        }
+
+        if (!roomId) {
+            alert("Room ID가 필요합니다.");
+            return;
+        }
+
+        disconnect(false);
+
+        myEmail = parseJwtSubject(token);
+        $("meLabel").textContent = myEmail || "(token subject 없음)";
+        $("roomTitle").textContent = roomId;
+
+        const socket = new SockJS(`${apiBase()}/ws-stomp`);
+        stompClient = Stomp.over(socket);
+        stompClient.debug = null;
+
+        setStatus("CONNECTING");
+
+        stompClient.connect(
+            { Authorization: `Bearer ${token}` },
+            () => {
+                setStatus("CONNECTED");
+
+                subscription = stompClient.subscribe(`/sub/chat/room/${roomId}`, (frame) => {
+                    appendMessage(JSON.parse(frame.body));
+                });
+
+                appendSystemMessage(`Connected to ${roomId}`);
+            },
+            (error) => {
+                setStatus("ERROR");
+                appendSystemMessage(`Connection failed: ${String(error)}`);
+            }
+        );
+    }
+
+    function disconnect(showMessage = true) {
+        if (subscription) {
+            subscription.unsubscribe();
+            subscription = null;
+        }
+
+        if (stompClient) {
+            const client = stompClient;
+            stompClient = null;
+
+            if (client.connected) {
+                client.disconnect(() => {
+                    setStatus("DISCONNECTED");
+                    if (showMessage) {
+                        appendSystemMessage("Disconnected");
+                    }
+                });
+                return;
+            }
+        }
+
+        setStatus("DISCONNECTED");
+    }
+
+    function sendMessage() {
+        if (!stompClient || !stompClient.connected) {
+            alert("먼저 Connect 해주세요.");
+            return;
+        }
+
+        const roomId = $("roomId").value.trim();
+        const content = $("message").value.trim();
+
+        if (!content) {
+            return;
+        }
+
+        stompClient.send("/pub/chat/message", {}, JSON.stringify({
+            roomId,
+            message: content
+        }));
+
+        $("message").value = "";
+        $("message").focus();
+    }
+
+    function appendMessage(msg) {
+        removeEmptyState();
+
+        const chatWindow = $("chatWindow");
+        const senderEmail = msg.senderEmail || msg.sender || "";
+        const isMine = senderEmail && senderEmail === myEmail;
+
+        const row = document.createElement("div");
+        row.className = `message-row ${isMine ? "mine" : "other"}`;
+
+        const time = msg.createdAt
+            ? new Date(msg.createdAt).toLocaleTimeString("ko-KR", {
+                hour: "2-digit",
+                minute: "2-digit"
+            })
+            : new Date().toLocaleTimeString("ko-KR", {
+                hour: "2-digit",
+                minute: "2-digit"
+            });
+
+        const senderName = msg.senderNickname || senderEmail || "unknown";
+
+        row.innerHTML = `
+        ${isMine ? "" : `<div class="sender">${escapeHtml(senderName)}</div>`}
+        <div class="bubble">${escapeHtml(msg.message || "")}</div>
+        <div class="time">${time}</div>
+    `;
+
+        chatWindow.appendChild(row);
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+    }
+
+
+
+    function appendSystemMessage(text) {
+        removeEmptyState();
+
+        const row = document.createElement("div");
+        row.style.textAlign = "center";
+        row.style.margin = "12px 0";
+        row.style.color = "#52616f";
+        row.style.fontSize = "12px";
+        row.textContent = text;
+
+        $("chatWindow").appendChild(row);
+        $("chatWindow").scrollTop = $("chatWindow").scrollHeight;
+    }
+
+    function clearMessages() {
+        $("chatWindow").innerHTML = '<div id="emptyState" class="empty">메시지가 없습니다.</div>';
+    }
+
+    function removeEmptyState() {
+        const emptyState = $("emptyState");
+        if (emptyState) {
+            emptyState.remove();
+        }
+    }
+
+    function escapeHtml(value) {
+        return String(value)
+            .replaceAll("&", "&amp;")
+            .replaceAll("<", "&lt;")
+            .replaceAll(">", "&gt;")
+            .replaceAll('"', "&quot;")
+            .replaceAll("'", "&#039;");
+    }
+</script>
+</body>
+</html>

@@ -1,0 +1,444 @@
+<!doctype html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Chat Room Test</title>
+    <style>
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: Arial, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+            background: #f4f6f8;
+            color: #17202a;
+        }
+
+        main {
+            width: min(1100px, calc(100% - 32px));
+            margin: 0 auto;
+            padding: 24px 0;
+            display: grid;
+            grid-template-columns: 380px minmax(0, 1fr);
+            gap: 16px;
+        }
+
+        h1 {
+            grid-column: 1 / -1;
+            margin: 0;
+            font-size: 26px;
+        }
+
+        section {
+            background: white;
+            border: 1px solid #dce2ea;
+            border-radius: 8px;
+            padding: 16px;
+        }
+
+        h2 {
+            margin: 0 0 14px;
+            font-size: 18px;
+        }
+
+        label {
+            display: block;
+            margin: 12px 0 6px;
+            font-size: 13px;
+            font-weight: 700;
+            color: #334155;
+        }
+
+        input,
+        textarea {
+            width: 100%;
+            border: 1px solid #dce2ea;
+            border-radius: 6px;
+            padding: 10px 12px;
+            font: inherit;
+            background: white;
+        }
+
+        textarea {
+            min-height: 120px;
+            resize: vertical;
+            font-family: Consolas, "Courier New", monospace;
+            font-size: 13px;
+        }
+
+        button {
+            border: 0;
+            border-radius: 6px;
+            padding: 10px 14px;
+            font: inherit;
+            font-weight: 700;
+            color: white;
+            background: #2563eb;
+            cursor: pointer;
+        }
+
+        button:hover { background: #1d4ed8; }
+
+        button.secondary {
+            background: #64748b;
+        }
+
+        button.secondary:hover {
+            background: #475569;
+        }
+
+        button.danger {
+            background: #dc2626;
+        }
+
+        button.danger:hover {
+            background: #b91c1c;
+        }
+
+        .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 14px;
+        }
+
+        .room-list {
+            display: grid;
+            gap: 10px;
+        }
+
+        .room-card {
+            border: 1px solid #dce2ea;
+            border-radius: 8px;
+            padding: 12px;
+            background: #fff;
+        }
+
+        .room-title {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 8px;
+            font-weight: 700;
+        }
+
+        .room-meta {
+            color: #64748b;
+            font-size: 13px;
+            line-height: 1.5;
+            word-break: break-all;
+        }
+
+        .room-card .actions {
+            margin-top: 10px;
+        }
+
+        pre {
+            margin: 0;
+            min-height: 260px;
+            max-height: 520px;
+            overflow: auto;
+            padding: 14px;
+            border-radius: 8px;
+            background: #111827;
+            color: #d1d5db;
+            font-size: 13px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+        }
+
+        .status {
+            margin-top: 12px;
+            padding: 10px 12px;
+            border-radius: 6px;
+            background: #f1f5f9;
+            color: #475569;
+            font-size: 13px;
+        }
+
+        @media (max-width: 900px) {
+            main {
+                grid-template-columns: 1fr;
+            }
+
+            h1 {
+                grid-column: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+<main>
+    <h1>Chat Room Test</h1>
+
+    <section>
+        <h2>Connection</h2>
+
+        <label for="apiBase">API Base</label>
+        <input id="apiBase" value="/api">
+
+        <label for="accessToken">Access Token</label>
+        <textarea id="accessToken" placeholder="auth-test.html에서 로그인한 accessToken"></textarea>
+
+        <div class="actions">
+            <button type="button" onclick="loadRooms()">채팅방 조회</button>
+            <button type="button" class="secondary" onclick="clearOutput()">Response Clear</button>
+        </div>
+
+        <div id="status" class="status">대기 중</div>
+    </section>
+
+    <section>
+        <h2>채팅방 생성</h2>
+
+        <label for="roomTitle">Title</label>
+        <input id="roomTitle" value="테스트 채팅방">
+
+        <label for="participantEmails">Participant Emails</label>
+        <textarea id="participantEmails" placeholder="초대할 사용자 이메일을 줄바꿈 또는 쉼표로 입력하세요"></textarea>
+
+        <div class="actions">
+            <button type="button" onclick="createRoom()">채팅방 생성</button>
+        </div>
+
+        <p style="margin: 12px 0 0; color: #64748b; font-size: 13px;">
+            방장은 서버에서 JWT 인증 사용자로 자동 추가됩니다.
+        </p>
+    </section>
+
+    <section>
+        <h2>채팅방 목록</h2>
+        <div id="roomList" class="room-list"></div>
+    </section>
+
+    <section>
+        <h2>Response</h2>
+        <pre id="output">{}</pre>
+    </section>
+</main>
+
+<script>
+    const $ = (id) => document.getElementById(id);
+
+    $("accessToken").value = localStorage.getItem("authTestAccessToken") || "";
+
+    if (!location.pathname.startsWith("/api/")) {
+        $("apiBase").value = "http://localhost:8080/api";
+    }
+
+    function apiBase() {
+        return $("apiBase").value.replace(/\/$/, "");
+    }
+
+    function token() {
+        return $("accessToken").value.trim();
+    }
+
+    function authHeaders(extra = {}) {
+        const accessToken = token();
+
+        if (!accessToken) {
+            throw new Error("Access Token이 필요합니다.");
+        }
+
+        return {
+            Authorization: `Bearer ${accessToken}`,
+            ...extra
+        };
+    }
+
+    function setStatus(message) {
+        $("status").textContent = message;
+    }
+
+    function showOutput(label, status, data) {
+        $("output").textContent = JSON.stringify({
+            label,
+            status,
+            data
+        }, null, 2);
+    }
+
+    function clearOutput() {
+        $("output").textContent = "{}";
+    }
+
+    async function readResponse(response) {
+        const text = await response.text();
+
+        if (!text) {
+            return null;
+        }
+
+        try {
+            return JSON.parse(text);
+        } catch (_) {
+            return text;
+        }
+    }
+
+    function parseEmails(value) {
+        return value
+            .split(/[\n,]/)
+            .map(email => email.trim())
+            .filter(Boolean);
+    }
+
+    async function createRoom() {
+        const body = {
+            title: $("roomTitle").value.trim(),
+            participantEmails: parseEmails($("participantEmails").value)
+        };
+
+        if (!body.title) {
+            alert("채팅방 제목을 입력하세요.");
+            return;
+        }
+
+        try {
+            const response = await fetch(`${apiBase()}/chat/rooms`, {
+                method: "POST",
+                headers: authHeaders({ "Content-Type": "application/json" }),
+                body: JSON.stringify(body)
+            });
+
+            const data = await readResponse(response);
+            showOutput("POST /chat/rooms", response.status, data);
+
+            if (response.ok) {
+                setStatus(`채팅방 생성 성공: ${data.roomId}`);
+                await loadRooms();
+            } else {
+                setStatus("채팅방 생성 실패");
+            }
+        } catch (error) {
+            showOutput("POST /chat/rooms", "ERROR", String(error));
+            setStatus("채팅방 생성 요청 실패");
+        }
+    }
+
+    async function loadRooms() {
+        try {
+            const response = await fetch(`${apiBase()}/chat/rooms`, {
+                method: "GET",
+                headers: authHeaders()
+            });
+
+            const data = await readResponse(response);
+            showOutput("GET /chat/rooms", response.status, data);
+
+            if (response.ok) {
+                renderRooms(data.rooms || []);
+                setStatus(`채팅방 ${data.rooms ? data.rooms.length : 0}개 조회`);
+            } else {
+                setStatus("채팅방 조회 실패");
+            }
+        } catch (error) {
+            showOutput("GET /chat/rooms", "ERROR", String(error));
+            setStatus("채팅방 조회 요청 실패");
+        }
+    }
+
+    async function leaveRoom(roomId) {
+        if (!confirm(`채팅방을 나가겠습니까?\n${roomId}`)) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`${apiBase()}/chat/rooms/${encodeURIComponent(roomId)}/leave`, {
+                method: "DELETE",
+                headers: authHeaders()
+            });
+
+            const data = await readResponse(response);
+            showOutput(`DELETE /chat/rooms/${roomId}/leave`, response.status, data);
+
+            if (response.ok) {
+                setStatus(data.roomDeleted ? "채팅방 나가기 성공: 방 삭제됨" : "채팅방 나가기 성공");
+                await loadRooms();
+            } else {
+                setStatus("채팅방 나가기 실패");
+            }
+        } catch (error) {
+            showOutput(`DELETE /chat/rooms/${roomId}/leave`, "ERROR", String(error));
+            setStatus("채팅방 나가기 요청 실패");
+        }
+    }
+
+    function renderRooms(rooms) {
+        const roomList = $("roomList");
+
+        if (!rooms.length) {
+            roomList.innerHTML = `
+        <div class="room-card">
+          <div class="room-meta">참여 중인 채팅방이 없습니다.</div>
+        </div>
+      `;
+            return;
+        }
+
+        roomList.innerHTML = rooms.map(room => {
+            const lastMessageAt = room.lastMessageAt
+                ? new Date(room.lastMessageAt).toLocaleString("ko-KR")
+                : "-";
+
+        return `
+          <div class="room-card" ondblclick="openChatRoom('${escapeJs(room.roomId || "")}')">
+            <div class="room-title">
+              <span>${escapeHtml(room.title || "(제목 없음)")}</span>
+              <span>${escapeHtml(String(room.participantCount ?? "-"))}명</span>
+            </div>
+            <div class="room-meta">roomId: ${escapeHtml(room.roomId || "")}</div>
+            <div class="room-meta">lastMessage: ${escapeHtml(room.lastMessage || "-")}</div>
+            <div class="room-meta">lastMessageAt: ${escapeHtml(lastMessageAt)}</div>
+            <div class="actions">
+              <button type="button" onclick="openChatRoom('${escapeJs(room.roomId || "")}')">채팅하기</button>
+              <button type="button" class="secondary" onclick="copyRoomId('${escapeJs(room.roomId || "")}')">roomId 복사</button>
+              <button type="button" class="danger" onclick="leaveRoom('${escapeJs(room.roomId || "")}')">나가기</button>
+            </div>
+          </div>
+        `;
+
+        }).join("");
+    }
+
+    function openChatRoom(roomId) {
+        if (!roomId) {
+            alert("roomId가 없습니다.");
+            return;
+        }
+
+        const basePath = location.pathname.startsWith("/api/")
+            ? "/api/chat-test.html"
+            : "chat-test.html";
+
+        location.href = `${basePath}?roomId=${encodeURIComponent(roomId)}`;
+    }
+
+    async function copyRoomId(roomId) {
+        try {
+            await navigator.clipboard.writeText(roomId);
+            setStatus(`roomId 복사됨: ${roomId}`);
+        } catch (_) {
+            setStatus(`roomId: ${roomId}`);
+        }
+    }
+
+    function escapeHtml(value) {
+        return String(value)
+            .replaceAll("&", "&amp;")
+            .replaceAll("<", "&lt;")
+            .replaceAll(">", "&gt;")
+            .replaceAll('"', "&quot;")
+            .replaceAll("'", "&#039;");
+    }
+
+    function escapeJs(value) {
+        return String(value)
+            .replaceAll("\\", "\\\\")
+            .replaceAll("'", "\\'");
+    }
+</script>
+</body>
+</html>

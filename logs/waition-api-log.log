@@ -36019,3 +36019,746 @@ where
 2026-04-24 22:52:00.712 INFO  [77add97e] c.t.a.logging.MdcLoggingFilter - [HTTP] Request completed - statusCode: 200, latencyMs: 44, requestUri: /api/matching/requests/guide/list, method: GET
 =======
 >>>>>>> 6e4fa357b0d4eba20aac3dad439581516d923f14
+2026-05-01 15:58:34.931 INFO  [] o.h.validator.internal.util.Version - HV000001: Hibernate Validator 8.0.2.Final
+2026-05-01 15:58:35.184 INFO  [] c.t.apiserver.ApiServerApplication - Starting ApiServerApplication using Java 17.0.18 with PID 26296 (C:\mch\programmers\LocalGuest\backend\api-server\build\classes\java\main started by 창현 in C:\mch\programmers\LocalGuest)
+2026-05-01 15:58:35.186 INFO  [] c.t.apiserver.ApiServerApplication - The following 1 profile is active: "local"
+2026-05-01 15:58:39.461 INFO  [] o.s.d.r.c.RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
+2026-05-01 15:58:39.461 INFO  [] o.s.d.r.c.RepositoryConfigurationDelegate - Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-05-01 15:58:40.038 INFO  [] o.s.d.r.c.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 558 ms. Found 13 JPA repository interfaces.
+2026-05-01 15:58:40.043 INFO  [] o.s.d.r.c.RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
+2026-05-01 15:58:40.043 INFO  [] o.s.d.r.c.RepositoryConfigurationDelegate - Bootstrapping Spring Data MongoDB repositories in DEFAULT mode.
+2026-05-01 15:58:40.057 INFO  [] o.s.d.r.c.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 12 ms. Found 1 MongoDB repository interface.
+2026-05-01 15:58:41.152 INFO  [] o.s.d.r.c.RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
+2026-05-01 15:58:41.155 INFO  [] o.s.d.r.c.RepositoryConfigurationDelegate - Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+2026-05-01 15:58:41.188 INFO  [] o.s.d.r.c.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 16 ms. Found 0 Redis repository interfaces.
+2026-05-01 15:58:41.401 WARN  [] o.m.s.mapper.ClassPathMapperScanner - No MyBatis mapper was found in '[com.team6.apiserver]' package. Please check your configuration.
+2026-05-01 15:58:42.703 INFO  [] o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port 8080 (http)
+2026-05-01 15:58:42.728 INFO  [] o.a.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-8080"]
+2026-05-01 15:58:42.732 INFO  [] o.a.catalina.core.StandardService - Starting service [Tomcat]
+2026-05-01 15:58:42.732 INFO  [] o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.40]
+2026-05-01 15:58:42.960 INFO  [] o.a.c.c.C.[.[localhost].[/api] - Initializing Spring embedded WebApplicationContext
+2026-05-01 15:58:42.961 INFO  [] o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 7610 ms
+2026-05-01 15:58:44.253 INFO  [] o.h.jpa.internal.util.LogHelper - HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-05-01 15:58:44.434 INFO  [] org.hibernate.Version - HHH000412: Hibernate ORM core version 6.6.13.Final
+2026-05-01 15:58:44.530 INFO  [] o.h.c.i.RegionFactoryInitiator - HHH000026: Second-level cache disabled
+2026-05-01 15:58:45.390 INFO  [] o.s.o.j.p.SpringPersistenceUnitInfo - No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-05-01 15:58:45.477 INFO  [] com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Starting...
+2026-05-01 15:58:46.012 INFO  [] com.zaxxer.hikari.pool.HikariPool - HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@216c6825
+2026-05-01 15:58:46.016 INFO  [] com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Start completed.
+2026-05-01 15:58:46.142 WARN  [] org.hibernate.orm.deprecation - HHH90000025: MySQLDialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+2026-05-01 15:58:46.186 INFO  [] o.hibernate.orm.connections.pooling - HHH10001005: Database info:
+	Database JDBC URL [Connecting through datasource 'HikariDataSource (HikariPool-1)']
+	Database driver: undefined/unknown
+	Database version: 8.0.44
+	Autocommit mode: undefined/unknown
+	Isolation level: undefined/unknown
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown
+2026-05-01 15:58:48.745 INFO  [] o.h.e.t.j.p.i.JtaPlatformInitiator - HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-05-01 15:58:48.868 DEBUG [] org.hibernate.SQL - 
+    alter table guide_schedules 
+       modify column status enum ('AVAILABLE','BLOCKED','BOOKED','PENDING') not null
+2026-05-01 15:58:48.922 DEBUG [] org.hibernate.SQL - 
+    alter table match_request 
+       modify column status enum ('ACCEPTED','CANCELLED','COMPLETED','IN_PROGRESS','PAID','PENDING','REJECTED') not null
+2026-05-01 15:58:49.116 DEBUG [] org.hibernate.SQL - 
+    alter table member 
+       modify column role enum ('ADMIN','GUEST','GUIDE') not null
+2026-05-01 15:58:49.141 DEBUG [] org.hibernate.SQL - 
+    alter table member 
+       modify column social_type enum ('GOOGLE','KAKAO')
+2026-05-01 15:58:49.161 DEBUG [] org.hibernate.SQL - 
+    alter table member 
+       modify column status enum ('ACTIVE','WITHDRAWN') not null
+2026-05-01 15:58:49.187 DEBUG [] org.hibernate.SQL - 
+    alter table payment 
+       modify column status enum ('CANCELLED','COMPLETED','FAILED','PENDING','REFUNDED') not null
+2026-05-01 15:58:49.406 DEBUG [] org.hibernate.SQL - 
+    alter table refund 
+       modify column refund_type enum ('AUTO','CANCEL_GUEST','CANCEL_GUIDE','MANUAL') not null
+2026-05-01 15:58:49.799 DEBUG [] org.hibernate.SQL - 
+    alter table refund 
+       modify column status enum ('APPROVED','PENDING','REJECTED') not null
+2026-05-01 15:58:49.917 DEBUG [] org.hibernate.SQL - 
+    alter table tour_extension 
+       modify column status enum ('AUTO_CANCELLED','GUIDE_APPROVED','PAID','REJECTED','REQUESTED') not null
+2026-05-01 15:58:50.131 INFO  [] o.s.o.j.LocalContainerEntityManagerFactoryBean - Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-05-01 15:58:50.815 INFO  [] o.s.d.j.r.query.QueryEnhancerFactory - Hibernate is in classpath; If applicable, HQL parser will be used.
+2026-05-01 15:58:55.190 INFO  [] org.mongodb.driver.client - MongoClient with metadata {"driver": {"name": "mongo-java-driver|sync|spring-boot", "version": "5.2.1"}, "os": {"type": "Windows", "name": "Windows 10", "architecture": "amd64", "version": "10.0"}, "platform": "Java/Amazon.com Inc./17.0.18+9-LTS"} created with settings MongoClientSettings{readPreference=primary, writeConcern=WriteConcern{w=null, wTimeout=null ms, journal=null}, retryWrites=true, retryReads=true, readConcern=ReadConcern{level=null}, credential=null, transportSettings=null, commandListeners=[io.micrometer.core.instrument.binder.mongodb.MongoMetricsCommandListener@1bb40695], codecRegistry=ProvidersCodecRegistry{codecProviders=[ValueCodecProvider{}, BsonValueCodecProvider{}, DBRefCodecProvider{}, DBObjectCodecProvider{}, DocumentCodecProvider{}, CollectionCodecProvider{}, IterableCodecProvider{}, MapCodecProvider{}, GeoJsonCodecProvider{}, GridFSFileCodecProvider{}, Jsr310CodecProvider{}, JsonObjectCodecProvider{}, BsonCodecProvider{}, EnumCodecProvider{}, com.mongodb.client.model.mql.ExpressionCodecProvider@6917b034, com.mongodb.Jep395RecordCodecProvider@549f11e0, com.mongodb.KotlinCodecProvider@1dd6812a]}, loggerSettings=LoggerSettings{maxDocumentLength=1000}, clusterSettings={hosts=[localhost:27017], srvServiceName=mongodb, mode=SINGLE, requiredClusterType=UNKNOWN, requiredReplicaSetName='null', serverSelector='null', clusterListeners='[]', serverSelectionTimeout='30000 ms', localThreshold='15 ms'}, socketSettings=SocketSettings{connectTimeoutMS=10000, readTimeoutMS=0, receiveBufferSize=0, proxySettings=ProxySettings{host=null, port=null, username=null, password=null}}, heartbeatSocketSettings=SocketSettings{connectTimeoutMS=10000, readTimeoutMS=10000, receiveBufferSize=0, proxySettings=ProxySettings{host=null, port=null, username=null, password=null}}, connectionPoolSettings=ConnectionPoolSettings{maxSize=100, minSize=0, maxWaitTimeMS=120000, maxConnectionLifeTimeMS=0, maxConnectionIdleTimeMS=0, maintenanceInitialDelayMS=0, maintenanceFrequencyMS=60000, connectionPoolListeners=[io.micrometer.core.instrument.binder.mongodb.MongoMetricsConnectionPoolListener@4abcb7a5], maxConnecting=2}, serverSettings=ServerSettings{heartbeatFrequencyMS=10000, minHeartbeatFrequencyMS=500, serverMonitoringMode=AUTO, serverListeners='[]', serverMonitorListeners='[]'}, sslSettings=SslSettings{enabled=false, invalidHostNameAllowed=false, context=null}, applicationName='null', compressorList=[], uuidRepresentation=JAVA_LEGACY, serverApi=null, autoEncryptionSettings=null, dnsClient=null, inetAddressResolver=null, contextProvider=null, timeoutMS=null}
+2026-05-01 15:58:55.201 INFO  [] org.mongodb.driver.cluster - Monitor thread successfully connected to server with description ServerDescription{address=localhost:27017, type=STANDALONE, cryptd=false, state=CONNECTED, ok=true, minWireVersion=0, maxWireVersion=27, maxDocumentSize=16777216, logicalSessionTimeoutMinutes=30, roundTripTimeNanos=37587600, minRoundTripTimeNanos=0}
+2026-05-01 15:58:56.002 WARN  [] o.s.b.a.o.j.JpaBaseConfiguration$JpaWebConfiguration - spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-05-01 15:58:56.836 INFO  [] o.s.b.a.e.web.EndpointLinksResolver - Exposing 1 endpoint beneath base path '/actuator'
+2026-05-01 15:58:57.094 WARN  [] o.s.s.c.a.web.builders.WebSecurity - You are asking Spring Security to ignore Deferred [Mvc [pattern='/actuator/**'], Ant [pattern='/actuator/**']]. This is not recommended -- please use permitAll via HttpSecurity#authorizeHttpRequests instead.
+2026-05-01 15:58:57.094 WARN  [] o.s.s.c.a.web.builders.WebSecurity - You are asking Spring Security to ignore Deferred [Mvc [pattern='/api/actuator/**'], Ant [pattern='/api/actuator/**']]. This is not recommended -- please use permitAll via HttpSecurity#authorizeHttpRequests instead.
+2026-05-01 15:58:57.094 WARN  [] o.s.s.c.a.web.builders.WebSecurity - You are asking Spring Security to ignore Deferred [Mvc [pattern='/v3/api-docs/**'], Ant [pattern='/v3/api-docs/**']]. This is not recommended -- please use permitAll via HttpSecurity#authorizeHttpRequests instead.
+2026-05-01 15:58:57.094 WARN  [] o.s.s.c.a.web.builders.WebSecurity - You are asking Spring Security to ignore Deferred [Mvc [pattern='/swagger-ui/**'], Ant [pattern='/swagger-ui/**']]. This is not recommended -- please use permitAll via HttpSecurity#authorizeHttpRequests instead.
+2026-05-01 15:58:57.094 WARN  [] o.s.s.c.a.web.builders.WebSecurity - You are asking Spring Security to ignore Deferred [Mvc [pattern='/api/v3/api-docs/**'], Ant [pattern='/api/v3/api-docs/**']]. This is not recommended -- please use permitAll via HttpSecurity#authorizeHttpRequests instead.
+2026-05-01 15:58:57.094 WARN  [] o.s.s.c.a.web.builders.WebSecurity - You are asking Spring Security to ignore Deferred [Mvc [pattern='/api/swagger-ui/**'], Ant [pattern='/api/swagger-ui/**']]. This is not recommended -- please use permitAll via HttpSecurity#authorizeHttpRequests instead.
+2026-05-01 15:58:58.257 INFO  [] o.s.m.s.b.SimpleBrokerMessageHandler - Starting...
+2026-05-01 15:58:58.257 INFO  [] o.s.m.s.b.SimpleBrokerMessageHandler - BrokerAvailabilityEvent[available=true, SimpleBrokerMessageHandler [org.springframework.messaging.simp.broker.DefaultSubscriptionRegistry@7547fcc5]]
+2026-05-01 15:58:58.257 INFO  [] o.s.m.s.b.SimpleBrokerMessageHandler - Started.
+2026-05-01 15:58:58.258 INFO  [] o.a.coyote.http11.Http11NioProtocol - Starting ProtocolHandler ["http-nio-8080"]
+2026-05-01 15:58:58.272 INFO  [] o.s.b.w.e.tomcat.TomcatWebServer - Tomcat started on port 8080 (http) with context path '/api'
+2026-05-01 15:58:58.295 INFO  [] c.t.apiserver.ApiServerApplication - Started ApiServerApplication in 25.733 seconds (process running for 27.12)
+2026-05-01 15:58:58.303 INFO  [] c.t.m.a.c.LlmPromptExtractorStartupDiagnostics - [AI_LLM] startup llmPromptExtractionEnabled=true llmProviderCfg=openai llmPromptExtractorBean=OpenAiLlmPromptExtractor
+2026-05-01 15:58:58.594 INFO  [] o.a.c.c.C.[.[localhost].[/api] - Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-05-01 15:58:58.595 INFO  [] o.s.web.servlet.DispatcherServlet - Initializing Servlet 'dispatcherServlet'
+2026-05-01 15:58:58.603 INFO  [] o.s.web.servlet.DispatcherServlet - Completed initialization in 8 ms
+2026-05-01 15:58:58.697 INFO  [e70960ab] c.t.a.logging.MdcLoggingFilter - [HTTP] Request started - requestUri: /api/auth/login, method: POST
+2026-05-01 15:58:58.785 INFO  [e70960ab] c.t.a.l.HttpHandlerLoggingInterceptor - [API] Enter - method: AuthController.login, requestUri: /api/auth/login, httpMethod: POST
+2026-05-01 15:58:59.028 DEBUG [e70960ab] org.hibernate.SQL - 
+    /* <criteria> */ select
+        m1_0.id,
+        m1_0.created_at,
+        m1_0.email,
+        m1_0.name,
+        m1_0.nickname,
+        m1_0.password,
+        m1_0.profile_image_url,
+        m1_0.role,
+        m1_0.social_type,
+        m1_0.status,
+        m1_0.updated_at 
+    from
+        member m1_0 
+    where
+        m1_0.email=? 
+        and m1_0.role=?
+2026-05-01 15:58:59.032 TRACE [e70960ab] org.hibernate.orm.jdbc.bind - binding parameter (1:VARCHAR) <- [test3@naver.com]
+2026-05-01 15:58:59.033 TRACE [e70960ab] org.hibernate.orm.jdbc.bind - binding parameter (2:ENUM) <- [GUEST]
+2026-05-01 15:58:59.120 INFO  [e70960ab] c.t.a.l.RepositoryLoggingAspect - [DB] Completed - method: MemberRepository.findByEmailAndRole(..), latencyMs: 219, status: success
+2026-05-01 15:58:59.599 INFO  [e70960ab] c.t.a.l.HttpHandlerLoggingInterceptor - [API] Exit - method: AuthController.login, latencyMs: 814, statusCode: 200, requestUri: /api/auth/login
+2026-05-01 15:58:59.602 INFO  [e70960ab] c.t.a.logging.MdcLoggingFilter - [HTTP] Request completed - statusCode: 200, latencyMs: 905, requestUri: /api/auth/login, method: POST
+2026-05-01 15:59:00.017 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-05-01 15:59:00.018 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-05-01 15:59:00.018 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-05-01T15:59:00.014194800]
+2026-05-01 15:59:00.027 INFO  [] c.t.a.l.RepositoryLoggingAspect - [DB] Completed - method: TourExtensionRepository.findByStatusAndDeadlineAtBefore(..), latencyMs: 12, status: success
+2026-05-01 15:59:03.651 INFO  [5d9bd342] c.t.a.logging.MdcLoggingFilter - [HTTP] Request started - requestUri: /api/chat-room-test.html, method: GET
+2026-05-01 15:59:03.674 INFO  [5d9bd342] c.t.a.logging.MdcLoggingFilter - [HTTP] Request completed - statusCode: 200, latencyMs: 23, requestUri: /api/chat-room-test.html, method: GET
+2026-05-01 15:59:05.505 INFO  [947a584a] c.t.a.logging.MdcLoggingFilter - [HTTP] Request started - requestUri: /api/chat/rooms, method: GET
+2026-05-01 15:59:05.577 INFO  [947a584a] c.t.a.l.HttpHandlerLoggingInterceptor - [API] Enter - method: ChatRoomController.getRooms, requestUri: /api/chat/rooms, httpMethod: GET
+2026-05-01 15:59:05.599 DEBUG [947a584a] org.hibernate.SQL - 
+    /* SELECT
+        DISTINCT r 
+    FROM
+        ChatRoom r 
+    JOIN
+        
+    FETCH
+        r.participants p 
+    WHERE
+        r.id IN (SELECT
+            r2.id 
+        FROM
+            ChatRoom r2 
+        JOIN
+            r2.participants p2 
+        WHERE
+            p2.userEmail = :userEmail) */ select
+            distinct cr1_0.id,
+            cr1_0.created_at,
+            cr1_0.last_message,
+            cr1_0.last_message_at,
+            cr1_0.owner_email,
+            cr1_0.participant_count,
+            p1_0.chat_room_id,
+            p1_0.id,
+            p1_0.created_at,
+            p1_0.last_read_at,
+            p1_0.updated_at,
+            p1_0.user_email,
+            p1_0.user_id,
+            p1_0.user_nickname,
+            cr1_0.room_id,
+            cr1_0.title,
+            cr1_0.updated_at 
+        from
+            chat_rooms cr1_0 
+        join
+            chat_participants p1_0 
+                on cr1_0.id=p1_0.chat_room_id 
+        where
+            cr1_0.id in (select
+                cr2_0.id 
+            from
+                chat_rooms cr2_0 
+            join
+                chat_participants p2_0 
+                    on cr2_0.id=p2_0.chat_room_id 
+            where
+                p2_0.user_email=?)
+2026-05-01 15:59:05.599 TRACE [947a584a] org.hibernate.orm.jdbc.bind - binding parameter (1:VARCHAR) <- [test3@naver.com]
+2026-05-01 15:59:05.614 INFO  [947a584a] c.t.a.l.RepositoryLoggingAspect - [DB] Completed - method: ChatRoomRepository.findAllByUserEmail(..), latencyMs: 32, status: success
+2026-05-01 15:59:05.624 INFO  [947a584a] c.t.a.l.HttpHandlerLoggingInterceptor - [API] Exit - method: ChatRoomController.getRooms, latencyMs: 46, statusCode: 200, requestUri: /api/chat/rooms
+2026-05-01 15:59:05.625 INFO  [947a584a] c.t.a.logging.MdcLoggingFilter - [HTTP] Request completed - statusCode: 200, latencyMs: 120, requestUri: /api/chat/rooms, method: GET
+2026-05-01 15:59:17.795 INFO  [f423ecdb] c.t.a.logging.MdcLoggingFilter - [HTTP] Request started - requestUri: /api/chat/rooms, method: GET
+2026-05-01 15:59:17.799 INFO  [f423ecdb] c.t.a.l.HttpHandlerLoggingInterceptor - [API] Enter - method: ChatRoomController.getRooms, requestUri: /api/chat/rooms, httpMethod: GET
+2026-05-01 15:59:17.802 DEBUG [f423ecdb] org.hibernate.SQL - 
+    /* SELECT
+        DISTINCT r 
+    FROM
+        ChatRoom r 
+    JOIN
+        
+    FETCH
+        r.participants p 
+    WHERE
+        r.id IN (SELECT
+            r2.id 
+        FROM
+            ChatRoom r2 
+        JOIN
+            r2.participants p2 
+        WHERE
+            p2.userEmail = :userEmail) */ select
+            distinct cr1_0.id,
+            cr1_0.created_at,
+            cr1_0.last_message,
+            cr1_0.last_message_at,
+            cr1_0.owner_email,
+            cr1_0.participant_count,
+            p1_0.chat_room_id,
+            p1_0.id,
+            p1_0.created_at,
+            p1_0.last_read_at,
+            p1_0.updated_at,
+            p1_0.user_email,
+            p1_0.user_id,
+            p1_0.user_nickname,
+            cr1_0.room_id,
+            cr1_0.title,
+            cr1_0.updated_at 
+        from
+            chat_rooms cr1_0 
+        join
+            chat_participants p1_0 
+                on cr1_0.id=p1_0.chat_room_id 
+        where
+            cr1_0.id in (select
+                cr2_0.id 
+            from
+                chat_rooms cr2_0 
+            join
+                chat_participants p2_0 
+                    on cr2_0.id=p2_0.chat_room_id 
+            where
+                p2_0.user_email=?)
+2026-05-01 15:59:17.802 TRACE [f423ecdb] org.hibernate.orm.jdbc.bind - binding parameter (1:VARCHAR) <- [test3@naver.com]
+2026-05-01 15:59:17.803 INFO  [f423ecdb] c.t.a.l.RepositoryLoggingAspect - [DB] Completed - method: ChatRoomRepository.findAllByUserEmail(..), latencyMs: 3, status: success
+2026-05-01 15:59:17.805 INFO  [f423ecdb] c.t.a.l.HttpHandlerLoggingInterceptor - [API] Exit - method: ChatRoomController.getRooms, latencyMs: 6, statusCode: 200, requestUri: /api/chat/rooms
+2026-05-01 15:59:17.806 INFO  [f423ecdb] c.t.a.logging.MdcLoggingFilter - [HTTP] Request completed - statusCode: 200, latencyMs: 10, requestUri: /api/chat/rooms, method: GET
+2026-05-01 15:59:27.564 INFO  [0eec7c3a] c.t.a.logging.MdcLoggingFilter - [HTTP] Request started - requestUri: /api/chat/rooms, method: GET
+2026-05-01 15:59:27.569 INFO  [0eec7c3a] c.t.a.l.HttpHandlerLoggingInterceptor - [API] Enter - method: ChatRoomController.getRooms, requestUri: /api/chat/rooms, httpMethod: GET
+2026-05-01 15:59:27.572 DEBUG [0eec7c3a] org.hibernate.SQL - 
+    /* SELECT
+        DISTINCT r 
+    FROM
+        ChatRoom r 
+    JOIN
+        
+    FETCH
+        r.participants p 
+    WHERE
+        r.id IN (SELECT
+            r2.id 
+        FROM
+            ChatRoom r2 
+        JOIN
+            r2.participants p2 
+        WHERE
+            p2.userEmail = :userEmail) */ select
+            distinct cr1_0.id,
+            cr1_0.created_at,
+            cr1_0.last_message,
+            cr1_0.last_message_at,
+            cr1_0.owner_email,
+            cr1_0.participant_count,
+            p1_0.chat_room_id,
+            p1_0.id,
+            p1_0.created_at,
+            p1_0.last_read_at,
+            p1_0.updated_at,
+            p1_0.user_email,
+            p1_0.user_id,
+            p1_0.user_nickname,
+            cr1_0.room_id,
+            cr1_0.title,
+            cr1_0.updated_at 
+        from
+            chat_rooms cr1_0 
+        join
+            chat_participants p1_0 
+                on cr1_0.id=p1_0.chat_room_id 
+        where
+            cr1_0.id in (select
+                cr2_0.id 
+            from
+                chat_rooms cr2_0 
+            join
+                chat_participants p2_0 
+                    on cr2_0.id=p2_0.chat_room_id 
+            where
+                p2_0.user_email=?)
+2026-05-01 15:59:27.572 TRACE [0eec7c3a] org.hibernate.orm.jdbc.bind - binding parameter (1:VARCHAR) <- [test3@naver.com]
+2026-05-01 15:59:27.574 INFO  [0eec7c3a] c.t.a.l.RepositoryLoggingAspect - [DB] Completed - method: ChatRoomRepository.findAllByUserEmail(..), latencyMs: 3, status: success
+2026-05-01 15:59:27.576 INFO  [0eec7c3a] c.t.a.l.HttpHandlerLoggingInterceptor - [API] Exit - method: ChatRoomController.getRooms, latencyMs: 7, statusCode: 200, requestUri: /api/chat/rooms
+2026-05-01 15:59:27.577 INFO  [0eec7c3a] c.t.a.logging.MdcLoggingFilter - [HTTP] Request completed - statusCode: 200, latencyMs: 13, requestUri: /api/chat/rooms, method: GET
+2026-05-01 15:59:34.257 INFO  [025835ed] c.t.a.logging.MdcLoggingFilter - [HTTP] Request started - requestUri: /api/auth/login, method: POST
+2026-05-01 15:59:34.259 INFO  [025835ed] c.t.a.l.HttpHandlerLoggingInterceptor - [API] Enter - method: AuthController.login, requestUri: /api/auth/login, httpMethod: POST
+2026-05-01 15:59:34.263 DEBUG [025835ed] org.hibernate.SQL - 
+    /* <criteria> */ select
+        m1_0.id,
+        m1_0.created_at,
+        m1_0.email,
+        m1_0.name,
+        m1_0.nickname,
+        m1_0.password,
+        m1_0.profile_image_url,
+        m1_0.role,
+        m1_0.social_type,
+        m1_0.status,
+        m1_0.updated_at 
+    from
+        member m1_0 
+    where
+        m1_0.email=? 
+        and m1_0.role=?
+2026-05-01 15:59:34.263 TRACE [025835ed] org.hibernate.orm.jdbc.bind - binding parameter (1:VARCHAR) <- [test2@naver.com]
+2026-05-01 15:59:34.263 TRACE [025835ed] org.hibernate.orm.jdbc.bind - binding parameter (2:ENUM) <- [GUEST]
+2026-05-01 15:59:34.265 INFO  [025835ed] c.t.a.l.RepositoryLoggingAspect - [DB] Completed - method: MemberRepository.findByEmailAndRole(..), latencyMs: 3, status: success
+2026-05-01 15:59:34.341 INFO  [025835ed] c.t.a.l.HttpHandlerLoggingInterceptor - [API] Exit - method: AuthController.login, latencyMs: 82, statusCode: 200, requestUri: /api/auth/login
+2026-05-01 15:59:34.342 INFO  [025835ed] c.t.a.logging.MdcLoggingFilter - [HTTP] Request completed - statusCode: 200, latencyMs: 85, requestUri: /api/auth/login, method: POST
+2026-05-01 15:59:39.360 INFO  [e4c38e4b] c.t.a.logging.MdcLoggingFilter - [HTTP] Request started - requestUri: /api/chat-room-test.html, method: GET
+2026-05-01 15:59:39.370 INFO  [e4c38e4b] c.t.a.logging.MdcLoggingFilter - [HTTP] Request completed - statusCode: 200, latencyMs: 9, requestUri: /api/chat-room-test.html, method: GET
+2026-05-01 15:59:40.726 INFO  [18e84bfc] c.t.a.logging.MdcLoggingFilter - [HTTP] Request started - requestUri: /api/chat/rooms, method: GET
+2026-05-01 15:59:40.730 INFO  [18e84bfc] c.t.a.l.HttpHandlerLoggingInterceptor - [API] Enter - method: ChatRoomController.getRooms, requestUri: /api/chat/rooms, httpMethod: GET
+2026-05-01 15:59:40.733 DEBUG [18e84bfc] org.hibernate.SQL - 
+    /* SELECT
+        DISTINCT r 
+    FROM
+        ChatRoom r 
+    JOIN
+        
+    FETCH
+        r.participants p 
+    WHERE
+        r.id IN (SELECT
+            r2.id 
+        FROM
+            ChatRoom r2 
+        JOIN
+            r2.participants p2 
+        WHERE
+            p2.userEmail = :userEmail) */ select
+            distinct cr1_0.id,
+            cr1_0.created_at,
+            cr1_0.last_message,
+            cr1_0.last_message_at,
+            cr1_0.owner_email,
+            cr1_0.participant_count,
+            p1_0.chat_room_id,
+            p1_0.id,
+            p1_0.created_at,
+            p1_0.last_read_at,
+            p1_0.updated_at,
+            p1_0.user_email,
+            p1_0.user_id,
+            p1_0.user_nickname,
+            cr1_0.room_id,
+            cr1_0.title,
+            cr1_0.updated_at 
+        from
+            chat_rooms cr1_0 
+        join
+            chat_participants p1_0 
+                on cr1_0.id=p1_0.chat_room_id 
+        where
+            cr1_0.id in (select
+                cr2_0.id 
+            from
+                chat_rooms cr2_0 
+            join
+                chat_participants p2_0 
+                    on cr2_0.id=p2_0.chat_room_id 
+            where
+                p2_0.user_email=?)
+2026-05-01 15:59:40.734 TRACE [18e84bfc] org.hibernate.orm.jdbc.bind - binding parameter (1:VARCHAR) <- [test2@naver.com]
+2026-05-01 15:59:40.770 INFO  [18e84bfc] c.t.a.l.RepositoryLoggingAspect - [DB] Completed - method: ChatRoomRepository.findAllByUserEmail(..), latencyMs: 36, status: success
+2026-05-01 15:59:40.777 INFO  [18e84bfc] c.t.a.l.HttpHandlerLoggingInterceptor - [API] Exit - method: ChatRoomController.getRooms, latencyMs: 46, statusCode: 200, requestUri: /api/chat/rooms
+2026-05-01 15:59:40.778 INFO  [18e84bfc] c.t.a.logging.MdcLoggingFilter - [HTTP] Request completed - statusCode: 200, latencyMs: 52, requestUri: /api/chat/rooms, method: GET
+2026-05-01 15:59:42.163 INFO  [119a3c52] c.t.a.logging.MdcLoggingFilter - [HTTP] Request started - requestUri: /api/chat-test.html, method: GET
+2026-05-01 15:59:42.173 INFO  [119a3c52] c.t.a.logging.MdcLoggingFilter - [HTTP] Request completed - statusCode: 200, latencyMs: 9, requestUri: /api/chat-test.html, method: GET
+2026-05-01 15:59:47.378 INFO  [64108217] c.t.a.logging.MdcLoggingFilter - [HTTP] Request started - requestUri: /api/chat/rooms, method: POST
+2026-05-01 15:59:47.382 INFO  [64108217] c.t.a.l.HttpHandlerLoggingInterceptor - [API] Enter - method: ChatRoomController.createRoom, requestUri: /api/chat/rooms, httpMethod: POST
+2026-05-01 15:59:47.421 DEBUG [64108217] org.hibernate.SQL - 
+    /* <criteria> */ select
+        m1_0.id,
+        m1_0.created_at,
+        m1_0.email,
+        m1_0.name,
+        m1_0.nickname,
+        m1_0.password,
+        m1_0.profile_image_url,
+        m1_0.role,
+        m1_0.social_type,
+        m1_0.status,
+        m1_0.updated_at 
+    from
+        member m1_0 
+    where
+        m1_0.email=?
+2026-05-01 15:59:47.422 TRACE [64108217] org.hibernate.orm.jdbc.bind - binding parameter (1:VARCHAR) <- [test3@naver.com]
+2026-05-01 15:59:47.425 INFO  [64108217] c.t.a.l.RepositoryLoggingAspect - [DB] Completed - method: MemberRepository.findByEmail(..), latencyMs: 8, status: success
+2026-05-01 15:59:47.428 DEBUG [64108217] org.hibernate.SQL - 
+    /* <criteria> */ select
+        m1_0.id,
+        m1_0.created_at,
+        m1_0.email,
+        m1_0.name,
+        m1_0.nickname,
+        m1_0.password,
+        m1_0.profile_image_url,
+        m1_0.role,
+        m1_0.social_type,
+        m1_0.status,
+        m1_0.updated_at 
+    from
+        member m1_0 
+    where
+        m1_0.email=?
+2026-05-01 15:59:47.428 TRACE [64108217] org.hibernate.orm.jdbc.bind - binding parameter (1:VARCHAR) <- [test3@naver.com]
+2026-05-01 15:59:47.429 INFO  [64108217] c.t.a.l.RepositoryLoggingAspect - [DB] Completed - method: MemberRepository.findByEmail(..), latencyMs: 2, status: success
+2026-05-01 15:59:47.431 DEBUG [64108217] org.hibernate.SQL - 
+    /* <criteria> */ select
+        m1_0.id,
+        m1_0.created_at,
+        m1_0.email,
+        m1_0.name,
+        m1_0.nickname,
+        m1_0.password,
+        m1_0.profile_image_url,
+        m1_0.role,
+        m1_0.social_type,
+        m1_0.status,
+        m1_0.updated_at 
+    from
+        member m1_0 
+    where
+        m1_0.email=?
+2026-05-01 15:59:47.432 TRACE [64108217] org.hibernate.orm.jdbc.bind - binding parameter (1:VARCHAR) <- [test2@naver.com]
+2026-05-01 15:59:47.433 INFO  [64108217] c.t.a.l.RepositoryLoggingAspect - [DB] Completed - method: MemberRepository.findByEmail(..), latencyMs: 2, status: success
+2026-05-01 15:59:47.534 DEBUG [64108217] org.hibernate.SQL - 
+    /* insert for
+        com.team6.module.chat.entity.mysql.ChatRoom */insert 
+    into
+        chat_rooms (created_at, last_message, last_message_at, owner_email, participant_count, room_id, title, updated_at) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?)
+2026-05-01 15:59:47.539 TRACE [64108217] org.hibernate.orm.jdbc.bind - binding parameter (1:TIMESTAMP) <- [2026-05-01T15:59:47.513211]
+2026-05-01 15:59:47.540 TRACE [64108217] org.hibernate.orm.jdbc.bind - binding parameter (2:VARCHAR) <- [null]
+2026-05-01 15:59:47.540 TRACE [64108217] org.hibernate.orm.jdbc.bind - binding parameter (3:TIMESTAMP) <- [2026-05-01T15:59:47.426810300]
+2026-05-01 15:59:47.540 TRACE [64108217] org.hibernate.orm.jdbc.bind - binding parameter (4:VARCHAR) <- [test3@naver.com]
+2026-05-01 15:59:47.540 TRACE [64108217] org.hibernate.orm.jdbc.bind - binding parameter (5:INTEGER) <- [2]
+2026-05-01 15:59:47.540 TRACE [64108217] org.hibernate.orm.jdbc.bind - binding parameter (6:VARCHAR) <- [c8a67796-1514-4427-a699-a708927c9f0e]
+2026-05-01 15:59:47.540 TRACE [64108217] org.hibernate.orm.jdbc.bind - binding parameter (7:VARCHAR) <- [테스트 채팅방2]
+2026-05-01 15:59:47.541 TRACE [64108217] org.hibernate.orm.jdbc.bind - binding parameter (8:TIMESTAMP) <- [2026-05-01T15:59:47.513211]
+2026-05-01 15:59:47.582 DEBUG [64108217] org.hibernate.SQL - 
+    /* insert for
+        com.team6.module.chat.entity.mysql.ChatParticipant */insert 
+    into
+        chat_participants (created_at, last_read_at, updated_at, user_email, user_id, user_nickname) 
+    values
+        (?, ?, ?, ?, ?, ?)
+2026-05-01 15:59:47.583 TRACE [64108217] org.hibernate.orm.jdbc.bind - binding parameter (1:TIMESTAMP) <- [2026-05-01T15:59:47.582983]
+2026-05-01 15:59:47.583 TRACE [64108217] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-05-01T15:59:47.430811700]
+2026-05-01 15:59:47.583 TRACE [64108217] org.hibernate.orm.jdbc.bind - binding parameter (3:TIMESTAMP) <- [2026-05-01T15:59:47.582983]
+2026-05-01 15:59:47.583 TRACE [64108217] org.hibernate.orm.jdbc.bind - binding parameter (4:VARCHAR) <- [test3@naver.com]
+2026-05-01 15:59:47.583 TRACE [64108217] org.hibernate.orm.jdbc.bind - binding parameter (5:BIGINT) <- [null]
+2026-05-01 15:59:47.583 TRACE [64108217] org.hibernate.orm.jdbc.bind - binding parameter (6:VARCHAR) <- [test3]
+2026-05-01 15:59:47.586 DEBUG [64108217] org.hibernate.SQL - 
+    /* insert for
+        com.team6.module.chat.entity.mysql.ChatParticipant */insert 
+    into
+        chat_participants (created_at, last_read_at, updated_at, user_email, user_id, user_nickname) 
+    values
+        (?, ?, ?, ?, ?, ?)
+2026-05-01 15:59:47.586 TRACE [64108217] org.hibernate.orm.jdbc.bind - binding parameter (1:TIMESTAMP) <- [2026-05-01T15:59:47.585983]
+2026-05-01 15:59:47.586 TRACE [64108217] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-05-01T15:59:47.433814]
+2026-05-01 15:59:47.586 TRACE [64108217] org.hibernate.orm.jdbc.bind - binding parameter (3:TIMESTAMP) <- [2026-05-01T15:59:47.585983]
+2026-05-01 15:59:47.586 TRACE [64108217] org.hibernate.orm.jdbc.bind - binding parameter (4:VARCHAR) <- [test2@naver.com]
+2026-05-01 15:59:47.586 TRACE [64108217] org.hibernate.orm.jdbc.bind - binding parameter (5:BIGINT) <- [null]
+2026-05-01 15:59:47.586 TRACE [64108217] org.hibernate.orm.jdbc.bind - binding parameter (6:VARCHAR) <- [test2]
+2026-05-01 15:59:47.594 INFO  [64108217] c.t.a.l.RepositoryLoggingAspect - [DB] Completed - method: CrudRepository.save(..), latencyMs: 160, status: success
+2026-05-01 15:59:47.626 DEBUG [64108217] org.hibernate.SQL - 
+    update
+        chat_participants 
+    set
+        chat_room_id=? 
+    where
+        id=?
+2026-05-01 15:59:47.626 TRACE [64108217] org.hibernate.orm.jdbc.bind - binding parameter (1:BIGINT) <- [3]
+2026-05-01 15:59:47.626 TRACE [64108217] org.hibernate.orm.jdbc.bind - binding parameter (2:BIGINT) <- [3]
+2026-05-01 15:59:47.628 DEBUG [64108217] org.hibernate.SQL - 
+    update
+        chat_participants 
+    set
+        chat_room_id=? 
+    where
+        id=?
+2026-05-01 15:59:47.628 TRACE [64108217] org.hibernate.orm.jdbc.bind - binding parameter (1:BIGINT) <- [3]
+2026-05-01 15:59:47.628 TRACE [64108217] org.hibernate.orm.jdbc.bind - binding parameter (2:BIGINT) <- [4]
+2026-05-01 15:59:47.646 INFO  [64108217] c.t.a.l.HttpHandlerLoggingInterceptor - [API] Exit - method: ChatRoomController.createRoom, latencyMs: 263, statusCode: 200, requestUri: /api/chat/rooms
+2026-05-01 15:59:47.646 INFO  [64108217] c.t.a.logging.MdcLoggingFilter - [HTTP] Request completed - statusCode: 200, latencyMs: 268, requestUri: /api/chat/rooms, method: POST
+2026-05-01 15:59:47.651 INFO  [deb547aa] c.t.a.logging.MdcLoggingFilter - [HTTP] Request started - requestUri: /api/chat/rooms, method: GET
+2026-05-01 15:59:47.654 INFO  [deb547aa] c.t.a.l.HttpHandlerLoggingInterceptor - [API] Enter - method: ChatRoomController.getRooms, requestUri: /api/chat/rooms, httpMethod: GET
+2026-05-01 15:59:47.658 DEBUG [deb547aa] org.hibernate.SQL - 
+    /* SELECT
+        DISTINCT r 
+    FROM
+        ChatRoom r 
+    JOIN
+        
+    FETCH
+        r.participants p 
+    WHERE
+        r.id IN (SELECT
+            r2.id 
+        FROM
+            ChatRoom r2 
+        JOIN
+            r2.participants p2 
+        WHERE
+            p2.userEmail = :userEmail) */ select
+            distinct cr1_0.id,
+            cr1_0.created_at,
+            cr1_0.last_message,
+            cr1_0.last_message_at,
+            cr1_0.owner_email,
+            cr1_0.participant_count,
+            p1_0.chat_room_id,
+            p1_0.id,
+            p1_0.created_at,
+            p1_0.last_read_at,
+            p1_0.updated_at,
+            p1_0.user_email,
+            p1_0.user_id,
+            p1_0.user_nickname,
+            cr1_0.room_id,
+            cr1_0.title,
+            cr1_0.updated_at 
+        from
+            chat_rooms cr1_0 
+        join
+            chat_participants p1_0 
+                on cr1_0.id=p1_0.chat_room_id 
+        where
+            cr1_0.id in (select
+                cr2_0.id 
+            from
+                chat_rooms cr2_0 
+            join
+                chat_participants p2_0 
+                    on cr2_0.id=p2_0.chat_room_id 
+            where
+                p2_0.user_email=?)
+2026-05-01 15:59:47.658 TRACE [deb547aa] org.hibernate.orm.jdbc.bind - binding parameter (1:VARCHAR) <- [test3@naver.com]
+2026-05-01 15:59:47.662 INFO  [deb547aa] c.t.a.l.RepositoryLoggingAspect - [DB] Completed - method: ChatRoomRepository.findAllByUserEmail(..), latencyMs: 4, status: success
+2026-05-01 15:59:47.664 INFO  [deb547aa] c.t.a.l.HttpHandlerLoggingInterceptor - [API] Exit - method: ChatRoomController.getRooms, latencyMs: 9, statusCode: 200, requestUri: /api/chat/rooms
+2026-05-01 15:59:47.665 INFO  [deb547aa] c.t.a.logging.MdcLoggingFilter - [HTTP] Request completed - statusCode: 200, latencyMs: 14, requestUri: /api/chat/rooms, method: GET
+2026-05-01 15:59:49.315 INFO  [eef56bb6] c.t.a.logging.MdcLoggingFilter - [HTTP] Request started - requestUri: /api/chat-room-test.html, method: GET
+2026-05-01 15:59:49.320 INFO  [eef56bb6] c.t.a.logging.MdcLoggingFilter - [HTTP] Request completed - statusCode: 200, latencyMs: 4, requestUri: /api/chat-room-test.html, method: GET
+2026-05-01 15:59:50.095 INFO  [a229e14c] c.t.a.logging.MdcLoggingFilter - [HTTP] Request started - requestUri: /api/chat/rooms, method: GET
+2026-05-01 15:59:50.097 INFO  [a229e14c] c.t.a.l.HttpHandlerLoggingInterceptor - [API] Enter - method: ChatRoomController.getRooms, requestUri: /api/chat/rooms, httpMethod: GET
+2026-05-01 15:59:50.099 DEBUG [a229e14c] org.hibernate.SQL - 
+    /* SELECT
+        DISTINCT r 
+    FROM
+        ChatRoom r 
+    JOIN
+        
+    FETCH
+        r.participants p 
+    WHERE
+        r.id IN (SELECT
+            r2.id 
+        FROM
+            ChatRoom r2 
+        JOIN
+            r2.participants p2 
+        WHERE
+            p2.userEmail = :userEmail) */ select
+            distinct cr1_0.id,
+            cr1_0.created_at,
+            cr1_0.last_message,
+            cr1_0.last_message_at,
+            cr1_0.owner_email,
+            cr1_0.participant_count,
+            p1_0.chat_room_id,
+            p1_0.id,
+            p1_0.created_at,
+            p1_0.last_read_at,
+            p1_0.updated_at,
+            p1_0.user_email,
+            p1_0.user_id,
+            p1_0.user_nickname,
+            cr1_0.room_id,
+            cr1_0.title,
+            cr1_0.updated_at 
+        from
+            chat_rooms cr1_0 
+        join
+            chat_participants p1_0 
+                on cr1_0.id=p1_0.chat_room_id 
+        where
+            cr1_0.id in (select
+                cr2_0.id 
+            from
+                chat_rooms cr2_0 
+            join
+                chat_participants p2_0 
+                    on cr2_0.id=p2_0.chat_room_id 
+            where
+                p2_0.user_email=?)
+2026-05-01 15:59:50.099 TRACE [a229e14c] org.hibernate.orm.jdbc.bind - binding parameter (1:VARCHAR) <- [test2@naver.com]
+2026-05-01 15:59:50.102 INFO  [a229e14c] c.t.a.l.RepositoryLoggingAspect - [DB] Completed - method: ChatRoomRepository.findAllByUserEmail(..), latencyMs: 2, status: success
+2026-05-01 15:59:50.103 INFO  [a229e14c] c.t.a.l.HttpHandlerLoggingInterceptor - [API] Exit - method: ChatRoomController.getRooms, latencyMs: 6, statusCode: 200, requestUri: /api/chat/rooms
+2026-05-01 15:59:50.103 INFO  [a229e14c] c.t.a.logging.MdcLoggingFilter - [HTTP] Request completed - statusCode: 200, latencyMs: 9, requestUri: /api/chat/rooms, method: GET
+2026-05-01 15:59:51.988 INFO  [3fb46f2a] c.t.a.logging.MdcLoggingFilter - [HTTP] Request started - requestUri: /api/chat-test.html, method: GET
+2026-05-01 15:59:51.995 INFO  [3fb46f2a] c.t.a.logging.MdcLoggingFilter - [HTTP] Request completed - statusCode: 200, latencyMs: 7, requestUri: /api/chat-test.html, method: GET
+2026-05-01 15:59:52.928 INFO  [be7295e2] c.t.a.logging.MdcLoggingFilter - [HTTP] Request started - requestUri: /api/chat-test.html, method: GET
+2026-05-01 15:59:52.933 INFO  [be7295e2] c.t.a.logging.MdcLoggingFilter - [HTTP] Request completed - statusCode: 200, latencyMs: 5, requestUri: /api/chat-test.html, method: GET
+2026-05-01 15:59:56.384 INFO  [1f27152b] c.t.a.logging.MdcLoggingFilter - [HTTP] Request started - requestUri: /api/ws-stomp/info, method: GET
+2026-05-01 15:59:56.390 INFO  [1f27152b] c.t.a.logging.MdcLoggingFilter - [HTTP] Request completed - statusCode: 200, latencyMs: 5, requestUri: /api/ws-stomp/info, method: GET
+2026-05-01 15:59:56.397 INFO  [2d30cf92] c.t.a.logging.MdcLoggingFilter - [HTTP] Request started - requestUri: /api/ws-stomp/248/bwgwzxcj/websocket, method: GET
+2026-05-01 15:59:56.477 INFO  [2d30cf92] c.t.a.logging.MdcLoggingFilter - [HTTP] Request completed - statusCode: 101, latencyMs: 81, requestUri: /api/ws-stomp/248/bwgwzxcj/websocket, method: GET
+2026-05-01 15:59:56.559 INFO  [] c.t.m.c.config.JwtChannelInterceptor - WebSocket 인증 성공: userEmail = test3@naver.com
+2026-05-01 15:59:57.236 INFO  [7f1e2bef] c.t.a.logging.MdcLoggingFilter - [HTTP] Request started - requestUri: /api/ws-stomp/info, method: GET
+2026-05-01 15:59:57.238 INFO  [7f1e2bef] c.t.a.logging.MdcLoggingFilter - [HTTP] Request completed - statusCode: 200, latencyMs: 2, requestUri: /api/ws-stomp/info, method: GET
+2026-05-01 15:59:57.244 INFO  [6cd46597] c.t.a.logging.MdcLoggingFilter - [HTTP] Request started - requestUri: /api/ws-stomp/495/lodv4rd2/websocket, method: GET
+2026-05-01 15:59:57.246 INFO  [6cd46597] c.t.a.logging.MdcLoggingFilter - [HTTP] Request completed - statusCode: 101, latencyMs: 2, requestUri: /api/ws-stomp/495/lodv4rd2/websocket, method: GET
+2026-05-01 15:59:57.250 INFO  [] c.t.m.c.config.JwtChannelInterceptor - WebSocket 인증 성공: userEmail = test2@naver.com
+2026-05-01 15:59:58.227 INFO  [] o.s.w.s.c.WebSocketMessageBrokerStats - WebSocketSession[2 current WS(2)-HttpStream(0)-HttpPoll(0), 2 total, 0 closed abnormally (0 connect failure, 0 send limit, 0 transport error)], stompSubProtocol[processed CONNECT(2)-CONNECTED(2)-DISCONNECT(0)], stompBrokerRelay[null], inboundChannel[pool size = 12, active threads = 0, queued tasks = 0, completed tasks = 12], outboundChannel[pool size = 2, active threads = 0, queued tasks = 0, completed tasks = 2], sockJsScheduler[pool size = 11, active threads = 1, queued tasks = 5, completed tasks = 3]
+2026-05-01 15:59:58.331 DEBUG [] org.hibernate.SQL - 
+    /* select
+        distinct cr 
+    from
+        ChatRoom cr 
+    join
+        
+    fetch
+        cr.participants 
+    where
+        cr.roomId = :roomId */ select
+            distinct cr1_0.id,
+            cr1_0.created_at,
+            cr1_0.last_message,
+            cr1_0.last_message_at,
+            cr1_0.owner_email,
+            cr1_0.participant_count,
+            p1_0.chat_room_id,
+            p1_0.id,
+            p1_0.created_at,
+            p1_0.last_read_at,
+            p1_0.updated_at,
+            p1_0.user_email,
+            p1_0.user_id,
+            p1_0.user_nickname,
+            cr1_0.room_id,
+            cr1_0.title,
+            cr1_0.updated_at 
+        from
+            chat_rooms cr1_0 
+        join
+            chat_participants p1_0 
+                on cr1_0.id=p1_0.chat_room_id 
+        where
+            cr1_0.room_id=?
+2026-05-01 15:59:58.332 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:VARCHAR) <- [c8a67796-1514-4427-a699-a708927c9f0e]
+2026-05-01 15:59:58.335 INFO  [] c.t.a.l.RepositoryLoggingAspect - [DB] Completed - method: ChatRoomRepository.findByRoomIdWithParticipants(..), latencyMs: 45, status: success
+2026-05-01 15:59:58.452 INFO  [] c.t.a.l.RepositoryLoggingAspect - [DB] Completed - method: CrudRepository.save(..), latencyMs: 112, status: success
+2026-05-01 15:59:58.601 INFO  [] c.t.m.c.s.RedisSubscribeListener - Redis Sub 수신 및 WS 전송: RoomId=c8a67796-1514-4427-a699-a708927c9f0e, SenderEmail=test3@naver.com
+2026-05-01 15:59:59.734 DEBUG [] org.hibernate.SQL - 
+    /* select
+        distinct cr 
+    from
+        ChatRoom cr 
+    join
+        
+    fetch
+        cr.participants 
+    where
+        cr.roomId = :roomId */ select
+            distinct cr1_0.id,
+            cr1_0.created_at,
+            cr1_0.last_message,
+            cr1_0.last_message_at,
+            cr1_0.owner_email,
+            cr1_0.participant_count,
+            p1_0.chat_room_id,
+            p1_0.id,
+            p1_0.created_at,
+            p1_0.last_read_at,
+            p1_0.updated_at,
+            p1_0.user_email,
+            p1_0.user_id,
+            p1_0.user_nickname,
+            cr1_0.room_id,
+            cr1_0.title,
+            cr1_0.updated_at 
+        from
+            chat_rooms cr1_0 
+        join
+            chat_participants p1_0 
+                on cr1_0.id=p1_0.chat_room_id 
+        where
+            cr1_0.room_id=?
+2026-05-01 15:59:59.735 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:VARCHAR) <- [c8a67796-1514-4427-a699-a708927c9f0e]
+2026-05-01 15:59:59.737 INFO  [] c.t.a.l.RepositoryLoggingAspect - [DB] Completed - method: ChatRoomRepository.findByRoomIdWithParticipants(..), latencyMs: 3, status: success
+2026-05-01 15:59:59.740 INFO  [] c.t.a.l.RepositoryLoggingAspect - [DB] Completed - method: CrudRepository.save(..), latencyMs: 2, status: success
+2026-05-01 15:59:59.744 INFO  [] c.t.m.c.s.RedisSubscribeListener - Redis Sub 수신 및 WS 전송: RoomId=c8a67796-1514-4427-a699-a708927c9f0e, SenderEmail=test3@naver.com
+2026-05-01 16:00:00.012 DEBUG [] org.hibernate.SQL - 
+    /* <criteria> */ select
+        te1_0.id,
+        te1_0.created_at,
+        te1_0.deadline_at,
+        te1_0.extended_date,
+        te1_0.extended_price,
+        te1_0.guest_id,
+        te1_0.guide_approved_at,
+        te1_0.match_request_id,
+        te1_0.requested_at,
+        te1_0.status,
+        te1_0.updated_at 
+    from
+        tour_extension te1_0 
+    where
+        te1_0.status=? 
+        and te1_0.deadline_at<?
+2026-05-01 16:00:00.012 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (1:ENUM) <- [REQUESTED]
+2026-05-01 16:00:00.012 TRACE [] org.hibernate.orm.jdbc.bind - binding parameter (2:TIMESTAMP) <- [2026-05-01T16:00:00.009031700]
+2026-05-01 16:00:00.013 INFO  [] c.t.a.l.RepositoryLoggingAspect - [DB] Completed - method: TourExtensionRepository.findByStatusAndDeadlineAtBefore(..), latencyMs: 4, status: success
+2026-05-01 16:00:03.491 INFO  [] o.s.b.w.e.tomcat.GracefulShutdown - Commencing graceful shutdown. Waiting for active requests to complete
+2026-05-01 16:00:03.659 INFO  [] o.s.b.w.e.tomcat.GracefulShutdown - Graceful shutdown complete
+2026-05-01 16:00:03.850 INFO  [] o.s.m.s.b.SimpleBrokerMessageHandler - Stopping...
+2026-05-01 16:00:03.850 INFO  [] o.s.m.s.b.SimpleBrokerMessageHandler - BrokerAvailabilityEvent[available=false, SimpleBrokerMessageHandler [org.springframework.messaging.simp.broker.DefaultSubscriptionRegistry@7547fcc5]]
+2026-05-01 16:00:03.850 INFO  [] o.s.m.s.b.SimpleBrokerMessageHandler - Stopped.
+2026-05-01 16:00:03.917 INFO  [] o.s.o.j.LocalContainerEntityManagerFactoryBean - Closing JPA EntityManagerFactory for persistence unit 'default'
+2026-05-01 16:00:03.926 INFO  [] com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Shutdown initiated...
+2026-05-01 16:00:03.942 INFO  [] com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Shutdown completed.
