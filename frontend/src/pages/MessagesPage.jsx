@@ -154,7 +154,8 @@ export function MessagesPage() {
     setConnecting(true)
     setError('')
 
-    const wsUrl = import.meta.env.VITE_API_BASE_URL || '/api/ws-stomp'
+    const wsUrl = import.meta.env.VITE_WS_STOMP_URL  || '/api/ws-stomp'
+
     const client = new Client({
       webSocketFactory: () => new SockJS(wsUrl),
       connectHeaders: {
