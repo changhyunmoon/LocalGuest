@@ -5,18 +5,44 @@ import { textSummary } from 'https://jslib.k6.io/k6-summary/0.0.1/index.js';
 
 const BASE_URL = 'https://api.bam-match.com/api';
 
-const ROOM_ID = __ENV.ROOM_ID || 'f0dff13b-4558-11f1-a198-029e36ba38f1';
+const ROOM_ID = __ENV.ROOM_ID;
+const TEST_NAME = __ENV.TEST_NAME || ROOM_ID;
+
+if (!ROOM_ID) {
+    throw new Error('ROOM_ID environment variable is required');
+}
 
 export const options = {
-    stages: [
-        { duration: '1m', target: 20 },
-        { duration: '1m', target: 50 },
-        { duration: '1m', target: 100 },
-        { duration: '1m', target: 0 },
-    ],
+    scenarios: {
+        message_list_load_test: {
+            executor: 'ramping-vus',
+            stages: [
+                { duration: '1m', target: 10 },
+                { duration: '2m', target: 10 },
+
+                { duration: '1m', target: 30 },
+                { duration: '2m', target: 30 },
+
+                { duration: '1m', target: 50 },
+                { duration: '2m', target: 50 },
+
+                { duration: '1m', target: 80 },
+                { duration: '2m', target: 80 },
+
+                { duration: '1m', target: 100 },
+                { duration: '2m', target: 100 },
+
+                { duration: '1m', target: 0 },
+            ],
+        },
+    },
     thresholds: {
         http_req_failed: ['rate<0.01'],
         http_req_duration: ['p(95)<1000', 'p(99)<3000'],
+    },
+    tags: {
+        test_name: TEST_NAME,
+        room_id: ROOM_ID,
     },
 };
 
@@ -54,6 +80,11 @@ export default function (data) {
         headers: {
             Authorization: `Bearer ${data.token}`,
         },
+        tags: {
+            name: 'GET /chat/rooms/{roomId}/messages',
+            test_name: TEST_NAME,
+            room_id: ROOM_ID,
+        },
     };
 
     const res = http.get(
@@ -69,10 +100,10 @@ export default function (data) {
 }
 
 export function handleSummary(data) {
-    console.log('테스트가 완료되었습니다. 리포트를 생성합니다.');
+    console.log(`테스트가 완료되었습니다. TEST_NAME=${TEST_NAME}, ROOM_ID=${ROOM_ID}`);
 
     return {
-        'summary.html': htmlReport(data),
+        [`summary-${TEST_NAME}.html`]: htmlReport(data),
         stdout: textSummary(data, { indent: ' ', enableColors: true }),
     };
 }
