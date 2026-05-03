@@ -1,5 +1,5 @@
 global:
-  scrape_interval: 15s
+  scrape_interval: 15s #메트릭 수집 주기 15초
   evaluation_interval: 15s
 
 scrape_configs:
