@@ -10,6 +10,7 @@ services:
     command:
       - --config.file=/etc/prometheus/prometheus.yml
       - --storage.tsdb.path=/prometheus
+      - --enable-feature=remote-write-receiver
     restart: always
     networks:
       - team6-backend
