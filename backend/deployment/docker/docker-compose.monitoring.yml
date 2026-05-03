@@ -8,10 +8,10 @@ services:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus-data:/prometheus
     command:
-      - --config.file=/etc/prometheus/prometheus.yml
-      - --storage.tsdb.path=/prometheus
-      - --web.enable-feature=remote-write-receiver
-      - --enable-feature=native-histograms
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--web.enable-feature=remote-write-receiver"
+      - "--enable-feature=native-histograms"
     restart: always
     networks:
       - team6-backend
