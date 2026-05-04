@@ -5,7 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="84d1b3de-8103-452e-83cf-38ecd34993e7" name="Changes" comment="Feat/fe#453: redis, mongodb 분리">
-      <change beforePath="$PROJECT_DIR$/stress-test/scripts/chat-api-test/test2.js" beforeDir="false" afterPath="$PROJECT_DIR$/stress-test/scripts/chat-api-test/test2.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -158,7 +158,7 @@
       <workItem from="1777024277210" duration="1941000" />
       <workItem from="1777123987663" duration="4948000" />
       <workItem from="1777166706254" duration="313000" />
-      <workItem from="1777818978925" duration="1150000" />
+      <workItem from="1777818978925" duration="2848000" />
     </task>
     <task id="LOCAL-00001" summary="Feat/be#417: 모니터링 배포 테스트">
       <option name="closed" value="true" />
