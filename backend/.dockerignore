@@ -1,0 +1,16 @@
+.gradle
+build
+**/build
+out
+logs
+.ai
+docs
+deployment
+
+.git
+.gitignore
+.gitattributes
+
+README.md
+HELP.md
+Dockerfile
